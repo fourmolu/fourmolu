@@ -1,4 +1,4 @@
-Copyright © 2018–present Tweag I/O
+Copyright © 2018–2020 Tweag I/O, 2020-present Matt Parsons
 
 All rights reserved.
 

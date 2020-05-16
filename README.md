@@ -1,4 +1,4 @@
-# Ormolu
+# ~~Ormolu~~ Fourmolu
 
 [![License BSD3](https://img.shields.io/badge/license-BSD3-brightgreen.svg)](http://opensource.org/licenses/BSD-3-Clause)
 [![Hackage](https://img.shields.io/hackage/v/ormolu.svg?style=flat)](https://hackage.haskell.org/package/ormolu)
@@ -6,7 +6,7 @@
 [![Stackage LTS](http://stackage.org/package/ormolu/badge/lts)](http://stackage.org/lts/package/ormolu)
 [![Build status](https://badge.buildkite.com/8e3b0951f3652b77e1c422b361904136a539b0522029156354.svg?branch=master)](https://buildkite.com/tweag-1/ormolu)
 
-Ormolu is a formatter for Haskell source code. The project was created with
+~~Ormolu~~ Fourmolu is a formatter for Haskell source code. The project was created with
 the following goals in mind:
 
 * Using GHC's own parser to avoid parsing problems caused by
@@ -18,7 +18,7 @@ the following goals in mind:
   leaves some control to the user while still guaranteeing that the
   formatted code is stylistically consistent.
 * Writing code in such a way so it's easy to modify and maintain.
-* Implementing one “true” formatting style which admits no configuration.
+* Implementing one “true” formatting style ~~which admits no configuration~~ requires you to fork the project to configure it (TODO: add a config file).
 * That formatting style aims to result in minimal diffs while still
   remaining very close to “conventional” Haskell formatting people use.
 * Choose a style compatible with modern dialects of Haskell. As new Haskell

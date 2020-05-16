@@ -17,7 +17,7 @@ import Options.Applicative
 import Ormolu
 import Ormolu.Parser (manualExts)
 import Ormolu.Utils (showOutputable)
-import Paths_ormolu (version)
+import Paths_fourmolu (version)
 import System.Exit (ExitCode (..), exitWith)
 import System.IO (hPutStrLn, stderr)
 

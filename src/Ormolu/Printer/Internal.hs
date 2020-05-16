@@ -572,4 +572,4 @@ canUseBraces = R (asks rcCanUseBraces)
 
 -- | Indentation step.
 indentStep :: Int
-indentStep = 2
+indentStep = 4
