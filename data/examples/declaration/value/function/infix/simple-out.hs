@@ -9,4 +9,4 @@ bar :: Int -> Int -> Int -> Int
 
 multiline :: Int -> Int -> Int
 x
-  `multiline` y = z
+    `multiline` y = z

@@ -1,19 +1,19 @@
 main =
-  do
-    x
-    y
-  z
+    do
+        x
+        y
+    z
 
 main =
-  case foo of
-    x -> a
-  foo
-  a
-  b
+    case foo of
+        x -> a
+    foo
+    a
+    b
 
 main =
-  do
-    if x then y else z
-  foo
-  a
-  b
+    do
+        if x then y else z
+    foo
+    a
+    b

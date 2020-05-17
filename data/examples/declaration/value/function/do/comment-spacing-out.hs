@@ -1,7 +1,7 @@
 foo = do
-  bar
-  -- foo
-  baz
+    bar
+    -- foo
+    baz
 
-  -- foo
-  quux
+    -- foo
+    quux

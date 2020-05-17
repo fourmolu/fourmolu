@@ -1,6 +1,6 @@
 module Test
-  {-# DEPRECATED "This module is unstable" #-}
-  (foo, bar, baz)
+    {-# DEPRECATED "This module is unstable" #-}
+    (foo, bar, baz)
 where
 
 import Blah

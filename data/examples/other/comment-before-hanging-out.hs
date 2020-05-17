@@ -1,5 +1,5 @@
 x = Just
-  -- comment
-  do
-    foo
-    bar
+    -- comment
+    do
+        foo
+        bar

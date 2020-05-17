@@ -1,15 +1,15 @@
 type role
-  D
-    phantom
-    nominal
+    D
+        phantom
+        nominal
 
 type role
-  E
-    _
-    nominal
+    E
+        _
+        nominal
 
 type role
-  E
-    _
-    nominal
-    phantom
+    E
+        _
+        nominal
+        phantom

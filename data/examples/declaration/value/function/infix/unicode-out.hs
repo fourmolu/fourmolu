@@ -1,3 +1,3 @@
 main = print ('a' → 'a')
-  where
-    (→) = (,)
+    where
+        (→) = (,)

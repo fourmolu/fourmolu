@@ -3,19 +3,19 @@
 pattern Head x <- x : xs
 
 pattern Head' x <-
-  x : xs
+    x : xs
 
 pattern Head'' {x} <-
-  x : xs
+    x : xs
 
 pattern FirstTwo {x, y} <-
-  x : (y : xs)
+    x : (y : xs)
 
 pattern FirstTwo'
-  { x,
-    y
-  } <-
-  x : (y : xs)
+    { x,
+      y
+    } <-
+    x : (y : xs)
 
 pattern Simple <- "Simple"
 

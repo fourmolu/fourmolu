@@ -1,5 +1,5 @@
 instance DemoteNodeTypes ('[] :: [NodeType]) where
-  demoteNodeTypes _ = []
+    demoteNodeTypes _ = []
 
 b :: (Bool :: *)
 b = True
