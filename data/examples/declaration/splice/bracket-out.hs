@@ -1,18 +1,18 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 foo =
-  [|
-    foo bar
-    |]
+    [|
+        foo bar
+        |]
 
 foo =
-  [e|
-    foo bar
-    |]
+    [e|
+        foo bar
+        |]
 
 foo = [t|Char|]
 
 foo =
-  [||
-  foo bar
-  ||]
+    [||
+    foo bar
+    ||]

@@ -6,20 +6,20 @@ foreign import ccall safe foo :: Int -> IO Int
 foreign import stdcall "baz" bar :: String -> Int -> IO String
 
 foreign import stdcall unsafe "boo"
-  -- Here is a comment about my foreign function
-  boo :: Int -> Text -> IO Array
+    -- Here is a comment about my foreign function
+    boo :: Int -> Text -> IO Array
 
 foreign import javascript
-  baz ::
-    String ->
-    Int ->
-    IO Foo
+    baz ::
+        String ->
+        Int ->
+        IO Foo
 
 foreign import {- We use capi here -} capi "pi.h value pi" c_pi :: CDouble
 
 foreign import stdcall {- This is a bad place for a comment -} "dynamic"
-  dyn_gluBeginSurface ::
-    -- | This 'FunPtr' is extremely dangerous, beware
-    FunPtr (Ptr GLUnurbs -> IO ()) ->
-    Ptr GLUnurbs ->
-    IO ()
+    dyn_gluBeginSurface ::
+        -- | This 'FunPtr' is extremely dangerous, beware
+        FunPtr (Ptr GLUnurbs -> IO ()) ->
+        Ptr GLUnurbs ->
+        IO ()

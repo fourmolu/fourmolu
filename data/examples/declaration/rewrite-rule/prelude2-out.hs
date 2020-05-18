@@ -1,10 +1,10 @@
 {-# RULES
 "fold/build" forall k z (g :: forall b. (a -> b -> b) -> b -> b).
-  foldr k z (build g) =
-    g k z
+    foldr k z (build g) =
+        g k z
 "foldr/augment" forall k z xs (g :: forall b. (a -> b -> b) -> b -> b).
-  foldr k z (augment g xs) =
-    g k (foldr k z xs)
+    foldr k z (augment g xs) =
+        g k (foldr k z xs)
 "foldr/id" foldr (:) [] = \x -> x
 "foldr/app" [1] forall ys. foldr (:) ys = \xs -> xs ++ ys
 -- Only activate this from phase 1, because that's
@@ -21,11 +21,11 @@
 "foldr/single" forall k z x. foldr k z [x] = k x z
 "foldr/nil" forall k z. foldr k z [] = z
 "augment/build" forall
-  (g :: forall b. (a -> b -> b) -> b -> b)
-  (h :: forall b. (a -> b -> b) -> b -> b).
-  augment g (build h) =
-    build (\c n -> g c (h c n))
+    (g :: forall b. (a -> b -> b) -> b -> b)
+    (h :: forall b. (a -> b -> b) -> b -> b).
+    augment g (build h) =
+        build (\c n -> g c (h c n))
 "augment/nil" forall (g :: forall b. (a -> b -> b) -> b -> b).
-  augment g [] =
-    build g
-  #-}
+    augment g [] =
+        build g
+    #-}

@@ -1,13 +1,13 @@
 x =
-  Just
-    -- comment
-    A
-      { x
-      }
+    Just
+        -- comment
+        A
+            { x
+            }
 
 x =
-  Just
-    -- comment
-    a
-      { x
-      }
+    Just
+        -- comment
+        a
+            { x
+            }

@@ -1,11 +1,11 @@
 module Magic
-  ( -- * Something
-    -- $explanation
+    ( -- * Something
+      -- $explanation
 
-    -- ** Another level
-    foo,
-    bar,
-  )
+      -- ** Another level
+      foo,
+      bar,
+    )
 where
 
 -- $explanation

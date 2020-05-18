@@ -1,11 +1,11 @@
 class Foo a where
-  foo :: a
-  default foo :: ()
-  foo = ()
-  bar :: a
-  default bar :: ()
-  bar = ()
+    foo :: a
+    default foo :: ()
+    foo = ()
+    bar :: a
+    default bar :: ()
+    bar = ()
 
-  qux :: a
-  default qux :: ()
-  qux = ()
+    qux :: a
+    default qux :: ()
+    qux = ()

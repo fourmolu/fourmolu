@@ -1,5 +1,5 @@
 instance Num X where
-  (+) = undefined
+    (+) = undefined
 
 instance Num Y where
-  (+) = undefined
+    (+) = undefined

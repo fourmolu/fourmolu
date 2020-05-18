@@ -2,7 +2,7 @@ module Main where
 
 -- | Another datatype...
 data D'
-  deriving (Show)
+    deriving (Show)
 -- ^ ...with two docstrings.
 
 -- more

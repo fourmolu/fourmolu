@@ -8,8 +8,8 @@ f (t -> Just _) = "Just"
 g ((f, _), f -> 4) = True
 
 multiline
-  ( t ->
-      Foo
-        bar
-        baz
-    ) = True
+    ( t ->
+          Foo
+              bar
+              baz
+        ) = True

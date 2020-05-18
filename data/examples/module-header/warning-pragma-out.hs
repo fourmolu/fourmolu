@@ -1,5 +1,5 @@
 module Test
-  {-# WARNING
-    "This module is very internal"
-    #-}
+    {-# WARNING
+        "This module is very internal"
+        #-}
 where

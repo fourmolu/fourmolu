@@ -1,17 +1,17 @@
 instance
-  ( Read a, -- Foo
-    Read b,
+    ( Read a, -- Foo
+      Read b,
+      Read
+          ( c, -- Bar
+            d
+          )
+    ) =>
     Read
-      ( c, -- Bar
-        d
-      )
-  ) =>
-  Read
-    ( a, -- Baz
-      b,
-      ( c, -- Quux
-        d
-      )
-    )
-  where
-  readsPrec = undefined
+        ( a, -- Baz
+          b,
+          ( c, -- Quux
+            d
+          )
+        )
+    where
+    readsPrec = undefined

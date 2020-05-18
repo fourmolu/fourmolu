@@ -1,7 +1,7 @@
 -- x
 
 import qualified -- x
-  Bar
+    Bar
 import qualified -- x
-  Baz
+    Baz
 import Foo
