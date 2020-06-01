@@ -28,7 +28,9 @@ data PrinterOpts f = PrinterOpts
     -- | How to print doc comments
     poHaddockStyle :: f HaddockPrintStyle,
     -- | Number of newlines between top-level decls
-    poNewlinesBetweenDecls :: f Int
+    poNewlinesBetweenDecls :: f Int,
+    -- | Enable leading arrows in type signatures
+    poLeadingArrows :: f Bool
   }
   deriving (Generic)
 

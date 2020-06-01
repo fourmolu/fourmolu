@@ -26,6 +26,7 @@ module Ormolu.Printer.Internal
     inciBy,
     inciByFrac,
     inciHalf,
+    inci3,
     sitcc,
     sitccIfTrailing,
     Layout (..),
@@ -442,6 +443,15 @@ inci = inciByFrac 1
 -- than 'indentStep'.
 inciHalf :: R () -> R ()
 inciHalf = inciByFrac 2
+
+-- | Increase indentation by 3.
+inci3 :: R () -> R ()
+inci3 (R m) = R (local modRC m)
+  where
+    modRC rc =
+      rc
+        { rcIndent = rcIndent rc + 3
+        }
 
 -- | Set indentation level for the inner computation equal to current
 -- column. This makes sure that the entire inner block is uniformly

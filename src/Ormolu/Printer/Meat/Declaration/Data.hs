@@ -128,13 +128,13 @@ p_conDecl singleConstRec = \case
             commaDel
             sep commaDel p_rdrName cs
       inci $ do
-        space
-        txt "::"
+        trailingArrowType (pure ())
         let interArgBreak =
               if hasDocStrings (unLoc con_res_ty)
                 then newline
                 else breakpoint
         interArgBreak
+        leadingArrowType (pure ())
         let conTy = case con_g_args of
               PrefixConGADT xs ->
                 let go (HsScaled a b) t = addCLocAA t b (HsFunTy EpAnnNotUsed a b t)

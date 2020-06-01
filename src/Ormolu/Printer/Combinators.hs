@@ -29,6 +29,7 @@ module Ormolu.Printer.Combinators
     askSourceType,
     askFixityOverrides,
     askFixityMap,
+    inci3,
     located,
     located',
     switchLayout,
@@ -74,6 +75,10 @@ module Ormolu.Printer.Combinators
     -- ** Placement
     Placement (..),
     placeHanging,
+
+    -- ** Helpers for leading/trailing arrows
+    leadingArrowType,
+    trailingArrowType,
   )
 where
 
@@ -364,3 +369,24 @@ placeHanging placement m =
     Normal -> do
       breakpoint
       inci m
+
+----------------------------------------------------------------------------
+-- Arrow style
+
+-- | Ouput @space >> txt "::" >> x@ when we are printing with trailing arrows
+trailingArrowType :: R () -> R ()
+trailingArrowType x = do
+  isTrailingArrow <- not <$> getPrinterOpt poLeadingArrows
+  when isTrailingArrow $ do
+    space
+    txt "::"
+    x
+
+-- | Ouput @x >> txt "::" >> space@ when we are printing with leading arrows
+leadingArrowType :: R () ->  R ()
+leadingArrowType x = do
+  isLeadingArrow <- getPrinterOpt poLeadingArrows
+  when isLeadingArrow $ do
+    x
+    txt "::"
+    space

@@ -166,6 +166,7 @@ regionIndicesToDeltas total RegionIndices {..} =
       regionSuffixLength = maybe 0 (total -) regionEndLine
     }
 
+
 -- | A wrapper for dynamic options.
 newtype DynOption = DynOption
   { unDynOption :: String
@@ -225,6 +226,7 @@ overFieldsM f $(unpackFieldsWithSuffix 'PrinterOpts "0") = do
   poRespectful <- f poRespectful0
   poHaddockStyle <- f poHaddockStyle0
   poNewlinesBetweenDecls <- f poNewlinesBetweenDecls0
+  poLeadingArrows <- f poLeadingArrows0
   return PrinterOpts {..}
 
 defaultPrinterOpts :: PrinterOptsTotal
@@ -337,6 +339,14 @@ printerOptsMeta =
             metaPlaceholder = "HEIGHT",
             metaHelp = "Number of spaces between top-level declarations",
             metaDefault = 1
+          },
+      poLeadingArrows =
+        PrinterOptsFieldMeta
+          { metaName = "leading-arrows",
+            metaGetField = poLeadingArrows,
+            metaPlaceholder = "BOOL",
+            metaHelp = "Whether to put arrows before or after types in type signatures",
+            metaDefault = True
           }
     }
 

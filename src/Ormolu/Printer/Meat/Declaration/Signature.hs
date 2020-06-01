@@ -62,11 +62,11 @@ p_typeAscription ::
   LHsSigType GhcPs ->
   R ()
 p_typeAscription sigType = inci $ do
-  space
-  txt "::"
+  trailingArrowType (pure ())
   if hasDocStrings (unLoc . sig_body . unLoc $ sigType)
     then newline
     else breakpoint
+  leadingArrowType (pure ())
   located sigType p_hsSigType
 
 p_patSynSig ::
@@ -139,10 +139,10 @@ p_specSig name ts InlinePragma {..} = pragmaBraces $ do
   p_activation inl_act
   space
   p_rdrName name
-  space
-  txt "::"
-  breakpoint
-  inci $ sep commaDel (located' p_hsSigType) ts
+  trailingArrowType (pure ())
+  inci $ do
+    leadingArrowType breakpoint
+    sep commaDel (located' p_hsSigType) ts
 
 p_inlineSpec :: InlineSpec -> R ()
 p_inlineSpec = \case
@@ -209,9 +209,9 @@ p_completeSig cs' mty =
     pragma "COMPLETE" . inci $ do
       sep commaDel p_rdrName cs
       forM_ mty $ \ty -> do
-        space
-        txt "::"
+        trailingArrowType (pure ())
         breakpoint
+        leadingArrowType (pure ())
         inci (p_rdrName ty)
 
 p_sccSig :: LocatedN RdrName -> Maybe (Located StringLiteral) -> R ()
@@ -227,7 +227,7 @@ p_standaloneKindSig (StandaloneKindSig _ name sigTy) = do
   inci $ do
     space
     p_rdrName name
-    space
-    txt "::"
+    trailingArrowType (pure ()) -- TODO, the space in tAT wasn't here before
     breakpoint
+    leadingArrowType (pure ())
     located sigTy p_hsSigType

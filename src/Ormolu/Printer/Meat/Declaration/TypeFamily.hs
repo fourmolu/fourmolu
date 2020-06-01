@@ -63,8 +63,9 @@ p_familyResultSigL ::
 p_familyResultSigL (L _ a) = case a of
   NoSig NoExtField -> Nothing
   KindSig NoExtField k -> Just $ do
-    txt "::"
+    trailingArrowType (pure ())
     breakpoint
+    leadingArrowType (pure ())
     located k p_hsType
   TyVarSig NoExtField bndr -> Just $ do
     equals
