@@ -671,7 +671,7 @@ p_hsExpr' s = \case
   HsDo NoExtField ctx es -> do
     let doBody header = do
           txt header
-          breakpoint
+          newline
           ub <- layoutToBraces <$> getLayout
           inci $
             sepSemi

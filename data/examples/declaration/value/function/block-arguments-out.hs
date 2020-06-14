@@ -1,4 +1,5 @@
-f1 = foo do bar
+f1 = foo do
+    bar
 
 f2 = foo do
     bar
@@ -26,9 +27,13 @@ f7 = foo \x -> y
 f8 = foo \x ->
     y
 
-f9 = foo do { bar } baz
+f9 = foo do
+            { bar } baz
 
 f10 = foo
-    do a
-    do b
-    do c
+    do
+        a
+    do
+        b
+    do
+        c

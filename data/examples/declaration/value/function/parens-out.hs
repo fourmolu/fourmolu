@@ -1,1 +1,2 @@
-f = p (do foo; bar) baz
+f = p (do
+            foo; bar) baz
