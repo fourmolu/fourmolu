@@ -1,0 +1,17 @@
+cradle:
+  multi:
+    - path: "data"
+      config: { cradle: { none: }}
+
+    - path: "."
+      config:
+        cradle:
+          cabal:
+            - path: "src"
+              component: "lib:fourmolu"
+
+            - path: "app"
+              component: "fourmolu:exe:fourmolu"
+
+            - path: "tests"
+              component: "fourmolu:test:tests"
