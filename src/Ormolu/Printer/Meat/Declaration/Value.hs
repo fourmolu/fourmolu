@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Ormolu.Printer.Meat.Declaration.Value
   ( p_valDecl,
@@ -1324,10 +1325,17 @@ p_exprOpTree isDollarSpecial s (OpBranch x op y) = do
           inci p_y
         else do
           ub lhs
-          placeHanging placement $ do
-            p_op
-            space
-            p_y
+          let opAndRhs = do
+                p_op
+                space
+                p_y
+          case x of
+            -- This case prevents an operator from being indented past the start of a `do` block
+            -- constituting its left operand, thus altering the AST.
+            -- This is only relevant when the `do` block is on one line, as otherwise we will
+            -- insert a newline after `do` anyway.
+            OpNode (unLoc -> HsDo _ _ _) | isOneLineSpan (opTreeLoc x) -> breakpoint >> opAndRhs
+            _ -> placeHanging placement opAndRhs
 
 -- | Return 'True' if given expression is a record-dot operator expression.
 isRecordDot ::
