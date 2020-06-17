@@ -7,6 +7,8 @@ module Ormolu.Config
     RegionIndices (..),
     RegionDeltas (..),
     defaultConfig,
+    PrinterOpts (..),
+    defaultPrinterOpts,
     regionIndicesToDeltas,
     DynOption (..),
     dynOptionToLocatedStr,
@@ -26,7 +28,8 @@ data Config region = Config
     -- | Checks if re-formatting the result is idempotent
     cfgCheckIdempotence :: !Bool,
     -- | Region selection
-    cfgRegion :: !region
+    cfgRegion :: !region,
+    cfgPrinterOpts :: PrinterOpts
   }
   deriving (Eq, Show, Functor)
 
@@ -61,8 +64,19 @@ defaultConfig =
         RegionIndices
           { regionStartLine = Nothing,
             regionEndLine = Nothing
-          }
+          },
+      cfgPrinterOpts = defaultPrinterOpts
     }
+
+-- | Options controlling formatting output
+data PrinterOpts = PrinterOpts
+  { -- | Number of spaces to use for indentation
+    poIndentStep :: Int
+  }
+  deriving (Eq, Show)
+
+defaultPrinterOpts :: PrinterOpts
+defaultPrinterOpts = PrinterOpts {poIndentStep = 4}
 
 -- | Convert 'RegionIndices' into 'RegionDeltas'.
 regionIndicesToDeltas ::

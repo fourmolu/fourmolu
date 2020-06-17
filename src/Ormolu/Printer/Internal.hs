@@ -63,6 +63,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import Data.Text.Lazy.Builder
 import GHC
+import Ormolu.Config
 import Ormolu.Parser.Anns
 import Ormolu.Parser.CommentStream
 import Ormolu.Printer.SpanStream
@@ -92,7 +93,8 @@ data RC = RC
     -- | Whether the last expression in the layout can use braces
     rcCanUseBraces :: Bool,
     -- | Whether the source could have used the record dot preprocessor
-    rcUseRecDot :: Bool
+    rcUseRecDot :: Bool,
+    rcPrinterOpts :: PrinterOpts
   }
 
 -- | State context of 'R'.
@@ -158,11 +160,12 @@ runR ::
   CommentStream ->
   -- | Annotations
   Anns ->
+  PrinterOpts ->
   -- | Use Record Dot Syntax
   Bool ->
   -- | Resulting rendition
   Text
-runR (R m) sstream cstream anns recDot =
+runR (R m) sstream cstream anns printerOpts recDot =
   TL.toStrict . toLazyText . scBuilder $ execState (runReaderT m rc) sc
   where
     rc =
@@ -172,7 +175,8 @@ runR (R m) sstream cstream anns recDot =
           rcEnclosingSpans = [],
           rcAnns = anns,
           rcCanUseBraces = False,
-          rcUseRecDot = recDot
+          rcUseRecDot = recDot,
+          rcPrinterOpts = printerOpts
         }
     sc =
       SC
@@ -373,12 +377,13 @@ useRecordDot = R (asks rcUseRecDot)
 -- to be valid Haskell. When layout is single-line there is no obvious
 -- effect, but with multi-line layout correct indentation levels matter.
 inci :: R () -> R ()
-inci (R m) = R (local modRC m)
-  where
-    modRC rc =
-      rc
-        { rcIndent = rcIndent rc + indentStep
-        }
+inci (R m) = do
+  indentStep <- R (asks (poIndentStep . rcPrinterOpts))
+  let modRC rc =
+        rc
+          { rcIndent = rcIndent rc + indentStep
+          }
+  R (local modRC m)
 
 -- | Set indentation level for the inner computation equal to current
 -- column. This makes sure that the entire inner block is uniformly
@@ -566,10 +571,3 @@ dontUseBraces (R r) = R (local (\i -> i {rcCanUseBraces = False}) r)
 -- | Return 'True' if we can use braces in this context.
 canUseBraces :: R Bool
 canUseBraces = R (asks rcCanUseBraces)
-
-----------------------------------------------------------------------------
--- Constants
-
--- | Indentation step.
-indentStep :: Int
-indentStep = 4
