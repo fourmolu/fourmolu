@@ -3,10 +3,12 @@
 -- | Pretty-printer for Haskell AST.
 module Ormolu.Printer
   ( printModule,
+    PrinterOpts (..),
   )
 where
 
 import Data.Text (Text)
+import Ormolu.Config
 import Ormolu.Parser.Result
 import Ormolu.Printer.Combinators
 import Ormolu.Printer.Meat.Module
@@ -17,9 +19,10 @@ import Ormolu.Processing.Postprocess (postprocess)
 printModule ::
   -- | Result of parsing
   ParseResult ->
+  PrinterOpts ->
   -- | Resulting rendition
   Text
-printModule ParseResult {..} =
+printModule ParseResult {..} printerOpts =
   prLiteralPrefix <> region <> prLiteralSuffix
   where
     region =
@@ -35,4 +38,5 @@ printModule ParseResult {..} =
           (mkSpanStream prParsedSource)
           prCommentStream
           prAnns
+          printerOpts
           prUseRecordDot

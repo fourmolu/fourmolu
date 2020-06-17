@@ -10,6 +10,7 @@ import Control.Exception (SomeException, displayException, try)
 import Control.Monad
 import Data.Either (lefts)
 import Data.List (intercalate, sort)
+import Data.Maybe (fromMaybe)
 import qualified Data.Text.IO as TIO
 import Data.Version (showVersion)
 import Development.GitRev
@@ -183,6 +184,17 @@ configParser =
                 help "End line of the region to format (inclusive)"
               ]
         )
+    <*> (fromMaybe defaultPrinterOpts <$> optional printerOptsParser)
+
+printerOptsParser :: Parser PrinterOpts
+printerOptsParser =
+  PrinterOpts
+    <$> (option auto . mconcat)
+      [ long "indent-step",
+        short 'i',
+        metavar "INT",
+        help "Number of spaces to use for indentation"
+      ]
 
 ----------------------------------------------------------------------------
 -- Helpers
