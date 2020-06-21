@@ -183,6 +183,7 @@ configParser =
                 help "End line of the region to format (inclusive)"
               ]
         )
+    <*> pure defaultPrinterOpts
 
 ----------------------------------------------------------------------------
 -- Helpers
