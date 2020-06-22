@@ -18,19 +18,18 @@ module Ormolu.Config
   )
 where
 
+import Control.Monad (when)
 import Data.Aeson
   ( FromJSON (..),
     camelTo2,
     defaultOptions,
     fieldLabelModifier,
-    rejectUnknownFields,
     genericParseJSON,
+    rejectUnknownFields,
   )
-import Data.Bifunctor (bimap)
-import Data.Functor ((<&>))
 import Data.List (stripPrefix)
 import Data.Maybe (fromMaybe)
-import Data.Yaml (ParseException, decodeFileEither, prettyPrintParseException)
+import Data.Yaml (decodeFileEither, prettyPrintParseException)
 import GHC.Generics (Generic)
 import qualified SrcLoc as GHC
 import System.Directory
@@ -38,8 +37,10 @@ import System.Directory
     findFile,
     getCurrentDirectory,
     getXdgDirectory,
+    makeAbsolute,
   )
 import System.FilePath ((</>), splitPath)
+import System.IO (hPutStrLn, stderr)
 
 -- | Ormolu configuration.
 data Config region = Config
@@ -142,47 +143,38 @@ instance FromJSON PrinterOptsPartial where
         }
 
 -- | Replace fields with those from a config file, if found.
--- First element of tuple contains debugging output.
-loadConfigFile :: PrinterOpts -> IO (String, PrinterOpts)
-loadConfigFile PrinterOpts {..} =
-  bimap prettyFileResult replaceWithFileOpts <$> getOptsFromFile
-  where
-    replaceWithFileOpts PrinterOptsPartial {..} =
-      PrinterOpts
-        { poIndentStep = fromMaybe poIndentStep popIndentation
-        }
-
--- | Looks recursively in parent folders, then in 'XdgConfig',
--- for a file matching 'configFileName'.
-getOptsFromFile :: IO (FileResult, PrinterOptsPartial)
-getOptsFromFile = do
-  cur <- getCurrentDirectory
+-- Looks recursively in parent folders, then in 'XdgConfig',
+-- for a file matching /fourmolu.yaml/'.
+loadConfigFile :: Bool -> Maybe FilePath -> PrinterOpts -> IO PrinterOpts
+loadConfigFile debug maybePath PrinterOpts {..} = do
+  root <- maybe getCurrentDirectory makeAbsolute maybePath
   xdg <- getXdgDirectory XdgConfig ""
-  let dirs = reverse $ xdg : scanl1 (</>) (splitPath cur)
+  PrinterOptsPartial {..} <-
+    optsFromFile debug $ reverse $ xdg : scanl1 (</>) (splitPath root)
+  return $
+    PrinterOpts
+      { poIndentStep = fromMaybe poIndentStep popIndentation
+      }
+
+-- | Search the directories, in order, for a config file.
+optsFromFile :: Bool -> [FilePath] -> IO PrinterOptsPartial
+optsFromFile debug dirs =
   findFile dirs configFileName >>= \case
-    Nothing -> return (NoFileFound cur xdg, def)
-    Just file -> decodeFileEither file <&> \case
-      Left e -> (FileFound file (Just e), def)
-      Right x -> (FileFound file Nothing, x)
+    Nothing -> do
+      printDebug $
+        "No " ++ show configFileName ++ " found in any of:\n"
+          ++ unlines (map ("  " ++) dirs)
+      return def
+    Just file -> do
+      printDebug $ "Found " ++ show file ++ ""
+      decodeFileEither file >>= \case
+        Left e -> do
+          printDebug $ prettyPrintParseException e
+          return def
+        Right x -> return x
   where
     def = PrinterOptsPartial Nothing
-
--- | Useful information for debugging config file searching and parsing.
-data FileResult
-  = NoFileFound
-      FilePath -- current directory
-      FilePath -- XDG config directory
-  | FileFound FilePath (Maybe ParseException)
-
-prettyFileResult :: FileResult -> String
-prettyFileResult = \case
-  NoFileFound cur xdg ->
-    "No \"" ++ configFileName ++ "\" found in " ++ xdg
-      ++ " or parents of "
-      ++ cur
-  FileFound f m ->
-    "Found \"" ++ f ++ "\""
-      ++ maybe "" ((":\n" ++) . prettyPrintParseException) m
+    printDebug = when debug . hPutStrLn stderr
 
 configFileName :: FilePath
 configFileName = "fourmolu.yaml"

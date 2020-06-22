@@ -25,7 +25,10 @@ import System.IO (hPutStrLn, stderr)
 main :: IO ()
 main = withPrettyOrmoluExceptions $ do
   Opts {..} <- execParser optsParserInfo
-  let formatOne' = formatOne optMode optConfig
+  let formatOne' path = do
+        printerOpts <-
+          loadConfigFile (cfgDebug optConfig) path $ cfgPrinterOpts optConfig
+        formatOne optMode optConfig {cfgPrinterOpts = printerOpts} path
   case optInputFiles of
     [] -> formatOne' Nothing
     ["-"] -> formatOne' Nothing

@@ -11,6 +11,7 @@ module Ormolu
     DynOption (..),
     PrinterOpts (..),
     defaultPrinterOpts,
+    loadConfigFile,
     OrmoluException (..),
     withPrettyOrmoluExceptions,
   )
@@ -52,14 +53,11 @@ ormolu ::
   String ->
   m Text
 ormolu cfgWithIndices path str = do
-  (cfgFileDebug, printerOpts) <-
-    liftIO $ loadConfigFile $ cfgPrinterOpts cfgWithIndices
   let totalLines = length (lines str)
       cfg = regionIndicesToDeltas totalLines <$> cfgWithIndices
   (warnings, result0) <-
     parseModule' cfg OrmoluParsingFailed path str
   when (cfgDebug cfg) $ do
-    traceM cfgFileDebug
     traceM "warnings:\n"
     traceM (concatMap showWarn warnings)
     traceM (prettyPrintParseResult result0)
@@ -67,7 +65,7 @@ ormolu cfgWithIndices path str = do
   -- about not-yet-supported functionality) will be thrown later when we try
   -- to parse the rendered code back, inside of GHC monad wrapper which will
   -- lead to error messages presenting the exceptions as GHC bugs.
-  let !txt = printModule result0 printerOpts
+  let !txt = printModule result0 $ cfgPrinterOpts cfgWithIndices
   when (not (cfgUnsafe cfg) || cfgCheckIdempotence cfg) $ do
     let pathRendered = path ++ "<rendered>"
     -- Parse the result of pretty-printing again and make sure that AST
@@ -85,7 +83,7 @@ ormolu cfgWithIndices path str = do
     -- Try re-formatting the formatted result to check if we get exactly
     -- the same output.
     when (cfgCheckIdempotence cfg) $
-      let txt2 = printModule result1 printerOpts
+      let txt2 = printModule result1 $ cfgPrinterOpts cfgWithIndices
        in case diffText txt txt2 pathRendered of
             Nothing -> return ()
             Just (loc, l, r) ->
