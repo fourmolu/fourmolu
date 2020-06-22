@@ -3,7 +3,7 @@ name:            fourmolu
 version:         0.0.6.0
 license:         BSD3
 license-file:    LICENSE.md
-maintainer:      Matt Parsons <parsonsmatt@gmail.com>
+maintainer:      Matt Parsons <parsonsmatt@gmail.com>, George Thomas <georgefsthomas@gmail.com>
 tested-with:     ghc ==8.6.5 ghc ==8.8.3 ghc ==8.10.1
 homepage:        https://github.com/parsonsmatt/fourmolu
 bug-reports:     https://github.com/parsonsmatt/fourmolu/issues
