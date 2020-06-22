@@ -4,17 +4,17 @@
 data instance Foo Int = FooInt Int
 
 data instance
-    Foo
-        [Int]
-    = IntListFoo
-          ( Int,
-            Int
-          )
-          ( Double,
-            Double
-          )
+  Foo
+    [Int]
+  = IntListFoo
+      ( Int,
+        Int
+      )
+      ( Double,
+        Double
+      )
 
 data instance Bar Double a
-    = DoubleBar
-          Double
-          (Bar a)
+  = DoubleBar
+      Double
+      (Bar a)

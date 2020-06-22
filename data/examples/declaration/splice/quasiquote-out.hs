@@ -3,7 +3,7 @@
 x = [foo|    foo bar   |]
 
 x =
-    [e|    foo
+  [e|    foo
  bar  {- -}
   |]
 

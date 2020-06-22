@@ -1,2 +1,2 @@
 type family TF a b = result where
-    TF a b = Int
+  TF a b = Int

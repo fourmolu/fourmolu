@@ -4,7 +4,7 @@
 {-# LANGUAGE NoStarIsType #-}
 
 class PNum x where
-    type (a :: x) * (b :: x)
+  type (a :: x) * (b :: x)
 
 instance PNum Nat where
-    type a * b = ()
+  type a * b = ()

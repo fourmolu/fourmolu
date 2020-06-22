@@ -1,19 +1,19 @@
 deriving instance
-    {-# OVERLAPPABLE #-}
-    Ord
-        Foo
+  {-# OVERLAPPABLE #-}
+  Ord
+    Foo
 
 deriving instance
-    {-# OVERLAPPING #-}
-    Num
-        Foo
+  {-# OVERLAPPING #-}
+  Num
+    Foo
 
 deriving instance
-    {-# OVERLAPS #-}
-    Read
-        Foo
+  {-# OVERLAPS #-}
+  Read
+    Foo
 
 deriving instance
-    {-# INCOHERENT #-}
-    Show
-        Foo
+  {-# INCOHERENT #-}
+  Show
+    Foo

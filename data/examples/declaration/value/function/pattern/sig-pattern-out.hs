@@ -1,7 +1,7 @@
 f = do
-    x :: a <- g
+  x :: a <- g
 
 f = do
-    (x, y) ::
-        (a, b) <-
-        g
+  (x, y) ::
+    (a, b) <-
+    g

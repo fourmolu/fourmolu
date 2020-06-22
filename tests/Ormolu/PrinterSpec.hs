@@ -24,12 +24,13 @@ spec = do
 checkExample :: Path Rel File -> Spec
 checkExample srcPath' = it (fromRelFile srcPath' ++ " works") . withNiceExceptions $ do
   let srcPath = examplesDir </> srcPath'
+      cfg = defaultConfig {cfgPrinterOpts = PrinterOpts {poIndentStep = 2}}
   expectedOutputPath <- deriveOutput srcPath
   -- 1. Given input snippet of source code parse it and pretty print it.
   -- 2. Parse the result of pretty-printing again and make sure that AST
   -- is the same as AST of the original snippet. (This happens in
   -- 'ormoluFile' automatically.)
-  formatted0 <- ormoluFile defaultConfig (fromRelFile srcPath)
+  formatted0 <- ormoluFile cfg (fromRelFile srcPath)
   -- 3. Check the output against expected output. Thus all tests should
   -- include two files: input and expected output.
   -- T.writeFile (fromRelFile expectedOutputPath) formatted0
@@ -37,7 +38,7 @@ checkExample srcPath' = it (fromRelFile srcPath' ++ " works") . withNiceExceptio
   shouldMatch False formatted0 expected
   -- 4. Check that running the formatter on the output produces the same
   -- output again (the transformation is idempotent).
-  formatted1 <- ormolu defaultConfig "<formatted>" (T.unpack formatted0)
+  formatted1 <- ormolu cfg "<formatted>" (T.unpack formatted0)
   shouldMatch True formatted1 formatted0
 
 -- | Build list of examples for testing.

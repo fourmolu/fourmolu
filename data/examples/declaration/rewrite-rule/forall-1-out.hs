@@ -6,18 +6,18 @@
 
 {-# RULES
 "rd_tyvs_multiline1" forall (a :: *). forall (x :: a).
-    id x =
-        x
-    #-}
+  id x =
+    x
+  #-}
 
 {-# RULES
 "rd_tyvs_multiline2" forall
-    ( a ::
-          *
-    ). forall
-    ( x ::
-          a
-    ).
-    id x =
-        x
-    #-}
+  ( a ::
+      *
+  ). forall
+  ( x ::
+      a
+  ).
+  id x =
+    x
+  #-}

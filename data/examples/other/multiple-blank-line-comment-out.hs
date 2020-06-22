@@ -1,9 +1,9 @@
 module A where
 
 a =
-    b
-        [ f
-        {-,
+  b
+    [ f
+    {-,
 
-                                           -}
-        ]
+                                       -}
+    ]

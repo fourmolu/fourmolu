@@ -14,4 +14,4 @@ foo bar
 
 -- TemplateHaskell allows Q () at the top level
 do
-    pure []
+  pure []

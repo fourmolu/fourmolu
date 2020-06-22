@@ -1,23 +1,23 @@
 class Foo a where
-    -- | Haddock
-    foo :: a
+  -- | Haddock
+  foo :: a
 
-    -- | Another Haddock
-    bar :: a
+  -- | Another Haddock
+  bar :: a
 
-    baz :: a
-    -- ^ Post-Haddock
+  baz :: a
+  -- ^ Post-Haddock
 
-    raz :: a
-    -- ^ Another Post-Haddock
+  raz :: a
+  -- ^ Another Post-Haddock
 
-    -- | One more Haddock
-    qux :: a
+  -- | One more Haddock
+  qux :: a
 
-    -- Comment before a Haddock
+  -- Comment before a Haddock
 
-    -- | And one more Haddock
-    xyz :: a
+  -- | And one more Haddock
+  xyz :: a
 
-    -- | Haddock followed by a blank line
-    abc :: a
+  -- | Haddock followed by a blank line
+  abc :: a

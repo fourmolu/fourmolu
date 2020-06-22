@@ -7,4 +7,4 @@
 "x# `geChar#` x#" forall x#. x# `geChar#` x# = True
 "x# `leChar#` x#" forall x#. x# `leChar#` x# = True
 "x# `ltChar#` x#" forall x#. x# `ltChar#` x# = False
-    #-}
+  #-}

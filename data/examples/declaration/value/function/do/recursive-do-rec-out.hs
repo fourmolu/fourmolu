@@ -1,19 +1,19 @@
 {-# LANGUAGE RecursiveDo #-}
 
 foo = do
-    rec a <- b + 5
+  rec a <- b + 5
 
-        let d = c
+      let d = c
 
-        b <- a * 5
+      b <- a * 5
 
-        something
+      something
 
-        c <- a + b
-    print c
-    rec something $ do
-            x <- a
-            print x
+      c <- a + b
+  print c
+  rec something $ do
+        x <- a
+        print x
 
-            y <- c
-            print y
+        y <- c
+        print y

@@ -4,18 +4,18 @@
 class (:$) a b
 
 class
-    (:&)
-        a
-        b
+  (:&)
+    a
+    b
 
 class a :* b
 
 class
-    a -- Before operator
-        :+ b -- After operator
+  a -- Before operator
+    :+ b -- After operator
 
 class
-    ( f
-          :. g
-    )
-        a
+  ( f
+      :. g
+  )
+    a

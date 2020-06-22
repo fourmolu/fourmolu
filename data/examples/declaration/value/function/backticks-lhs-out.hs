@@ -4,4 +4,4 @@ op1 x Nothing = undefined
 
 op2 1 y = False
 x `op2` y =
-    True
+  True

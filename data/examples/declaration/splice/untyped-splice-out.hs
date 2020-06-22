@@ -3,8 +3,8 @@
 x = $(foo bar)
 
 x =
-    $( foo
-           bar
-     )
+  $( foo
+       bar
+   )
 
 x = $foo

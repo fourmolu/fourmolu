@@ -2,5 +2,5 @@
 {-# LANGUAGE TypeFamilies #-}
 
 newtype instance Foo [Double] = DoubleListFoo
-    { unDoubleListFoo :: Double
-    }
+  { unDoubleListFoo :: Double
+  }

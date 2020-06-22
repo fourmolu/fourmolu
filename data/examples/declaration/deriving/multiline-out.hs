@@ -1,24 +1,24 @@
 deriving instance
-    Eq
-        Foo
+  Eq
+    Foo
 
 deriving stock instance
-    Show
-        Foo
+  Show
+    Foo
 
 deriving anyclass instance
-    ToJSON
-        Foo
+  ToJSON
+    Foo
 
 deriving newtype instance
-    Data
-        Foo
+  Data
+    Foo
 
 deriving via
-    Foo
-        Int
-    instance
-        Triple
-            A
-            B
-            C
+  Foo
+    Int
+  instance
+    Triple
+      A
+      B
+      C

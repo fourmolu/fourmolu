@@ -1,4 +1,4 @@
 f =
-    Foo <$> bar
-        <*> baz
-        <*> baz'
+  Foo <$> bar
+    <*> baz
+    <*> baz'
