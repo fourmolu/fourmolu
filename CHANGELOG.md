@@ -1,5 +1,11 @@
 ## Fourmolu 0.1.0.0
 
+* Allow configuration of indentation size via `fourmolu.yaml` config files.
+
+* An operator on a new line is no longer indented when its left operand is a do-block. This prevents the AST from potentially changing when indenting by more than two spaces.
+
+Upstream changes:
+
 * Fixed rendering of type signatures concerning several identifiers. [Issue
   566](https://github.com/tweag/ormolu/issues/566).
 
