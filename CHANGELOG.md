@@ -1,6 +1,4 @@
-## Fourmolu 0.0.6.0
-
-* The project was fourked to provide four space indent.
+## Fourmolu 0.1.0.0
 
 * Fixed rendering of type signatures concerning several identifiers. [Issue
   566](https://github.com/tweag/ormolu/issues/566).
@@ -8,7 +6,7 @@
 * Fixed an idempotence issue with inline comments in tuples and parentheses.
   [Issue 450](https://github.com/tweag/ormolu/issues/450).
 
-* Fixed an idempotence issue when certain comments where picked up as
+* Fixed an idempotence issue when certain comments were picked up as
   “continuation” of a series of comments [Issue
   449](https://github.com/tweag/ormolu/issues/449).
 
@@ -27,7 +25,7 @@
   multiple blank lines in a row. [Issue
   518](https://github.com/tweag/ormolu/issues/518).
 
-* Fixed rendering of comment around if expressions. [Issue
+* Fixed rendering of comments around if expressions. [Issue
   458](https://github.com/tweag/ormolu/issues/458).
 
 * Unnamed fields of data constructors are now documented using the `-- ^`
@@ -37,8 +35,15 @@
 * Fixed non-idempotent transformation of partly documented data definition.
   [Issue 590](https://github.com/tweag/ormolu/issues/590).
 
+* Fixed an idempotence issue related to operators. [Issue
+  522](https://github.com/tweag/ormolu/issues/522).
+
 * Renamed the `--check-idempotency` flag to `--check-idempotence`.
   Apparently only the latter is correct.
+
+## Fourmolu 0.0.6.0
+
+* The project was fourked to provide four space indent.
 
 ## Ormolu 0.0.5.0
 
