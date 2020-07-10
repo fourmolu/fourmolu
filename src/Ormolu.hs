@@ -10,8 +10,11 @@ module Ormolu
     defaultConfig,
     DynOption (..),
     PrinterOpts (..),
+    PrinterOptsPartial,
+    PrinterOptsTotal,
     defaultPrinterOpts,
     loadConfigFile,
+    mergePrinterOpts,
     OrmoluException (..),
     withPrettyOrmoluExceptions,
   )

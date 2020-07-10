@@ -5,6 +5,7 @@ module Ormolu.PrinterSpec (spec) where
 import Control.Exception
 import Control.Monad
 import Control.Monad.IO.Class
+import Data.Functor.Identity (Identity (..))
 import Data.List (isSuffixOf)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -24,7 +25,7 @@ spec = do
 checkExample :: Path Rel File -> Spec
 checkExample srcPath' = it (fromRelFile srcPath' ++ " works") . withNiceExceptions $ do
   let srcPath = examplesDir </> srcPath'
-      cfg = defaultConfig {cfgPrinterOpts = PrinterOpts {poIndentStep = 2}}
+      cfg = defaultConfig {cfgPrinterOpts = PrinterOpts {poIndentation = Identity 2}}
   expectedOutputPath <- deriveOutput srcPath
   -- 1. Given input snippet of source code parse it and pretty print it.
   -- 2. Parse the result of pretty-printing again and make sure that AST

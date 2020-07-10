@@ -18,7 +18,7 @@ the following goals in mind:
   leaves some control to the user while still guaranteeing that the
   formatted code is stylistically consistent.
 * Writing code in such a way so it's easy to modify and maintain.
-* Implementing one “true” formatting style ~~which admits no configuration~~ requires you to fork the project to configure it (TODO: add a config file).
+* Implementing one “true” formatting style ~~which admits no configuration~~ requires you to fork the project to configure it.
 * That formatting style aims to result in minimal diffs while still
   remaining very close to “conventional” Haskell formatting people use.
 * Choose a style compatible with modern dialects of Haskell. As new Haskell
@@ -96,6 +96,9 @@ Use `find` to format a tree recursively:
 ```console
 $ ormolu --mode inplace $(find . -name '*.hs')
 ```
+
+Add `--indentation 4` (or edit the `fourmolu.yaml` config file) to
+change the indentation width to 4 spaces.
 
 ## Magic comments
 
