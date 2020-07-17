@@ -32,8 +32,7 @@ import Data.Aeson
     genericParseJSON,
     rejectUnknownFields,
   )
-import Data.Foldable (asum)
-import Data.Functor.Identity
+import Data.Functor.Identity (Identity (..))
 import Data.List (stripPrefix)
 import Data.Maybe (fromMaybe)
 import Data.Yaml (decodeFileEither, prettyPrintParseException)
@@ -115,6 +114,12 @@ deriving instance Eq PrinterOptsPartial
 
 deriving instance Show PrinterOptsPartial
 
+instance Semigroup PrinterOptsPartial where
+  (<>) = mergePrinterOpts
+
+instance Monoid PrinterOptsPartial where
+  mempty = PrinterOpts {poIndentation = Nothing}
+
 -- | A version of 'PrinterOpts' without empty fields.
 type PrinterOptsTotal = PrinterOpts Identity
 
@@ -125,13 +130,19 @@ deriving instance Show PrinterOptsTotal
 defaultPrinterOpts :: PrinterOptsTotal
 defaultPrinterOpts = PrinterOpts {poIndentation = Identity 4}
 
--- | Combine a list of 'PrinterOptsPartial' and then fill the missing fields
--- with defaults.
-mergePrinterOpts :: [PrinterOptsPartial] -> PrinterOptsTotal -> PrinterOptsTotal
-mergePrinterOpts opts totalOpts = PrinterOpts {poIndentation = m poIndentation poIndentation}
+-- | Fill the field values that are 'Nothing' in the first argument
+-- with the values of the corresponding fields of the second argument.
+mergePrinterOpts ::
+  (Applicative f) =>
+  PrinterOptsPartial ->
+  PrinterOpts f ->
+  PrinterOpts f
+mergePrinterOpts p1 p2 =
+  PrinterOpts {poIndentation = m poIndentation poIndentation}
   where
-    m :: (PrinterOptsTotal -> Identity a) -> (PrinterOptsPartial -> Maybe a) -> Identity a
-    m ft fp = Identity $ fromMaybe (runIdentity . ft $ totalOpts) (asum $ map fp opts)
+    m f1 f2 = case f1 p1 of
+      Nothing -> f2 p2
+      Just x -> pure x
 
 -- | Convert 'RegionIndices' into 'RegionDeltas'.
 regionIndicesToDeltas ::
@@ -191,7 +202,7 @@ optsFromFile debug dirs =
           return def
         Right x -> return x
   where
-    def = PrinterOpts {poIndentation = Nothing}
+    def = mempty
     printDebug = when debug . hPutStrLn stderr
 
 configFileName :: FilePath

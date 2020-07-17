@@ -33,8 +33,8 @@ main = withPrettyOrmoluExceptions $ do
           optConfig
             { cfgPrinterOpts =
                 mergePrinterOpts
-                  [optPrinterOpts, filePrinterOpts]
-                  defaultPrinterOpts
+                  (optPrinterOpts <> filePrinterOpts)
+                  (cfgPrinterOpts optConfig)
             }
           path
   case optInputFiles of
@@ -197,7 +197,7 @@ configParser =
                 help "End line of the region to format (inclusive)"
               ]
         )
-    <*> pure defaultPrinterOpts -- just a placeholder that is overwritten later
+    <*> pure defaultPrinterOpts
 
 printerOptsParser :: Parser PrinterOptsPartial
 printerOptsParser =
