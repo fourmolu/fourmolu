@@ -19,7 +19,7 @@ import Ormolu.Processing.Postprocess (postprocess)
 printModule ::
   -- | Result of parsing
   ParseResult ->
-  PrinterOpts ->
+  PrinterOptsTotal ->
   -- | Resulting rendition
   Text
 printModule ParseResult {..} printerOpts =

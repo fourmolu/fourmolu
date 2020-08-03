@@ -1,7 +1,9 @@
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE StandaloneDeriving #-}
 
 -- | Configuration options used by the tool.
 module Ormolu.Config
@@ -10,8 +12,11 @@ module Ormolu.Config
     RegionDeltas (..),
     defaultConfig,
     PrinterOpts (..),
+    PrinterOptsPartial,
+    PrinterOptsTotal,
     defaultPrinterOpts,
     loadConfigFile,
+    fillMissingPrinterOpts,
     regionIndicesToDeltas,
     DynOption (..),
     dynOptionToLocatedStr,
@@ -27,6 +32,7 @@ import Data.Aeson
     genericParseJSON,
     rejectUnknownFields,
   )
+import Data.Functor.Identity (Identity (..))
 import Data.List (stripPrefix)
 import Data.Maybe (fromMaybe)
 import Data.Yaml (decodeFileEither, prettyPrintParseException)
@@ -54,7 +60,7 @@ data Config region = Config
     cfgCheckIdempotence :: !Bool,
     -- | Region selection
     cfgRegion :: !region,
-    cfgPrinterOpts :: PrinterOpts
+    cfgPrinterOpts :: !PrinterOptsTotal
   }
   deriving (Eq, Show, Functor)
 
@@ -93,15 +99,51 @@ defaultConfig =
       cfgPrinterOpts = defaultPrinterOpts
     }
 
--- | Options controlling formatting output
-data PrinterOpts = PrinterOpts
+-- | Options controlling formatting output.
+data PrinterOpts f = PrinterOpts
   { -- | Number of spaces to use for indentation
-    poIndentStep :: Int
+    poIndentation :: f Int
   }
-  deriving (Eq, Show)
+  deriving (Generic)
 
-defaultPrinterOpts :: PrinterOpts
-defaultPrinterOpts = PrinterOpts {poIndentStep = 4}
+-- | A version of 'PrinterOpts' where any field can be empty.
+-- This corresponds to the information in a config file or in CLI options.
+type PrinterOptsPartial = PrinterOpts Maybe
+
+deriving instance Eq PrinterOptsPartial
+
+deriving instance Show PrinterOptsPartial
+
+instance Semigroup PrinterOptsPartial where
+  (<>) = fillMissingPrinterOpts
+
+instance Monoid PrinterOptsPartial where
+  mempty = PrinterOpts {poIndentation = Nothing}
+
+-- | A version of 'PrinterOpts' without empty fields.
+type PrinterOptsTotal = PrinterOpts Identity
+
+deriving instance Eq PrinterOptsTotal
+
+deriving instance Show PrinterOptsTotal
+
+defaultPrinterOpts :: PrinterOptsTotal
+defaultPrinterOpts = PrinterOpts {poIndentation = Identity 4}
+
+-- | Fill the field values that are 'Nothing' in the first argument
+-- with the values of the corresponding fields of the second argument.
+fillMissingPrinterOpts ::
+  (Applicative f) =>
+  PrinterOptsPartial ->
+  PrinterOpts f ->
+  PrinterOpts f
+fillMissingPrinterOpts p1 p2 =
+  PrinterOpts {poIndentation = fillField poIndentation poIndentation}
+  where
+    fillField f1 f2 =
+      case f1 p1 of
+        Nothing -> f2 p2
+        Just x -> pure x
 
 -- | Convert 'RegionIndices' into 'RegionDeltas'.
 regionIndicesToDeltas ::
@@ -127,34 +169,22 @@ newtype DynOption = DynOption
 dynOptionToLocatedStr :: DynOption -> GHC.Located String
 dynOptionToLocatedStr (DynOption o) = GHC.L GHC.noSrcSpan o
 
--- | A version of 'PrinterOpts' where any field can be empty.
--- This corresponds to the information in a config file.
-data PrinterOptsPartial = PrinterOptsPartial
-  { popIndentation :: Maybe Int
-  }
-  deriving (Eq, Show, Generic)
-
 instance FromJSON PrinterOptsPartial where
   parseJSON =
     genericParseJSON
       defaultOptions
         { rejectUnknownFields = True,
-          fieldLabelModifier = camelTo2 '_' . fromMaybe "" . stripPrefix "pop"
+          fieldLabelModifier = camelTo2 '_' . fromMaybe "" . stripPrefix "po"
         }
 
--- | Replace fields with those from a config file, if found.
+-- | Read options from a config file, if found.
 -- Looks recursively in parent folders, then in 'XdgConfig',
 -- for a file matching /fourmolu.yaml/'.
-loadConfigFile :: Bool -> Maybe FilePath -> PrinterOpts -> IO PrinterOpts
-loadConfigFile debug maybePath PrinterOpts {..} = do
+loadConfigFile :: Bool -> Maybe FilePath -> IO PrinterOptsPartial
+loadConfigFile debug maybePath = do
   root <- maybe getCurrentDirectory makeAbsolute maybePath
   xdg <- getXdgDirectory XdgConfig ""
-  PrinterOptsPartial {..} <-
-    optsFromFile debug $ reverse $ xdg : scanl1 (</>) (splitPath root)
-  return $
-    PrinterOpts
-      { poIndentStep = fromMaybe poIndentStep popIndentation
-      }
+  optsFromFile debug $ reverse $ xdg : scanl1 (</>) (splitPath root)
 
 -- | Search the directories, in order, for a config file.
 optsFromFile :: Bool -> [FilePath] -> IO PrinterOptsPartial
@@ -173,7 +203,7 @@ optsFromFile debug dirs =
           return def
         Right x -> return x
   where
-    def = PrinterOptsPartial Nothing
+    def = mempty
     printDebug = when debug . hPutStrLn stderr
 
 configFileName :: FilePath

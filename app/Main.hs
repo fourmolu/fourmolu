@@ -26,9 +26,17 @@ main :: IO ()
 main = withPrettyOrmoluExceptions $ do
   Opts {..} <- execParser optsParserInfo
   let formatOne' path = do
-        printerOpts <-
-          loadConfigFile (cfgDebug optConfig) path $ cfgPrinterOpts optConfig
-        formatOne optMode optConfig {cfgPrinterOpts = printerOpts} path
+        filePrinterOpts <-
+          loadConfigFile (cfgDebug optConfig) path
+        formatOne
+          optMode
+          optConfig
+            { cfgPrinterOpts =
+                fillMissingPrinterOpts
+                  (optPrinterOpts <> filePrinterOpts)
+                  (cfgPrinterOpts optConfig)
+            }
+          path
   case optInputFiles of
     [] -> formatOne' Nothing
     ["-"] -> formatOne' Nothing
@@ -85,6 +93,8 @@ data Opts = Opts
     optMode :: !Mode,
     -- | Ormolu 'Config'
     optConfig :: !(Config RegionIndices),
+    -- | Fourmolu-specific options
+    optPrinterOpts :: !PrinterOptsPartial,
     -- | Haskell source files to format or stdin (when the list is empty)
     optInputFiles :: ![FilePath]
   }
@@ -145,6 +155,7 @@ optsParser =
         help "Mode of operation: 'stdout' (default), 'inplace', or 'check'"
       ]
     <*> configParser
+    <*> printerOptsParser
     <*> (many . strArgument . mconcat)
       [ metavar "FILE",
         help "Haskell source files to format or stdin (default)"
@@ -187,6 +198,15 @@ configParser =
               ]
         )
     <*> pure defaultPrinterOpts
+
+printerOptsParser :: Parser PrinterOptsPartial
+printerOptsParser =
+  PrinterOpts
+    <$> (optional . option auto . mconcat)
+      [ long "indentation",
+        metavar "WIDTH",
+        help "Number of spaces per indentation step (default 4)"
+      ]
 
 ----------------------------------------------------------------------------
 -- Helpers

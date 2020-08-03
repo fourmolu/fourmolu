@@ -57,6 +57,7 @@ import Control.Monad.Reader
 import Control.Monad.State.Strict
 import Data.Bool (bool)
 import Data.Coerce
+import Data.Functor.Identity (runIdentity)
 import Data.Maybe (listToMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -94,7 +95,7 @@ data RC = RC
     rcCanUseBraces :: Bool,
     -- | Whether the source could have used the record dot preprocessor
     rcUseRecDot :: Bool,
-    rcPrinterOpts :: PrinterOpts
+    rcPrinterOpts :: PrinterOptsTotal
   }
 
 -- | State context of 'R'.
@@ -160,7 +161,7 @@ runR ::
   CommentStream ->
   -- | Annotations
   Anns ->
-  PrinterOpts ->
+  PrinterOptsTotal ->
   -- | Use Record Dot Syntax
   Bool ->
   -- | Resulting rendition
@@ -378,7 +379,7 @@ useRecordDot = R (asks rcUseRecDot)
 -- effect, but with multi-line layout correct indentation levels matter.
 inci :: R () -> R ()
 inci (R m) = do
-  indentStep <- R (asks (poIndentStep . rcPrinterOpts))
+  indentStep <- R (asks (runIdentity . poIndentation . rcPrinterOpts))
   let modRC rc =
         rc
           { rcIndent = rcIndent rc + indentStep
