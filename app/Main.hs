@@ -205,7 +205,7 @@ printerOptsParser =
     <$> (optional . option auto . mconcat)
       [ long "indentation",
         metavar "WIDTH",
-        help "Number of spaces per indentation step"
+        help "Number of spaces per indentation step (default 4)"
       ]
 
 ----------------------------------------------------------------------------
