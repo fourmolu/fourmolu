@@ -32,7 +32,7 @@ main = withPrettyOrmoluExceptions $ do
           optMode
           optConfig
             { cfgPrinterOpts =
-                mergePrinterOpts
+                fillMissingPrinterOpts
                   (optPrinterOpts <> filePrinterOpts)
                   (cfgPrinterOpts optConfig)
             }

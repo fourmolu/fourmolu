@@ -16,7 +16,7 @@ module Ormolu.Config
     PrinterOptsTotal,
     defaultPrinterOpts,
     loadConfigFile,
-    mergePrinterOpts,
+    fillMissingPrinterOpts,
     regionIndicesToDeltas,
     DynOption (..),
     dynOptionToLocatedStr,
@@ -115,7 +115,7 @@ deriving instance Eq PrinterOptsPartial
 deriving instance Show PrinterOptsPartial
 
 instance Semigroup PrinterOptsPartial where
-  (<>) = mergePrinterOpts
+  (<>) = fillMissingPrinterOpts
 
 instance Monoid PrinterOptsPartial where
   mempty = PrinterOpts {poIndentation = Nothing}
@@ -132,17 +132,18 @@ defaultPrinterOpts = PrinterOpts {poIndentation = Identity 4}
 
 -- | Fill the field values that are 'Nothing' in the first argument
 -- with the values of the corresponding fields of the second argument.
-mergePrinterOpts ::
+fillMissingPrinterOpts ::
   (Applicative f) =>
   PrinterOptsPartial ->
   PrinterOpts f ->
   PrinterOpts f
-mergePrinterOpts p1 p2 =
-  PrinterOpts {poIndentation = m poIndentation poIndentation}
+fillMissingPrinterOpts p1 p2 =
+  PrinterOpts {poIndentation = fillField poIndentation poIndentation}
   where
-    m f1 f2 = case f1 p1 of
-      Nothing -> f2 p2
-      Just x -> pure x
+    fillField f1 f2 =
+      case f1 p1 of
+        Nothing -> f2 p2
+        Just x -> pure x
 
 -- | Convert 'RegionIndices' into 'RegionDeltas'.
 regionIndicesToDeltas ::
