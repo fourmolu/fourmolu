@@ -26,7 +26,7 @@ printModule ParseResult {..} printerOpts =
   prLiteralPrefix <> region <> prLiteralSuffix
   where
     region =
-      postprocess $
+      postprocess prIndent $
         runR
           ( p_hsModule
               prStackHeader

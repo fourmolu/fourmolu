@@ -32,10 +32,9 @@ p_moduleWarning wtxt = do
 p_topLevelWarning :: [Located RdrName] -> WarningTxt -> R ()
 p_topLevelWarning fnames wtxt = do
   let (pragmaText, lits) = warningText wtxt
-  switchLayout (fmap getLoc fnames ++ fmap getLoc lits)
-    $ pragma pragmaText . inci
-    $ do
-      sitcc $ sep (comma >> breakpoint) p_rdrName fnames
+  switchLayout (fmap getLoc fnames ++ fmap getLoc lits) $
+    pragma pragmaText . inci $ do
+      sep commaDel p_rdrName fnames
       breakpoint
       p_lits lits
 
@@ -47,4 +46,4 @@ warningText = \case
 p_lits :: [Located StringLiteral] -> R ()
 p_lits = \case
   [l] -> atom l
-  ls -> brackets N . sitcc $ sep (comma >> breakpoint) atom ls
+  ls -> brackets N $ sep commaDel atom ls

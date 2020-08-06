@@ -27,7 +27,8 @@ import qualified GHC
 import qualified Lexer as GHC
 import Ormolu.Parser.Pragma
 import Ormolu.Parser.Shebang
-import Ormolu.Utils (showOutputable)
+import Ormolu.Processing.Common
+import Ormolu.Utils (onTheSameLine, showOutputable)
 import SrcLoc
 
 ----------------------------------------------------------------------------
@@ -109,11 +110,15 @@ mkComment ls (L l s) = (ls', comment)
             Nothing -> s :| []
             Just (x :| xs) ->
               let getIndent y =
-                    if all isSpace y
+                    if all isSpace y || y == endDisabling
                       then startIndent
                       else length (takeWhile isSpace y)
                   n = minimum (startIndent : fmap getIndent xs)
-               in x :| (drop n <$> xs)
+                  removeIndent y =
+                    if y == endDisabling
+                      then y
+                      else drop n y
+               in x :| (removeIndent <$> xs)
           else s :| []
     (atomsBefore, ls') =
       case dropWhile ((< commentLine) . fst) ls of
@@ -145,6 +150,7 @@ isMultilineComment (Comment _ (x :| _)) = "{-" `L.isPrefixOf` x
 
 -- | Detect and extract stack header if it is present.
 extractStackHeader ::
+  -- | Comment stream to analyze
   [RealLocated String] ->
   ([RealLocated String], Maybe (RealLocated Comment))
 extractStackHeader = \case
@@ -160,7 +166,9 @@ extractStackHeader = \case
 
 -- | Extract pragmas and their associated comments.
 extractPragmas ::
+  -- | Input
   String ->
+  -- | Comment stream to analyze
   [RealLocated String] ->
   ([RealLocated Comment], [([RealLocated Comment], Pragma)])
 extractPragmas input = go initialLs id id
@@ -174,8 +182,17 @@ extractPragmas input = go initialLs id id
             let (ls', x') = mkComment ls x
              in go ls' (csSoFar . (x' :)) pragmasSoFar xs
           Just pragma ->
-            let combined = (csSoFar [], pragma)
-             in go ls id (pragmasSoFar . (combined :)) xs
+            let combined ys = (csSoFar ys, pragma)
+                go' ls' ys rest = go ls' id (pragmasSoFar . (combined ys :)) rest
+             in case xs of
+                  [] -> go' ls [] xs
+                  (y : ys) ->
+                    let (ls', y') = mkComment ls y
+                     in if onTheSameLine
+                          (RealSrcSpan (getRealSrcSpan x))
+                          (RealSrcSpan (getRealSrcSpan y))
+                          then go' ls' [y'] ys
+                          else go' ls [] xs
 
 -- | Get a 'String' from 'GHC.AnnotationComment'.
 unAnnotationComment :: GHC.AnnotationComment -> Maybe String

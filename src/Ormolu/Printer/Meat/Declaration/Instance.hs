@@ -32,9 +32,7 @@ p_standaloneDerivDecl DerivDecl {..} = do
         txt "instance"
         breakpoint
         match_overlap_mode deriv_overlap_mode breakpoint
-        if toIndent
-          then inci typesAfterInstance
-          else typesAfterInstance
+        inciIf toIndent typesAfterInstance
   txt "deriving"
   space
   case deriv_strategy of
@@ -90,12 +88,10 @@ p_clsInstDecl = \case
             unless (null allDecls) $ do
               breakpoint
               txt "where"
-        unless (null allDecls)
-          $ inci
-          $ do
-            -- Ensure whitespace is added after where clause.
-            breakpoint
-            dontUseBraces $ p_hsDeclsRespectGrouping Associated allDecls
+        unless (null allDecls) . inci $ do
+          -- Ensure whitespace is added after where clause.
+          breakpoint
+          dontUseBraces $ p_hsDeclsRespectGrouping Associated allDecls
       XHsImplicitBndrs x -> noExtCon x
   XClsInstDecl x -> noExtCon x
 

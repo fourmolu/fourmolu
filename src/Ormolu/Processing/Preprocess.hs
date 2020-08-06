@@ -11,8 +11,7 @@ where
 import Control.Monad
 import Data.Char (isSpace)
 import qualified Data.List as L
-import Data.Maybe (isJust)
-import Data.Maybe (maybeToList)
+import Data.Maybe (isJust, maybeToList)
 import FastString
 import Ormolu.Config (RegionDeltas (..))
 import Ormolu.Parser.Shebang (isShebang)
@@ -143,7 +142,8 @@ magicComment ::
   -- | Whether or not the two strings watch
   Bool
 magicComment expected s0 = isJust $ do
-  s1 <- dropWhile isSpace <$> L.stripPrefix "{-" s0
-  s2 <- dropWhile isSpace <$> L.stripPrefix expected s1
+  let trim = dropWhile isSpace
+  s1 <- trim <$> L.stripPrefix "{-" (trim s0)
+  s2 <- trim <$> L.stripPrefix expected s1
   s3 <- L.stripPrefix "-}" s2
   guard (all isSpace s3)

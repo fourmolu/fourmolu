@@ -41,7 +41,7 @@ p_dataDecl style name tpats fixity HsDataDefn {..} = do
     inci $
       p_infixDefHelper
         (isInfix fixity)
-        inci
+        True
         (p_rdrName name)
         (located' p_hsType <$> tpats)
   case dd_kindSig of
@@ -60,28 +60,26 @@ p_dataDecl style name tpats fixity HsDataDefn {..} = do
           txt "where"
         breakpoint
         sepSemi (located' (p_conDecl False)) dd_cons
-      else switchLayout (getLoc name : (getLoc <$> dd_cons))
-        $ inci
-        $ do
-          let singleConstRec = isSingleConstRec dd_cons
-          if singleConstRec
-            then space
-            else
-              if hasHaddocks dd_cons
-                then newline
-                else breakpoint
-          equals
-          space
-          layout <- getLayout
-          let s =
-                if layout == MultiLine || hasHaddocks dd_cons
-                  then newline >> txt "|" >> space
-                  else space >> txt "|" >> space
-              sitcc' =
-                if singleConstRec
-                  then id
-                  else sitcc
-          sep s (sitcc' . located' (p_conDecl singleConstRec)) dd_cons
+      else switchLayout (getLoc name : (getLoc <$> dd_cons)) . inci $ do
+        let singleConstRec = isSingleConstRec dd_cons
+        if singleConstRec
+          then space
+          else
+            if hasHaddocks dd_cons
+              then newline
+              else breakpoint
+        equals
+        space
+        layout <- getLayout
+        let s =
+              if layout == MultiLine || hasHaddocks dd_cons
+                then newline >> txt "|" >> space
+                else space >> txt "|" >> space
+            sitcc' =
+              if singleConstRec
+                then id
+                else sitcc
+        sep s (sitcc' . located' (p_conDecl singleConstRec)) dd_cons
   unless (null $ unLoc dd_derivs) breakpoint
   inci . located dd_derivs $ \xs ->
     sep newline (located' p_hsDerivingClause) xs
@@ -106,11 +104,10 @@ p_conDecl singleConstRec = \case
         (c : cs) -> do
           p_rdrName c
           unless (null cs) . inci $ do
-            comma
-            breakpoint
-            sitcc $ sep (comma >> breakpoint) p_rdrName cs
-      space
+            commaDel
+            sep commaDel p_rdrName cs
       inci $ do
+        space
         txt "::"
         let interArgBreak =
               if hasDocStrings (unLoc con_res_ty)
@@ -158,11 +155,7 @@ p_conDecl singleConstRec = \case
         RecCon l -> do
           p_rdrName con_name
           breakpoint
-          let inci' =
-                if singleConstRec
-                  then id
-                  else inci
-          inci' (located l p_conDeclFields)
+          inciIf (not singleConstRec) (located l p_conDeclFields)
         InfixCon x y -> do
           located x p_hsType
           breakpoint
@@ -211,9 +204,9 @@ p_hsDerivingClause HsDerivingClause {..} = do
   let derivingWhat = located deriv_clause_tys $ \case
         [] -> txt "()"
         xs ->
-          parens N . sitcc $
+          parens N $
             sep
-              (comma >> breakpoint)
+              commaDel
               (sitcc . located' p_hsType . hsib_body)
               xs
   space

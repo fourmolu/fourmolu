@@ -12,7 +12,7 @@ module Ormolu.Printer.Meat.Declaration
 where
 
 import Data.List (sort)
-import Data.List.NonEmpty ((<|), NonEmpty (..))
+import Data.List.NonEmpty (NonEmpty (..), (<|))
 import qualified Data.List.NonEmpty as NE
 import GHC hiding (InlinePragma)
 import OccName (occNameFS)
@@ -54,12 +54,13 @@ p_hsDeclsRespectGrouping :: FamilyStyle -> [LHsDecl GhcPs] -> R ()
 p_hsDeclsRespectGrouping = p_hsDecls' Respect
 
 p_hsDecls' :: UserGrouping -> FamilyStyle -> [LHsDecl GhcPs] -> R ()
-p_hsDecls' grouping style decls = sepSemi id $
-  -- Return a list of rendered declarations, adding a newline to separate
-  -- groups.
-  case groupDecls decls of
-    [] -> []
-    (x : xs) -> renderGroup x ++ concat (zipWith renderGroupWithPrev (x : xs) xs)
+p_hsDecls' grouping style decls =
+  sepSemi id $
+    -- Return a list of rendered declarations, adding a newline to separate
+    -- groups.
+    case groupDecls decls of
+      [] -> []
+      (x : xs) -> renderGroup x ++ concat (zipWith renderGroupWithPrev (x : xs) xs)
   where
     renderGroup = NE.toList . fmap (located' $ dontUseBraces . p_hsDecl style)
     renderGroupWithPrev prev curr =
@@ -84,9 +85,6 @@ isDocumented = any (isHaddock . unLoc)
     isHaddock _ = False
 
 -- | Group relevant declarations together.
---
--- Add a declaration to a group iff it is relevant to either the first or
--- the preceding declaration in the group.
 groupDecls :: [LHsDecl GhcPs] -> [NonEmpty (LHsDecl GhcPs)]
 groupDecls [] = []
 groupDecls (l@(L _ DocNext) : xs) =
@@ -99,7 +97,8 @@ groupDecls (header : xs) =
   let (grp, rest) = flip span (zip (header : xs) xs) $ \(previous, current) ->
         let relevantToHdr = groupedDecls header current
             relevantToPrev = groupedDecls previous current
-         in relevantToHdr || relevantToPrev
+            isDeclSeries = declSeries previous current
+         in isDeclSeries || relevantToHdr || relevantToPrev
    in (header :| map snd grp) : groupDecls (map snd rest)
 
 p_hsDecl :: FamilyStyle -> HsDecl GhcPs -> R ()
@@ -196,6 +195,18 @@ groupedDecls (L l_x x') (L l_y y') =
     (_, DocPrev) -> True
     _ -> False
 
+-- | Detect declaration series that should not have blanks between them.
+declSeries ::
+  LHsDecl GhcPs ->
+  LHsDecl GhcPs ->
+  Bool
+declSeries (L _ x) (L _ y) =
+  case (x, y) of
+    ( SigD NoExtField (TypeSig NoExtField _ _),
+      SigD NoExtField (TypeSig NoExtField _ _)
+      ) -> True
+    _ -> False
+
 intersects :: Ord a => [a] -> [a] -> Bool
 intersects a b = go (sort a) (sort b)
   where
@@ -288,9 +299,10 @@ patSigRdrNames (SigD NoExtField (PatSynSig NoExtField ns _)) = Just $ map unLoc 
 patSigRdrNames _ = Nothing
 
 warnSigRdrNames :: HsDecl GhcPs -> Maybe [RdrName]
-warnSigRdrNames (WarningD NoExtField (Warnings NoExtField _ ws)) = Just $ flip concatMap ws $ \case
-  L _ (Warning NoExtField ns _) -> map unLoc ns
-  L _ (XWarnDecl x) -> noExtCon x
+warnSigRdrNames (WarningD NoExtField (Warnings NoExtField _ ws)) = Just $
+  flip concatMap ws $ \case
+    L _ (Warning NoExtField ns _) -> map unLoc ns
+    L _ (XWarnDecl x) -> noExtCon x
 warnSigRdrNames _ = Nothing
 
 patBindNames :: Pat GhcPs -> [RdrName]

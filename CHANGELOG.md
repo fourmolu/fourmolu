@@ -1,10 +1,63 @@
+## Ormolu 0.1.2.0
+
+### Upstream changes:
+
+* Fixed the bug when comments in different styles got glued together after
+  formatting. [Issue 589](https://github.com/tweag/ormolu/issues/589).
+
+* Added `-i` as a shortcut for `--mode inplace`. [Issue
+  467](https://github.com/tweag/ormolu/issues/467).
+
+* Improved grouping of top-level declarations. [Issue
+  466](https://github.com/tweag/ormolu/issues/466).
+
+## Fourmolu 0.1.1.0
+
+### Upstream changes:
+
+* Imports in a import lists are now normalized: duplicate imports are
+  combined/eliminated intelligently.
+
+* Import declarations that can be merged are now automatically merged.
+  [Issue 414](https://github.com/tweag/ormolu/issues/414).
+
+* The magic comments for disabling and enabling Ormolu now can encompass any
+  fragment of code provided that the remaining code after exclusion of the
+  disabled part is still syntactically correct. [Issue
+  601](https://github.com/tweag/ormolu/issues/601).
+
+* Improved sorting of operators in imports. [Issue
+  602](https://github.com/tweag/ormolu/issues/602).
+
+* Fixed a bug related to trailing space in multiline comments in certain
+  cases. [Issue 603](https://github.com/tweag/ormolu/issues/602).
+
+* Added support for formatting linked lists with `(:)` as line terminator.
+  [Issue 478](https://github.com/tweag/ormolu/issues/478).
+
+* Fixed rendering of function arguments in multiline layout. [Issue
+  609](https://github.com/tweag/ormolu/issues/609).
+
+* Blank lines between definitions in `let` and `while` bindings are now
+  preserved. [Issue 554](https://github.com/tweag/ormolu/issues/554).
+
+* Fixed the bug when type applications stuck to the `$` of TH splices that
+  followed them. [Issue 613](https://github.com/tweag/ormolu/issues/613).
+
+* Improved region formatting so that indented fragments—such as definitions
+  inside of `where` clauses—can be formatted. [Issue
+  572](https://github.com/tweag/ormolu/issues/572).
+
+* Fixed the bug related to the de-association of pragma comments. [Issue
+  619](https://github.com/tweag/ormolu/issues/619).
+
 ## Fourmolu 0.1.0.0
 
 * Allow configuration of indentation size via `fourmolu.yaml` config files.
 
 * An operator on a new line is no longer indented when its left operand is a do-block. This prevents the AST from potentially changing when indenting by more than two spaces.
 
-Upstream changes:
+### Upstream changes:
 
 * Fixed rendering of type signatures concerning several identifiers. [Issue
   566](https://github.com/tweag/ormolu/issues/566).

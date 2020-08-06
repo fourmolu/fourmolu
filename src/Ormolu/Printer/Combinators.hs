@@ -21,6 +21,7 @@ module Ormolu.Printer.Combinators
     space,
     newline,
     inci,
+    inciIf,
     located,
     located',
     switchLayout,
@@ -51,6 +52,7 @@ module Ormolu.Printer.Combinators
 
     -- ** Literals
     comma,
+    commaDel,
     equals,
 
     -- ** Stateful markers
@@ -71,6 +73,15 @@ import SrcLoc
 
 ----------------------------------------------------------------------------
 -- Basic
+
+-- | Indent the inner expression if the first argument is 'True'.
+inciIf ::
+  -- | Whether to indent
+  Bool ->
+  -- | The expression to indent
+  R () ->
+  R ()
+inciIf b m = if b then inci m else m
 
 -- | Enter a 'Located' entity. This combinator handles outputting comments
 -- and sets layout (single-line vs multi-line) for the inner computation.
@@ -174,10 +185,12 @@ sepSemi f xs = vlayout singleLine multiLine
         xs' ->
           if ub
             then do
-              txt "{ "
-              sep (txt "; ") (dontUseBraces . f) xs'
-              txt " }"
-            else sep (txt "; ") f xs'
+              txt "{"
+              space
+              sep (txt ";" >> space) (dontUseBraces . f) xs'
+              space
+              txt "}"
+            else sep (txt ";" >> space) f xs'
     multiLine =
       sep newline (dontUseBraces . f) xs
 
@@ -190,6 +203,7 @@ data BracketStyle
     N
   | -- | Shifted one level
     S
+  deriving (Eq, Show)
 
 -- | Surround given entity by backticks.
 backticks :: R () -> R ()
@@ -266,9 +280,7 @@ brackets_ needBreaks open close style m = sitcc (vlayout singleLine multiLine)
         then newline >> inci m
         else space >> sitcc m
       newline
-      case style of
-        N -> txt close
-        S -> inci (txt close)
+      inciIf (style == S) (txt close)
 
 ----------------------------------------------------------------------------
 -- Literals
@@ -276,6 +288,10 @@ brackets_ needBreaks open close style m = sitcc (vlayout singleLine multiLine)
 -- | Print @,@.
 comma :: R ()
 comma = txt ","
+
+-- | Delimiting combination with 'comma'. To be used with 'sep'.
+commaDel :: R ()
+commaDel = comma >> breakpoint
 
 -- | Print @=@. Do not use @'txt' "="@.
 equals :: R ()

@@ -67,7 +67,7 @@ p_hsType' multilineArgs docStyle = \case
             L _ (HsAppTy _ l r) -> gatherArgs l (r : knownArgs)
             _ -> (f', knownArgs)
         (func, args) = gatherArgs f [x]
-    switchLayout (getLoc f : fmap getLoc args) $ sitcc $ do
+    switchLayout (getLoc f : fmap getLoc args) . sitcc $ do
       located func p_hsType
       breakpoint
       inci $
@@ -98,10 +98,9 @@ p_hsType' multilineArgs docStyle = \case
             HsBoxedTuple -> parens N
             HsConstraintTuple -> parens N
             HsBoxedOrConstraintTuple -> parens N
-     in parens' . sitcc $
-          sep (comma >> breakpoint) (sitcc . located' p_hsType) xs
+     in parens' $ sep commaDel (sitcc . located' p_hsType) xs
   HsSumTy NoExtField xs ->
-    parensHash N . sitcc $
+    parensHash N $
       sep (txt "|" >> breakpoint) (sitcc . located' p_hsType) xs
   HsOpTy NoExtField x op y ->
     sitcc $
@@ -118,9 +117,9 @@ p_hsType' multilineArgs docStyle = \case
   HsStarTy NoExtField _ -> txt "*"
   HsKindSig NoExtField t k -> sitcc $ do
     located t p_hsType
-    space -- FIXME
-    txt "::"
     space
+    txt "::"
+    breakpoint
     inci (located k p_hsType)
   HsSpliceTy NoExtField splice -> p_hsSplice splice
   HsDocTy NoExtField t str ->
@@ -154,14 +153,14 @@ p_hsType' multilineArgs docStyle = \case
       case (p, xs) of
         (IsPromoted, L _ t : _) | isPromoted t -> space
         _ -> return ()
-      sitcc $ sep (comma >> breakpoint) (sitcc . located' p_hsType) xs
+      sep commaDel (sitcc . located' p_hsType) xs
   HsExplicitTupleTy NoExtField xs -> do
     txt "'"
     parens N $ do
       case xs of
         L _ t : _ | isPromoted t -> space
         _ -> return ()
-      sep (comma >> breakpoint) (located' p_hsType) xs
+      sep commaDel (located' p_hsType) xs
   HsTyLit NoExtField t ->
     case t of
       HsStrTy (SourceText s) _ -> p_stringLit s
@@ -192,9 +191,7 @@ p_hsContext :: HsContext GhcPs -> R ()
 p_hsContext = \case
   [] -> txt "()"
   [x] -> located x p_hsType
-  xs ->
-    parens N . sitcc $
-      sep (comma >> breakpoint) (sitcc . located' p_hsType) xs
+  xs -> parens N $ sep commaDel (sitcc . located' p_hsType) xs
 
 p_hsTyVarBndr :: HsTyVarBndr GhcPs -> R ()
 p_hsTyVarBndr = \case
@@ -224,15 +221,14 @@ p_forallBndrs vis p tyvars =
 
 p_conDeclFields :: [LConDeclField GhcPs] -> R ()
 p_conDeclFields xs =
-  braces N . sitcc $
-    sep (comma >> breakpoint) (sitcc . located' p_conDeclField) xs
+  braces N $ sep commaDel (sitcc . located' p_conDeclField) xs
 
 p_conDeclField :: ConDeclField GhcPs -> R ()
 p_conDeclField ConDeclField {..} = do
   mapM_ (p_hsDocString Pipe True) cd_fld_doc
   sitcc $
     sep
-      (comma >> breakpoint)
+      commaDel
       (located' (p_rdrName . rdrNameFieldOcc))
       cd_fld_names
   space
@@ -274,6 +270,6 @@ tyVarToType = \case
     -- <https://gitlab.haskell.org/ghc/ghc/issues/17404>. This is fine as
     -- long as 'tyVarToType' does not get applied to right-hand sides of
     -- declarations.
-    HsParTy NoExtField $ noLoc $
+    HsParTy NoExtField . noLoc $
       HsKindSig NoExtField (noLoc (HsTyVar NoExtField NotPromoted tvar)) kind
   XTyVarBndr x -> noExtCon x

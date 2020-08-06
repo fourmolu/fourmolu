@@ -14,7 +14,6 @@ where
 import BasicTypes
 import BooleanFormula
 import Control.Monad
-import Data.Bool (bool)
 import GHC
 import Ormolu.Printer.Combinators
 import Ormolu.Printer.Meat.Common
@@ -48,25 +47,22 @@ p_typeSig indentTail (n : ns) hswc = do
   p_rdrName n
   if null ns
     then p_typeAscription hswc
-    else do
-      comma
-      breakpoint
-      bool id inci indentTail $ do
-        sep (comma >> breakpoint) p_rdrName ns
-        p_typeAscription hswc
+    else inciIf indentTail $ do
+      commaDel
+      sep commaDel p_rdrName ns
+      p_typeAscription hswc
 
 p_typeAscription ::
   LHsSigWcType GhcPs ->
   R ()
-p_typeAscription HsWC {..} = do
+p_typeAscription HsWC {..} = inci $ do
   space
-  inci $ do
-    txt "::"
-    let t = hsib_body hswc_body
-    if hasDocStrings (unLoc t)
-      then newline
-      else breakpoint
-    located t p_hsType
+  txt "::"
+  let t = hsib_body hswc_body
+  if hasDocStrings (unLoc t)
+    then newline
+    else breakpoint
+  located t p_hsType
 p_typeAscription (XHsWildCardBndrs x) = noExtCon x
 
 p_patSynSig ::
@@ -108,7 +104,7 @@ p_fixSig = \case
     space
     atom n
     space
-    sitcc $ sep (comma >> breakpoint) p_rdrName names
+    sitcc $ sep commaDel p_rdrName names
   XFixitySig x -> noExtCon x
 
 p_inlineSig ::
@@ -147,7 +143,7 @@ p_specSig name ts InlinePragma {..} = pragmaBraces $ do
   space
   txt "::"
   breakpoint
-  inci $ sep (comma >> breakpoint) (located' p_hsType . hsib_body) ts
+  inci $ sep commaDel (located' p_hsType . hsib_body) ts
 
 p_inlineSpec :: InlineSpec -> R ()
 p_inlineSpec = \case
@@ -191,13 +187,13 @@ p_booleanFormula = \case
   And xs ->
     sitcc $
       sep
-        (comma >> breakpoint)
+        commaDel
         (located' p_booleanFormula)
         xs
   Or xs ->
     sitcc $
       sep
-        (breakpoint >> txt "| ")
+        (breakpoint >> txt "|" >> space)
         (located' p_booleanFormula)
         xs
   Parens l -> located l (parens N . p_booleanFormula)
@@ -211,7 +207,7 @@ p_completeSig ::
 p_completeSig cs' mty =
   located cs' $ \cs ->
     pragma "COMPLETE" . inci $ do
-      sitcc $ sep (comma >> breakpoint) p_rdrName cs
+      sep commaDel p_rdrName cs
       forM_ mty $ \ty -> do
         space
         txt "::"
@@ -228,12 +224,13 @@ p_sccSig loc literal = pragma "SCC" . inci $ do
 p_standaloneKindSig :: StandaloneKindSig GhcPs -> R ()
 p_standaloneKindSig (StandaloneKindSig NoExtField name bndrs) = do
   txt "type"
-  space
-  p_rdrName name
-  space
-  txt "::"
-  breakpoint
-  inci $ case bndrs of
-    HsIB NoExtField sig -> located sig p_hsType
-    XHsImplicitBndrs x -> noExtCon x
+  inci $ do
+    space
+    p_rdrName name
+    space
+    txt "::"
+    breakpoint
+    case bndrs of
+      HsIB NoExtField sig -> located sig p_hsType
+      XHsImplicitBndrs x -> noExtCon x
 p_standaloneKindSig (XStandaloneKindSig c) = noExtCon c

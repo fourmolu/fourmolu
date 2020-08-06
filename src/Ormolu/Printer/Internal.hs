@@ -225,7 +225,8 @@ txt ::
   R ()
 txt = spit SimpleText
 
--- |
+-- | Similar to 'txt' but the text inserted this way is assumed to break the
+-- “link” between the preceding atom and its pending comments.
 interferingTxt ::
   -- | 'Text' to output
   Text ->
@@ -248,6 +249,7 @@ spit ::
   -- | 'Text' to output
   Text ->
   R ()
+spit _ "" = return ()
 spit stype text = do
   requestedDel <- R (gets scRequestedDelimiter)
   pendingComments <- R (gets scPendingComments)

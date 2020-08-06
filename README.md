@@ -45,11 +45,12 @@ Alternatively, `stack` could be used with a `stack.yaml` file as follows.
 
 ```console
 $ cat stack.yaml
-resolver: lts-14.3
+resolver: lts-16.0
 packages:
 - '.'
 
-$ stack build
+$ stack build # to build
+$ stack install # to install
 ```
 
 To use Ormolu directly from GitHub with Nix, this snippet may come in handy:
@@ -132,14 +133,6 @@ independent top-level definitions.
   criterion than just being valid Haskell modules.
 * Various minor idempotence issues, most of them are related to comments.
 
-## Editor integration
-
-We know of the following editor integrations:
-
-* [Emacs][emacs-package]
-* [VS Code][vs-code-plugin]
-* vim: [neoformat][neoformat], [vim-ormolu][vim-ormolu]
-
 ## Running on Hackage
 
 It's possible to try Ormolu on arbitrary packages from Hackage. For that
@@ -153,6 +146,22 @@ Then inspect `result/log.txt` for possible problems. The derivation will
 also contain formatted `.hs` files for inspection and original inputs with
 `.hs-original` extension (those are with CPP dropped, exactly what is fed
 into Ormolu).
+
+## Editor integration
+
+We know of the following editor integrations:
+
+* [Emacs][emacs-package]
+* [VS Code][vs-code-plugin]
+* vim: [neoformat][neoformat], [vim-ormolu][vim-ormolu]
+
+## Arch Linux
+
+To install Ormolu on Arch Linux, one can use [the package on AUR][aur]:
+
+```console
+yay -S ormolu
+```
 
 ## Contributing
 
@@ -172,3 +181,4 @@ Copyright © 2018–present Tweag I/O
 [vs-code-plugin]: https://marketplace.visualstudio.com/items?itemName=sjurmillidahl.ormolu-vscode
 [vim-ormolu]: https://github.com/sdiehl/vim-ormolu
 [neoformat]: https://github.com/sbdchd/neoformat
+[aur]: https://aur.archlinux.org/packages/ormolu

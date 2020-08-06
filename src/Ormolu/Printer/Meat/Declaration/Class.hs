@@ -58,7 +58,7 @@ p_classDecl ctx name HsQTvs {..} fixity fdeps csigs cdefs cats catdefs cdocs = d
       switchLayout signatureSpans $
         p_infixDefHelper
           (isInfix fixity)
-          inci
+          True
           (p_rdrName name)
           (located' p_hsTyVarBndr <$> hsq_explicit)
       inci (p_classFundeps fdeps)
@@ -82,7 +82,7 @@ p_classFundeps fdeps = unless (null fdeps) $ do
   breakpoint
   txt "|"
   space
-  sitcc $ sep (comma >> breakpoint) (sitcc . located' p_funDep) fdeps
+  inci $ sep commaDel (sitcc . located' p_funDep) fdeps
 
 p_funDep :: FunDep (Located RdrName) -> R ()
 p_funDep (before, after) = do
