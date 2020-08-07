@@ -16,6 +16,7 @@ import Data.Version (showVersion)
 import Development.GitRev
 import Options.Applicative
 import Ormolu
+import Ormolu.Config
 import Ormolu.Parser (manualExts)
 import Ormolu.Utils (showOutputable)
 import Paths_fourmolu (version)
@@ -213,6 +214,11 @@ printerOptsParser =
         metavar "WIDTH",
         help "Number of spaces per indentation step (default 4)"
       ]
+    <*> (optional . option parseCommaStyle . mconcat)
+      [ long "comma-style",
+        metavar "STYLE",
+        help "How to place commas in mutliline lists, records etc: 'leading' (default) or 'trailing'"
+      ]
 
 ----------------------------------------------------------------------------
 -- Helpers
@@ -224,3 +230,10 @@ parseMode = eitherReader $ \case
   "inplace" -> Right InPlace
   "check" -> Right Check
   s -> Left $ "unknown mode: " ++ s
+
+-- | Parse 'CommaStyle'.
+parseCommaStyle :: ReadM CommaStyle
+parseCommaStyle = eitherReader $ \case
+  "leading" -> Right Leading
+  "trailing" -> Right Trailing
+  s -> Left $ "unknown comma style: " ++ s

@@ -5,12 +5,12 @@ module Ormolu.PrinterSpec (spec) where
 import Control.Exception
 import Control.Monad
 import Control.Monad.IO.Class
-import Data.Functor.Identity (Identity (..))
 import Data.List (isSuffixOf)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Ormolu
+import Ormolu.Config
 import Path
 import Path.IO
 import qualified System.FilePath as F
@@ -19,14 +19,19 @@ import Test.Hspec
 spec :: Spec
 spec = do
   es <- runIO locateExamples
-  forM_ es checkExample
+  let ormoluOpts =
+        PrinterOpts
+          { poIndentation = pure 2,
+            poCommaStyle = pure Trailing
+          }
+  sequence_ $ uncurry checkExample <$> [(ormoluOpts, ""), (defaultPrinterOpts, "-four")] <*> es
 
 -- | Check a single given example.
-checkExample :: Path Rel File -> Spec
-checkExample srcPath' = it (fromRelFile srcPath' ++ " works") . withNiceExceptions $ do
+checkExample :: PrinterOptsTotal -> String -> Path Rel File -> Spec
+checkExample po suffix srcPath' = it (fromRelFile srcPath' ++ " works") . withNiceExceptions $ do
   let srcPath = examplesDir </> srcPath'
-      cfg = defaultConfig {cfgPrinterOpts = PrinterOpts {poIndentation = Identity 2}}
-  expectedOutputPath <- deriveOutput srcPath
+      cfg = defaultConfig {cfgPrinterOpts = po}
+  expectedOutputPath <- deriveOutput suffix srcPath
   -- 1. Given input snippet of source code parse it and pretty print it.
   -- 2. Parse the result of pretty-printing again and make sure that AST
   -- is the same as AST of the original snippet. (This happens in
@@ -56,10 +61,10 @@ isInput path =
    in exts == ".hs" && not ("-out" `isSuffixOf` s')
 
 -- | For given path of input file return expected name of output.
-deriveOutput :: Path Rel File -> IO (Path Rel File)
-deriveOutput path =
+deriveOutput :: String -> Path Rel File -> IO (Path Rel File)
+deriveOutput suffix path =
   parseRelFile $
-    F.addExtension (F.dropExtensions (fromRelFile path) ++ "-out") "hs"
+    F.addExtension (F.dropExtensions (fromRelFile path) ++ suffix ++ "-out") "hs"
 
 -- | A version of 'shouldBe' that is specialized to comparing 'Text' values.
 -- It also prints multi-line snippets in a more readable form.

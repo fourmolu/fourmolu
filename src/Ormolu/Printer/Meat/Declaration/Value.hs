@@ -29,6 +29,7 @@ import Data.Text (Text)
 import qualified Data.Text as Text
 import GHC
 import OccName (occNameString)
+import Ormolu.Config
 import Ormolu.Printer.Combinators
 import Ormolu.Printer.Internal
 import Ormolu.Printer.Meat.Common
@@ -334,7 +335,7 @@ p_hsCmd = \case
     -- does. Open an issue and ping @yumiova if this ever occurs in output.
     notImplemented "HsCmdApp"
   HsCmdLam NoExtField mgroup -> p_matchGroup' cmdPlacement p_hsCmd Lambda mgroup
-  HsCmdPar NoExtField c -> parens N (located c p_hsCmd)
+  HsCmdPar NoExtField c -> parens N $ sitcc $ located c p_hsCmd
   HsCmdCase NoExtField e mgroup ->
     p_case cmdPlacement p_hsCmd e mgroup
   HsCmdIf NoExtField _ if' then' else' ->
@@ -627,8 +628,8 @@ p_hsExpr' s = \case
     txt "-"
     space
     located e p_hsExpr
-  HsPar NoExtField e ->
-    parens s (located e (dontUseBraces . p_hsExpr))
+  HsPar NoExtField e -> do
+    parens s $ sitcc $ located e $ dontUseBraces . p_hsExpr
   SectionL NoExtField x op -> do
     located x p_hsExpr
     breakpoint
@@ -687,10 +688,14 @@ p_hsExpr' s = \case
                   (breakpoint >> txt "|" >> space)
                   p_seqBody
               p_seqBody =
-                sitcc
+                sitcc'
                   . sep
                     commaDel
                     (located' (sitcc . p_stmt))
+              sitcc' x =
+                getPrinterOpt poCommaStyle >>= \case
+                  Leading -> id x
+                  Trailing -> sitcc x
               stmts = init xs
               yield = last xs
               lists = foldr (liftAppend . gatherStmt) [] stmts
@@ -945,7 +950,7 @@ p_pat = \case
     txt "@"
     located pat p_pat
   ParPat NoExtField pat ->
-    located pat (parens S . p_pat)
+    located pat (parens S . sitcc . p_pat)
   BangPat NoExtField pat -> do
     txt "!"
     located pat p_pat

@@ -67,6 +67,7 @@ where
 import Control.Monad
 import Data.List (intersperse)
 import Data.Text (Text)
+import Ormolu.Config
 import Ormolu.Printer.Comments
 import Ormolu.Printer.Internal
 import SrcLoc
@@ -276,9 +277,16 @@ brackets_ needBreaks open close style m = sitcc (vlayout singleLine multiLine)
       txt close
     multiLine = do
       txt open
-      if needBreaks
-        then newline >> inci m
-        else space >> sitcc m
+      commaStyle <- getPrinterOpt poCommaStyle
+      case commaStyle of
+        Leading ->
+          if needBreaks
+            then inci $ newline >> m
+            else inciIf (style == S) $ space >> m
+        Trailing ->
+          if needBreaks
+            then newline >> inci m
+            else space >> sitcc m
       newline
       inciIf (style == S) (txt close)
 
@@ -291,7 +299,10 @@ comma = txt ","
 
 -- | Delimiting combination with 'comma'. To be used with 'sep'.
 commaDel :: R ()
-commaDel = comma >> breakpoint
+commaDel =
+  getPrinterOpt poCommaStyle >>= \case
+    Leading -> breakpoint' >> comma >> space
+    Trailing -> comma >> breakpoint
 
 -- | Print @=@. Do not use @'txt' "="@.
 equals :: R ()

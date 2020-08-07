@@ -21,7 +21,7 @@ p_hsmodExports [] = do
   breakpoint'
   txt ")"
 p_hsmodExports xs =
-  parens N $ do
+  parens' $ do
     layout <- getLayout
     sep
       breakpoint
@@ -65,7 +65,7 @@ p_hsmodImport useQualifiedPost ImportDecl {..} = do
       Nothing -> return ()
       Just (_, L _ xs) -> do
         breakpoint
-        parens N $ do
+        parens' $ do
           layout <- getLayout
           sep
             breakpoint
@@ -93,7 +93,7 @@ p_lie encLayout relativePos = \case
     inci $ do
       let names :: [R ()]
           names = located' p_ieWrappedName <$> xs
-      parens N . sep commaDel sitcc $
+      parens' . sep commaDel' sitcc $
         case w of
           NoIEWildcard -> names
           IEWildcard n ->
@@ -124,3 +124,22 @@ p_lie encLayout relativePos = \case
             MiddlePos -> comma
             LastPos -> return ()
         MultiLine -> comma
+
+----------------------------------------------------------------------------
+-- Unlike the versions in 'Ormolu.Printer.Combinators', these do not depend on
+-- whether 'leadingCommas' is set. This is useful here is we choose to keep
+-- import and export lists independent of that setting.
+
+-- | Delimiting combination with 'comma'. To be used with 'sep'.
+commaDel' :: R ()
+commaDel' = comma >> breakpoint
+
+-- | Surround given entity by parentheses @(@ and @)@.
+parens' :: R () -> R ()
+parens' m = sitcc $ txt "(" >> vlayout singleLine multiLine >> txt ")"
+  where
+    singleLine = m
+    multiLine = do
+      space
+      sitcc m
+      newline
