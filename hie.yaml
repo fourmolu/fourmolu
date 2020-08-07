@@ -2,6 +2,8 @@ cradle:
   multi:
     - path: "data"
       config: { cradle: { none: }}
+    - path: "region-tests"
+      config: { cradle: { none: }}
 
     - path: "."
       config:
