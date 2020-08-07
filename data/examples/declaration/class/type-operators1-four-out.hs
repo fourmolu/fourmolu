@@ -16,6 +16,6 @@ class
 
 class
     ( f
-        :. g
+          :. g
     )
         a
