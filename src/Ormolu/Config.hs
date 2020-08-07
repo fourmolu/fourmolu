@@ -45,7 +45,7 @@ import System.Directory
     getXdgDirectory,
     makeAbsolute,
   )
-import System.FilePath ((</>), splitPath)
+import System.FilePath (splitPath, (</>))
 import System.IO (hPutStrLn, stderr)
 
 -- | Ormolu configuration.
