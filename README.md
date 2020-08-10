@@ -94,7 +94,7 @@ independent top-level definitions.
 * CPP support is experimental. CPP is virtually impossible to handle
   correctly, so we process them as a sort of unchangeable snippets. This
   works only in simple cases when CPP conditionals surround top-level
-  declarations. See the [CPP][design-cpp] section in the design notes for
+  declarations. See the [CPP](https://github.com/tweag/ormolu/blob/master/DESIGN.md#cpp) section in the design notes for
   a discussion of the dangers.
 * Input modules should be parsable by Haddock, which is a bit stricter
   criterion than just being valid Haskell modules.
@@ -103,11 +103,11 @@ independent top-level definitions.
 
 ## Contributing
 
-See [CONTRIBUTING.md][contributing].
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-See [LICENSE.md][license].
+See [LICENSE.md](LICENSE.md).
 
 Copyright © 2018–2020 Tweag I/O, 2020-present Matt Parsons
 
