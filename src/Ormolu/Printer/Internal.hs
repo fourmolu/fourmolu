@@ -20,6 +20,7 @@ module Ormolu.Printer.Internal
     newline,
     useRecordDot,
     inci,
+    inciBy,
     sitcc,
     Layout (..),
     enterLayout,
@@ -381,11 +382,15 @@ useRecordDot = R (asks rcUseRecDot)
 -- to be valid Haskell. When layout is single-line there is no obvious
 -- effect, but with multi-line layout correct indentation levels matter.
 inci :: R () -> R ()
-inci (R m) = do
+inci = inciBy 1
+
+-- | Like 'inci', but indents by the given fraction of a full step.
+inciBy :: Int -> R () -> R ()
+inciBy x (R m) = do
   indentStep <- R (asks (runIdentity . poIndentation . rcPrinterOpts))
   let modRC rc =
         rc
-          { rcIndent = rcIndent rc + indentStep
+          { rcIndent = rcIndent rc + indentStep `quot` x
           }
   R (local modRC m)
 
