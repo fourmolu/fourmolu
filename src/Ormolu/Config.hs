@@ -179,7 +179,7 @@ instance FromJSON PrinterOptsPartial where
 
 -- | Read options from a config file, if found.
 -- Looks recursively in parent folders, then in 'XdgConfig',
--- for a file matching /fourmolu.yaml/'.
+-- for a file matching /fourmolu.yaml/.
 loadConfigFile :: Bool -> Maybe FilePath -> IO PrinterOptsPartial
 loadConfigFile debug maybePath = do
   root <- maybe getCurrentDirectory makeAbsolute maybePath
