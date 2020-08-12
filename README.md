@@ -57,13 +57,13 @@ $ fourmolu Module.hs
 Add `-i` (or `--mode inplace`) to replace the contents of the input file with the formatted output.
 
 ```console
-$ ormolu -i Module.hs
+$ fourmolu -i Module.hs
 ```
 
 Use `find` to format a tree recursively:
 
 ```console
-$ ormolu -i $(find . -name '*.hs')
+$ fourmolu -i $(find . -name '*.hs')
 ```
 
 Fourmolu can be integrated with your editor via the [Haskell Language Server](https://github.com/haskell/haskell-language-server).
