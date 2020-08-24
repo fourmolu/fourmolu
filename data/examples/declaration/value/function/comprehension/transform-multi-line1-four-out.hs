@@ -7,6 +7,6 @@ foo' xs ys =
     | x <- xs
     , y <- ys
     , then
-          -- First comment
-          reverse -- Second comment
+        -- First comment
+        reverse -- Second comment
     ]

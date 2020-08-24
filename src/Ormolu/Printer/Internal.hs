@@ -385,9 +385,11 @@ inci (R m) = do
   indentStep <- R (asks (runIdentity . poIndentation . rcPrinterOpts))
   let modRC rc =
         rc
-          { rcIndent = rcIndent rc + indentStep
+          { rcIndent = roundToNearest indentStep $ rcIndent rc + indentStep
           }
   R (local modRC m)
+  where
+    roundToNearest n x = x `div` n * n
 
 -- | Set indentation level for the inner computation equal to current
 -- column. This makes sure that the entire inner block is uniformly

@@ -4,7 +4,7 @@ x = $(foo bar)
 
 x =
     $( foo
-           bar
+        bar
      )
 
 x = $foo

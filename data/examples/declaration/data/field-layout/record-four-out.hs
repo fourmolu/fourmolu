@@ -6,7 +6,7 @@ data Foo = Foo
       foo :: Foo Int Int
     , -- | Something else
       bar ::
-          Bar
-              Char
-              Char
+        Bar
+            Char
+            Char
     }

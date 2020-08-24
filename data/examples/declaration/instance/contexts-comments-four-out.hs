@@ -2,9 +2,9 @@ instance
     ( Read a -- Foo
     , Read b
     , Read
-          ( c -- Bar
-          , d
-          )
+        ( c -- Bar
+        , d
+        )
     ) =>
     Read
         ( a -- Baz
