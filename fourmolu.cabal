@@ -55,7 +55,6 @@ data-files:
 extra-doc-files:
     CONTRIBUTING.md
     CHANGELOG.md
-    DESIGN.md
     README.md
 
 source-repository head
