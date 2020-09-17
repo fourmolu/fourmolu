@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 -- | A formatter for Haskell source code.
 module Ormolu
@@ -26,6 +27,7 @@ import Control.Monad
 import Control.Monad.IO.Class (MonadIO (..))
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.IO as T
 import Debug.Trace
 import Ormolu.Config
 import Ormolu.Diff
@@ -35,6 +37,22 @@ import Ormolu.Parser.Result
 import Ormolu.Printer
 import Ormolu.Utils (showOutputable)
 import qualified SrcLoc as GHC
+
+-- >>> main
+main :: IO ()
+main =
+  let f = "tmp/Main.hs"
+      opts =
+        defaultConfig
+          { cfgPrinterOpts =
+              defaultPrinterOpts
+                -- { poCommaStyle = pure Trailing
+                { poCommaStyle = pure Leading
+                , poIndentation = pure 4
+                }
+          , cfgUnsafe = True
+          }
+   in T.writeFile (T.unpack $ (<> "-out.hs") $ T.dropEnd 3 $ T.pack f) =<< ormolu opts f =<< readFile f
 
 -- | Format a 'String', return formatted version as 'Text'.
 --

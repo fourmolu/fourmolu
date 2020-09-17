@@ -646,6 +646,7 @@ p_hsExpr' s = \case
           Missing NoExtField -> True
           _ -> False
         p_arg = \case
+          Present NoExtField x -> located x p_hsExpr1
           Present NoExtField x -> located x p_hsExpr
           Missing NoExtField -> pure ()
           XTupArg x -> noExtCon x
@@ -716,7 +717,8 @@ p_hsExpr' s = \case
       TransStmtCtxt _ -> notImplemented "TransStmtCtxt"
   ExplicitList _ _ xs ->
     brackets s $
-      sep commaDel (sitcc . located' p_hsExpr) xs
+      -- sep commaDel (sitcc . located' p_hsExpr) xs
+      sep commaDel (sitcc . located' p_hsExpr1) xs
   RecordCon {..} -> do
     located rcon_con_name atom
     breakpoint
@@ -820,6 +822,15 @@ p_hsExpr' s = \case
   HsTickPragma {} -> notImplemented "HsTickPragma"
   HsWrap {} -> notImplemented "HsWrap"
   XExpr x -> noExtCon x
+
+p_hsExpr1 :: HsExpr GhcPs -> R ()
+p_hsExpr1 = \case
+  ExplicitList _ _ xs ->
+    bracketsH True False "[" "]" N $ do
+    -- bracketsH True True "[" "]" S $ do
+      -- sep commaDel (sitcc . located' p_hsExpr) xs"["
+    sep commaDel (sitcc . located' p_hsExpr1) xs
+  e -> p_hsExpr e
 
 p_patSynBind :: PatSynBind GhcPs GhcPs -> R ()
 p_patSynBind PSB {..} = do

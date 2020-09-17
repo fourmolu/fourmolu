@@ -1,0 +1,10 @@
+roughly speaking
+    i is where this line started
+    c is where this subexpression started
+    
+record
+long-multiline-applications
+
+if a list (tuple,record...) is multiline, add a line break for the first element
+
+almost there - extra newline and inci before each multiline parens

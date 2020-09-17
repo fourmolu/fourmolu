@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -86,6 +87,7 @@ data RC = RC
   { -- | Indentation level, as the column index we need to start from after
     -- a newline if we break lines
     rcIndent :: !Int,
+    rcId :: !Int,
     -- | Current layout
     rcLayout :: Layout,
     -- | Spans of enclosing elements of AST
@@ -105,6 +107,7 @@ data SC = SC
     scColumn :: !Int,
     -- | Indentation level that was used for the current line
     scIndent :: !Int,
+    scId :: !Int,
     -- | Rendered source code so far
     scBuilder :: Builder,
     -- | Span stream
@@ -173,6 +176,7 @@ runR (R m) sstream cstream anns printerOpts recDot =
     rc =
       RC
         { rcIndent = 0,
+          rcId = 0,
           rcLayout = MultiLine,
           rcEnclosingSpans = [],
           rcAnns = anns,
@@ -184,6 +188,7 @@ runR (R m) sstream cstream anns printerOpts recDot =
       SC
         { scColumn = 0,
           scIndent = 0,
+          scId = 0,
           scBuilder = mempty,
           scSpanStream = sstream,
           scThisLineSpans = [],
@@ -328,6 +333,7 @@ newline :: R ()
 newline = do
   indent <- R (gets scIndent)
   cs <- reverse <$> R (gets scPendingComments)
+  -- txt "n"
   case cs of
     [] -> newlineRaw
     ((position, _) : _) -> do
@@ -338,6 +344,7 @@ newline = do
         let modRC rc =
               rc
                 { rcIndent = indent
+
                 }
             R m = do
               unless (T.null text) $
@@ -386,10 +393,14 @@ inci (R m) = do
   let modRC rc =
         rc
           { rcIndent = roundToNearest indentStep $ rcIndent rc + indentStep
+          -- { rcIndent = rcIndent rc + indentStep
           }
+  -- txt "i"
   R (local modRC m)
   where
-    roundToNearest n x = x `div` n * n
+    roundToNearest n x = ((x + 1) `div` n) * n
+    -- roundToNearest n x = ((x `div` n) + 1) * n
+    -- roundToNearest n x = ((x `div` n) + 1) * n
 
 -- | Set indentation level for the inner computation equal to current
 -- column. This makes sure that the entire inner block is uniformly
@@ -399,11 +410,24 @@ sitcc (R m) = do
   requestedDel <- R (gets scRequestedDelimiter)
   i <- R (asks rcIndent)
   c <- R (gets scColumn)
+  id' <- R (state $ \sc -> (scId sc,) $ sc {scId = succ $ scId sc})
   let modRC rc =
         rc
+          -- { rcIndent = i
           { rcIndent = max i (c + bool 0 1 (requestedDel == RequestedSpace))
+                  -- + bool 0 (-2) (requestedDel == AfterNewline)
+          -- { rcIndent = c + bool 0 1 (requestedDel == RequestedSpace)
+          -- { rcIndent = max 2 $ max i (c + bool 0 1 (requestedDel == RequestedSpace))
+          -- { rcIndent = max i (c + bool 0 0 (requestedDel == RequestedSpace))
+          -- { rcIndent = max i c
+          -- , rcId = id'
           }
+  -- txt $ (T.pack . show) (id',Start,i,c,requestedDel) <> " "
+  -- txt $ (T.pack . show) (i,c) <> " "
   R (local modRC m)
+  -- txt $ (T.pack . show) (id',End,i,c,requestedDel) <> " "
+
+data D = Start | End deriving Show
 
 -- | Set 'Layout' for internal computation.
 enterLayout :: Layout -> R () -> R ()

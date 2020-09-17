@@ -1,3 +1,5 @@
+{-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
@@ -45,6 +47,7 @@ module Ormolu.Printer.Combinators
     banana,
     braces,
     brackets,
+    bracketsH,
     parens,
     parensHash,
     pragmaBraces,
@@ -69,8 +72,11 @@ import Data.List (intersperse)
 import Data.Text (Text)
 import Ormolu.Config
 import Ormolu.Printer.Comments
+    ( spitFollowingComments, spitPrecedingComments )
 import Ormolu.Printer.Internal
 import SrcLoc
+-- import Data.String (IsString(fromString))
+-- import qualified Data.Text as T
 
 ----------------------------------------------------------------------------
 -- Basic
@@ -225,6 +231,10 @@ braces = brackets_ False "{" "}"
 brackets :: BracketStyle -> R () -> R ()
 brackets = brackets_ False "[" "]"
 
+-- | Surround given entity by square brackets @[@ and @]@.
+-- brackets1 :: BracketStyle -> R () -> R ()
+-- brackets1 = brackets_ True "[" "]"
+
 -- | Surround given entity by parentheses @(@ and @)@.
 parens :: BracketStyle -> R () -> R ()
 parens = brackets_ False "(" ")"
@@ -254,8 +264,12 @@ pragma pragmaText body = pragmaBraces $ do
   breakpoint
   body
 
+brackets_ :: Bool -> Text -> Text -> BracketStyle -> R () -> R ()
+brackets_ = bracketsH False
+
 -- | A helper for defining wrappers like 'parens' and 'braces'.
-brackets_ ::
+bracketsH ::
+  Bool ->
   -- | Insert breakpoints around brackets
   Bool ->
   -- | Opening bracket
@@ -267,7 +281,7 @@ brackets_ ::
   -- | Inner expression
   R () ->
   R ()
-brackets_ needBreaks open close style m = sitcc (vlayout singleLine multiLine)
+bracketsH gBreaks needBreaks open close style m = sitcc (vlayout singleLine multiLine)
   where
     singleLine = do
       txt open
@@ -275,7 +289,15 @@ brackets_ needBreaks open close style m = sitcc (vlayout singleLine multiLine)
       m
       when needBreaks space
       txt close
-    multiLine = do
+    -- multiLine = inciIf (style == N) $ do
+    -- multiLine = inciIf needBreaks $ do
+    -- multiLine = inci do
+    f = if gBreaks then (newline >>) . inci else id
+    -- multiLine = do
+    -- multiLine = newline >> inci do --TODO apply these only when we are already in a list
+    multiLine = f do --TODO apply these only when we are already in a list
+    -- multiLine = sitcc do
+      -- txt "a"
       txt open
       commaStyle <- getPrinterOpt poCommaStyle
       case commaStyle of
@@ -290,6 +312,9 @@ brackets_ needBreaks open close style m = sitcc (vlayout singleLine multiLine)
       newline
       inciIf (style == S) (txt close)
 
+-- instance IsString (R ()) where
+--   fromString = txt . T.pack
+
 ----------------------------------------------------------------------------
 -- Literals
 
@@ -299,6 +324,7 @@ comma = txt ","
 
 -- | Delimiting combination with 'comma'. To be used with 'sep'.
 commaDel :: R ()
+-- commaDel = comma >> breakpoint
 commaDel =
   getPrinterOpt poCommaStyle >>= \case
     Leading -> breakpoint' >> comma >> space

@@ -2,6 +2,10 @@ cradle:
   multi:
     - path: "data"
       config: { cradle: { none: }}
+    - path: "four"
+      config: { cradle: { direct: {arguments: []} }}
+    - path: "dist-newstyle"
+      config: { cradle: { none: }}
 
     - path: "."
       config:
