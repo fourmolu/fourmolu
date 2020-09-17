@@ -17,7 +17,7 @@
 #
 # resolver: ./custom-snapshot.yaml
 # resolver: https://example.com/snapshots/2018-01-01.yaml
-resolver: nightly-2020-05-16
+resolver: lts-16.3
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -40,6 +40,9 @@ packages:
 #   commit: e7b331f14bcffb8367cd58fbfc8b40ec7642100a
 #
 # extra-deps: []
+
+extra-deps:
+  - aeson-1.5.2.0
 
 # Override default flag values for local packages and extra-deps
 # flags: {}
