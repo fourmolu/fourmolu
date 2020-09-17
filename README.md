@@ -29,11 +29,13 @@ We share all bar one of Ormolu's goals:
 
 The current options affecting formatting are:
 * `indentation`, taking any integer value
+* `comma-style`, which can be "leading" or "trailing"
 
 Fourmolu looks for a `fourmolu.yaml` file in all parents of the current directory, followed by [the XDG config directory](https://hackage.haskell.org/package/directory/docs/System-Directory.html#v:XdgConfig). A complete configuration file, corresponding to Fourmolu's default options, looks like:
 
 ```yaml
 indentation: 4
+comma-style: leading
 ```
 
 See [here](fourmolu.yaml) for a config to simulate the behaviour of Ormolu.
