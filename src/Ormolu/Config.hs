@@ -2,7 +2,9 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 
 -- | Configuration options used by the tool.
@@ -17,6 +19,7 @@ module Ormolu.Config
     defaultPrinterOpts,
     loadConfigFile,
     fillMissingPrinterOpts,
+    CommaStyle (..),
     regionIndicesToDeltas,
     DynOption (..),
     dynOptionToLocatedStr,
@@ -27,14 +30,14 @@ import Control.Monad (when)
 import Data.Aeson
   ( FromJSON (..),
     camelTo2,
+    constructorTagModifier,
     defaultOptions,
     fieldLabelModifier,
     genericParseJSON,
     rejectUnknownFields,
   )
+import Data.Char (isLower)
 import Data.Functor.Identity (Identity (..))
-import Data.List (stripPrefix)
-import Data.Maybe (fromMaybe)
 import Data.Yaml (decodeFileEither, prettyPrintParseException)
 import GHC.Generics (Generic)
 import qualified SrcLoc as GHC
@@ -102,7 +105,8 @@ defaultConfig =
 -- | Options controlling formatting output.
 data PrinterOpts f = PrinterOpts
   { -- | Number of spaces to use for indentation
-    poIndentation :: f Int
+    poIndentation :: f Int,
+    poCommaStyle :: f CommaStyle
   }
   deriving (Generic)
 
@@ -118,7 +122,7 @@ instance Semigroup PrinterOptsPartial where
   (<>) = fillMissingPrinterOpts
 
 instance Monoid PrinterOptsPartial where
-  mempty = PrinterOpts {poIndentation = Nothing}
+  mempty = PrinterOpts Nothing Nothing
 
 -- | A version of 'PrinterOpts' without empty fields.
 type PrinterOptsTotal = PrinterOpts Identity
@@ -128,22 +132,40 @@ deriving instance Eq PrinterOptsTotal
 deriving instance Show PrinterOptsTotal
 
 defaultPrinterOpts :: PrinterOptsTotal
-defaultPrinterOpts = PrinterOpts {poIndentation = Identity 4}
+defaultPrinterOpts =
+  PrinterOpts
+    { poIndentation = pure 4,
+      poCommaStyle = pure Leading
+    }
 
 -- | Fill the field values that are 'Nothing' in the first argument
 -- with the values of the corresponding fields of the second argument.
 fillMissingPrinterOpts ::
-  (Applicative f) =>
+  forall f.
+  Applicative f =>
   PrinterOptsPartial ->
   PrinterOpts f ->
   PrinterOpts f
 fillMissingPrinterOpts p1 p2 =
-  PrinterOpts {poIndentation = fillField poIndentation poIndentation}
+  PrinterOpts
+    { poIndentation = fillField poIndentation,
+      poCommaStyle = fillField poCommaStyle
+    }
   where
-    fillField f1 f2 =
-      case f1 p1 of
-        Nothing -> f2 p2
-        Just x -> pure x
+    fillField :: (forall g. PrinterOpts g -> g a) -> f a
+    fillField f = maybe (f p2) pure $ f p1
+
+data CommaStyle
+  = Leading
+  | Trailing
+  deriving (Eq, Ord, Show, Generic)
+
+instance FromJSON CommaStyle where
+  parseJSON =
+    genericParseJSON
+      defaultOptions
+        { constructorTagModifier = camelTo2 '-'
+        }
 
 -- | Convert 'RegionIndices' into 'RegionDeltas'.
 regionIndicesToDeltas ::
@@ -174,7 +196,7 @@ instance FromJSON PrinterOptsPartial where
     genericParseJSON
       defaultOptions
         { rejectUnknownFields = True,
-          fieldLabelModifier = camelTo2 '_' . fromMaybe "" . stripPrefix "po"
+          fieldLabelModifier = camelTo2 '-' . dropWhile isLower
         }
 
 -- | Read options from a config file, if found.

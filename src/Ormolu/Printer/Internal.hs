@@ -25,6 +25,7 @@ module Ormolu.Printer.Internal
     enterLayout,
     vlayout,
     getLayout,
+    getPrinterOpt,
 
     -- * Helpers for braces
     useBraces,
@@ -427,6 +428,10 @@ vlayout sline mline = do
 -- | Get current 'Layout'.
 getLayout :: R Layout
 getLayout = R (asks rcLayout)
+
+-- | Get a particular 'PrinterOpts' field from the environment.
+getPrinterOpt :: (forall f. PrinterOpts f -> f a) -> R a
+getPrinterOpt f = R $ asks $ runIdentity . f . rcPrinterOpts
 
 ----------------------------------------------------------------------------
 -- Special helpers for comment placement

@@ -14,7 +14,9 @@ import Control.Monad
 import Data.Foldable
 import Data.List (sortOn)
 import GHC
+import Ormolu.Config
 import Ormolu.Printer.Combinators
+import Ormolu.Printer.Internal
 import Ormolu.Printer.Meat.Common
 import {-# SOURCE #-} Ormolu.Printer.Meat.Declaration
 import Ormolu.Printer.Meat.Type
@@ -82,7 +84,12 @@ p_classFundeps fdeps = unless (null fdeps) $ do
   breakpoint
   txt "|"
   space
-  inci $ sep commaDel (sitcc . located' p_funDep) fdeps
+  inci' $ sep commaDel (sitcc . located' p_funDep) fdeps
+  where
+    inci' x =
+      getPrinterOpt poCommaStyle >>= \case
+        Leading -> id x
+        Trailing -> inci x
 
 p_funDep :: FunDep (Located RdrName) -> R ()
 p_funDep (before, after) = do
