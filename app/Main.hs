@@ -225,7 +225,7 @@ printerOptsParser =
         metavar "BOOL",
         help $
           "Whether to indent 'where' bindings past the preceding body"
-            <> " (rather than half-indenting the 'where' keyword)"
+            <> " (rather than half-indenting the 'where' keyword) (default 'false')"
       ]
 
 ----------------------------------------------------------------------------
