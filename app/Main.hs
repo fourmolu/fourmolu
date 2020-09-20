@@ -131,7 +131,7 @@ optsParserInfo =
       intercalate
         "\n"
         [ unwords
-            [ "ormolu",
+            [ "fourmolu",
               showVersion version,
               $gitBranch,
               $gitHash
