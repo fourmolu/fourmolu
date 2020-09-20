@@ -222,6 +222,7 @@ printerOptsParser =
       ]
     <*> (optional . option parseBool . mconcat)
       [ long "indent-wheres",
+        metavar "BOOL",
         help $
           "Whether to indent 'where' bindings past the preceding body"
             <> " (rather than half-indenting the 'where' keyword)"
