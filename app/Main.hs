@@ -219,6 +219,12 @@ printerOptsParser =
         metavar "STYLE",
         help "How to place commas in mutliline lists, records etc: 'leading' (default) or 'trailing'"
       ]
+    <*> (optional . option auto . mconcat)
+      [ long "indent-wheres",
+        help $
+          "Whether to indent 'where' bindings past the preceding body"
+            <> " (rather than half-indenting the 'where' keyword)"
+      ]
 
 ----------------------------------------------------------------------------
 -- Helpers

@@ -1,7 +1,7 @@
 f x y = g (x + y)
-    where
-        g z = z
-        {-# SCC g #-}
+  where
+    g z = z
+    {-# SCC g #-}
 {-# SCC f #-}
 
 withString x y = x + y
