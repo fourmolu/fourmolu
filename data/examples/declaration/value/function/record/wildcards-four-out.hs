@@ -1,7 +1,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RecordWildCards #-}
 
-foo x y = Foo {x, y}
+foo x y = Foo{x, y}
 
 bar x y z =
     Bar
@@ -11,4 +11,4 @@ bar x y z =
         , ..
         }
 
-baz = Baz {..}
+baz = Baz{..}

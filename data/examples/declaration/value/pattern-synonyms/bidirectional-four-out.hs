@@ -3,7 +3,7 @@
 
 pattern Arrow t1 t2 = App "->" [t1, t2]
 
-pattern Arrow {t1, t2} = App "->" [t1, t2]
+pattern Arrow{t1, t2} = App "->" [t1, t2]
 
 pattern Arrow
     { t1
@@ -14,7 +14,7 @@ pattern Arrow
 pattern Int =
     App "Int" []
 
-pattern Maybe {t} =
+pattern Maybe{t} =
     App
         "Maybe"
         [t]
