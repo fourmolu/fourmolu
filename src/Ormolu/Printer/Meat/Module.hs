@@ -11,12 +11,14 @@ where
 import Control.Monad
 import qualified Data.Text as T
 import GHC
+import Ormolu.Config
 import Ormolu.Imports (normalizeImports)
 import Ormolu.Parser.CommentStream
 import Ormolu.Parser.Pragma
 import Ormolu.Parser.Shebang
 import Ormolu.Printer.Combinators
 import Ormolu.Printer.Comments
+import Ormolu.Printer.Internal
 import Ormolu.Printer.Meat.Common
 import Ormolu.Printer.Meat.Declaration
 import Ormolu.Printer.Meat.Declaration.Warning
@@ -56,16 +58,21 @@ p_hsModule mstackHeader shebangs pragmas qualifiedPost HsModule {..} = do
         located hsmodName' $ \name -> do
           forM_ hsmodHaddockModHeader (p_hsDocString Pipe True)
           p_hsmodName name
-        breakpoint
         forM_ hsmodDeprecMessage $ \w -> do
-          located' p_moduleWarning w
           breakpoint
+          located' p_moduleWarning w
+        breakIfNotDiffFriendly
+
+        -- This works around an awkward idempotency bug with deprecation messages.
+        diffFriendly <- getPrinterOpt poDiffFriendlyImportExport
+        when (diffFriendly && not (null hsmodDeprecMessage)) newline
+
         case hsmodExports of
           Nothing -> return ()
           Just l -> do
             located l $ \exports -> do
               inci (p_hsmodExports exports)
-            breakpoint
+            breakIfNotDiffFriendly
         txt "where"
         newline
     newline
