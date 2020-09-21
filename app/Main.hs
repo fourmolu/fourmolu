@@ -9,6 +9,7 @@ module Main (main) where
 import Control.Exception (SomeException, displayException, try)
 import Control.Monad
 import Data.Bool (bool)
+import Data.Char (toLower)
 import Data.Either (lefts)
 import Data.List (intercalate, sort)
 import qualified Data.Text.IO as TIO
@@ -219,6 +220,11 @@ printerOptsParser =
         metavar "STYLE",
         help "How to place commas in mutliline lists, records etc: 'leading' (default) or 'trailing'"
       ]
+    <*> (optional . option parseBool . mconcat)
+      [ long "preserve-spacing",
+        metavar "BOOL",
+        help "Give the programmer more choice on where to insert blank lines (default 'true')"
+      ]
 
 ----------------------------------------------------------------------------
 -- Helpers
@@ -237,3 +243,10 @@ parseCommaStyle = eitherReader $ \case
   "leading" -> Right Leading
   "trailing" -> Right Trailing
   s -> Left $ "unknown comma style: " ++ s
+
+-- | Parse a 'Bool'. Unlike 'auto', this is not case sensitive.
+parseBool :: ReadM Bool
+parseBool = eitherReader $ \x -> case map toLower x of
+  "false" -> Right False
+  "true" -> Right True
+  s -> Left $ "not a boolean value: " ++ s

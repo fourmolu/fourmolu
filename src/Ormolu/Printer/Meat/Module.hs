@@ -11,12 +11,14 @@ where
 import Control.Monad
 import qualified Data.Text as T
 import GHC
+import Ormolu.Config
 import Ormolu.Imports (normalizeImports)
 import Ormolu.Parser.CommentStream
 import Ormolu.Parser.Pragma
 import Ormolu.Parser.Shebang
 import Ormolu.Printer.Combinators
 import Ormolu.Printer.Comments
+import Ormolu.Printer.Internal
 import Ormolu.Printer.Meat.Common
 import Ormolu.Printer.Meat.Declaration
 import Ormolu.Printer.Meat.Declaration.Warning
@@ -69,7 +71,10 @@ p_hsModule mstackHeader shebangs pragmas qualifiedPost HsModule {..} = do
         txt "where"
         newline
     newline
-    forM_ (normalizeImports hsmodImports) (located' (p_hsmodImport qualifiedPost))
+    preserveGroups <- getPrinterOpt poPreserveSpacing
+    forM_ (normalizeImports preserveGroups hsmodImports) $ \importGroup -> do
+      forM_ importGroup (located' (p_hsmodImport qualifiedPost))
+      newline
     newline
     switchLayout (getLoc <$> hsmodDecls) $ do
       p_hsDecls Free hsmodDecls
