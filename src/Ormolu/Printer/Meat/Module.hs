@@ -76,7 +76,10 @@ p_hsModule mstackHeader shebangs pragmas qualifiedPost HsModule {..} = do
         txt "where"
         newline
     newline
-    forM_ (normalizeImports hsmodImports) (located' (p_hsmodImport qualifiedPost))
+    preserveGroups <- getPrinterOpt poPreserveSpacing
+    forM_ (normalizeImports preserveGroups hsmodImports) $ \importGroup -> do
+      forM_ importGroup (located' (p_hsmodImport qualifiedPost))
+      newline
     newline
     switchLayout (getLoc <$> hsmodDecls) $ do
       p_hsDecls Free hsmodDecls

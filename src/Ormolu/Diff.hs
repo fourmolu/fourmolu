@@ -47,8 +47,8 @@ diffParseResult
     } =
     matchIgnoringSrcSpans cstream0 cstream1
       <> matchIgnoringSrcSpans
-        hs0 {hsmodImports = normalizeImports (hsmodImports hs0)}
-        hs1 {hsmodImports = normalizeImports (hsmodImports hs1)}
+        hs0 {hsmodImports = concat . normalizeImports False $ hsmodImports hs0}
+        hs1 {hsmodImports = concat . normalizeImports False $ hsmodImports hs1}
 
 -- | Compare two values for equality disregarding differences in 'SrcSpan's
 -- and the ordering of import lists.

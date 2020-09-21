@@ -17,6 +17,7 @@ module Ormolu.Utils
     separatedByBlankNE,
     onTheSameLine,
     removeIndentation,
+    groupBy',
   )
 where
 
@@ -153,3 +154,13 @@ removeIndentation (lines -> xs) = (unlines (drop n <$> xs), n)
       if all isSpace y
         then 0
         else length (takeWhile isSpace y)
+
+-- | A generalisation of 'groupBy' to functions which aren't equivalences - a group ends
+-- when comparison fails with the previous element, rather than the first of the group.
+groupBy' :: (a -> a -> Bool) -> [a] -> [NonEmpty a]
+groupBy' eq = flip foldr [] $ \x -> \case
+  [] -> [pure x]
+  (y :| ys) : zs ->
+    if x `eq` y
+      then (x :| y : ys) : zs
+      else pure x : (y :| ys) : zs

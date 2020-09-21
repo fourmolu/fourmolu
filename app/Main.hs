@@ -232,14 +232,19 @@ printerOptsParser =
         metavar "BOOL",
         help "Whether to leave a space before an opening record brace (default 'false')"
       ]
-    <*>
+    <*> (optional . option parseBool . mconcat)
       [ long "diff-friendly-import-export",
         metavar "BOOL",
         help $
           "Whether to make use extra commas in import/export lists"
             <> " (as opposed to Ormolu's style) (default 'true')"
       ]
-            
+    <*> (optional . option parseBool . mconcat)
+      [ long "preserve-spacing",
+        metavar "BOOL",
+        help "Give the programmer more choice on where to insert blank lines (default 'true')"
+      ]
+
 ----------------------------------------------------------------------------
 -- Helpers
 
