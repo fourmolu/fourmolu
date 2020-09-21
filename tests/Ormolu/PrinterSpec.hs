@@ -28,7 +28,7 @@ spec = do
 
 -- | Check a single given example.
 checkExample :: PrinterOptsTotal -> String -> Path Rel File -> Spec
-checkExample po suffix srcPath' = it (fromRelFile srcPath' ++ " works") . withNiceExceptions $ do
+checkExample po suffix srcPath' = it (fromRelFile srcPath' ++ " works" ++ suffix) . withNiceExceptions $ do
   let srcPath = examplesDir </> srcPath'
       cfg = defaultConfig {cfgPrinterOpts = po}
   expectedOutputPath <- deriveOutput suffix srcPath
@@ -39,7 +39,7 @@ checkExample po suffix srcPath' = it (fromRelFile srcPath' ++ " works") . withNi
   formatted0 <- ormoluFile cfg (fromRelFile srcPath)
   -- 3. Check the output against expected output. Thus all tests should
   -- include two files: input and expected output.
-  -- T.writeFile (fromRelFile expectedOutputPath) formatted0
+  T.writeFile (fromRelFile expectedOutputPath) formatted0
   expected <- (liftIO . T.readFile . fromRelFile) expectedOutputPath
   shouldMatch False formatted0 expected
   -- 4. Check that running the formatter on the output produces the same
