@@ -107,7 +107,7 @@ data PrinterOpts f = PrinterOpts
   { -- | Number of spaces to use for indentation
     poIndentation :: f Int,
     poCommaStyle :: f CommaStyle,
-    poDiffFriendlyImportExport :: f Bool --TODO name and type - rn True is my way
+    poDiffFriendlyImportExport :: f Bool
   }
   deriving (Generic)
 
