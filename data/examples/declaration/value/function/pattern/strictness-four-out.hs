@@ -1,5 +1,4 @@
 {-# LANGUAGE BangPatterns #-}
 
 !a = ()
-
 ~b = ()

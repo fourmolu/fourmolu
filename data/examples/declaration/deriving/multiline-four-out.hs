@@ -5,11 +5,9 @@ deriving instance
 deriving stock instance
     Show
         Foo
-
 deriving anyclass instance
     ToJSON
         Foo
-
 deriving newtype instance
     Data
         Foo
