@@ -139,16 +139,17 @@ commaDel' = comma >> breakpoint
 
 -- | Surround given entity by parentheses @(@ and @)@.
 parens' :: Bool -> R () -> R ()
-parens' topLevelImport m = getPrinterOpt poDiffFriendlyImportExport >>= \case
-  True -> do
-    txt "("
-    breakpoint'
-    sitcc body
-    vlayout (txt ")") (inciBy (-1) trailingParen)
-  False -> sitcc $ do
-    txt "("
-    body
-    txt ")"
+parens' topLevelImport m =
+  getPrinterOpt poDiffFriendlyImportExport >>= \case
+    True -> do
+      txt "("
+      breakpoint'
+      sitcc body
+      vlayout (txt ")") (inciBy (-1) trailingParen)
+    False -> sitcc $ do
+      txt "("
+      body
+      txt ")"
   where
     body = vlayout singleLine multiLine
     singleLine = m
@@ -159,6 +160,7 @@ parens' topLevelImport m = getPrinterOpt poDiffFriendlyImportExport >>= \case
     trailingParen = if topLevelImport then txt " )" else txt ")"
 
 breakIfNotDiffFriendly :: R ()
-breakIfNotDiffFriendly = getPrinterOpt poDiffFriendlyImportExport >>= \case
-  True -> space
-  False -> breakpoint
+breakIfNotDiffFriendly =
+  getPrinterOpt poDiffFriendlyImportExport >>= \case
+    True -> space
+    False -> breakpoint
