@@ -73,7 +73,6 @@ splitDocString docStr =
   where
     r =
       fmap escapeLeadingDollar
-        . dropPaddingSpace
         . dropWhileEnd T.null
         . fmap (T.stripEnd . T.pack)
         . lines
@@ -85,20 +84,6 @@ splitDocString docStr =
       case T.uncons txt of
         Just ('$', _) -> T.cons '\\' txt
         _ -> txt
-    dropPaddingSpace xs =
-      case dropWhile T.null xs of
-        [] -> []
-        (x : _) ->
-          let leadingSpace txt = case T.uncons txt of
-                Just (' ', _) -> True
-                _ -> False
-              dropSpace txt =
-                if leadingSpace txt
-                  then T.drop 1 txt
-                  else txt
-           in if leadingSpace x
-                then dropSpace <$> xs
-                else xs
 
 -- | Get 'LHsType' out of 'LHsTypeArg'.
 typeArgToType :: LHsTypeArg p -> LHsType p

@@ -7,6 +7,7 @@ module Magic (
     bar,
 ) where
 
--- $explanation
---
--- Here it goes.
+{- $explanation
+
+ Here it goes.
+-}

@@ -11,6 +11,7 @@ module Ormolu.Printer.Meat.ImportExport
 where
 
 import Control.Monad
+import qualified Data.Text as T
 import GHC
 import Ormolu.Config (poDiffFriendlyImportExport)
 import Ormolu.Printer.Combinators
@@ -115,7 +116,7 @@ p_lie encLayout relativePos = \case
     p_hsDocString (Asterisk n) False (noLoc str)
   IEDoc NoExtField str ->
     p_hsDocString Pipe False (noLoc str)
-  IEDocNamed NoExtField str -> p_hsDocName str
+  IEDocNamed NoExtField str -> txt $ "-- $" <> T.pack str
   XIE x -> noExtCon x
   where
     p_comma =
