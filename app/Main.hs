@@ -1,3 +1,4 @@
+{-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -208,47 +209,54 @@ configParser =
     <*> pure defaultPrinterOpts
 
 printerOptsParser :: Parser PrinterOptsPartial
-printerOptsParser =
-  PrinterOpts
-    <$> (optional . option auto . mconcat)
+printerOptsParser = do
+  poIndentation <-
+    (optional . option auto . mconcat)
       [ long "indentation",
         metavar "WIDTH",
         help "Number of spaces per indentation step (default 4)"
       ]
-    <*> (optional . option parseCommaStyle . mconcat)
+  poCommaStyle <-
+    (optional . option parseCommaStyle . mconcat)
       [ long "comma-style",
         metavar "STYLE",
         help "How to place commas in multi-line lists, records etc: 'leading' (default) or 'trailing'"
       ]
-    <*> (optional . option parseBool . mconcat)
+  poIndentWheres <-
+    (optional . option parseBool . mconcat)
       [ long "indent-wheres",
         metavar "BOOL",
         help $
           "Whether to indent 'where' bindings past the preceding body"
             <> " (rather than half-indenting the 'where' keyword) (default 'false')"
       ]
-    <*> (optional . option parseBool . mconcat)
+  poRecordBraceSpace <-
+    (optional . option parseBool . mconcat)
       [ long "record-brace-space",
         metavar "BOOL",
         help "Whether to leave a space before an opening record brace (default 'false')"
       ]
-    <*> (optional . option parseBool . mconcat)
+  poDiffFriendlyImportExport <-
+    (optional . option parseBool . mconcat)
       [ long "diff-friendly-import-export",
         metavar "BOOL",
         help $
           "Whether to make use of extra commas in import/export lists"
             <> " (as opposed to Ormolu's style) (default 'true')"
       ]
-    <*> (optional . option parseBool . mconcat)
+  poPreserveSpacing <-
+    (optional . option parseBool . mconcat)
       [ long "preserve-spacing",
         metavar "BOOL",
         help "Give the programmer more choice on where to insert blank lines (default 'true')"
       ]
-    <*> (optional . option parseHaddockStyle . mconcat)
+  poHaddockStyle <-
+    (optional . option parseHaddockStyle . mconcat)
       [ long "haddock-style",
         metavar "STYLE",
         help "How to print Haddock comments (default 'multi-line')"
       ]
+  pure PrinterOpts {..}
 
 ----------------------------------------------------------------------------
 -- Helpers
