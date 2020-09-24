@@ -5,10 +5,10 @@ pattern Head x <- x : xs
 pattern Head' x <-
     x : xs
 
-pattern Head'' {x} <-
+pattern Head''{x} <-
     x : xs
 
-pattern FirstTwo {x, y} <-
+pattern FirstTwo{x, y} <-
     x : (y : xs)
 
 pattern FirstTwo'

@@ -252,9 +252,10 @@ p_match' placer render style isInfix strictness m_pats GRHSs {..} = do
         let whereIsEmpty = GHC.isEmptyLocalBindsPR (unLoc grhssLocalBinds)
         unless (GHC.eqEmptyLocalBinds (unLoc grhssLocalBinds)) $ do
           breakpoint
-          txt "where"
+          indentWhere <- getPrinterOpt poIndentWheres
+          bool (inciBy $ -2) id indentWhere $ txt "where"
           unless whereIsEmpty breakpoint
-          inci $ located grhssLocalBinds p_hsLocalBinds
+          inciIf indentWhere $ located grhssLocalBinds p_hsLocalBinds
   inciIf indentBody $ do
     unless (length grhssGRHSs > 1) $
       case style of
@@ -719,7 +720,7 @@ p_hsExpr' s = \case
       sep commaDel (sitcc . located' p_hsExpr) xs
   RecordCon {..} -> do
     located rcon_con_name atom
-    breakpoint
+    breakpointPreRecordBrace
     let HsRecFields {..} = rcon_flds
         updName f =
           (f :: HsRecField GhcPs (LHsExpr GhcPs))
@@ -743,7 +744,7 @@ p_hsExpr' s = \case
     let isPluginForm =
           ((1 +) . srcSpanEndCol <$> mrs rupd_expr)
             == (srcSpanStartCol <$> mrs (head rupd_flds))
-    unless (useRecordDot' && isPluginForm) breakpoint
+    unless (useRecordDot' && isPluginForm) breakpointPreRecordBrace
     let updName f =
           (f :: HsRecUpdField GhcPs)
             { hsRecFieldLbl = case unLoc $ hsRecFieldLbl f of
@@ -857,7 +858,7 @@ p_patSynBind PSB {..} = do
       p_rdrName psb_id
       inci $ do
         switchLayout (getLoc . recordPatSynPatVar <$> xs) $ do
-          unless (null xs) breakpoint
+          unless (null xs) breakpointPreRecordBrace
           braces N $
             sep commaDel (p_rdrName . recordPatSynPatVar) xs
         rhs
@@ -973,7 +974,7 @@ p_pat = \case
           inci . sitcc $ sep breakpoint (sitcc . located' p_pat) xs
       RecCon (HsRecFields fields dotdot) -> do
         p_rdrName pat
-        breakpoint
+        breakpointPreRecordBrace
         let f = \case
               Nothing -> txt ".."
               Just x -> located x p_pat_hsRecField
@@ -1373,3 +1374,11 @@ getEnclosingAnns = do
   case e of
     Nothing -> return []
     Just e' -> getAnns (RealSrcSpan e')
+
+-- | For use before record braces. Collapse to empty if not 'poRecordBraceSpace'.
+breakpointPreRecordBrace :: R ()
+breakpointPreRecordBrace = do
+  useSpace <- getPrinterOpt poRecordBraceSpace
+  if useSpace
+    then breakpoint
+    else breakpoint'
