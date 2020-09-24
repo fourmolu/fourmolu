@@ -8,6 +8,7 @@
 module Ormolu.Printer.Meat.Declaration
   ( p_hsDecls,
     p_hsDeclsRespectGrouping,
+    p_hsDeclsRespectGroupingFully,
   )
 where
 
@@ -40,6 +41,8 @@ data UserGrouping
     Disregard
   | -- | Respect user preferences regarding grouping
     Respect
+  | -- | Respect user preferences, even in the presence of Haddocks
+    RespectFully
   deriving (Eq, Show)
 
 p_hsDecls :: FamilyStyle -> [LHsDecl GhcPs] -> R ()
@@ -52,6 +55,11 @@ p_hsDecls = p_hsDecls' Disregard
 -- Does some normalization (compress subsequent newlines into a single one)
 p_hsDeclsRespectGrouping :: FamilyStyle -> [LHsDecl GhcPs] -> R ()
 p_hsDeclsRespectGrouping = p_hsDecls' Respect
+
+-- | Like 'p_hsDeclsRespectGrouping' but doesn't split declarations due to
+-- Haddock comments.
+p_hsDeclsRespectGroupingFully :: FamilyStyle -> [LHsDecl GhcPs] -> R ()
+p_hsDeclsRespectGroupingFully = p_hsDecls' RespectFully
 
 p_hsDecls' :: UserGrouping -> FamilyStyle -> [LHsDecl GhcPs] -> R ()
 p_hsDecls' grouping style decls =
@@ -73,6 +81,10 @@ p_hsDecls' grouping style decls =
           if separatedByBlankNE getLoc prev curr
             || isDocumented prev
             || isDocumented curr
+            then breakpoint : renderGroup curr
+            else renderGroup curr
+        RespectFully ->
+          if separatedByBlankNE getLoc prev curr
             then breakpoint : renderGroup curr
             else renderGroup curr
 

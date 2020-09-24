@@ -78,6 +78,6 @@ p_hsModule mstackHeader shebangs pragmas qualifiedPost HsModule {..} = do
     newline
     switchLayout (getLoc <$> hsmodDecls) $ do
       preserveSpacing <- getPrinterOpt poPreserveSpacing
-      (if preserveSpacing then p_hsDeclsRespectGrouping else p_hsDecls) Free hsmodDecls
+      (if preserveSpacing then p_hsDeclsRespectGroupingFully else p_hsDecls) Free hsmodDecls
       newline
       spitRemainingComments
