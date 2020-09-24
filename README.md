@@ -27,15 +27,16 @@ We share all bar one of Ormolu's goals:
 
 ## Configuration
 
-The current options affecting formatting are:
-* `indentation`, taking any integer value
-* `comma-style`, which can be "leading" or "trailing"
-
 Fourmolu looks for a `fourmolu.yaml` file in all parents of the current directory, followed by [the XDG config directory](https://hackage.haskell.org/package/directory/docs/System-Directory.html#v:XdgConfig). A complete configuration file, corresponding to Fourmolu's default options, looks like:
 
 ```yaml
 indentation: 4
-comma-style: leading
+comma-style: leading # for lists, tuples etc. - can also be 'trailing'
+record-brace-space: false # rec {x = 1} vs. rec{x = 1}
+indent-wheres: false # 'false' means save space by only half-indenting the 'where' keyword
+diff-friendly-import-export: true # 'false' uses Ormolu-style lists
+preserve-spacing: true # don't be too opinionated about newlines etc.
+haddock-style: multi-line # '--' vs. '{-'
 ```
 
 See [here](fourmolu.yaml) for a config to simulate the behaviour of Ormolu.
