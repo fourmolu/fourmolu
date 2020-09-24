@@ -76,21 +76,23 @@ Fourmolu can be integrated with your editor via the [Haskell Language Server](ht
 Fourmolu understands two magic comments:
 
 ```haskell
-{- ORMOLU_DISABLE -}
+{- FOURMOLU_DISABLE -}
 ```
 
 and
 
 ```haskell
-{- ORMOLU_ENABLE -}
+{- FOURMOLU_ENABLE -}
 ```
 
 This allows us to disable formatting selectively for code between these
 markers or disable it for the entire file. To achieve the latter, just put
-`{- ORMOLU_DISABLE -}` at the very top. Note that the source code should
+`{- FOURMOLU_DISABLE -}` at the very top. Note that the source code should
 still be parseable even without the “excluded” part. Because of that the
 magic comments cannot be placed arbitrary, but should rather enclose
 independent top-level definitions.
+
+`{- ORMOLU_DISABLE -}` and `{- ORMOLU_ENABLE -}`, respectively, can be used to the same effect.
 
 ## Current limitations
 

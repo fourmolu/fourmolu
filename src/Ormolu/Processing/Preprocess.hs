@@ -127,11 +127,11 @@ disableMarker = "{- ORMOLU_DISABLE -}"
 
 -- | Return 'True' if the given string is an enabling marker.
 isOrmoluEnable :: String -> Bool
-isOrmoluEnable = magicComment "ORMOLU_ENABLE"
+isOrmoluEnable s = magicComment "ORMOLU_ENABLE" s || magicComment "FOURMOLU_ENABLE" s
 
 -- | Return 'True' if the given string is a disabling marker.
 isOrmoluDisable :: String -> Bool
-isOrmoluDisable = magicComment "ORMOLU_DISABLE"
+isOrmoluDisable s = magicComment "ORMOLU_DISABLE" s || magicComment "FOURMOLU_DISABLE" s
 
 -- | Construct a function for whitespace-insensitive matching of string.
 magicComment ::
