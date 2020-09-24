@@ -106,10 +106,12 @@ defaultConfig =
 data PrinterOpts f = PrinterOpts
   { -- | Number of spaces to use for indentation
     poIndentation :: f Int,
+    poCommaStyle :: f CommaStyle,
     -- | Whether to place commas at start or end of lines
     poCommaStyle :: f CommaStyle,
     -- | Whether to indent `where` blocks
-    poIndentWheres :: f Bool
+    poIndentWheres :: f Bool,
+    poRecordBraceSpace :: f Bool
   }
   deriving (Generic)
 
@@ -139,7 +141,8 @@ defaultPrinterOpts =
   PrinterOpts
     { poIndentation = pure 4,
       poCommaStyle = pure Leading,
-      poIndentWheres = pure False
+      poIndentWheres = pure False,
+      poRecordBraceSpace = pure False
     }
 
 -- | Fill the field values that are 'Nothing' in the first argument
@@ -154,7 +157,8 @@ fillMissingPrinterOpts p1 p2 =
   PrinterOpts
     { poIndentation = fillField poIndentation,
       poCommaStyle = fillField poCommaStyle,
-      poIndentWheres = fillField poIndentWheres
+      poIndentWheres = fillField poIndentWheres,
+      poRecordBraceSpace = fillField poRecordBraceSpace
     }
   where
     fillField :: (forall g. PrinterOpts g -> g a) -> f a

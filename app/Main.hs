@@ -227,6 +227,11 @@ printerOptsParser =
           "Whether to indent 'where' bindings past the preceding body"
             <> " (rather than half-indenting the 'where' keyword) (default 'false')"
       ]
+    <*> (optional . option parseBool . mconcat)
+      [ long "record-brace-space",
+        metavar "BOOL",
+        help "Whether to leave a space before an opening record brace (default 'false')"
+      ]
 
 ----------------------------------------------------------------------------
 -- Helpers

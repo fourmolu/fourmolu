@@ -1,14 +1,14 @@
-foo = Foo {a = 3}
+foo = Foo{a = 3}
 
 bar =
     Bar
         { abc = foo
-        , def = Foo {a = 10}
+        , def = Foo{a = 10}
         }
 
-baz = Baz {}
+baz = Baz{}
 
-sym = Foo {(+) = 3}
+sym = Foo{(+) = 3}
 
 aLongVariableName =
     ALongRecordName
