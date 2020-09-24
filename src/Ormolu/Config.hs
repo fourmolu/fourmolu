@@ -111,7 +111,8 @@ data PrinterOpts f = PrinterOpts
     poCommaStyle :: f CommaStyle,
     -- | Whether to indent `where` blocks
     poIndentWheres :: f Bool,
-    poRecordBraceSpace :: f Bool
+    poRecordBraceSpace :: f Bool,
+    poDiffFriendlyImportExport :: f Bool
   }
   deriving (Generic)
 
@@ -142,7 +143,8 @@ defaultPrinterOpts =
     { poIndentation = pure 4,
       poCommaStyle = pure Leading,
       poIndentWheres = pure False,
-      poRecordBraceSpace = pure False
+      poRecordBraceSpace = pure False,
+      poDiffFriendlyImportExport = pure True
     }
 
 -- | Fill the field values that are 'Nothing' in the first argument
@@ -158,7 +160,8 @@ fillMissingPrinterOpts p1 p2 =
     { poIndentation = fillField poIndentation,
       poCommaStyle = fillField poCommaStyle,
       poIndentWheres = fillField poIndentWheres,
-      poRecordBraceSpace = fillField poRecordBraceSpace
+      poRecordBraceSpace = fillField poRecordBraceSpace,
+      poDiffFriendlyImportExport = fillField poDiffFriendlyImportExport
     }
   where
     fillField :: (forall g. PrinterOpts g -> g a) -> f a

@@ -5,7 +5,6 @@
 -- NoMonoLocalBinds before TypeFamilies
 {-# LANGUAGE NoMonoLocalBinds #-}
 
-module Foo
-    ( bar,
-    )
-where
+module Foo (
+    bar,
+) where

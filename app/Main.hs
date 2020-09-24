@@ -232,7 +232,14 @@ printerOptsParser =
         metavar "BOOL",
         help "Whether to leave a space before an opening record brace (default 'false')"
       ]
-
+    <*>
+      [ long "diff-friendly-import-export",
+        metavar "BOOL",
+        help $
+          "Whether to make use extra commas in import/export lists"
+            <> " (as opposed to Ormolu's style) (default 'true')"
+      ]
+            
 ----------------------------------------------------------------------------
 -- Helpers
 

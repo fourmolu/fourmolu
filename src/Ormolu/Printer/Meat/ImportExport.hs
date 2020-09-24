@@ -6,12 +6,15 @@
 module Ormolu.Printer.Meat.ImportExport
   ( p_hsmodExports,
     p_hsmodImport,
+    breakIfNotDiffFriendly,
   )
 where
 
 import Control.Monad
 import GHC
+import Ormolu.Config (poDiffFriendlyImportExport)
 import Ormolu.Printer.Combinators
+import Ormolu.Printer.Internal (getPrinterOpt, inciBy)
 import Ormolu.Printer.Meat.Common
 import Ormolu.Utils (RelativePos (..), attachRelativePos)
 
@@ -21,7 +24,7 @@ p_hsmodExports [] = do
   breakpoint'
   txt ")"
 p_hsmodExports xs =
-  parens' $ do
+  parens' False $ do
     layout <- getLayout
     sep
       breakpoint
@@ -64,8 +67,8 @@ p_hsmodImport useQualifiedPost ImportDecl {..} = do
     case ideclHiding of
       Nothing -> return ()
       Just (_, L _ xs) -> do
-        breakpoint
-        parens' $ do
+        breakIfNotDiffFriendly
+        parens' True $ do
           layout <- getLayout
           sep
             breakpoint
@@ -89,11 +92,11 @@ p_lie encLayout relativePos = \case
     p_comma
   IEThingWith NoExtField l1 w xs _ -> sitcc $ do
     located l1 p_ieWrappedName
-    breakpoint
+    breakIfNotDiffFriendly
     inci $ do
       let names :: [R ()]
           names = located' p_ieWrappedName <$> xs
-      parens' . sep commaDel' sitcc $
+      parens' False . sep commaDel' sitcc $
         case w of
           NoIEWildcard -> names
           IEWildcard n ->
@@ -135,11 +138,29 @@ commaDel' :: R ()
 commaDel' = comma >> breakpoint
 
 -- | Surround given entity by parentheses @(@ and @)@.
-parens' :: R () -> R ()
-parens' m = sitcc $ txt "(" >> vlayout singleLine multiLine >> txt ")"
+parens' :: Bool -> R () -> R ()
+parens' topLevelImport m =
+  getPrinterOpt poDiffFriendlyImportExport >>= \case
+    True -> do
+      txt "("
+      breakpoint'
+      sitcc body
+      vlayout (txt ")") (inciBy (-1) trailingParen)
+    False -> sitcc $ do
+      txt "("
+      body
+      txt ")"
   where
+    body = vlayout singleLine multiLine
     singleLine = m
     multiLine = do
       space
       sitcc m
       newline
+    trailingParen = if topLevelImport then txt " )" else txt ")"
+
+breakIfNotDiffFriendly :: R ()
+breakIfNotDiffFriendly =
+  getPrinterOpt poDiffFriendlyImportExport >>= \case
+    True -> space
+    False -> breakpoint

@@ -4,8 +4,8 @@ module Test
         , "Please use OtherModule instead."
         ]
         #-}
-    ( foo,
-      bar,
-      baz,
-    )
-where
+    (
+    foo,
+    bar,
+    baz,
+) where
