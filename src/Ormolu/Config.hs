@@ -106,7 +106,10 @@ defaultConfig =
 data PrinterOpts f = PrinterOpts
   { -- | Number of spaces to use for indentation
     poIndentation :: f Int,
-    poCommaStyle :: f CommaStyle
+    -- | Whether to place commas at start or end of lines
+    poCommaStyle :: f CommaStyle,
+    -- | Whether to indent `where` blocks
+    poIndentWheres :: f Bool
   }
   deriving (Generic)
 
@@ -122,7 +125,7 @@ instance Semigroup PrinterOptsPartial where
   (<>) = fillMissingPrinterOpts
 
 instance Monoid PrinterOptsPartial where
-  mempty = PrinterOpts Nothing Nothing
+  mempty = PrinterOpts Nothing Nothing Nothing
 
 -- | A version of 'PrinterOpts' without empty fields.
 type PrinterOptsTotal = PrinterOpts Identity
@@ -135,7 +138,8 @@ defaultPrinterOpts :: PrinterOptsTotal
 defaultPrinterOpts =
   PrinterOpts
     { poIndentation = pure 4,
-      poCommaStyle = pure Leading
+      poCommaStyle = pure Leading,
+      poIndentWheres = pure False
     }
 
 -- | Fill the field values that are 'Nothing' in the first argument
@@ -149,7 +153,8 @@ fillMissingPrinterOpts ::
 fillMissingPrinterOpts p1 p2 =
   PrinterOpts
     { poIndentation = fillField poIndentation,
-      poCommaStyle = fillField poCommaStyle
+      poCommaStyle = fillField poCommaStyle,
+      poIndentWheres = fillField poIndentWheres
     }
   where
     fillField :: (forall g. PrinterOpts g -> g a) -> f a
