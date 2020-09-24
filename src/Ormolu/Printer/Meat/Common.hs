@@ -23,7 +23,6 @@ import Name (nameStableString)
 import OccName (OccName (..))
 import Ormolu.Config
 import Ormolu.Printer.Combinators
-import Ormolu.Printer.Internal (getPrinterOpt)
 import Ormolu.Utils
 
 -- | Data and type family style.

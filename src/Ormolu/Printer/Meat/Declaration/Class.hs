@@ -16,7 +16,6 @@ import Data.List (sortOn)
 import GHC
 import Ormolu.Config
 import Ormolu.Printer.Combinators
-import Ormolu.Printer.Internal
 import Ormolu.Printer.Meat.Common
 import {-# SOURCE #-} Ormolu.Printer.Meat.Declaration
 import Ormolu.Printer.Meat.Type

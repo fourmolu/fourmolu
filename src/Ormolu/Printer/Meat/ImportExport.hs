@@ -15,7 +15,6 @@ import qualified Data.Text as T
 import GHC
 import Ormolu.Config (poDiffFriendlyImportExport)
 import Ormolu.Printer.Combinators
-import Ormolu.Printer.Internal (getPrinterOpt, inciBy)
 import Ormolu.Printer.Meat.Common
 import Ormolu.Utils (RelativePos (..), attachRelativePos)
 

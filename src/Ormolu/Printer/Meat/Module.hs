@@ -18,7 +18,6 @@ import Ormolu.Parser.Pragma
 import Ormolu.Parser.Shebang
 import Ormolu.Printer.Combinators
 import Ormolu.Printer.Comments
-import Ormolu.Printer.Internal
 import Ormolu.Printer.Meat.Common
 import Ormolu.Printer.Meat.Declaration
 import Ormolu.Printer.Meat.Declaration.Warning

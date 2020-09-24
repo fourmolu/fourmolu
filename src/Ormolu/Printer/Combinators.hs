@@ -22,6 +22,7 @@ module Ormolu.Printer.Combinators
     newline,
     inci,
     inciIf,
+    inciBy,
     located,
     located',
     switchLayout,
@@ -30,6 +31,7 @@ module Ormolu.Printer.Combinators
     getLayout,
     breakpoint,
     breakpoint',
+    getPrinterOpt,
 
     -- ** Formatting lists
     sep,
