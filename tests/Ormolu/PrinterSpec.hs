@@ -26,7 +26,8 @@ spec = do
             poIndentWheres = pure True,
             poRecordBraceSpace = pure True,
             poDiffFriendlyImportExport = pure False,
-            poPreserveSpacing = pure False
+            poPreserveSpacing = pure False,
+            poHaddockStyle = pure HaddockSingleLine
           }
   sequence_ $ uncurry checkExample <$> [(ormoluOpts, ""), (defaultPrinterOpts, "-four")] <*> es
 

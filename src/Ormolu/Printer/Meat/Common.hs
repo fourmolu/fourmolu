@@ -15,12 +15,15 @@ module Ormolu.Printer.Meat.Common
 where
 
 import Control.Monad
+import Data.Functor
 import Data.List (intersperse, isPrefixOf)
 import qualified Data.Text as T
 import GHC hiding (GhcPs, IE)
 import Name (nameStableString)
 import OccName (OccName (..))
+import Ormolu.Config
 import Ormolu.Printer.Combinators
+import Ormolu.Printer.Internal (getPrinterOpt)
 import Ormolu.Utils
 
 -- | Data and type family style.
@@ -169,9 +172,13 @@ p_hsDocString hstyle needsNewline (L l str) = do
           Asterisk n -> " " <> T.replicate n "*"
           Named name -> " $" <> T.pack name
         sequence_ $ intersperse (newline >> s) $ map txt' docLines
-  if maybe False ((> 1) . srcSpanStartCol) $ unSrcSpan l
-    then -- Use multiple single-line comments when the whole comment is indented
-    do
+  single <-
+    getPrinterOpt poHaddockStyle <&> \case
+      HaddockSingleLine -> True
+      -- Use multiple single-line comments when the whole comment is indented
+      HaddockMultiLine -> maybe False ((> 1) . srcSpanStartCol) $ unSrcSpan l
+  if single
+    then do
       txt "--"
       body $ txt "--"
     else

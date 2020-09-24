@@ -4,3 +4,4 @@ record-brace-space: true
 indent-wheres: true
 diff-friendly-import-export: false
 preserve-spacing: false
+haddock-style: single-line

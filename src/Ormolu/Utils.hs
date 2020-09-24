@@ -72,7 +72,7 @@ splitDocString docStr =
     _ -> r
   where
     r =
-      fmap escapeLeadingDollar
+      fmap (escapeLeadingDollar . escapeCommentBraces)
         . dropWhileEnd T.null
         . fmap (T.stripEnd . T.pack)
         . lines
@@ -84,6 +84,7 @@ splitDocString docStr =
       case T.uncons txt of
         Just ('$', _) -> T.cons '\\' txt
         _ -> txt
+    escapeCommentBraces = T.replace "{-" "{\\-" . T.replace "-}" "-\\}"
 
 -- | Get 'LHsType' out of 'LHsTypeArg'.
 typeArgToType :: LHsTypeArg p -> LHsType p

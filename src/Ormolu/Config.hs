@@ -20,6 +20,7 @@ module Ormolu.Config
     loadConfigFile,
     fillMissingPrinterOpts,
     CommaStyle (..),
+    HaddockPrintStyle (..),
     regionIndicesToDeltas,
     DynOption (..),
     dynOptionToLocatedStr,
@@ -112,7 +113,8 @@ data PrinterOpts f = PrinterOpts
     poIndentWheres :: f Bool,
     poRecordBraceSpace :: f Bool,
     poDiffFriendlyImportExport :: f Bool,
-    poPreserveSpacing :: f Bool
+    poPreserveSpacing :: f Bool,
+    poHaddockStyle :: f HaddockPrintStyle
   }
   deriving (Generic)
 
@@ -128,7 +130,7 @@ instance Semigroup PrinterOptsPartial where
   (<>) = fillMissingPrinterOpts
 
 instance Monoid PrinterOptsPartial where
-  mempty = PrinterOpts Nothing Nothing Nothing Nothing Nothing Nothing
+  mempty = PrinterOpts Nothing Nothing Nothing Nothing Nothing Nothing Nothing
 
 -- | A version of 'PrinterOpts' without empty fields.
 type PrinterOptsTotal = PrinterOpts Identity
@@ -145,7 +147,8 @@ defaultPrinterOpts =
       poIndentWheres = pure False,
       poRecordBraceSpace = pure False,
       poDiffFriendlyImportExport = pure True,
-      poPreserveSpacing = pure True
+      poPreserveSpacing = pure True,
+      poHaddockStyle = pure HaddockMultiLine
     }
 
 -- | Fill the field values that are 'Nothing' in the first argument
@@ -163,7 +166,8 @@ fillMissingPrinterOpts p1 p2 =
       poIndentWheres = fillField poIndentWheres,
       poRecordBraceSpace = fillField poRecordBraceSpace,
       poDiffFriendlyImportExport = fillField poDiffFriendlyImportExport,
-      poPreserveSpacing = fillField poPreserveSpacing
+      poPreserveSpacing = fillField poPreserveSpacing,
+      poHaddockStyle = fillField poHaddockStyle
     }
   where
     fillField :: (forall g. PrinterOpts g -> g a) -> f a
@@ -179,6 +183,18 @@ instance FromJSON CommaStyle where
     genericParseJSON
       defaultOptions
         { constructorTagModifier = camelTo2 '-'
+        }
+
+data HaddockPrintStyle
+  = HaddockSingleLine
+  | HaddockMultiLine
+  deriving (Eq, Ord, Show, Generic)
+
+instance FromJSON HaddockPrintStyle where
+  parseJSON =
+    genericParseJSON
+      defaultOptions
+        { constructorTagModifier = drop (length "haddock-") . camelTo2 '-'
         }
 
 -- | Convert 'RegionIndices' into 'RegionDeltas'.
