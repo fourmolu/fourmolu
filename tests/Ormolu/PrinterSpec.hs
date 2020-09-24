@@ -23,6 +23,7 @@ spec = do
         PrinterOpts
           { poIndentation = pure 2,
             poCommaStyle = pure Trailing,
+            poIndentWheres = pure True,
             poRecordBraceSpace = pure True
           }
   sequence_ $ uncurry checkExample <$> [(ormoluOpts, ""), (defaultPrinterOpts, "-four")] <*> es

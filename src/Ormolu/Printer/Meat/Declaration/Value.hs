@@ -252,9 +252,10 @@ p_match' placer render style isInfix strictness m_pats GRHSs {..} = do
         let whereIsEmpty = GHC.isEmptyLocalBindsPR (unLoc grhssLocalBinds)
         unless (GHC.eqEmptyLocalBinds (unLoc grhssLocalBinds)) $ do
           breakpoint
-          txt "where"
+          indentWhere <- getPrinterOpt poIndentWheres
+          bool (inciBy $ -2) id indentWhere $ txt "where"
           unless whereIsEmpty breakpoint
-          inci $ located grhssLocalBinds p_hsLocalBinds
+          inciIf indentWhere $ located grhssLocalBinds p_hsLocalBinds
   inciIf indentBody $ do
     unless (length grhssGRHSs > 1) $
       case style of

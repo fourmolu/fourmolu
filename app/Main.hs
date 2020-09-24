@@ -221,6 +221,13 @@ printerOptsParser =
         help "How to place commas in mutliline lists, records etc: 'leading' (default) or 'trailing'"
       ]
     <*> (optional . option parseBool . mconcat)
+      [ long "indent-wheres",
+        metavar "BOOL",
+        help $
+          "Whether to indent 'where' bindings past the preceding body"
+            <> " (rather than half-indenting the 'where' keyword) (default 'false')"
+      ]
+    <*> (optional . option parseBool . mconcat)
       [ long "record-brace-space",
         metavar "BOOL",
         help "Whether to leave a space before an opening record brace (default 'false')"
