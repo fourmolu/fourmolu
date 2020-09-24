@@ -233,7 +233,7 @@ parens = brackets_ False "(" ")"
 parensHash :: BracketStyle -> R () -> R ()
 parensHash = brackets_ True "(#" "#)"
 
--- | Braces as used for pragmas: @{-#@ and @#-}@.
+-- | Braces as used for pragmas: @{\-#@ and @#-\}@.
 pragmaBraces :: R () -> R ()
 pragmaBraces m = sitcc $ do
   txt "{-#"

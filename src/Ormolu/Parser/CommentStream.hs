@@ -86,7 +86,7 @@ showCommentStream (CommentStream xs) =
 
 -- | A wrapper for a single comment. The 'Bool' indicates whether there were
 -- atoms before beginning of the comment in the original input. The
--- 'NonEmpty' list inside contains lines of multiline comment @{- … -}@ or
+-- 'NonEmpty' list inside contains lines of multiline comment @{\- … -\}@ or
 -- just single item\/line otherwise.
 data Comment = Comment Bool (NonEmpty String)
   deriving (Eq, Show, Data)

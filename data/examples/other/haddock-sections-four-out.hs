@@ -1,7 +1,9 @@
--- $weird #anchor#
---
--- Section 1
+{- $weird #anchor#
 
--- $normal
---
--- Section 2
+ Section 1
+-}
+
+{- $normal
+
+ Section 2
+-}

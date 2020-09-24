@@ -244,6 +244,11 @@ printerOptsParser =
         metavar "BOOL",
         help "Give the programmer more choice on where to insert blank lines (default 'true')"
       ]
+    <*> (optional . option parseHaddockStyle . mconcat)
+      [ long "haddock-style",
+        metavar "STYLE",
+        help "How to print Haddock comments (default 'multi-line')"
+      ]
 
 ----------------------------------------------------------------------------
 -- Helpers
@@ -262,6 +267,13 @@ parseCommaStyle = eitherReader $ \case
   "leading" -> Right Leading
   "trailing" -> Right Trailing
   s -> Left $ "unknown comma style: " ++ s
+
+-- | Parse 'HaddockStyle'.
+parseHaddockStyle :: ReadM HaddockPrintStyle
+parseHaddockStyle = eitherReader $ \case
+  "single-line" -> Right HaddockSingleLine
+  "multi-line" -> Right HaddockMultiLine
+  s -> Left $ "unknown haddock style: " ++ s
 
 -- | Parse a 'Bool'. Unlike 'auto', this is not case sensitive.
 parseBool :: ReadM Bool

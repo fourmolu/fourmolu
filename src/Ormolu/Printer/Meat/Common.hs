@@ -11,17 +11,19 @@ module Ormolu.Printer.Meat.Common
     p_qualName,
     p_infixDefHelper,
     p_hsDocString,
-    p_hsDocName,
   )
 where
 
 import Control.Monad
-import Data.List (isPrefixOf)
+import Data.Functor
+import Data.List (intersperse, isPrefixOf)
 import qualified Data.Text as T
 import GHC hiding (GhcPs, IE)
 import Name (nameStableString)
 import OccName (OccName (..))
+import Ormolu.Config
 import Ormolu.Printer.Combinators
+import Ormolu.Printer.Internal (getPrinterOpt)
 import Ormolu.Utils
 
 -- | Data and type family style.
@@ -161,16 +163,35 @@ p_hsDocString hstyle needsNewline (L l str) = do
   goesAfterComment <- maybe False isCommentSpan <$> getSpanMark
   -- Make sure the Haddock is separated by a newline from other comments.
   when goesAfterComment newline
-  forM_ (zip (splitDocString str) (True : repeat False)) $ \(x, isFirst) -> do
-    if isFirst
-      then case hstyle of
-        Pipe -> txt "-- |"
-        Caret -> txt "-- ^"
-        Asterisk n -> txt ("-- " <> T.replicate n "*")
-        Named name -> p_hsDocName name
-      else newline >> txt "--"
-    space
-    unless (T.null x) (txt x)
+  let txt' x = unless (T.null x) (txt x)
+      docLines = splitDocString str
+      body s = do
+        txt $ case hstyle of
+          Pipe -> " |"
+          Caret -> " ^"
+          Asterisk n -> " " <> T.replicate n "*"
+          Named name -> " $" <> T.pack name
+        sequence_ $ intersperse (newline >> s) $ map txt' docLines
+  single <-
+    getPrinterOpt poHaddockStyle <&> \case
+      HaddockSingleLine -> True
+      -- Use multiple single-line comments when the whole comment is indented
+      HaddockMultiLine -> maybe False ((> 1) . srcSpanStartCol) $ unSrcSpan l
+  if single
+    then do
+      txt "--"
+      body $ txt "--"
+    else
+      if length docLines <= 1
+        then do
+          txt "--"
+          body $ pure ()
+        else do
+          txt "{-"
+          body $ pure ()
+          newline
+          txt "-}"
+
   when needsNewline newline
   case l of
     UnhelpfulSpan _ ->
@@ -179,7 +200,3 @@ p_hsDocString hstyle needsNewline (L l str) = do
       -- nearest enclosing span.
       getEnclosingSpan (const True) >>= mapM_ (setSpanMark . HaddockSpan hstyle)
     RealSrcSpan spn -> setSpanMark (HaddockSpan hstyle spn)
-
--- | Print anchor of named doc section.
-p_hsDocName :: String -> R ()
-p_hsDocName name = txt ("-- $" <> T.pack name)
