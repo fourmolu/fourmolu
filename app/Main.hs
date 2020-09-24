@@ -218,7 +218,7 @@ printerOptsParser =
     <*> (optional . option parseCommaStyle . mconcat)
       [ long "comma-style",
         metavar "STYLE",
-        help "How to place commas in mutliline lists, records etc: 'leading' (default) or 'trailing'"
+        help "How to place commas in multi-line lists, records etc: 'leading' (default) or 'trailing'"
       ]
     <*> (optional . option parseBool . mconcat)
       [ long "indent-wheres",
@@ -236,7 +236,7 @@ printerOptsParser =
       [ long "diff-friendly-import-export",
         metavar "BOOL",
         help $
-          "Whether to make use extra commas in import/export lists"
+          "Whether to make use of extra commas in import/export lists"
             <> " (as opposed to Ormolu's style) (default 'true')"
       ]
     <*> (optional . option parseBool . mconcat)
