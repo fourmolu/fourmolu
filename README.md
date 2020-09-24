@@ -23,7 +23,7 @@ We share all bar one of Ormolu's goals:
 * Idempotence: formatting already formatted code doesn't change it.
 * Be well-tested and robust to the point that it can be used in large
   projects without exposing unfortunate, disappointing bugs here and there.
-* ~~Implementing one “true” formatting style which admits no configuration.~~ We allow configuration of various parameters, via CLI options or config files. We encourage contributions which add further flexibility, so long as they don't unduly complicate the implementation.
+* ~~Implementing one “true” formatting style which admits no configuration.~~ We allow configuration of various parameters, via CLI options or config files. We encourage any contributions which add further flexibility.
 
 ## Configuration
 
@@ -106,7 +106,9 @@ independent top-level definitions.
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+If there are any options you'd like to see, let us know. If it's not too complicated to implement (and especially if you implement it yourself!) then we'll probably add it.
+
+Run `cabal test` and `./format.sh` before submitting any pull requests.
 
 ## License
 
