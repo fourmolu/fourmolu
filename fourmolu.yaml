@@ -3,3 +3,4 @@ comma-style: trailing
 record-brace-space: true
 indent-wheres: true
 diff-friendly-import-export: false
+preserve-spacing: false

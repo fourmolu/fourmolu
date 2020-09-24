@@ -25,7 +25,8 @@ spec = do
             poCommaStyle = pure Trailing,
             poIndentWheres = pure True,
             poRecordBraceSpace = pure True,
-            poDiffFriendlyImportExport = pure False
+            poDiffFriendlyImportExport = pure False,
+            poPreserveSpacing = pure False
           }
   sequence_ $ uncurry checkExample <$> [(ormoluOpts, ""), (defaultPrinterOpts, "-four")] <*> es
 

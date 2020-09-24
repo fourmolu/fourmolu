@@ -10,6 +10,7 @@ where
 
 import Data.Bifunctor
 import Data.Char (isAlphaNum)
+import Data.Foldable (toList)
 import Data.Function (on)
 import Data.List (foldl', nubBy, sortBy, sortOn)
 import Data.Map.Strict (Map)
@@ -18,15 +19,20 @@ import FastString (FastString)
 import GHC hiding (GhcPs, IE)
 import GHC.Hs.Extension
 import GHC.Hs.ImpExp (IE (..))
-import Ormolu.Utils (notImplemented, showOutputable)
+import Ormolu.Utils (groupBy', notImplemented, separatedByBlank, showOutputable)
 
--- | Sort and normalize imports.
-normalizeImports :: [LImportDecl GhcPs] -> [LImportDecl GhcPs]
-normalizeImports =
-  fmap snd
-    . M.toAscList
-    . M.fromListWith combineImports
-    . fmap (\x -> (importId x, g x))
+-- | Sort, group and normalize imports. Assumes input list is sorted by source location.
+normalizeImports :: Bool -> [LImportDecl GhcPs] -> [[LImportDecl GhcPs]]
+normalizeImports preserveGroups =
+  map
+    ( fmap snd
+        . M.toAscList
+        . M.fromListWith combineImports
+        . fmap (\x -> (importId x, g x))
+    )
+    . if preserveGroups
+      then map toList . groupBy' (\x y -> not $ separatedByBlank getLoc x y)
+      else pure
   where
     g (L l ImportDecl {..}) =
       L

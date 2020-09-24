@@ -1,11 +1,8 @@
 foo = do bar
-
 foo = do bar; baz
-
 foo = do
     bar
     baz
-
 foo = do do { foo; bar }; baz
 
 readInClause = do
