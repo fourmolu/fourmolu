@@ -111,9 +111,13 @@ data PrinterOpts f = PrinterOpts
     poCommaStyle :: f CommaStyle,
     -- | Whether to indent `where` blocks
     poIndentWheres :: f Bool,
+    -- | Leave space before opening record brace
     poRecordBraceSpace :: f Bool,
+    -- | Trailing commas with parentheses on separate lines
     poDiffFriendlyImportExport :: f Bool,
+    -- | Be less opinionated about spaces/newlines
     poPreserveSpacing :: f Bool,
+    -- | How to print doc comments
     poHaddockStyle :: f HaddockPrintStyle
   }
   deriving (Generic)
