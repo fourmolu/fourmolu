@@ -47,7 +47,6 @@ import qualified SrcLoc as GHC
 import System.Directory
   ( XdgDirectory (XdgConfig),
     findFile,
-    getCurrentDirectory,
     getXdgDirectory,
     makeAbsolute,
   )
