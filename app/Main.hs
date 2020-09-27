@@ -13,6 +13,7 @@ import Data.Bool (bool)
 import Data.Char (toLower)
 import Data.Either (lefts)
 import Data.List (intercalate, sort)
+import Data.Maybe (fromMaybe)
 import qualified Data.Text.IO as TIO
 import Data.Version (showVersion)
 import Development.GitRev
@@ -22,34 +23,31 @@ import Ormolu.Config
 import Ormolu.Parser (manualExts)
 import Ormolu.Utils (showOutputable)
 import Paths_fourmolu (version)
+import System.Directory (getCurrentDirectory)
 import System.Exit (ExitCode (..), exitWith)
 import System.IO (hPutStrLn, stderr)
 
 -- | Entry point of the program.
 main :: IO ()
 main = withPrettyOrmoluExceptions $ do
-  Opts {..} <- execParser optsParserInfo
-  let formatOne' path = do
-        filePrinterOpts <-
-          loadConfigFile (cfgDebug optConfig) path
-        formatOne
-          optMode
-          optConfig
-            { cfgPrinterOpts =
-                fillMissingPrinterOpts
-                  (optPrinterOpts <> filePrinterOpts)
-                  (cfgPrinterOpts optConfig)
-            }
-          path
+  opts@Opts {..} <- execParser optsParserInfo
+  let formatStdIn = do
+        cur <- getCurrentDirectory
+        cfg <- mkConfig cur opts
+        formatOne optMode cfg Nothing
   case optInputFiles of
-    [] -> formatOne' Nothing
-    ["-"] -> formatOne' Nothing
-    [x] -> formatOne' (Just x)
-    xs -> do
+    [] -> formatStdIn
+    ["-"] -> formatStdIn
+    [x] -> flip (formatOne optMode) (Just x) =<< mkConfig x opts
+    xs@(x : _) -> do
+      cfg <- mkConfig x opts
       -- It is possible to get IOException, error's and 'OrmoluException's
       -- from 'formatOne', so we just catch everything.
       errs <-
-        lefts <$> mapM (try @SomeException . formatOne' . Just) (sort xs)
+        lefts
+          <$> mapM
+            (try @SomeException . formatOne optMode cfg . Just)
+            (sort xs)
       unless (null errs) $ do
         mapM_ (hPutStrLn stderr . displayException) errs
         exitWith (ExitFailure 102)
@@ -289,3 +287,36 @@ parseBool = eitherReader $ \x -> case map toLower x of
   "false" -> Right False
   "true" -> Right True
   s -> Left $ "not a boolean value: " ++ s
+
+-- | Build the full config, by adding 'PrinterOpts' from a file, if found.
+mkConfig :: FilePath -> Opts -> IO (Config RegionIndices)
+mkConfig path Opts {..} = do
+  filePrinterOpts <-
+    loadConfigFile path >>= \case
+      ConfigLoaded f po -> do
+        putStrLn $ "Loaded config from: " <> f
+        printDebug $ show po
+        return $ Just po
+      ConfigParseError f (_pos, err) -> do
+        -- we ignore '_pos' due to the note on 'Data.YAML.Aeson.decode1'
+        putStrLn $
+          unlines
+            [ "Failed to load " <> f <> ":",
+              "  " <> err
+            ]
+        exitWith $ ExitFailure 400
+      ConfigNotFound searchDirs -> do
+        printDebug
+          . unlines
+          $ ("No " ++ show configFileName ++ " found in any of:") :
+          map ("  " ++) searchDirs
+        return Nothing
+  return $
+    optConfig
+      { cfgPrinterOpts =
+          fillMissingPrinterOpts
+            (optPrinterOpts <> fromMaybe mempty filePrinterOpts)
+            (cfgPrinterOpts optConfig)
+      }
+  where
+    printDebug = when (cfgDebug optConfig) . hPutStrLn stderr

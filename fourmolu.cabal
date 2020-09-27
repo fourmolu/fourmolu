@@ -126,10 +126,11 @@ library
         exceptions >=0.6 && <0.11,
         filepath >=1.4.2.1 && <1.5,
         ghc-lib-parser >=8.10 && <8.11,
+        HsYAML >=0.2 && <0.3,
+        HsYAML-aeson >=0.2 && <0.3,
         mtl >=2.0 && <3.0,
         syb >=0.7 && <0.8,
-        text >=0.2 && <1.3,
-        yaml >=0.11.2 && <0.12
+        text >=0.2 && <1.3
 
     if flag(dev)
         ghc-options:
@@ -146,11 +147,12 @@ executable fourmolu
     other-modules:    Paths_fourmolu
     default-language: Haskell2010
     build-depends:
+        fourmolu -any,
         base >=4.12 && <5.0,
+        directory >=1.3.3 && <1.4,
         ghc-lib-parser >=8.10 && <8.11,
         gitrev >=1.3 && <1.4,
         optparse-applicative >=0.14 && <0.16,
-        fourmolu -any,
         text >=0.2 && <1.3
 
     if flag(dev)

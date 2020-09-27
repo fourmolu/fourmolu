@@ -18,6 +18,8 @@ module Ormolu.Config
     PrinterOptsTotal,
     defaultPrinterOpts,
     loadConfigFile,
+    configFileName,
+    ConfigFileLoadResult (..),
     fillMissingPrinterOpts,
     CommaStyle (..),
     HaddockPrintStyle (..),
@@ -27,7 +29,6 @@ module Ormolu.Config
   )
 where
 
-import Control.Monad (when)
 import Data.Aeson
   ( FromJSON (..),
     camelTo2,
@@ -35,11 +36,12 @@ import Data.Aeson
     defaultOptions,
     fieldLabelModifier,
     genericParseJSON,
-    rejectUnknownFields,
   )
+import qualified Data.ByteString.Lazy as BS
 import Data.Char (isLower)
 import Data.Functor.Identity (Identity (..))
-import Data.Yaml (decodeFileEither, prettyPrintParseException)
+import Data.YAML (Pos)
+import Data.YAML.Aeson (decode1)
 import GHC.Generics (Generic)
 import qualified SrcLoc as GHC
 import System.Directory
@@ -50,7 +52,6 @@ import System.Directory
     makeAbsolute,
   )
 import System.FilePath (splitPath, (</>))
-import System.IO (hPutStrLn, stderr)
 
 -- | Ormolu configuration.
 data Config region = Config
@@ -229,38 +230,29 @@ instance FromJSON PrinterOptsPartial where
   parseJSON =
     genericParseJSON
       defaultOptions
-        { rejectUnknownFields = True,
-          fieldLabelModifier = camelTo2 '-' . dropWhile isLower
+        { fieldLabelModifier = camelTo2 '-' . dropWhile isLower
         }
 
 -- | Read options from a config file, if found.
 -- Looks recursively in parent folders, then in 'XdgConfig',
--- for a file matching /fourmolu.yaml/.
-loadConfigFile :: Bool -> Maybe FilePath -> IO PrinterOptsPartial
-loadConfigFile debug maybePath = do
-  root <- maybe getCurrentDirectory makeAbsolute maybePath
+-- for a file named /fourmolu.yaml/.
+loadConfigFile :: FilePath -> IO ConfigFileLoadResult
+loadConfigFile path = do
+  root <- makeAbsolute path
   xdg <- getXdgDirectory XdgConfig ""
-  optsFromFile debug $ reverse $ xdg : scanl1 (</>) (splitPath root)
-
--- | Search the directories, in order, for a config file.
-optsFromFile :: Bool -> [FilePath] -> IO PrinterOptsPartial
-optsFromFile debug dirs =
+  let dirs = reverse $ xdg : scanl1 (</>) (splitPath root)
   findFile dirs configFileName >>= \case
-    Nothing -> do
-      printDebug $
-        "No " ++ show configFileName ++ " found in any of:\n"
-          ++ unlines (map ("  " ++) dirs)
-      return def
-    Just file -> do
-      printDebug $ "Found " ++ show file ++ ""
-      decodeFileEither file >>= \case
-        Left e -> do
-          printDebug $ prettyPrintParseException e
-          return def
-        Right x -> return x
-  where
-    def = mempty
-    printDebug = when debug . hPutStrLn stderr
+    Nothing -> return $ ConfigNotFound dirs
+    Just file ->
+      either (ConfigParseError file) (ConfigLoaded file)
+        . decode1
+        <$> BS.readFile file
+
+-- | The result of calling 'loadConfigFile'.
+data ConfigFileLoadResult
+  = ConfigLoaded FilePath PrinterOptsPartial
+  | ConfigParseError FilePath (Pos, String)
+  | ConfigNotFound [FilePath]
 
 configFileName :: FilePath
 configFileName = "fourmolu.yaml"
