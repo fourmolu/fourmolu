@@ -14,6 +14,8 @@ module Ormolu
     PrinterOptsTotal,
     defaultPrinterOpts,
     loadConfigFile,
+    ConfigFileLoadResult (..),
+    configFileName,
     fillMissingPrinterOpts,
     OrmoluException (..),
     withPrettyOrmoluExceptions,

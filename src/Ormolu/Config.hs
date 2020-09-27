@@ -252,6 +252,8 @@ data ConfigFileLoadResult
   = ConfigLoaded FilePath PrinterOptsPartial
   | ConfigParseError FilePath (Pos, String)
   | ConfigNotFound [FilePath]
+  deriving (Eq, Show)
 
+-- | Expected file name for YAML config.
 configFileName :: FilePath
 configFileName = "fourmolu.yaml"
