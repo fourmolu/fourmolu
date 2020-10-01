@@ -19,8 +19,8 @@ $(do [d|baz = baz|])
 $(singletons [d|data T = T deriving (Eq, Ord, Enum, Bounded, Show)|])
 
 $( singletons
-       [d|
-           data T = T
-               deriving (Eq, Ord, Enum, Bounded, Show)
-           |]
+    [d|
+        data T = T
+            deriving (Eq, Ord, Enum, Bounded, Show)
+        |]
  )

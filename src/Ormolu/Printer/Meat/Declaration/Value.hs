@@ -647,7 +647,7 @@ p_hsExpr' s = \case
           Missing NoExtField -> True
           _ -> False
         p_arg = \case
-          Present NoExtField x -> located x p_hsExpr
+          Present NoExtField x -> located x p_hsExprListItem
           Missing NoExtField -> pure ()
           XTupArg x -> noExtCon x
         p_larg = sitcc . located' p_arg
@@ -717,7 +717,7 @@ p_hsExpr' s = \case
       TransStmtCtxt _ -> notImplemented "TransStmtCtxt"
   ExplicitList _ _ xs ->
     brackets s $
-      sep commaDel (sitcc . located' p_hsExpr) xs
+      sep commaDel (sitcc . located' p_hsExprListItem) xs
   RecordCon {..} -> do
     located rcon_con_name atom
     breakpointPreRecordBrace
@@ -1382,3 +1382,22 @@ breakpointPreRecordBrace = do
   if useSpace
     then breakpoint
     else breakpoint'
+
+listLike :: HsExpr p -> Bool
+listLike = \case
+  ExplicitList {} -> True
+  ExplicitTuple{} -> True
+  _ -> False
+
+spaces :: Int -> R ()
+spaces n = txt $ Text.replicate n " "
+
+p_hsExprListItem :: HsExpr GhcPs -> R ()
+p_hsExprListItem e = do
+  indent <- getPrinterOpt poIndentation
+  when (listLike e) $ do
+    getPrinterOpt poCommaStyle >>= \case
+      Leading -> newline
+      Trailing -> pure ()
+    spaces (indent - 2)
+  p_hsExpr e

@@ -4,9 +4,9 @@ module Main where
 data Foo
     = -- | Foo
       Foo
-          Int
-          Int
+        Int
+        Int
     | -- | Bar
       Bar
-          Bool
-          Bool
+        Bool
+        Bool

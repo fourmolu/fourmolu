@@ -1,15 +1,15 @@
 handleStuff =
     handle
         [ \ExceptionA ->
-              something
+            something
         , \ExceptionB ->
-              somethingElse
+            somethingElse
         ]
 
 handleStuff =
     handle
         [ foo
-              bar
+            bar
         , baz
-              qux
+            qux
         ]

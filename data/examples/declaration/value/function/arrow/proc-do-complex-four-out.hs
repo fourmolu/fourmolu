@@ -34,9 +34,9 @@ foo
                                     u -- Actually never used
                                         ^ 2
                              in ( returnA
-                                      -<
-                                          -- Just do the calculation
-                                          (x + y * z)
+                                    -<
+                                        -- Just do the calculation
+                                        (x + y * z)
                                 )
                 else do
                     let u = x -- Let bindings bind expressions, not commands
@@ -57,6 +57,6 @@ foo
                     returnA
                         -<
                             ( i
-                                  + x
-                                  * y -- Just do the calculation
+                                + x
+                                * y -- Just do the calculation
                             )

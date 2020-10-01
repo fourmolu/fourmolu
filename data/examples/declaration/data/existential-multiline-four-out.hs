@@ -11,7 +11,7 @@ data Bar
 data Baz
     = forall x y.
       Baz
-          x
-          y
-          x
-          y
+        x
+        y
+        x
+        y
