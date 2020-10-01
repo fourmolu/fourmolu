@@ -1383,15 +1383,8 @@ breakpointPreRecordBrace = do
     then breakpoint
     else breakpoint'
 
-listLike :: HsExpr p -> Bool
-listLike = \case
-  ExplicitList {} -> True
-  ExplicitTuple{} -> True
-  _ -> False
-
-spaces :: Int -> R ()
-spaces n = txt $ Text.replicate n " "
-
+-- | For nested lists/tuples, pad with whitespace so that we always indent correctly,
+-- rather than sometimes indenting by 2 regardless of 'poIndentation'.
 p_hsExprListItem :: HsExpr GhcPs -> R ()
 p_hsExprListItem e = do
   indent <- getPrinterOpt poIndentation
@@ -1401,3 +1394,9 @@ p_hsExprListItem e = do
       Trailing -> pure ()
     spaces (indent - 2)
   p_hsExpr e
+  where
+    spaces n = txt $ Text.replicate n " "
+    listLike = \case
+      ExplicitList {} -> True
+      ExplicitTuple {} -> True
+      _ -> False

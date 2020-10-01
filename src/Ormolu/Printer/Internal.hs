@@ -393,8 +393,8 @@ inciBy x (R m) = do
           { rcIndent = roundDownToNearest step (rcIndent rc) + step
           }
   R (local modRC m)
-roundDownToNearest :: Integral a => a -> a -> a
-roundDownToNearest r n = (n `div` r) * r
+  where
+    roundDownToNearest r n = (n `div` r) * r
 
 -- | Set indentation level for the inner computation equal to current
 -- column. This makes sure that the entire inner block is uniformly
