@@ -6,5 +6,5 @@ data Foo
       Foo Int Int
     | -- | Something else
       Bar
-          Char
-          Char
+        Char
+        Char

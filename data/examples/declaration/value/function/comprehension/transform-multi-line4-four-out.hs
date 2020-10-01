@@ -7,11 +7,11 @@ quux' xs ys =
     | x <- xs
     , y <- ys
     , then group by
-          -- First comment
-          ( x
-                + y
-          )
+        -- First comment
+        ( x
+            + y
+        )
       using
-          -- Second comment
-          groupWith -- Third comment
+        -- Second comment
+        groupWith -- Third comment
     ]

@@ -7,10 +7,10 @@ bar' xs ys =
     | x <- xs
     , y <- ys
     , then
-          -- First comment
-          sortWith
+        -- First comment
+        sortWith
       by
-          ( x
-                + y -- Second comment
-          )
+        ( x
+            + y -- Second comment
+        )
     ]

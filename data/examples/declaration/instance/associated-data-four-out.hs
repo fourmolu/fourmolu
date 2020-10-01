@@ -7,8 +7,8 @@ instance Foo Double where
         Bar
             Double
         = DoubleBar
-              Double
-              Double
+            Double
+            Double
 
 instance Foo [a] where
     data Bar [a]

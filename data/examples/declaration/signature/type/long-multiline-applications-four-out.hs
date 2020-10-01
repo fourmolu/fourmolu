@@ -4,9 +4,9 @@ functionName ::
     a ->
     b ->
     ( LongDataTypeName
-          AnotherLongDataTypeName
-          AnotherLongDataTypeName2
-          AnotherLongDataTypeName3 ->
+        AnotherLongDataTypeName
+        AnotherLongDataTypeName2
+        AnotherLongDataTypeName3 ->
       a ->
       AnotherLongDataTypeName4 ->
       b ->

@@ -13,10 +13,10 @@
 {-# RULES
 "rd_tyvs_multiline2" forall
     ( a ::
-          *
+        *
     ). forall
     ( x ::
-          a
+        a
     ).
     id x =
         x

@@ -387,12 +387,14 @@ inci = inciBy 1
 -- | Like 'inci', but indents by the given fraction of a full step.
 inciBy :: Int -> R () -> R ()
 inciBy x (R m) = do
-  indentStep <- R (asks (runIdentity . poIndentation . rcPrinterOpts))
+  step <- (`quot` x) <$> R (asks (runIdentity . poIndentation . rcPrinterOpts))
   let modRC rc =
         rc
-          { rcIndent = rcIndent rc + indentStep `quot` x
+          { rcIndent = roundDownToNearest step (rcIndent rc) + step
           }
   R (local modRC m)
+  where
+    roundDownToNearest r n = (n `div` r) * r
 
 -- | Set indentation level for the inner computation equal to current
 -- column. This makes sure that the entire inner block is uniformly

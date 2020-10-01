@@ -10,7 +10,9 @@ where
 
 import Control.Monad
 import Data.Maybe (isJust, maybeToList)
+import qualified Data.Text as Text
 import GHC
+import Ormolu.Config
 import Ormolu.Printer.Combinators
 import Ormolu.Printer.Meat.Common
 import Ormolu.Printer.Meat.Type
@@ -146,6 +148,8 @@ p_conDecl singleConstRec = \case
       when (unLoc con_forall) $ do
         p_forallBndrs ForallInvis p_hsTyVarBndr con_ex_tvs
         breakpoint
+        indent <- getPrinterOpt poIndentation
+        vlayout (pure ()) . txt $ Text.replicate (indent - 2) " "
       forM_ con_mb_cxt p_lhsContext
       switchLayout conDeclSpn $ case con_args of
         PrefixCon xs -> do

@@ -13,10 +13,10 @@ bar2 f g h x =
 bar3 f g h x =
     proc (y, z) ->
         ( (h f . h g)
-              -<
-                  (y x) . y z
+            -<
+                (y x) . y z
         ) |||
             ( (h g . h f)
-                  -<
-                      y z . (y x)
+                -<
+                    y z . (y x)
             )

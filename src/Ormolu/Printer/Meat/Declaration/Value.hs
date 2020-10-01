@@ -647,7 +647,7 @@ p_hsExpr' s = \case
           Missing NoExtField -> True
           _ -> False
         p_arg = \case
-          Present NoExtField x -> located x p_hsExpr
+          Present NoExtField x -> located x p_hsExprListItem
           Missing NoExtField -> pure ()
           XTupArg x -> noExtCon x
         p_larg = sitcc . located' p_arg
@@ -717,7 +717,7 @@ p_hsExpr' s = \case
       TransStmtCtxt _ -> notImplemented "TransStmtCtxt"
   ExplicitList _ _ xs ->
     brackets s $
-      sep commaDel (sitcc . located' p_hsExpr) xs
+      sep commaDel (sitcc . located' p_hsExprListItem) xs
   RecordCon {..} -> do
     located rcon_con_name atom
     breakpointPreRecordBrace
@@ -1382,3 +1382,21 @@ breakpointPreRecordBrace = do
   if useSpace
     then breakpoint
     else breakpoint'
+
+-- | For nested lists/tuples, pad with whitespace so that we always indent correctly,
+-- rather than sometimes indenting by 2 regardless of 'poIndentation'.
+p_hsExprListItem :: HsExpr GhcPs -> R ()
+p_hsExprListItem e = do
+  indent <- getPrinterOpt poIndentation
+  when (listLike e) $ do
+    getPrinterOpt poCommaStyle >>= \case
+      Leading -> newline
+      Trailing -> pure ()
+    spaces (indent - 2)
+  p_hsExpr e
+  where
+    spaces n = txt $ Text.replicate n " "
+    listLike = \case
+      ExplicitList {} -> True
+      ExplicitTuple {} -> True
+      _ -> False
