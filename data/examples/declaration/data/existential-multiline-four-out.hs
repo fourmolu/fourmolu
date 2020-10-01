@@ -6,11 +6,11 @@ data Foo
 
 data Bar
     = forall x y.
-      Bar x y x y
+        Bar x y x y
 
 data Baz
     = forall x y.
-      Baz
+        Baz
         x
         y
         x

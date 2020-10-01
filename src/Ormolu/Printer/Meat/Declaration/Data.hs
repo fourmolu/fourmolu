@@ -146,6 +146,7 @@ p_conDecl singleConstRec = \case
       when (unLoc con_forall) $ do
         p_forallBndrs ForallInvis p_hsTyVarBndr con_ex_tvs
         breakpoint
+        indentSpacesMinus 2
       forM_ con_mb_cxt p_lhsContext
       switchLayout conDeclSpn $ case con_args of
         PrefixCon xs -> do
@@ -164,6 +165,14 @@ p_conDecl singleConstRec = \case
             space
             located y p_hsType
   XConDecl x -> noExtCon x
+
+spaces :: Int -> R ()
+spaces n = txt $ Text.replicate n " "
+
+indentSpacesMinus :: Int -> R ()
+indentSpacesMinus n = do
+  indent <- getPrinterOpt poIndentation
+  vlayout (pure ()) $ spaces (indent - n)
 
 conArgsSpans :: HsConDeclDetails GhcPs -> [SrcSpan]
 conArgsSpans = \case
