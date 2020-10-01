@@ -35,7 +35,7 @@ comma-style: leading # for lists, tuples etc. - can also be 'trailing'
 record-brace-space: false # rec {x = 1} vs. rec{x = 1}
 indent-wheres: false # 'false' means save space by only half-indenting the 'where' keyword
 diff-friendly-import-export: true # 'false' uses Ormolu-style lists
-preserve-spacing: true # don't be too opinionated about newlines etc.
+respectful: true # don't be too opinionated about newlines etc.
 haddock-style: multi-line # '--' vs. '{-'
 ```
 
