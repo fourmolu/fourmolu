@@ -242,9 +242,9 @@ printerOptsParser = do
           "Whether to make use of extra commas in import/export lists"
             <> " (as opposed to Ormolu's style) (default 'true')"
       ]
-  poPreserveSpacing <-
+  poRespectful <-
     (optional . option parseBool . mconcat)
-      [ long "preserve-spacing",
+      [ long "respectful",
         metavar "BOOL",
         help "Give the programmer more choice on where to insert blank lines (default 'true')"
       ]

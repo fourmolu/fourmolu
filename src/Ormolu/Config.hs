@@ -115,8 +115,8 @@ data PrinterOpts f = PrinterOpts
     poRecordBraceSpace :: f Bool,
     -- | Trailing commas with parentheses on separate lines
     poDiffFriendlyImportExport :: f Bool,
-    -- | Be less opinionated about spaces/newlines
-    poPreserveSpacing :: f Bool,
+    -- | Be less opinionated about spaces/newlines etc.
+    poRespectful :: f Bool,
     -- | How to print doc comments
     poHaddockStyle :: f HaddockPrintStyle
   }
@@ -151,7 +151,7 @@ defaultPrinterOpts =
       poIndentWheres = pure False,
       poRecordBraceSpace = pure False,
       poDiffFriendlyImportExport = pure True,
-      poPreserveSpacing = pure True,
+      poRespectful = pure True,
       poHaddockStyle = pure HaddockMultiLine
     }
 
@@ -170,7 +170,7 @@ fillMissingPrinterOpts p1 p2 =
       poIndentWheres = fillField poIndentWheres,
       poRecordBraceSpace = fillField poRecordBraceSpace,
       poDiffFriendlyImportExport = fillField poDiffFriendlyImportExport,
-      poPreserveSpacing = fillField poPreserveSpacing,
+      poRespectful = fillField poRespectful,
       poHaddockStyle = fillField poHaddockStyle
     }
   where
