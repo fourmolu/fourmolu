@@ -1,5 +1,7 @@
 ## Fourmolu 0.2.0.0
 
+* More consistent indentation. Previously, with indentation set to n, some constructs such as nested lists and tuples would use an ugly mix of n-space and 2-space indentation.
+
 * New configuration options (see README or Hackage docs for details):
   * `comma-style`
   * `record-brace-space`
