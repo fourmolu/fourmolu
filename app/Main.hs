@@ -298,12 +298,12 @@ mkConfig path Opts {..} = do
   filePrinterOpts <-
     loadConfigFile path >>= \case
       ConfigLoaded f po -> do
-        putStrLn $ "Loaded config from: " <> f
+        hPutStrLn stderr $ "Loaded config from: " <> f
         printDebug $ show po
         return $ Just po
       ConfigParseError f (_pos, err) -> do
         -- we ignore '_pos' due to the note on 'Data.YAML.Aeson.decode1'
-        putStrLn $
+        hPutStrLn stderr $
           unlines
             [ "Failed to load " <> f <> ":",
               "  " <> err
