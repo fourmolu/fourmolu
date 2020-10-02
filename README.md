@@ -19,7 +19,7 @@ We share all bar one of Ormolu's goals:
 * That formatting style aims to result in minimal diffs while still
   remaining very close to “conventional” Haskell formatting people use.
 * Choose a style compatible with modern dialects of Haskell. As new Haskell
-  extensions enter broad use, we may change the style to accomodate them.
+  extensions enter broad use, we may change the style to accommodate them.
 * Idempotence: formatting already formatted code doesn't change it.
 * Be well-tested and robust to the point that it can be used in large
   projects without exposing unfortunate, disappointing bugs here and there.
@@ -87,10 +87,10 @@ and
 
 This allows us to disable formatting selectively for code between these
 markers or disable it for the entire file. To achieve the latter, just put
-`{- FOURMOLU_DISABLE -}` at the very top. Note that the source code should
-still be parseable even without the “excluded” part. Because of that the
-magic comments cannot be placed arbitrary, but should rather enclose
-independent top-level definitions.
+`{- FOURMOLU_DISABLE -}` at the very top. Note that for Fourmolu to work the
+source code must still be parseable even when the disabled regions are
+omitted. Because of that the magic comments cannot be placed arbitrarily,
+but rather must enclose independent top-level definitions.
 
 `{- ORMOLU_DISABLE -}` and `{- ORMOLU_ENABLE -}`, respectively, can be used to the same effect.
 

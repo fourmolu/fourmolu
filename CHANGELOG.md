@@ -1,3 +1,14 @@
+## Ormolu 0.1.3.0
+
+* Ormolu no longer overwrites already formatted files. [PR
+  649](https://github.com/tweag/ormolu/pull/649).
+
+* Now a space is guaranteed before ticked promoted types. [Issue
+  631](https://github.com/tweag/ormolu/issues/631).
+
+* Made formatting of single-line explicitly bidirectional pattern synonyms
+  idempotent. [Issue 630](https://github.com/tweag/ormolu/issues/630).
+
 ## Ormolu 0.1.2.0
 
 ### Upstream changes:
