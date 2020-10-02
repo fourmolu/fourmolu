@@ -1390,9 +1390,9 @@ p_hsExprListItem e = do
   indent <- getPrinterOpt poIndentation
   when (listLike e) $ do
     getPrinterOpt poCommaStyle >>= \case
-      Leading -> newline
+      Leading -> breakpoint'
       Trailing -> pure ()
-    spaces (indent - 2)
+    vlayout (pure ()) (spaces $ indent - 2)
   p_hsExpr e
   where
     spaces n = txt $ Text.replicate n " "
