@@ -1,4 +1,18 @@
-## Ormolu 0.1.3.0
+## Fourmolu 0.2.0.0
+
+* More consistent indentation. Previously, with indentation set to n, some constructs such as nested lists and tuples would use an ugly mix of n-space and 2-space indentation.
+
+* New configuration options (see README or Hackage docs for details):
+  * `comma-style`
+  * `record-brace-space`
+  * `indent-wheres`
+  * `diff-friendly-import-export`
+  * `respectful`
+  * `haddock-style`
+
+### Upstream changes:
+
+#### Ormolu 0.1.3.0:
 
 * Ormolu no longer overwrites already formatted files. [PR
   649](https://github.com/tweag/ormolu/pull/649).
@@ -9,9 +23,7 @@
 * Made formatting of single-line explicitly bidirectional pattern synonyms
   idempotent. [Issue 630](https://github.com/tweag/ormolu/issues/630).
 
-## Ormolu 0.1.2.0
-
-### Upstream changes:
+#### Ormolu 0.1.2.0:
 
 * Fixed the bug when comments in different styles got glued together after
   formatting. [Issue 589](https://github.com/tweag/ormolu/issues/589).
@@ -25,6 +37,8 @@
 ## Fourmolu 0.1.1.0
 
 ### Upstream changes:
+
+#### Ormolu 0.1.1.0:
 
 * Imports in a import lists are now normalized: duplicate imports are
   combined/eliminated intelligently.
@@ -69,6 +83,8 @@
 * An operator on a new line is no longer indented when its left operand is a do-block. This prevents the AST from potentially changing when indenting by more than two spaces.
 
 ### Upstream changes:
+
+#### Ormolu 0.1.0.0:
 
 * Fixed rendering of type signatures concerning several identifiers. [Issue
   566](https://github.com/tweag/ormolu/issues/566).
