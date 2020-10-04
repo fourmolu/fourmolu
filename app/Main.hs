@@ -1,7 +1,10 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 
@@ -10,8 +13,8 @@ module Main (main) where
 import Control.Exception (SomeException, displayException, try)
 import Control.Monad
 import Data.Bool (bool)
-import Data.Char (toLower)
 import Data.Either (lefts)
+import Data.Functor.Identity (Identity (..))
 import Data.List (intercalate, sort)
 import Data.Maybe (fromMaybe)
 import qualified Data.Text.IO as TIO
@@ -114,7 +117,7 @@ data Mode
   | -- | Exit with non-zero status code if
     -- source is not already formatted
     Check
-  deriving (Eq, Show)
+  deriving (Eq, Show, Bounded, Enum)
 
 optsParserInfo :: ParserInfo Opts
 optsParserInfo =
@@ -157,7 +160,7 @@ optsParser =
             [ short 'i',
               help "A shortcut for --mode inplace"
             ]
-            <|> (option parseMode . mconcat)
+            <|> (option parseBoundedEnum . mconcat)
               [ long "mode",
                 short 'm',
                 metavar "MODE",
@@ -216,81 +219,141 @@ printerOptsParser = do
     (optional . option auto . mconcat)
       [ long "indentation",
         metavar "WIDTH",
-        help "Number of spaces per indentation step (default 4)"
+        help $
+          "Number of spaces per indentation step"
+            <> showDefaultValue poIndentation
       ]
   poCommaStyle <-
-    (optional . option parseCommaStyle . mconcat)
+    (optional . option parseBoundedEnum . mconcat)
       [ long "comma-style",
         metavar "STYLE",
-        help "How to place commas in multi-line lists, records etc: 'leading' (default) or 'trailing'"
+        help $
+          "How to place commas in multi-line lists, records etc: "
+            <> showAllValues @CommaStyle
+            <> showDefaultValue poCommaStyle
       ]
   poIndentWheres <-
-    (optional . option parseBool . mconcat)
+    (optional . option parseBoundedEnum . mconcat)
       [ long "indent-wheres",
         metavar "BOOL",
         help $
           "Whether to indent 'where' bindings past the preceding body"
-            <> " (rather than half-indenting the 'where' keyword) (default 'false')"
+            <> " (rather than half-indenting the 'where' keyword)"
+            <> showDefaultValue poIndentWheres
       ]
   poRecordBraceSpace <-
-    (optional . option parseBool . mconcat)
+    (optional . option parseBoundedEnum . mconcat)
       [ long "record-brace-space",
         metavar "BOOL",
-        help "Whether to leave a space before an opening record brace (default 'false')"
+        help $
+          "Whether to leave a space before an opening record brace"
+            <> showDefaultValue poRecordBraceSpace
       ]
   poDiffFriendlyImportExport <-
-    (optional . option parseBool . mconcat)
+    (optional . option parseBoundedEnum . mconcat)
       [ long "diff-friendly-import-export",
         metavar "BOOL",
         help $
           "Whether to make use of extra commas in import/export lists"
-            <> " (as opposed to Ormolu's style) (default 'true')"
+            <> " (as opposed to Ormolu's style)"
+            <> showDefaultValue poDiffFriendlyImportExport
       ]
   poRespectful <-
-    (optional . option parseBool . mconcat)
+    (optional . option parseBoundedEnum . mconcat)
       [ long "respectful",
         metavar "BOOL",
-        help "Give the programmer more choice on where to insert blank lines (default 'true')"
+        help $
+          "Give the programmer more choice on where to insert blank lines"
+            <> showDefaultValue poRespectful
       ]
   poHaddockStyle <-
-    (optional . option parseHaddockStyle . mconcat)
+    (optional . option parseBoundedEnum . mconcat)
       [ long "haddock-style",
         metavar "STYLE",
-        help "How to print Haddock comments (default 'multi-line')"
+        help $
+          "How to print Haddock comments: "
+            <> showAllValues @HaddockPrintStyle
+            <> showDefaultValue poHaddockStyle
       ]
   pure PrinterOpts {..}
 
 ----------------------------------------------------------------------------
 -- Helpers
 
--- | Parse 'Mode'.
-parseMode :: ReadM Mode
-parseMode = eitherReader $ \case
-  "stdout" -> Right Stdout
-  "inplace" -> Right InPlace
-  "check" -> Right Check
-  s -> Left $ "unknown mode: " ++ s
+-- | A standard parser of CLI option arguments, applicable to arguments that
+-- have a finite (preferably small) number of possible values. (Basically an
+-- inverse of 'toCLIArgument'.)
+parseBoundedEnum ::
+  forall a.
+  (Enum a, Bounded a, ToCLIArgument a) =>
+  ReadM a
+parseBoundedEnum =
+  eitherReader
+    ( \s ->
+        case lookup s argumentToValue of
+          Just v -> Right v
+          Nothing ->
+            Left $
+              "unknown value: '"
+                <> s
+                <> "'\nValid values are: "
+                <> showAllValues @a
+                <> "."
+    )
+  where
+    argumentToValue = map (\x -> (toCLIArgument x, x)) [minBound ..]
 
--- | Parse 'CommaStyle'.
-parseCommaStyle :: ReadM CommaStyle
-parseCommaStyle = eitherReader $ \case
-  "leading" -> Right Leading
-  "trailing" -> Right Trailing
-  s -> Left $ "unknown comma style: " ++ s
+-- | Values that appear as arguments of CLI options and thus have
+-- a corresponding textual representation.
+class ToCLIArgument a where
+  -- | Convert a value to its representation as a CLI option argument.
+  toCLIArgument :: a -> String
 
--- | Parse 'HaddockStyle'.
-parseHaddockStyle :: ReadM HaddockPrintStyle
-parseHaddockStyle = eitherReader $ \case
-  "single-line" -> Right HaddockSingleLine
-  "multi-line" -> Right HaddockMultiLine
-  s -> Left $ "unknown haddock style: " ++ s
+  -- | Convert a value to its representation as a CLI option argument wrapped
+  -- in apostrophes.
+  toCLIArgument' :: a -> String
+  toCLIArgument' x = "'" <> toCLIArgument x <> "'"
 
--- | Parse a 'Bool'. Unlike 'auto', this is not case sensitive.
-parseBool :: ReadM Bool
-parseBool = eitherReader $ \x -> case map toLower x of
-  "false" -> Right False
-  "true" -> Right True
-  s -> Left $ "not a boolean value: " ++ s
+instance ToCLIArgument Bool where
+  toCLIArgument True = "true"
+  toCLIArgument False = "false"
+
+instance ToCLIArgument CommaStyle where
+  toCLIArgument Leading = "leading"
+  toCLIArgument Trailing = "trailing"
+
+instance ToCLIArgument Int where
+  toCLIArgument = show
+
+instance ToCLIArgument HaddockPrintStyle where
+  toCLIArgument HaddockSingleLine = "single-line"
+  toCLIArgument HaddockMultiLine = "multi-line"
+
+instance ToCLIArgument Mode where
+  toCLIArgument Stdout = "stdout"
+  toCLIArgument InPlace = "inplace"
+  toCLIArgument Check = "check"
+
+showAllValues :: forall a. (Enum a, Bounded a, ToCLIArgument a) => String
+showAllValues = format (map toCLIArgument' [(minBound :: a) ..])
+  where
+    format [] = []
+    format [x] = x
+    format [x1, x2] = x1 <> " or " <> x2
+    format (x : xs) = x <> ", " <> format xs
+
+-- | CLI representation of the default value of an option, formatted for
+-- inclusion in the help text.
+showDefaultValue ::
+  ToCLIArgument a =>
+  (PrinterOptsTotal -> Identity a) ->
+  String
+showDefaultValue =
+  (" (default " <>)
+    . (<> ")")
+    . toCLIArgument'
+    . runIdentity
+    . ($ defaultPrinterOpts)
 
 -- | Build the full config, by adding 'PrinterOpts' from a file, if found.
 mkConfig :: FilePath -> Opts -> IO (Config RegionIndices)

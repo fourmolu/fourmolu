@@ -180,7 +180,7 @@ fillMissingPrinterOpts p1 p2 =
 data CommaStyle
   = Leading
   | Trailing
-  deriving (Eq, Ord, Show, Generic)
+  deriving (Eq, Ord, Show, Generic, Bounded, Enum)
 
 instance FromJSON CommaStyle where
   parseJSON =
@@ -192,7 +192,7 @@ instance FromJSON CommaStyle where
 data HaddockPrintStyle
   = HaddockSingleLine
   | HaddockMultiLine
-  deriving (Eq, Ord, Show, Generic)
+  deriving (Eq, Ord, Show, Generic, Bounded, Enum)
 
 instance FromJSON HaddockPrintStyle where
   parseJSON =
