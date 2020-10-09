@@ -18,6 +18,7 @@ module Ormolu.Printer.Internal
     atom,
     space,
     newline,
+    declNewline,
     useRecordDot,
     inci,
     inciBy,
@@ -316,6 +317,24 @@ space = R . modify $ \sc ->
         other -> other
     }
 
+declNewline :: R ()
+declNewline = newlineRawN . pred =<< getPrinterOpt poNewlinesBetweenDecls
+
+-- | Low-level newline primitive. This always inserts 'n' newlines.
+newlineRawN :: Int -> R ()
+newlineRawN n = R . modify $ \sc ->
+  sc
+    { scBuilder = scBuilder sc <> mconcat (replicate n "\n"),
+      scColumn = 0,
+      scIndent = 0,
+      scThisLineSpans = [],
+      scRequestedDelimiter = case scRequestedDelimiter sc of
+        AfterNewline -> RequestedNewline
+        RequestedNewline -> RequestedNewline
+        VeryBeginning -> VeryBeginning
+        _ -> AfterNewline
+    }
+
 -- | Output a newline. First time 'newline' is used after some non-'newline'
 -- output it gets inserted immediately. Second use of 'newline' does not
 -- output anything but makes sure that the next non-white space output will
@@ -365,7 +384,7 @@ newlineRaw = R . modify $ \sc ->
           scColumn = 0,
           scIndent = 0,
           scThisLineSpans = [],
-          scRequestedDelimiter = case scRequestedDelimiter sc of
+          scRequestedDelimiter = case requestedDel of
             AfterNewline -> RequestedNewline
             RequestedNewline -> RequestedNewline
             VeryBeginning -> VeryBeginning

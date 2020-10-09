@@ -118,7 +118,9 @@ data PrinterOpts f = PrinterOpts
     -- | Be less opinionated about spaces/newlines etc.
     poRespectful :: f Bool,
     -- | How to print doc comments
-    poHaddockStyle :: f HaddockPrintStyle
+    poHaddockStyle :: f HaddockPrintStyle,
+    -- | Number of newlines between top-level decls
+    poNewlinesBetweenDecls :: f Int
   }
   deriving (Generic)
 
@@ -134,7 +136,7 @@ instance Semigroup PrinterOptsPartial where
   (<>) = fillMissingPrinterOpts
 
 instance Monoid PrinterOptsPartial where
-  mempty = PrinterOpts Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+  mempty = PrinterOpts Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
 
 -- | A version of 'PrinterOpts' without empty fields.
 type PrinterOptsTotal = PrinterOpts Identity
@@ -152,7 +154,8 @@ defaultPrinterOpts =
       poRecordBraceSpace = pure False,
       poDiffFriendlyImportExport = pure True,
       poRespectful = pure True,
-      poHaddockStyle = pure HaddockMultiLine
+      poHaddockStyle = pure HaddockMultiLine,
+      poNewlinesBetweenDecls = pure 1
     }
 
 -- | Fill the field values that are 'Nothing' in the first argument
@@ -171,7 +174,8 @@ fillMissingPrinterOpts p1 p2 =
       poRecordBraceSpace = fillField poRecordBraceSpace,
       poDiffFriendlyImportExport = fillField poDiffFriendlyImportExport,
       poRespectful = fillField poRespectful,
-      poHaddockStyle = fillField poHaddockStyle
+      poHaddockStyle = fillField poHaddockStyle,
+      poNewlinesBetweenDecls = fillField poNewlinesBetweenDecls
     }
   where
     fillField :: (forall g. PrinterOpts g -> g a) -> f a
