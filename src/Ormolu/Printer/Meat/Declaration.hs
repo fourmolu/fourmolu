@@ -68,12 +68,12 @@ p_hsDecls' grouping style decls =
       -- ensure we always add blank lines around documented declarations
       case grouping of
         Disregard ->
-          breakpoint : renderGroup curr
+          declNewline : renderGroup curr
         Respect ->
           if separatedByBlankNE getLoc prev curr
             || isDocumented prev
             || isDocumented curr
-            then breakpoint : renderGroup curr
+            then declNewline : renderGroup curr
             else renderGroup curr
 
 -- | Is a declaration group documented?

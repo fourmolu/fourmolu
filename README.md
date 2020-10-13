@@ -37,6 +37,7 @@ indent-wheres: false # 'false' means save space by only half-indenting the 'wher
 diff-friendly-import-export: true # 'false' uses Ormolu-style lists
 respectful: true # don't be too opinionated about newlines etc.
 haddock-style: multi-line # '--' vs. '{-'
+newlines-between-decls: 1 # Number of newlines between declarations
 ```
 
 See [here](fourmolu.yaml) for a config to simulate the behaviour of Ormolu.

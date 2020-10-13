@@ -258,6 +258,12 @@ printerOptsParser = do
         metavar "STYLE",
         help "How to print Haddock comments (default 'multi-line')"
       ]
+  poNewlinesBetweenDecls <-
+    (optional . option auto . mconcat)
+      [ long "newlines-between-decls",
+        metavar "HEIGHT",
+        help "Number of spaces between top-level declarations (default 1)"
+      ]
   pure PrinterOpts {..}
 
 ----------------------------------------------------------------------------

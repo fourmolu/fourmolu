@@ -20,6 +20,7 @@ module Ormolu.Printer.Combinators
     atom,
     space,
     newline,
+    declNewline,
     inci,
     inciIf,
     inciBy,
