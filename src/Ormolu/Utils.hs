@@ -23,7 +23,7 @@ where
 
 import Data.Char (isSpace)
 import Data.List (dropWhileEnd)
-import Data.List.NonEmpty (NonEmpty (..))
+import Data.List.NonEmpty (NonEmpty (..), nonEmpty)
 import qualified Data.List.NonEmpty as NE
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
@@ -135,7 +135,9 @@ onTheSameLine a b =
 removeIndentation :: String -> (String, Int)
 removeIndentation (lines -> xs) = (unlines (drop n <$> xs), n)
   where
-    n = minimum (getIndent <$> xs)
+    n = case nonEmpty xs of
+      Nothing -> 0
+      Just l -> minimum (getIndent <$> l)
     getIndent y =
       if all isSpace y
         then 0
