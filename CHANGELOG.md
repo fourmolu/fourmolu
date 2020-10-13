@@ -1,3 +1,8 @@
+## Fourmolu 0.3.0.0
+
+* New config option `newlines-between-decls`, to choose the number of blank lines between top-level declarations.
+* Minor CLI improvements. In particular, the set of valid values for each option is communicated more consistently.
+
 ## Fourmolu 0.2.0.0
 
 * More consistent indentation. Previously, with indentation set to n, some constructs such as nested lists and tuples would use an ugly mix of n-space and 2-space indentation.
