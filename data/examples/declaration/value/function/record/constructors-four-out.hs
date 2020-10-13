@@ -14,8 +14,7 @@ aLongVariableName =
                 { yetAnotherLongRecordFieldName = "a long string"
                 }
         , aLongRecordFieldName2 =
-            Just
-                YetAnotherLongRecordName
+            Just YetAnotherLongRecordName
                     { yetAnotherLongRecordFieldName = "a long string"
                     , yetAnotherLongRecordFieldName =
                         Just

@@ -37,6 +37,16 @@ import Ormolu.Parser.Result
 import Ormolu.Printer
 import Ormolu.Utils (showOutputable)
 import qualified SrcLoc as GHC
+import qualified Data.Text.IO as T
+import System.FilePath
+
+-- ghcid -c 'cabal repl' -r -W
+main :: IO ()
+main = let f = "data/tmp.hs" in T.writeFile (dropExtension f <> "-out.hs") =<< ormolu defaultConfig {cfgUnsafe = True, cfgPrinterOpts = opts} f =<< readFile f
+
+opts :: PrinterOptsTotal
+opts = defaultPrinterOpts
+  -- {poDiffFriendlyImportExport = pure False}
 
 -- | Format a 'String', return formatted version as 'Text'.
 --

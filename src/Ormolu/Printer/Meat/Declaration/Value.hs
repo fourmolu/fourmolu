@@ -580,7 +580,9 @@ p_hsExpr' s = \case
     -- usual. If it is hanging, print the initial arguments and hang the
     -- last one. Also, use braces around the every argument except the last
     -- one.
-    case placement of
+    -- case placement of
+    switchLayout [initSpan] $ case placement of
+    -- case Hanging of
       Normal -> do
         let -- Usually we want to bump indentation for arguments for the
             -- sake of readability. However, when the function itself is a
@@ -736,7 +738,9 @@ p_hsExpr' s = \case
     inci . braces N $
       sep commaDel sitcc (fields <> dotdot)
   RecordUpd {..} -> do
+    -- txt "q"
     located rupd_expr p_hsExpr
+    -- rupd_expr $ p_hsExpr
     useRecordDot' <- useRecordDot
     let mrs sp = case getLoc sp of
           RealSrcSpan r -> Just r
@@ -756,6 +760,7 @@ p_hsExpr' s = \case
       sep
         commaDel
         (sitcc . located' (p_hsRecField . updName))
+        -- (sitcc . p_hsRecField . updName . unLoc)
         rupd_flds
   ExprWithTySig NoExtField x HsWC {hswc_body = HsIB {..}} -> sitcc $ do
     located x p_hsExpr

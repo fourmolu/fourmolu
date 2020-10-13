@@ -13,8 +13,7 @@ sinkData h compression = do
 #else
       BZip2   -> throwM BZip2Unsupported
 #endif
-    return
-        DataDescriptor
+    return DataDescriptor
             { ddCRC32 = fromIntegral crc32
             , ddCompressedSize = compressedSize
             , ddUncompressedSize = uncompressedSize
