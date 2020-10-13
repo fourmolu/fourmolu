@@ -30,7 +30,6 @@ module Ormolu.Printer.Combinators
     Layout (..),
     vlayout,
     getLayout,
-    declBreakpoint,
     breakpoint,
     breakpoint',
     getPrinterOpt,
@@ -137,13 +136,6 @@ spansLayout = \case
     if isOneLineSpan (foldr combineSrcSpans x xs)
       then SingleLine
       else MultiLine
-
--- | Insert a space if enclosing layout is single-line, or 'declNewline' if it's
--- multiline.
---
--- > declBreakpoint = vlayout space declNewline
-declBreakpoint :: R ()
-declBreakpoint = vlayout space declNewline
 
 -- | Insert a space if enclosing layout is single-line, or newline if it's
 -- multiline.

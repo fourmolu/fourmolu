@@ -384,7 +384,7 @@ newlineRaw = R . modify $ \sc ->
           scColumn = 0,
           scIndent = 0,
           scThisLineSpans = [],
-          scRequestedDelimiter = case requestedDel of
+          scRequestedDelimiter = case scRequestedDelimiter sc of
             AfterNewline -> RequestedNewline
             RequestedNewline -> RequestedNewline
             VeryBeginning -> VeryBeginning
