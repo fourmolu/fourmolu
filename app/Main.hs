@@ -279,7 +279,9 @@ printerOptsParser = do
     (optional . option auto . mconcat)
       [ long "newlines-between-decls",
         metavar "HEIGHT",
-        help "Number of spaces between top-level declarations (default 1)"
+        help $
+          "Number of spaces between top-level declarations"
+            <> showDefaultValue poNewlinesBetweenDecls
       ]
   pure PrinterOpts {..}
 
