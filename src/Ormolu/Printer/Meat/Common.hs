@@ -15,7 +15,6 @@ module Ormolu.Printer.Meat.Common
 where
 
 import Control.Monad
-import Data.Functor
 import Data.List (intersperse, isPrefixOf)
 import qualified Data.Text as T
 import GHC hiding (GhcPs, IE)
@@ -172,10 +171,10 @@ p_hsDocString hstyle needsNewline (L l str) = do
           Named name -> " $" <> T.pack name
         sequence_ $ intersperse (newline >> s) $ map txt' docLines
   single <-
-    getPrinterOpt poHaddockStyle <&> \case
-      HaddockSingleLine -> True
+    getPrinterOpt poHaddockStyle >>= \case
+      HaddockSingleLine -> pure True
       -- Use multiple single-line comments when the whole comment is indented
-      HaddockMultiLine -> maybe False ((> 1) . srcSpanStartCol) $ unSrcSpan l
+      HaddockMultiLine -> maybe False ((> 1) . srcSpanStartCol) <$> getSrcSpan l
   if single
     then do
       txt "--"
@@ -192,10 +191,11 @@ p_hsDocString hstyle needsNewline (L l str) = do
           txt "-}"
 
   when needsNewline newline
-  case l of
-    UnhelpfulSpan _ ->
+  getSrcSpan l >>= mapM_ (setSpanMark . HaddockSpan hstyle)
+  where
+    getSrcSpan = \case
       -- It's often the case that the comment itself doesn't have a span
       -- attached to it and instead its location can be obtained from
       -- nearest enclosing span.
-      getEnclosingSpan (const True) >>= mapM_ (setSpanMark . HaddockSpan hstyle)
-    RealSrcSpan spn -> setSpanMark (HaddockSpan hstyle spn)
+      UnhelpfulSpan _ -> getEnclosingSpan (const True)
+      RealSrcSpan spn -> pure $ Just spn
