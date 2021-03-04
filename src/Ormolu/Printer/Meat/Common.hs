@@ -15,7 +15,6 @@ module Ormolu.Printer.Meat.Common
 where
 
 import Control.Monad
-import Data.Functor
 import Data.List (intersperse, isPrefixOf)
 import qualified Data.Text as T
 import GHC hiding (GhcPs, IE)
@@ -175,10 +174,10 @@ p_hsDocString hstyle needsNewline (L l str) = do
         sequence_ $ intersperse (newline >> s) $ map txt' docLines
 
   single <-
-    getPrinterOpt poHaddockStyle <&> \case
-      HaddockSingleLine -> True
+    getPrinterOpt poHaddockStyle >>= \case
+      HaddockSingleLine -> pure True
       -- Use multiple single-line comments when the whole comment is indented
-      HaddockMultiLine -> maybe False ((> 1) . srcSpanStartCol) $ unSrcSpan l
+      HaddockMultiLine -> maybe False ((> 1) . srcSpanStartCol) <$> getSrcSpan l
 
   if single
     then do
