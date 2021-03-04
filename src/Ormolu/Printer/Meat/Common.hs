@@ -158,11 +158,9 @@ p_hsDocString hstyle needsNewline (L l str) = do
         HaddockSpan _ _ -> True
         CommentSpan _ -> True
         _ -> False
-
   goesAfterComment <- maybe False isCommentSpan <$> getSpanMark
   -- Make sure the Haddock is separated by a newline from other comments.
   when goesAfterComment newline
-
   let txt' x = unless (T.null x) (txt x)
       docLines = splitDocString str
       body s = do
@@ -172,13 +170,11 @@ p_hsDocString hstyle needsNewline (L l str) = do
           Asterisk n -> " " <> T.replicate n "*"
           Named name -> " $" <> T.pack name
         sequence_ $ intersperse (newline >> s) $ map txt' docLines
-
   single <-
     getPrinterOpt poHaddockStyle >>= \case
       HaddockSingleLine -> pure True
       -- Use multiple single-line comments when the whole comment is indented
       HaddockMultiLine -> maybe False ((> 1) . srcSpanStartCol) <$> getSrcSpan l
-
   if single
     then do
       txt "--"
