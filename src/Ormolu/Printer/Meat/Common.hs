@@ -197,9 +197,8 @@ p_hsDocString hstyle needsNewline (L l str) = do
 
   when needsNewline newline
   case l of
-    UnhelpfulSpan _ ->
-      -- It's often the case that the comment itself doesn't have a span
-      -- attached to it and instead its location can be obtained from
-      -- nearest enclosing span.
-      getEnclosingSpan (const True) >>= mapM_ (setSpanMark . HaddockSpan hstyle)
+    -- It's often the case that the comment itself doesn't have a span
+    -- attached to it and instead its location can be obtained from
+    -- nearest enclosing span.
+    UnhelpfulSpan _ -> getEnclosingSpan (const True) >>= mapM_ (setSpanMark . HaddockSpan hstyle)
     RealSrcSpan spn -> setSpanMark (HaddockSpan hstyle spn)
