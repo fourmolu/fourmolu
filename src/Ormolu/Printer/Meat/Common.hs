@@ -196,9 +196,11 @@ p_hsDocString hstyle needsNewline (L l str) = do
           txt "-}"
 
   when needsNewline newline
-  case l of
-    -- It's often the case that the comment itself doesn't have a span
-    -- attached to it and instead its location can be obtained from
-    -- nearest enclosing span.
-    UnhelpfulSpan _ -> getEnclosingSpan (const True) >>= mapM_ (setSpanMark . HaddockSpan hstyle)
-    RealSrcSpan spn -> setSpanMark (HaddockSpan hstyle spn)
+  getSrcSpan l >>= mapM_ (setSpanMark . HaddockSpan hstyle)
+  where
+    getSrcSpan = \case
+      -- It's often the case that the comment itself doesn't have a span
+      -- attached to it and instead its location can be obtained from
+      -- nearest enclosing span.
+      UnhelpfulSpan _ -> getEnclosingSpan (const True)
+      RealSrcSpan spn -> pure $ Just spn
