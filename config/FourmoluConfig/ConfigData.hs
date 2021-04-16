@@ -298,6 +298,16 @@ allOptions =
         ormolu = HsList [],
         sinceVersion = Just "0.17.0.0",
         cliOverrides = emptyOverrides
+      },
+    Option
+      { name = "one-level-ifs",
+        fieldName = Just "poOneLevelIfs",
+        description = "Use one-level if-then-else statements instead of two-level",
+        type_ = "Bool",
+        default_ = HsBool False,
+        ormolu = HsBool False,
+        sinceVersion = Nothing,
+        cliOverrides = emptyOverrides
       }
   ]
 

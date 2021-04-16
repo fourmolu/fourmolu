@@ -89,6 +89,8 @@ data PrinterOpts f =
       poUnicode :: f Unicode
     , -- | Give the programmer more choice on where to insert blank lines
       poRespectful :: f Bool
+    , -- | Use one-level if-then-else statements instead of two-level
+      poOneLevelIfs :: f Bool
     }
   deriving (Generic)
 
@@ -117,6 +119,7 @@ emptyPrinterOpts =
     , poTrailingSectionOperators = Nothing
     , poUnicode = Nothing
     , poRespectful = Nothing
+    , poOneLevelIfs = Nothing
     }
 
 defaultPrinterOpts :: PrinterOpts Identity
@@ -144,6 +147,7 @@ defaultPrinterOpts =
     , poTrailingSectionOperators = pure True
     , poUnicode = pure UnicodeNever
     , poRespectful = pure True
+    , poOneLevelIfs = pure False
     }
 
 -- | Fill the field values that are 'Nothing' in the first argument
@@ -178,6 +182,7 @@ fillMissingPrinterOpts p1 p2 =
     , poTrailingSectionOperators = maybe (poTrailingSectionOperators p2) pure (poTrailingSectionOperators p1)
     , poUnicode = maybe (poUnicode p2) pure (poUnicode p1)
     , poRespectful = maybe (poRespectful p2) pure (poRespectful p1)
+    , poOneLevelIfs = maybe (poOneLevelIfs p2) pure (poOneLevelIfs p1)
     }
 
 parsePrinterOptsCLI ::
@@ -274,6 +279,10 @@ parsePrinterOptsCLI f =
       "respectful"
       "Give the programmer more choice on where to insert blank lines (default: true)"
       "BOOL"
+    <*> f
+      "one-level-ifs"
+      "Use one-level if-then-else statements instead of two-level (default: false)"
+      "BOOL"
 
 parsePrinterOptsJSON ::
   Applicative f =>
@@ -303,6 +312,7 @@ parsePrinterOptsJSON f =
     <*> f "trailing-section-operators"
     <*> f "unicode"
     <*> f "respectful"
+    <*> f "one-level-ifs"
 
 {---------- PrinterOpts field types ----------}
 
@@ -801,4 +811,7 @@ defaultPrinterOptsYaml =
     , ""
     , "# Modules defined by the current Cabal package for import grouping"
     , "local-modules: []"
+    , ""
+    , "# Use one-level if-then-else statements instead of two-level"
+    , "one-level-ifs: false"
     ]

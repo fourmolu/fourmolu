@@ -368,6 +368,15 @@ spec =
               renderPrinterOpt importExportStyle
             ],
           checkIdempotence = True
+        },
+      TestGroup
+        { label = "one-level-ifs",
+          isMulti = False,
+          testCases = allOptions,
+          updateConfig = \oneLevelIfs opts -> opts {poOneLevelIfs = pure oneLevelIfs},
+          showTestCase = show,
+          testCaseSuffix = suffix1,
+          checkIdempotence = True
         }
     ]
 
