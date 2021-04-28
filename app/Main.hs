@@ -283,6 +283,14 @@ printerOptsParser = do
           "Number of spaces between top-level declarations"
             <> showDefaultValue poNewlinesBetweenDecls
       ]
+  poAddSpaceBetweenImportedTypeAndConstructor <-
+    (optional . option parseBoundedEnum . mconcat)
+      [ long "space-between-type-and-constructor",
+        metavar "BOOL",
+        help $
+          "Whether to add space between type and its constructor(s) in import"
+            <> showDefaultValue poAddSpaceBetweenImportedTypeAndConstructor
+      ]
   pure PrinterOpts {..}
 
 ----------------------------------------------------------------------------
