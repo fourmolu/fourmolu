@@ -1,0 +1,4 @@
+resolver: lts-17.6
+
+ghc-options:
+  '$locals': -Werror
