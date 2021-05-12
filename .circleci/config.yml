@@ -1,0 +1,123 @@
+version: 2.1
+
+workflows:
+  version: 2
+
+  build_and_test:
+    jobs:
+      - run_build_and_test:
+          name: test_latest
+          latest: true
+      - run_build_and_test:
+          name: test_ghc_8.10
+          stack_yaml: stack-ghc-8.10.yaml
+      - run_build_and_test:
+          name: test_ghc_8.8
+          stack_yaml: stack-ghc-8.8.yaml
+      - run_build_and_test:
+          name: test_ghc_8.6
+          stack_yaml: stack-ghc-8.6.yaml
+
+jobs:
+  run_build_and_test:
+    parameters:
+      stack_yaml:
+        type: string
+        default: stack.yaml
+      latest:
+        type: boolean
+        default: false
+
+    executor: circleci-base
+    environment:
+      STACK_YAML: << parameters.stack_yaml >>
+
+    steps:
+      # init
+      - checkout
+      - run: sudo apt-get update
+      - run:
+          name: Install stack
+          command: |
+            curl -sSL https://get.haskellstack.org/ | sh
+            stack --version
+      - run: mkdir -p .ci
+
+      # install stack dependencies
+      - run:
+          name: Build cache key
+          command: |
+            FILES=(
+              "${STACK_YAML}"
+              fourmolu.cabal
+            )
+            echo "${STACK_YAML}" > cache-key.txt
+            cat "${FILES[@]}" >> cache-key.txt
+            stack --version >> cache-key.txt
+            cat cache-key.txt
+      - restore_cache:
+          key: v1-{{ checksum "cache-key.txt" }}
+      - run:
+          name: Build external dependencies
+          # Use --jobs=1 to prevent "ExitFailure (-9)" out of memory failure
+          command: stack build --test --bench --only-dependencies --jobs=1
+      - save_cache:
+          key: v1-{{ checksum "cache-key.txt" }}
+          paths:
+            - ~/.stack
+            - .stack-work
+
+      # build
+      - run:
+          name: Build
+          command: stack build --test --no-run-tests
+
+      # lint
+      - when:
+          condition: << parameters.latest >>
+          steps:
+            - run:
+                name: Lint
+                command: |
+                  git ls-files '*.hs' '*.hs-boot' \
+                    | grep -v '^region-tests/' \
+                    | grep -v '^data/examples/' \
+                    | xargs stack exec -- fourmolu --mode=inplace
+                  git diff --exit-code
+
+      # test
+      - run:
+          name: Test
+          command: stack test
+
+      # build haddock
+      - when:
+          condition: << parameters.latest >>
+          steps:
+            - run:
+                name: Build haddock
+                # just a sanity check, so no need to build third-party docs
+                command: stack haddock --no-haddock-deps
+            - run:
+                name: Bundle haddock docs
+                command: tar czf .ci/haddock-docs.tar.gz -C "$(find .stack-work/dist -regex '.*/doc/html/[^/]*')" .
+
+      # bundle Haskell files for deployment
+      - when:
+          condition: << parameters.latest >>
+          steps:
+            - run:
+                name: stack sdist
+                command: |
+                  stack sdist
+                  cp "$(find .stack-work/ -name 'fourmolu-*.tar.gz')" .ci/
+
+      # store artifacts in circle ci interface
+      - store_artifacts:
+          path: .ci/
+
+executors:
+  circleci-base:
+    docker:
+      - image: cimg/base:2020.01
+    shell: /bin/bash -eux -o pipefail
