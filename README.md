@@ -93,7 +93,8 @@ source code must still be parseable even when the disabled regions are
 omitted. Because of that the magic comments cannot be placed arbitrarily,
 but rather must enclose independent top-level definitions.
 
-`{- ORMOLU_DISABLE -}` and `{- ORMOLU_ENABLE -}`, respectively, can be used to the same effect.
+`{- ORMOLU_DISABLE -}` and `{- ORMOLU_ENABLE -}`, respectively, can be used to the same effect,
+and the two styles of magic comments can be mixed.
 
 ## Current limitations
 
