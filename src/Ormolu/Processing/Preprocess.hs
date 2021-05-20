@@ -79,18 +79,18 @@ processLine path n ormoluState Cpp.Outside line
         size = length pragma
         ss = mkSrcSpan (mkSrcLoc' 1) (mkSrcLoc' (size + 1))
      in (res, ormoluState, Cpp.Outside, Just (L ss pragma))
-  | isOrmoluEnable line =
+  | Just marker <- enablingMagicComment line =
     case ormoluState of
       OrmoluEnabled ->
-        (enableMarker, OrmoluEnabled, Cpp.Outside, Nothing)
+        (marker, OrmoluEnabled, Cpp.Outside, Nothing)
       OrmoluDisabled ->
-        (endDisabling ++ enableMarker, OrmoluEnabled, Cpp.Outside, Nothing)
-  | isOrmoluDisable line =
+        (endDisabling ++ marker, OrmoluEnabled, Cpp.Outside, Nothing)
+  | Just marker <- disablingMagicComment line =
     case ormoluState of
       OrmoluEnabled ->
-        (disableMarker ++ startDisabling, OrmoluDisabled, Cpp.Outside, Nothing)
+        (marker ++ startDisabling, OrmoluDisabled, Cpp.Outside, Nothing)
       OrmoluDisabled ->
-        (disableMarker, OrmoluDisabled, Cpp.Outside, Nothing)
+        (marker, OrmoluDisabled, Cpp.Outside, Nothing)
   | isShebang line =
     let ss = mkSrcSpan (mkSrcLoc' 1) (mkSrcLoc' (length line))
      in ("", ormoluState, Cpp.Outside, Just (L ss line))
@@ -117,21 +117,21 @@ getPragma s@(x : xs)
     let (prag, remline) = getPragma xs
      in (x : prag, ' ' : remline)
 
--- | Canonical enable marker.
-enableMarker :: String
-enableMarker = "{- ORMOLU_ENABLE -}"
+-- | If the given string is an enabling marker (Ormolu or Fourmolu style), then
+-- return 'Just' the enabling marker. Otherwise return 'Nothing'.
+enablingMagicComment :: String -> Maybe String
+enablingMagicComment s
+  | magicComment "ORMOLU_ENABLE" s = Just "{- ORMOLU_ENABLE -}"
+  | magicComment "FOURMOLU_ENABLE" s = Just "{- FOURMOLU_ENABLE -}"
+  | otherwise = Nothing
 
--- | Canonical disable marker.
-disableMarker :: String
-disableMarker = "{- ORMOLU_DISABLE -}"
-
--- | Return 'True' if the given string is an enabling marker.
-isOrmoluEnable :: String -> Bool
-isOrmoluEnable s = magicComment "ORMOLU_ENABLE" s || magicComment "FOURMOLU_ENABLE" s
-
--- | Return 'True' if the given string is a disabling marker.
-isOrmoluDisable :: String -> Bool
-isOrmoluDisable s = magicComment "ORMOLU_DISABLE" s || magicComment "FOURMOLU_DISABLE" s
+-- | If the given string is a disabling marker (Ormolu or Fourmolu style), then
+-- return 'Just' the disabling marker. Otherwise return 'Nothing'.
+disablingMagicComment :: String -> Maybe String
+disablingMagicComment s
+  | magicComment "ORMOLU_DISABLE" s = Just "{- ORMOLU_DISABLE -}"
+  | magicComment "FOURMOLU_DISABLE" s = Just "{- FOURMOLU_DISABLE -}"
+  | otherwise = Nothing
 
 -- | Construct a function for whitespace-insensitive matching of string.
 magicComment ::
