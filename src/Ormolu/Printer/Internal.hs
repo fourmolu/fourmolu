@@ -17,6 +17,8 @@ module Ormolu.Printer.Internal
     interferingTxt,
     atom,
     space,
+    align,
+    alignContext,
     newline,
     declNewline,
     useRecordDot,
@@ -60,7 +62,7 @@ import Control.Monad.Reader
 import Control.Monad.State.Strict
 import Data.Bool (bool)
 import Data.Coerce
-import Data.Functor.Identity (runIdentity)
+import Data.Functor.Identity (runIdentity, Identity(..))
 import Data.Maybe (listToMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -73,13 +75,14 @@ import Ormolu.Parser.CommentStream
 import Ormolu.Printer.SpanStream
 import Ormolu.Utils (showOutputable)
 import Outputable (Outputable)
+import Data.Bifunctor (second)
 
 ----------------------------------------------------------------------------
 -- The 'R' monad
 
 -- | The 'R' monad hosts combinators that allow us to describe how to render
 -- AST.
-newtype R a = R (ReaderT RC (State SC) a)
+newtype R a = R (ReaderT RC (StateT SC (State [Int])) a)
   deriving (Functor, Applicative, Monad)
 
 -- | Reader context of 'R'. This should be used when we control rendering by
@@ -87,7 +90,7 @@ newtype R a = R (ReaderT RC (State SC) a)
 data RC = RC
   { -- | Indentation level, as the column index we need to start from after
     -- a newline if we break lines
-    rcIndent :: !Int,
+    rcIndent :: Int,
     -- | Current layout
     rcLayout :: Layout,
     -- | Spans of enclosing elements of AST
@@ -98,15 +101,17 @@ data RC = RC
     rcCanUseBraces :: Bool,
     -- | Whether the source could have used the record dot preprocessor
     rcUseRecDot :: Bool,
-    rcPrinterOpts :: PrinterOptsTotal
+    rcPrinterOpts :: PrinterOptsTotal,
+    -- | The alignment of elements from the closest enclosing 'alignContext'
+    rcAlignment :: Int
   }
 
 -- | State context of 'R'.
 data SC = SC
   { -- | Index of the next column to render
-    scColumn :: !Int,
+    scColumn :: Int,
     -- | Indentation level that was used for the current line
-    scIndent :: !Int,
+    scIndent :: Int,
     -- | Rendered source code so far
     scBuilder :: Builder,
     -- | Span stream
@@ -117,11 +122,14 @@ data SC = SC
     scCommentStream :: CommentStream,
     -- | Pending comment lines (in reverse order) to be inserted before next
     -- newline, 'Int' is the indentation level
-    scPendingComments :: ![(CommentPosition, Text)],
+    scPendingComments :: [(CommentPosition, Text)],
     -- | Whether to output a space before the next output
-    scRequestedDelimiter :: !RequestedDelimiter,
+    scRequestedDelimiter :: RequestedDelimiter,
     -- | An auxiliary marker for keeping track of last output element
-    scSpanMark :: !(Maybe SpanMark)
+    scSpanMark :: (Maybe SpanMark),
+    -- | Have we already rendered an "align" this line (multiple alignments not
+    -- currently supported)
+    scAlignedThisLine :: Bool
   }
 
 -- | Make sure next output is delimited by one of the following.
@@ -136,6 +144,9 @@ data RequestedDelimiter
     AfterNewline
   | -- | We haven't printed anything yet
     VeryBeginning
+  | -- | Like 'RequestSpace' except multiple " "s could be inserted to reach a
+    -- specified alignment
+    RequestAlign
   deriving (Eq, Show)
 
 -- | 'Layout' options.
@@ -170,7 +181,7 @@ runR ::
   -- | Resulting rendition
   Text
 runR (R m) sstream cstream anns printerOpts recDot =
-  TL.toStrict . toLazyText . scBuilder $ execState (runReaderT m rc) sc
+  TL.toStrict . toLazyText . scBuilder $ evalState (execStateT (runReaderT m rc) sc) []
   where
     rc =
       RC
@@ -180,7 +191,8 @@ runR (R m) sstream cstream anns printerOpts recDot =
           rcAnns = anns,
           rcCanUseBraces = False,
           rcUseRecDot = recDot,
-          rcPrinterOpts = printerOpts
+          rcPrinterOpts = printerOpts,
+          rcAlignment = error "unreachable"
         }
     sc =
       SC
@@ -192,7 +204,8 @@ runR (R m) sstream cstream anns printerOpts recDot =
           scCommentStream = cstream,
           scPendingComments = [],
           scRequestedDelimiter = VeryBeginning,
-          scSpanMark = Nothing
+          scSpanMark = Nothing,
+          scAlignedThisLine = False
         }
 
 ----------------------------------------------------------------------------
@@ -271,12 +284,20 @@ spit stype text = do
     i <- asks rcIndent
     c <- gets scColumn
     closestEnclosing <- listToMaybe <$> asks rcEnclosingSpans
+    -- Update our maximum alignment
+    when (requestedDel == RequestAlign) $
+      lift . lift $ modify (\(a:as) -> max c a : as)
+    -- Get our maximum alignment from the future, spooky
+    a <- asks rcAlignment
     let indentedTxt = spaces <> text
         spaces = T.replicate spacesN " "
         spacesN =
           if c == 0
             then i
-            else bool 0 1 (requestedDel == RequestedSpace)
+            else case requestedDel of
+                   RequestedSpace -> 1
+                   RequestAlign -> a + 1 - c
+                   _ -> 0
     modify $ \sc ->
       sc
         { scBuilder = scBuilder sc <> fromText indentedTxt,
@@ -317,6 +338,25 @@ space = R . modify $ \sc ->
         other -> other
     }
 
+align :: R ()
+align = R $ do
+  alignedAlready <- gets scAlignedThisLine
+  modify $ \sc -> sc
+    { scRequestedDelimiter = case scRequestedDelimiter sc of
+      RequestedNothing ->
+        if alignedAlready then RequestedSpace else RequestAlign
+      other -> other
+    , scAlignedThisLine    = True
+    }
+
+alignContext :: R a -> R a
+alignContext (R (ReaderT x)) =
+  R $ ReaderT $ \rc -> StateT $ \sc -> StateT $ \ma -> Identity $
+    let StateT s1 = x rc{rcAlignment = head . snd $ r}
+        StateT s2 = s1 sc
+        Identity r = s2 (0:ma)
+    in second tail r
+
 declNewline :: R ()
 declNewline = newlineRawN =<< getPrinterOpt poNewlinesBetweenDecls
 
@@ -331,6 +371,7 @@ declNewline = newlineRawN =<< getPrinterOpt poNewlinesBetweenDecls
 -- hard to output more than one blank newline in a row.
 newline :: R ()
 newline = do
+  R $ modify (\sc -> sc{scAlignedThisLine = False})
   indent <- R (gets scIndent)
   cs <- reverse <$> R (gets scPendingComments)
   case cs of
