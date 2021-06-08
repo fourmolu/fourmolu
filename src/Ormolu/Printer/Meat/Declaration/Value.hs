@@ -39,6 +39,8 @@ import Ormolu.Printer.Meat.Type
 import Ormolu.Printer.Operators
 import Ormolu.Utils
 
+{-# ANN module ("Hlint: inore use camelCase " :: String) #-}
+
 -- | Style of a group of equations.
 data MatchGroupStyle
   = Function (Located RdrName)
@@ -105,7 +107,7 @@ p_matchGroup' placer render style MG {..} = do
   -- Since we are forcing braces on 'sepSemi' based on 'ob', we have to
   -- restore the brace state inside the sepsemi.
   ub <- bool dontUseBraces useBraces <$> canUseBraces
-  ob $ sepSemi (located' (ub . p_Match)) (unLoc mg_alts)
+  alignContext $ ob $ sepSemi (located' (ub . p_Match)) (unLoc mg_alts)
   where
     p_Match m@Match {..} =
       p_match'
@@ -263,7 +265,7 @@ p_match' placer render style isInfix strictness m_pats GRHSs {..} = do
         Function _ -> space >> inci equals
         PatternBind -> space >> inci equals
         s | isCase s && hasGuards -> return ()
-        _ -> space >> txt "->"
+        _ -> align >> txt "->"
     switchLayout [patGrhssSpan] $
       placeHanging placement p_body
     inci p_where
@@ -287,7 +289,7 @@ p_grhs' placer render style (GRHS NoExtField guards body) =
     xs -> do
       txt "|"
       space
-      sitcc (sep commaDel (sitcc . located' p_stmt) xs)
+      alignContext . sitcc $ sep commaDel (sitcc . located' p_stmt) xs
       space
       inci $ case style of
         EqualSign -> equals
@@ -346,7 +348,7 @@ p_hsCmd = \case
   HsCmdDo NoExtField es -> do
     txt "do"
     newline
-    inci . located es $
+    alignContext . inci . located es $
       sitcc . sep newline (sitcc . withSpacing (p_stmt' cmdPlacement p_hsCmd))
   HsCmdWrap {} -> notImplemented "HsCmdWrap"
   XCmd x -> noExtCon x
@@ -401,7 +403,7 @@ p_stmt' placer render = \case
   LastStmt NoExtField body _ _ -> located body render
   BindStmt NoExtField p f _ _ -> do
     located p p_pat
-    space
+    align
     txt "<-"
     let loc = getLoc p
         placement =
@@ -456,7 +458,7 @@ p_stmt' placer render = \case
   RecStmt {..} -> do
     txt "rec"
     space
-    sitcc $ sepSemi (withSpacing (p_stmt' placer render)) recS_stmts
+    alignContext . sitcc $ sepSemi (withSpacing (p_stmt' placer render)) recS_stmts
   XStmtLR c -> noExtCon c
 
 gatherStmt :: ExprLStmt GhcPs -> [[ExprLStmt GhcPs]]
@@ -516,7 +518,7 @@ p_hsRecField ::
 p_hsRecField HsRecField {..} = do
   p_rdrName hsRecFieldLbl
   unless hsRecPun $ do
-    space
+    align
     equals
     let placement =
           if onTheSameLine (getLoc hsRecFieldLbl) (getLoc hsRecFieldArg)
@@ -679,7 +681,7 @@ p_hsExpr' s = \case
           txt header
           breakpoint
           ub <- layoutToBraces <$> getLayout
-          inci $
+          alignContext . inci $
             sepSemi
               (ub . withSpacing (p_stmt' exprPlacement (p_hsExpr' S)))
               (unLoc es)
@@ -689,7 +691,8 @@ p_hsExpr' s = \case
                   (breakpoint >> txt "|" >> space)
                   p_seqBody
               p_seqBody =
-                sitcc'
+                alignContext
+                  . sitcc'
                   . sep
                     commaDel
                     (located' (sitcc . p_stmt))
@@ -700,7 +703,7 @@ p_hsExpr' s = \case
               stmts = init xs
               yield = last xs
               lists = foldr (liftAppend . gatherStmt) [] stmts
-          located yield p_stmt
+          alignContext $ located yield p_stmt
           breakpoint
           txt "|"
           space
@@ -752,7 +755,7 @@ p_hsExpr' s = \case
                 Unambiguous _ n -> n
                 XAmbiguousFieldOcc x -> noExtCon x
             }
-    inci . braces N $
+    alignContext . inci . braces N $
       sep
         commaDel
         (sitcc . located' (p_hsRecField . updName))
