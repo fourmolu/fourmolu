@@ -20,6 +20,7 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import Data.Version (showVersion)
 import Development.GitRev
+import GHC.Natural (Natural)
 import Options.Applicative
 import Ormolu
 import Ormolu.Config
@@ -34,6 +35,7 @@ import System.Directory (getCurrentDirectory)
 import System.Exit (ExitCode (..), exitWith)
 import qualified System.FilePath as FP
 import System.IO (hPutStrLn, stderr)
+import Text.Read (readEither)
 
 -- | Entry point of the program.
 main :: IO ()
@@ -361,6 +363,15 @@ printerOptsParser = do
           "Number of spaces between top-level declarations"
             <> showDefaultValue poNewlinesBetweenDecls
       ]
+  poColumnLimit <-
+    (optional . option parseColumnLimit . mconcat)
+      [ long "column-limit",
+        metavar "WIDTH",
+        help $
+          "Max length of a line"
+            <> showDefaultValue poColumnLimit
+      ]
+
   pure PrinterOpts {..}
 
 ----------------------------------------------------------------------------
@@ -388,6 +399,14 @@ parseBoundedEnum =
     )
   where
     argumentToValue = map (\x -> (toCLIArgument x, x)) [minBound ..]
+
+parseColumnLimit :: ReadM ColumnLimit
+parseColumnLimit =
+  eitherReader $ \s -> do
+    let num = readEither s :: Either String Natural
+    case num of
+      Left e -> Left e
+      Right lim -> Right $ ColumnLimit lim
 
 -- | Values that appear as arguments of CLI options and thus have
 -- a corresponding textual representation.
@@ -424,6 +443,9 @@ instance ToCLIArgument ColorMode where
   toCLIArgument Never = "never"
   toCLIArgument Always = "always"
   toCLIArgument Auto = "auto"
+instance ToCLIArgument ColumnLimit where
+  toCLIArgument (ColumnLimit lim) = "ColumnLimit " <> show lim
+  toCLIArgument NoLimit = "NoLimit"
 
 showAllValues :: forall a. (Enum a, Bounded a, ToCLIArgument a) => String
 showAllValues = format (map toCLIArgument' [(minBound :: a) ..])
