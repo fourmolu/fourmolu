@@ -40,6 +40,7 @@ module Ormolu.Config
     LetStyle (..),
     InStyle (..),
     Unicode (..),
+    ColumnLimit (..),
     parsePrinterOptsCLI,
     parsePrinterOptType,
 

@@ -62,6 +62,7 @@ Defaults are in bold.
 | `respectful`               | **`true`**, `false`                                   | Be less aggressive in reformatting input, e.g. keep empty lines in import list
 | `fixities`                 | list of strings (**`[]`**)                            | See the "Language extensions, dependencies, and fixities" section below
 | `single-constraint-parens` | **`always`**, `never`, `auto`                         | Whether to style optional parentheses around single constraints
+| `column-limit`             | **`none`**, or any non-negative integer               | Try to break up lines that are longer than this character limit. May break idempotence.
 
 For examples of each of these options, see the [test files](https://github.com/fourmolu/fourmolu/tree/main/data/fourmolu/).
 
@@ -87,6 +88,8 @@ respectful: true
 fixities: []
 unicode: never
 single-constraint-parens: always
+# Disclaimer: enabling column-limit breaks idempotence in a few cases.
+column-limit: none
 ```
 
 The configuration that most closely matches Ormolu's styling is:
@@ -107,6 +110,7 @@ respectful: false
 fixities: []
 unicode: never
 single-constraint-parens: always
+column-limit: none
 ```
 
 Command-line options override options in a configuration file. Run `fourmolu --help` to see all options.
@@ -277,7 +281,7 @@ It follows [PVP](https://pvp.haskell.org/) starting from the version
   discussion of the dangers.
 * Input modules should be parsable by Haddock, which is a bit stricter
   criterion than just being valid Haskell modules.
-* Various minor idempotence issues, most of them are related to comments.
+* Various minor idempotence issues, most of them are related to comments or column limits.
 * Fourmolu is in a fairly early stage of development. The implementation should be as stable as Ormolu, as it only makes minimal changes, and is extensively tested. But the default configuration style may change in some minor ways in the near future, as we make more options available. It will always be possible to replicate the old default behaviour with a suitable `fourmolu.yaml`.
 
 ## Contributing
