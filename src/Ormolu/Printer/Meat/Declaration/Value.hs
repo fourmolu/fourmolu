@@ -249,7 +249,7 @@ p_match' placer render style isInfix strictness m_pats GRHSs {..} = do
               if isCase style && hasGuards
                 then RightArrow
                 else EqualSign
-        sep newline (located' (p_grhs' placer render groupStyle)) grhssGRHSs
+        alignContext $ sep newline (located' (p_grhs' placer render groupStyle)) grhssGRHSs
       p_where = do
         let whereIsEmpty = GHC.isEmptyLocalBindsPR (unLoc grhssLocalBinds)
         unless (GHC.eqEmptyLocalBinds (unLoc grhssLocalBinds)) $ do
@@ -290,7 +290,7 @@ p_grhs' placer render style (GRHS NoExtField guards body) =
       txt "|"
       space
       alignContext . sitcc $ sep commaDel (sitcc . located' p_stmt) xs
-      space
+      align
       inci $ case style of
         EqualSign -> equals
         RightArrow -> txt "->"
@@ -736,7 +736,7 @@ p_hsExpr' s = \case
           case rec_dotdot of
             Just {} -> [txt ".."]
             Nothing -> []
-    inci . braces N $
+    alignContext . inci . braces N $
       sep commaDel sitcc (fields <> dotdot)
   RecordUpd {..} -> do
     located rupd_expr p_hsExpr
@@ -859,7 +859,7 @@ p_patSynBind PSB {..} = do
     RecCon xs -> do
       space
       p_rdrName psb_id
-      inci $ do
+      alignContext . inci $ do
         switchLayout (getLoc . recordPatSynPatVar <$> xs) $ do
           unless (null xs) breakpointPreRecordBrace
           braces N $
