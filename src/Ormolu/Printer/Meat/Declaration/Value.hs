@@ -54,6 +54,8 @@ import Ormolu.Printer.Meat.Type
 import Ormolu.Printer.Operators
 import Ormolu.Utils
 
+{-# ANN module ("Hlint: ignore Use camelCase" :: String) #-}
+
 -- | Style of a group of equations.
 data MatchGroupStyle
   = Function (LocatedN RdrName)

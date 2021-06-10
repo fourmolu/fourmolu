@@ -37,6 +37,8 @@ import {-# SOURCE #-} Ormolu.Printer.Meat.Declaration.Value (p_hsSplice, p_strin
 import Ormolu.Printer.Operators
 import Ormolu.Utils
 
+{-# ANN module ("Hlint: ignore Use camelCase" :: String) #-}
+
 p_hsType :: HsType GhcPs -> R ()
 p_hsType t = p_hsType' (hasDocStrings t) PipeStyle t
 

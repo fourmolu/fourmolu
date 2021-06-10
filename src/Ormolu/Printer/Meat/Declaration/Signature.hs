@@ -24,6 +24,8 @@ import Ormolu.Printer.Meat.Common
 import Ormolu.Printer.Meat.Type
 import Ormolu.Utils
 
+{-# ANN module ("Hlint: ignore Use camelCase" :: String) #-}
+
 p_sigDecl :: Sig GhcPs -> R ()
 p_sigDecl = \case
   TypeSig _ names hswc -> p_typeSig True names (hswc_body hswc)
