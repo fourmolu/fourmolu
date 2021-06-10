@@ -82,7 +82,7 @@ import Data.Bifunctor (second)
 
 -- | The 'R' monad hosts combinators that allow us to describe how to render
 -- AST.
-newtype R a = R (ReaderT RC (StateT SC (State [Int])) a)
+newtype R a = R (ReaderT RC (StateT SC (State AlignStack)) a)
   deriving (Functor, Applicative, Monad)
 
 -- | Reader context of 'R'. This should be used when we control rendering by
@@ -103,7 +103,7 @@ data RC = RC
     rcUseRecDot :: Bool,
     rcPrinterOpts :: PrinterOptsTotal,
     -- | The alignment of elements from the closest enclosing 'alignContext'
-    rcAlignment :: Int
+    rcAlignment :: AlignContext
   }
 
 -- | State context of 'R'.
@@ -126,11 +126,15 @@ data SC = SC
     -- | Whether to output a space before the next output
     scRequestedDelimiter :: RequestedDelimiter,
     -- | An auxiliary marker for keeping track of last output element
-    scSpanMark :: (Maybe SpanMark),
+    scSpanMark :: Maybe SpanMark,
     -- | Have we already rendered an "align" this line (multiple alignments not
     -- currently supported)
     scAlignedThisLine :: Bool
   }
+
+type AlignStack = [AlignContext]
+
+newtype AlignContext = AlignContext { unAlignContext :: Int }
 
 -- | Make sure next output is delimited by one of the following.
 data RequestedDelimiter
@@ -286,9 +290,9 @@ spit stype text = do
     closestEnclosing <- listToMaybe <$> asks rcEnclosingSpans
     -- Update our maximum alignment
     when (requestedDel == RequestAlign) $
-      lift . lift $ modify (\(a:as) -> max c a : as)
+      lift . lift $ modify (\(a:as) -> AlignContext (max c (unAlignContext a)) : as)
     -- Get our maximum alignment from the future, spooky
-    a <- asks rcAlignment
+    AlignContext a <- asks rcAlignment
     let indentedTxt = spaces <> text
         spaces = T.replicate spacesN " "
         spacesN =
@@ -354,7 +358,7 @@ alignContext (R (ReaderT x)) =
   R $ ReaderT $ \rc -> StateT $ \sc -> StateT $ \ma -> Identity $
     let StateT s1 = x rc{rcAlignment = head . snd $ r}
         StateT s2 = s1 sc
-        Identity r = s2 (0:ma)
+        Identity r = s2 (AlignContext 0 : ma)
     in second tail r
 
 declNewline :: R ()
