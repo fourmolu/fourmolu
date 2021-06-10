@@ -76,6 +76,7 @@ import Ormolu.Printer.SpanStream
 import Ormolu.Utils (showOutputable)
 import Outputable (Outputable)
 import Data.Bifunctor (second)
+import Data.Foldable (find)
 
 ----------------------------------------------------------------------------
 -- The 'R' monad
@@ -287,7 +288,7 @@ spit stype text = do
   R $ do
     i <- asks rcIndent
     c <- gets scColumn
-    closestEnclosing <- listToMaybe <$> asks rcEnclosingSpans
+    closestEnclosing <- asks (listToMaybe . rcEnclosingSpans)
     -- Update our maximum alignment
     when (requestedDel == RequestAlign) $
       lift . lift $ modify (\(a:as) -> AlignContext (max c (unAlignContext a)) : as)
@@ -321,7 +322,7 @@ spit stype text = do
           scSpanMark =
             -- If there are pending comments, do not reset last comment
             -- location.
-            if (stype == CommentPart) || (not . null . scPendingComments) sc
+            if stype == CommentPart || (not . null . scPendingComments) sc
               then scSpanMark sc
               else Nothing
         }
@@ -448,7 +449,7 @@ inciBy x (R m) = do
           }
   R (local modRC m)
   where
-    roundDownToNearest r n = (n `div` r) * r
+    roundDownToNearest r n = n `div` r * r
 
 -- | Set indentation level for the inner computation equal to current
 -- column. This makes sure that the entire inner block is uniformly
@@ -507,11 +508,11 @@ registerPendingCommentLine ::
   -- | 'Text' to output
   Text ->
   R ()
-registerPendingCommentLine position text = R $ do
+registerPendingCommentLine position text = R $
   modify $ \sc ->
-    sc
-      { scPendingComments = (position, text) : scPendingComments sc
-      }
+  sc
+    { scPendingComments = (position, text) : scPendingComments sc
+    }
 
 -- | Drop elements that begin before or at the same place as given
 -- 'SrcSpan'.
@@ -558,7 +559,7 @@ getEnclosingSpan ::
   (RealSrcSpan -> Bool) ->
   R (Maybe RealSrcSpan)
 getEnclosingSpan f =
-  listToMaybe . filter f <$> R (asks rcEnclosingSpans)
+  find f <$> R (asks rcEnclosingSpans)
 
 -- | Set 'RealSrcSpan' of enclosing span for the given computation.
 withEnclosingSpan :: RealSrcSpan -> R () -> R ()
