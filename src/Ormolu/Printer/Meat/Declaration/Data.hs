@@ -18,6 +18,8 @@ import Ormolu.Printer.Meat.Common
 import Ormolu.Printer.Meat.Type
 import Ormolu.Utils
 
+{-# ANN module ("Hlint: ignore Use camelCase" :: String) #-}
+
 p_dataDecl ::
   -- | Whether to format as data family
   FamilyStyle ->
