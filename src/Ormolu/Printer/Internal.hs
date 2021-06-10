@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -75,7 +76,7 @@ import Ormolu.Parser.CommentStream
 import Ormolu.Printer.SpanStream
 import Ormolu.Utils (showOutputable)
 import Outputable (Outputable)
-import Data.Bifunctor (second)
+import Data.Bifunctor (second, bimap)
 import Data.Foldable (find)
 
 ----------------------------------------------------------------------------
@@ -102,9 +103,7 @@ data RC = RC
     rcCanUseBraces :: Bool,
     -- | Whether the source could have used the record dot preprocessor
     rcUseRecDot :: Bool,
-    rcPrinterOpts :: PrinterOptsTotal,
-    -- | The alignment of elements from the closest enclosing 'alignContext'
-    rcAlignment :: AlignContext
+    rcPrinterOpts :: PrinterOptsTotal
   }
 
 -- | State context of 'R'.
@@ -130,12 +129,18 @@ data SC = SC
     scSpanMark :: Maybe SpanMark,
     -- | Have we already rendered an "align" this line (multiple alignments not
     -- currently supported)
-    scAlignedThisLine :: Bool
+    scAlignedThisLine :: Bool,
+    -- | The alignment of elements from the closest enclosing 'alignContext'
+    scAlignment :: AlignContext
   }
 
 type AlignStack = [AlignContext]
 
-newtype AlignContext = AlignContext { unAlignContext :: Int }
+-- | This is a queue which is built up in the inner state and the consumed in
+-- the outer state. Make sure that whenever this is modified in the inner
+-- state, the inverse is done to the outer state's copy (for example pushing
+-- one element and popping one element)
+newtype AlignContext = AlignContext { unAlignContext :: [Int] }
 
 -- | Make sure next output is delimited by one of the following.
 data RequestedDelimiter
@@ -152,6 +157,8 @@ data RequestedDelimiter
   | -- | Like 'RequestSpace' except multiple " "s could be inserted to reach a
     -- specified alignment
     RequestAlign
+  | -- | Behaves like 'RequestSpace' but breaks alignment groups
+    RequestAlignMulti
   deriving (Eq, Show)
 
 -- | 'Layout' options.
@@ -196,8 +203,7 @@ runR (R m) sstream cstream anns printerOpts recDot =
           rcAnns = anns,
           rcCanUseBraces = False,
           rcUseRecDot = recDot,
-          rcPrinterOpts = printerOpts,
-          rcAlignment = error "unreachable"
+          rcPrinterOpts = printerOpts
         }
     sc =
       SC
@@ -210,7 +216,8 @@ runR (R m) sstream cstream anns printerOpts recDot =
           scPendingComments = [],
           scRequestedDelimiter = VeryBeginning,
           scSpanMark = Nothing,
-          scAlignedThisLine = False
+          scAlignedThisLine = False,
+          scAlignment = error "unreachable"
         }
 
 ----------------------------------------------------------------------------
@@ -289,11 +296,22 @@ spit stype text = do
     i <- asks rcIndent
     c <- gets scColumn
     closestEnclosing <- asks (listToMaybe . rcEnclosingSpans)
+
     -- Update our maximum alignment
-    when (requestedDel == RequestAlign) $
-      lift . lift $ modify (\(a:as) -> AlignContext (max c (unAlignContext a)) : as)
     -- Get our maximum alignment from the future, spooky
-    AlignContext a <- asks rcAlignment
+    a <- case requestedDel of
+      RequestAlign -> do
+        lift . lift $ modify (\(AlignContext (x:xs):as) ->
+          AlignContext (max c x : xs) : as)
+        gets (head . unAlignContext . scAlignment)
+      RequestAlignMulti -> do
+        lift . lift $ modify (\(AlignContext xs:as) ->
+          AlignContext (0 : c : xs) : as)
+        modify' (\sc -> sc{scAlignment = AlignContext . drop 1 . unAlignContext . scAlignment $ sc})
+        gets (head . unAlignContext . scAlignment) <*
+          modify' (\sc -> sc{scAlignment = AlignContext . drop 1 . unAlignContext . scAlignment $ sc})
+      _ -> pure 0
+
     let indentedTxt = spaces <> text
         spaces = T.replicate spacesN " "
         spacesN =
@@ -302,6 +320,7 @@ spit stype text = do
             else case requestedDel of
                    RequestedSpace -> 1
                    RequestAlign -> a + 1 - c
+                   RequestAlignMulti -> a + 1 - c
                    _ -> 0
     modify $ \sc ->
       sc
@@ -346,21 +365,27 @@ space = R . modify $ \sc ->
 align :: R ()
 align = R $ do
   alignedAlready <- gets scAlignedThisLine
+  layout         <- asks rcLayout
   modify $ \sc -> sc
     { scRequestedDelimiter = case scRequestedDelimiter sc of
-      RequestedNothing ->
-        if alignedAlready then RequestedSpace else RequestAlign
-      other -> other
+                               RequestedNothing -> if alignedAlready
+                                 then RequestedSpace
+                                 else case layout of
+                                   SingleLine -> RequestAlign
+                                   MultiLine  -> RequestAlignMulti
+                               other -> other
     , scAlignedThisLine    = True
     }
 
 alignContext :: R a -> R a
-alignContext (R (ReaderT x)) =
-  R $ ReaderT $ \rc -> StateT $ \sc -> StateT $ \ma -> Identity $
-    let StateT s1 = x rc{rcAlignment = head . snd $ r}
-        StateT s2 = s1 sc
-        Identity r = s2 (AlignContext 0 : ma)
-    in second tail r
+alignContext (R (ReaderT x)) = R $ ReaderT $ \rc -> StateT $ \sc ->
+  StateT $ \ma ->
+    Identity
+      $ let StateT s1 = x rc
+            StateT s2 =
+              s1 sc { scAlignment = reverseAlignContext . head . snd $ r }
+            Identity r = s2 (AlignContext [0] : ma)
+        in  bimap (second (\sc' -> sc' { scAlignment = scAlignment sc })) tail r
 
 declNewline :: R ()
 declNewline = newlineRawN =<< getPrinterOpt poNewlinesBetweenDecls
@@ -641,3 +666,9 @@ dontUseBraces (R r) = R (local (\i -> i {rcCanUseBraces = False}) r)
 -- | Return 'True' if we can use braces in this context.
 canUseBraces :: R Bool
 canUseBraces = R (asks rcCanUseBraces)
+
+----------------------------------------------------------------------------
+-- Helpers for alignment
+
+reverseAlignContext :: AlignContext -> AlignContext
+reverseAlignContext = coerce (reverse @Int)
