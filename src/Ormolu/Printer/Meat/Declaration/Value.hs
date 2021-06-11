@@ -249,7 +249,12 @@ p_match' placer render style isInfix strictness m_pats GRHSs {..} = do
               if isCase style && hasGuards
                 then RightArrow
                 else EqualSign
-        alignContext $ sep newline (located' (p_grhs' placer render groupStyle)) grhssGRHSs
+            -- If this is a function, then use the enclosing context set up by
+            -- the declaration group, otherwise make a context for this match
+            alignContext' = case style of
+              Function _ -> id
+              _ -> alignContext
+        alignContext' $ sep newline (located' (p_grhs' placer render groupStyle)) grhssGRHSs
       p_where = do
         let whereIsEmpty = GHC.isEmptyLocalBindsPR (unLoc grhssLocalBinds)
         unless (GHC.eqEmptyLocalBinds (unLoc grhssLocalBinds)) $ do
@@ -262,8 +267,8 @@ p_match' placer render style isInfix strictness m_pats GRHSs {..} = do
     unless (length grhssGRHSs > 1) $
       case style of
         Function _ | hasGuards -> return ()
-        Function _ -> space >> inci equals
-        PatternBind -> space >> inci equals
+        Function _ -> align >> inci equals
+        PatternBind -> align >> inci equals
         s | isCase s && hasGuards -> return ()
         _ -> align >> txt "->"
     switchLayout [patGrhssSpan] $

@@ -34,6 +34,7 @@ import Ormolu.Printer.Meat.Declaration.Value
 import Ormolu.Printer.Meat.Declaration.Warning
 import Ormolu.Printer.Meat.Type
 import Ormolu.Utils
+import Ormolu.Printer.Internal (alignContext)
 
 {-# ANN module ("Hlint: ignore Use camelCase" :: String) #-}
 
@@ -57,12 +58,12 @@ p_hsDeclsRespectGrouping = p_hsDecls' Respect
 
 p_hsDecls' :: UserGrouping -> FamilyStyle -> [LHsDecl GhcPs] -> R ()
 p_hsDecls' grouping style decls =
-  sepSemi id $
+  sepSemi (alignContext . sepSemi id) $
     -- Return a list of rendered declarations, adding a newline to separate
     -- groups.
     case groupDecls decls of
       [] -> []
-      (x : xs) -> renderGroup x ++ concat (zipWith renderGroupWithPrev (x : xs) xs)
+      (x : xs) -> renderGroup x : zipWith renderGroupWithPrev (x : xs) xs
   where
     renderGroup = NE.toList . fmap (located' $ dontUseBraces . p_hsDecl style)
     renderGroupWithPrev prev curr =
