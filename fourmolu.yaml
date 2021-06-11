@@ -5,3 +5,4 @@ indent-wheres: true
 diff-friendly-import-export: false
 respectful: false
 haddock-style: single-line
+align: false

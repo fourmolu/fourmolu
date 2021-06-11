@@ -363,23 +363,26 @@ space = R . modify $ \sc ->
     }
 
 align :: R ()
-align = R $ do
-  alignedAlready <- gets scAlignedThisLine
-  layout         <- asks rcLayout
-  modify $ \sc -> sc
-    { scRequestedDelimiter = case scRequestedDelimiter sc of
-                               RequestedNothing -> if alignedAlready
-                                 then RequestedSpace
-                                 else case layout of
-                                   SingleLine -> RequestAlign
-                                   MultiLine  -> RequestAlignMulti
-                               other -> other
-    , scAlignedThisLine    = True
-    }
+align = getPrinterOpt poAlign >>= \case
+  False -> space
+  True  -> R $ do
+    alignedAlready <- gets scAlignedThisLine
+    layout         <- asks rcLayout
+    modify $ \sc -> sc
+      { scRequestedDelimiter = case scRequestedDelimiter sc of
+                                 RequestedNothing -> if alignedAlready
+                                   then RequestedSpace
+                                   else case layout of
+                                     SingleLine -> RequestAlign
+                                     MultiLine  -> RequestAlignMulti
+                                 other -> other
+      , scAlignedThisLine    = True
+      }
 
 alignContext :: R a -> R a
-alignContext (R (ReaderT x)) = R $ ReaderT $ \rc -> StateT $ \sc ->
-  StateT $ \ma ->
+alignContext (R (ReaderT x)) = getPrinterOpt poAlign >>= \case
+  False -> R (ReaderT x)
+  True  -> R $ ReaderT $ \rc -> StateT $ \sc -> StateT $ \ma ->
     Identity
       $ let StateT s1 = x rc
             StateT s2 =
