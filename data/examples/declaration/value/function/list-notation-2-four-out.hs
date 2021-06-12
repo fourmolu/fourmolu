@@ -2,5 +2,5 @@
 getPath tree t =
     t :
     case Map.lookup (getId t) tree of
-        Nothing -> []
+        Nothing     -> []
         Just parent -> getPath tree parent

@@ -4,7 +4,7 @@ module Main where
 data Foo where
     Foo :: {fooX :: Int} -> Foo
     Bar ::
-        { fooY :: Int
+        { fooY           :: Int
         , fooBar, fooBaz :: Bool
         , fooFoo
           , barBar

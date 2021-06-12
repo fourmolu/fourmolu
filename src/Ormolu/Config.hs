@@ -158,7 +158,7 @@ defaultPrinterOpts =
       poRespectful = pure True,
       poHaddockStyle = pure HaddockMultiLine,
       poNewlinesBetweenDecls = pure 1,
-      poAlign = pure False
+      poAlign = pure True
     }
 
 -- | Fill the field values that are 'Nothing' in the first argument
