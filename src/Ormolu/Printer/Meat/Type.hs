@@ -5,6 +5,8 @@
 -- | Rendering of types.
 module Ormolu.Printer.Meat.Type
   ( p_hsType,
+    p_hsTypeAfterForall,
+    p_hsTypePostDoc,
     hasDocStrings,
     p_hsContext,
     p_hsTyVarBndr,
@@ -22,11 +24,24 @@ import Ormolu.Printer.Meat.Common
 import {-# SOURCE #-} Ormolu.Printer.Meat.Declaration.Value (p_hsSplice, p_stringLit)
 import Ormolu.Printer.Operators
 import Ormolu.Utils
+import Ormolu.Config (poLeadingArrows)
 
 {-# ANN module ("Hlint: ignore Use camelCase" :: String) #-}
 
 p_hsType :: HsType GhcPs -> R ()
-p_hsType t = p_hsType' False (hasDocStrings t) CaretStyle t
+p_hsType = p_hsTypeAfterForall' False
+
+p_hsTypeAfterForall :: HsType GhcPs -> R ()
+p_hsTypeAfterForall = p_hsTypeAfterForall' True
+
+-- | Like 'p_hsType' but indent properly following a forall
+p_hsTypeAfterForall' :: Bool -> HsType GhcPs -> R ()
+p_hsTypeAfterForall' afterForall t = do
+  s <- bool PipeStyle CaretStyle <$> getPrinterOpt poLeadingArrows
+  p_hsType' afterForall (hasDocStrings t) s t
+
+p_hsTypePostDoc :: HsType GhcPs -> R ()
+p_hsTypePostDoc t = p_hsType' False (hasDocStrings t) CaretStyle t
 
 -- | How to render Haddocks associated with a type.
 data TypeDocStyle
@@ -40,10 +55,17 @@ p_hsType' afterForall multilineArgs docStyle = \case
     interArgBreak
     p_hsTypeRAfterForall (unLoc t)
   HsQualTy NoExtField qs t -> do
-    located qs p_hsContext
-    interArgBreak
-    txt "=>"
-    space
+    getPrinterOpt poLeadingArrows >>= \case
+      True -> do
+        bool id inci3 afterForall $ located qs p_hsContext
+        interArgBreak
+        txt "=>"
+        space
+      False -> do
+        located qs p_hsContext
+        space
+        txt "=>"
+        interArgBreak
     case unLoc t of
       HsQualTy {} -> p_hsTypeR (unLoc t)
       HsFunTy {} -> p_hsTypeR (unLoc t)
@@ -82,10 +104,17 @@ p_hsType' afterForall multilineArgs docStyle = \case
       txt "@"
       located kd p_hsType
   HsFunTy NoExtField x y@(L _ y') -> do
-    bool id inci3 afterForall (located x p_hsType)
-    interArgBreak
-    txt "->"
-    space
+    getPrinterOpt poLeadingArrows >>= \case
+      True -> do
+        bool id inci3 afterForall (located x p_hsType)
+        interArgBreak
+        txt "->"
+        space
+      False -> do
+        located x p_hsType
+        space
+        txt "->"
+        interArgBreak
     case y' of
       HsFunTy {} -> p_hsTypeR y'
       _ -> located y p_hsTypeR
@@ -110,16 +139,16 @@ p_hsType' afterForall multilineArgs docStyle = \case
     parens N $ sitcc $ located t p_hsType
   HsIParamTy NoExtField n t -> sitcc $ do
     located n atom
+    trailingArrowType (pure ())
     breakpoint
-    txt "::"
-    space
+    leadingArrowType (pure ())
     inci (located t p_hsType)
   HsStarTy NoExtField _ -> txt "*"
   HsKindSig NoExtField t k -> sitcc $ do
     located t p_hsType
+    trailingArrowType (pure ())
     breakpoint
-    txt "::"
-    space
+    leadingArrowType (pure ())
     inci (located k p_hsType)
   HsSpliceTy NoExtField splice -> p_hsSplice splice
   HsDocTy NoExtField t str ->
@@ -129,7 +158,7 @@ p_hsType' afterForall multilineArgs docStyle = \case
         located t p_hsType
       CaretStyle -> do
         located t p_hsType
-        space
+        newline
         p_hsDocString Caret False str
   HsBangTy NoExtField (HsSrcBang _ u s) t -> do
     case u of
@@ -200,9 +229,9 @@ p_hsTyVarBndr = \case
     p_rdrName x
   KindedTyVar NoExtField l k -> parens N . sitcc $ do
     located l atom
+    trailingArrowType (pure ())
     breakpoint
-    txt "::"
-    space
+    leadingArrowType (pure ())
     inci (located k p_hsType)
   XTyVarBndr x -> noExtCon x
 
@@ -210,15 +239,15 @@ p_hsTyVarBndr = \case
 p_forallBndrs :: Data a => ForallVisFlag -> (a -> R ()) -> [Located a] -> R ()
 p_forallBndrs ForallInvis _ [] = txt "forall."
 p_forallBndrs ForallVis _ [] = txt "forall ->"
-p_forallBndrs vis p tyvars =
+p_forallBndrs vis p tyvars = do
   switchLayout (getLoc <$> tyvars) $ do
     txt "forall"
     breakpoint
     inci $ do
       sitcc $ sep breakpoint (sitcc . located' p) tyvars
-      case vis of
-        ForallInvis -> txt "."
-        ForallVis -> space >> txt "->"
+  case vis of
+    ForallInvis -> txt "."
+    ForallVis -> space >> txt "->"
 
 p_conDeclFields :: [LConDeclField GhcPs] -> R ()
 p_conDeclFields xs =
@@ -232,10 +261,17 @@ p_conDeclField ConDeclField {..} = do
       commaDel
       (located' (p_rdrName . rdrNameFieldOcc))
       cd_fld_names
-  breakpoint
-  txt "::"
-  space
-  sitcc . inci $ p_hsType (unLoc cd_fld_type)
+  getPrinterOpt poLeadingArrows >>= \case
+    True -> sitcc . inci $ do
+      space
+      txt "::"
+      space
+      p_hsType (unLoc cd_fld_type)
+    False -> do
+      space
+      txt "::"
+      breakpoint
+      sitcc . inci $ p_hsType (unLoc cd_fld_type)
 p_conDeclField (XConDeclField x) = noExtCon x
 
 tyOpTree :: LHsType GhcPs -> OpTree (LHsType GhcPs) (Located RdrName)

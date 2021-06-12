@@ -761,9 +761,9 @@ p_hsExpr' s = \case
         rupd_flds
   ExprWithTySig NoExtField x HsWC {hswc_body = HsIB {..}} -> sitcc $ do
     located x p_hsExpr
+    trailingArrowType (pure ())
     breakpoint
-    txt "::"
-    space
+    leadingArrowType (pure ())
     inci $ located hsib_body p_hsType
   ExprWithTySig NoExtField _ HsWC {hswc_body = XHsImplicitBndrs x} -> noExtCon x
   ExprWithTySig NoExtField _ (XHsWildCardBndrs x) -> noExtCon x

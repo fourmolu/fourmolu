@@ -111,13 +111,13 @@ p_conDecl singleConstRec = \case
             commaDel
             sep commaDel p_rdrName cs
       inci $ do
+        trailingArrowType (pure ())
         let interArgBreak =
               if hasDocStrings (unLoc con_res_ty)
                 then newline
                 else breakpoint
         interArgBreak
-        txt "::"
-        space
+        leadingArrowType (pure ())
         when (unLoc con_forall) $ do
           p_forallBndrs ForallInvis p_hsTyVarBndr (hsq_explicit con_qvars)
           interArgBreak
@@ -136,7 +136,7 @@ p_conDecl singleConstRec = \case
               txt "->"
               breakpoint
           InfixCon _ _ -> notImplemented "InfixCon"
-        p_hsType (unLoc con_res_ty)
+        p_hsTypeAfterForall (unLoc con_res_ty)
   ConDeclH98 {..} -> do
     mapM_ (p_hsDocString Pipe True) con_doc
     let conDeclWithContextSpn =
@@ -157,7 +157,7 @@ p_conDecl singleConstRec = \case
         PrefixCon xs -> do
           p_rdrName con_name
           unless (null xs) breakpoint
-          inci . sitcc $ sep breakpoint (sitcc . located' p_hsType) xs
+          inci . sitcc $ sep breakpoint (sitcc . located' p_hsTypePostDoc) xs
         RecCon l -> do
           p_rdrName con_name
           breakpoint

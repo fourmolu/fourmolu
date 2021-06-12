@@ -33,7 +33,6 @@ module Ormolu.Printer.Combinators
     getLayout,
     breakpoint,
     breakpoint',
-    breakpointAlign,
     getPrinterOpt,
 
     -- ** Formatting lists
@@ -66,6 +65,10 @@ module Ormolu.Printer.Combinators
     HaddockStyle (..),
     setSpanMark,
     getSpanMark,
+
+    -- ** Helpers for leading/trailing arrows
+    leadingArrowType,
+    trailingArrowType,
   )
 where
 
@@ -152,13 +155,6 @@ breakpoint = vlayout space newline
 -- > breakpoint' = vlayout (return ()) newline
 breakpoint' :: R ()
 breakpoint' = vlayout (return ()) newline
-
--- | Similar to 'breakpoint' but outputs 'align' in case of single-line
--- layout.
---
--- > breakpoint' = vlayout (return ()) newline
-breakpointAlign :: R ()
-breakpointAlign = vlayout align newline
 
 ----------------------------------------------------------------------------
 -- Formatting lists
@@ -319,3 +315,24 @@ commaDel =
 -- | Print @=@. Do not use @'txt' "="@.
 equals :: R ()
 equals = interferingTxt "="
+
+----------------------------------------------------------------------------
+-- Arrow style
+
+-- | Ouput @space >> txt "::" >> x@ when we are printing with trailing arrows
+trailingArrowType :: R () -> R ()
+trailingArrowType x = do
+  isTrailingArrow <- not <$> getPrinterOpt poLeadingArrows
+  when isTrailingArrow $ do
+    space
+    txt "::"
+    x
+
+-- | Ouput @x >> txt "::" >> space@ when we are printing with leading arrows
+leadingArrowType :: R () ->  R ()
+leadingArrowType x = do
+  isLeadingArrow <- getPrinterOpt poLeadingArrows
+  when isLeadingArrow $ do
+    x
+    txt "::"
+    space
