@@ -12,7 +12,7 @@ data Foo a where
         -> Foo 'Bool
         -- ^ But 'Bar' is also not too bad.
     Baz
-        :: forall a.
-           a
+        :: forall a
+         . a
         -> Foo 'String
         -- ^ So is 'Baz'.

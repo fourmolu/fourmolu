@@ -1,8 +1,8 @@
 wrapError
-    :: forall outertag innertag t outer inner m a.
-       ( forall x. Coercible (t m x) (m x)
-       , forall m'.
-            HasCatch outertag outer m'
+    :: forall outertag innertag t outer inner m a
+     . ( forall x. Coercible (t m x) (m x)
+       , forall m'
+          . HasCatch outertag outer m'
          => HasCatch innertag inner (t m')
        , HasCatch outertag outer m
        )

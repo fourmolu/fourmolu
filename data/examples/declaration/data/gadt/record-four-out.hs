@@ -9,5 +9,5 @@ data Foo where
            , fooFoo
              , barBar
              , bazBaz :: Int
-           } ->
-        Foo
+           }
+        -> Foo

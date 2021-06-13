@@ -6,10 +6,10 @@ module Main where
 data Foo a where
     -- | 'Foo' is wonderful.
     Foo
-        :: forall a b.
-        (Show a, Eq b) => -- foo
+        :: forall a b
+         . (Show a, Eq b) -- foo
         -- bar
-           a
+        => a
         -> b
         -> Foo 'Int
     -- | But 'Bar' is also not too bad.
@@ -19,7 +19,7 @@ data Foo a where
         -> Foo 'Bool
     -- | So is 'Baz'.
     Baz
-        :: forall a.
-           a
+        :: forall a
+         . a
         -> Foo 'String
     (:~>) :: Foo a -> Foo a -> Foo a
