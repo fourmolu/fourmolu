@@ -275,6 +275,15 @@ printerOptsParser = do
             <> showAllValues @HaddockPrintStyle
             <> showDefaultValue poHaddockStyle
       ]
+  poRecordHaddockLocation <-
+    (optional . option parseBoundedEnum . mconcat)
+      [ long "record-haddock-location",
+        metavar "STYLE",
+        help $
+          "Where to place Haddock comments in record definitions"
+            <> showAllValues @LeadingOrTrailing
+            <> showDefaultValue poRecordHaddockLocation
+      ]
   poNewlinesBetweenDecls <-
     (optional . option auto . mconcat)
       [ long "newlines-between-decls",
