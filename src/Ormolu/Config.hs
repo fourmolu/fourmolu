@@ -21,7 +21,7 @@ module Ormolu.Config
     configFileName,
     ConfigFileLoadResult (..),
     fillMissingPrinterOpts,
-    CommaStyle (..),
+    LeadingOrTrailing (..),
     HaddockPrintStyle (..),
     regionIndicesToDeltas,
     DynOption (..),
@@ -108,7 +108,7 @@ data PrinterOpts f = PrinterOpts
   { -- | Number of spaces to use for indentation
     poIndentation :: f Int,
     -- | Whether to place commas at start or end of lines
-    poCommaStyle :: f CommaStyle,
+    poCommaStyle :: f LeadingOrTrailing,
     -- | Whether to indent `where` blocks
     poIndentWheres :: f Bool,
     -- | Leave space before opening record brace
@@ -181,12 +181,12 @@ fillMissingPrinterOpts p1 p2 =
     fillField :: (forall g. PrinterOpts g -> g a) -> f a
     fillField f = maybe (f p2) pure $ f p1
 
-data CommaStyle
+data LeadingOrTrailing
   = Leading
   | Trailing
   deriving (Eq, Ord, Show, Generic, Bounded, Enum)
 
-instance FromJSON CommaStyle where
+instance FromJSON LeadingOrTrailing where
   parseJSON =
     genericParseJSON
       defaultOptions

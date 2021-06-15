@@ -229,7 +229,7 @@ printerOptsParser = do
         metavar "STYLE",
         help $
           "How to place commas in multi-line lists, records etc: "
-            <> showAllValues @CommaStyle
+            <> showAllValues @LeadingOrTrailing
             <> showDefaultValue poCommaStyle
       ]
   poIndentWheres <-
@@ -326,7 +326,7 @@ instance ToCLIArgument Bool where
   toCLIArgument True = "true"
   toCLIArgument False = "false"
 
-instance ToCLIArgument CommaStyle where
+instance ToCLIArgument LeadingOrTrailing where
   toCLIArgument Leading = "leading"
   toCLIArgument Trailing = "trailing"
 
