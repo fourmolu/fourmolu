@@ -4,7 +4,7 @@ f2 = foo do
     bar
 
 f3 = foo case True of
-    True -> bar
+    True  -> bar
     False -> baz
 
 f4 = foo let a = 3 in b

@@ -22,6 +22,9 @@ import Ormolu.Printer.Meat.Common
 import {-# SOURCE #-} Ormolu.Printer.Meat.Declaration.Value (p_hsSplice, p_stringLit)
 import Ormolu.Printer.Operators
 import Ormolu.Utils
+import Ormolu.Printer.Internal (alignContext, align)
+
+{-# ANN module ("Hlint: ignore Use camelCase" :: String) #-}
 
 p_hsType :: HsType GhcPs -> R ()
 p_hsType t = p_hsType' (hasDocStrings t) PipeStyle t
@@ -222,7 +225,7 @@ p_forallBndrs vis p tyvars =
 
 p_conDeclFields :: [LConDeclField GhcPs] -> R ()
 p_conDeclFields xs =
-  braces N $ sep commaDel (sitcc . located' p_conDeclField) xs
+  alignContext . braces N $ sep commaDel (sitcc . located' p_conDeclField) xs
 
 p_conDeclField :: ConDeclField GhcPs -> R ()
 p_conDeclField ConDeclField {..} = do
@@ -232,7 +235,7 @@ p_conDeclField ConDeclField {..} = do
       commaDel
       (located' (p_rdrName . rdrNameFieldOcc))
       cd_fld_names
-  space
+  align
   txt "::"
   breakpoint
   sitcc . inci $ p_hsType (unLoc cd_fld_type)

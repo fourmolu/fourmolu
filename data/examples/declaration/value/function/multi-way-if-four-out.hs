@@ -11,6 +11,6 @@ bar x y =
 
 baz =
     if
-            | p -> f
+            | p         -> f
             | otherwise -> g
         x

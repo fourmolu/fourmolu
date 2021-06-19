@@ -5,4 +5,4 @@ instance A.ToJSON UpdateTable where
             "ProvisionedThroughput" .= updateProvisionedThroughput a :
             case updateGlobalSecondaryIndexUpdates a of
                 [] -> []
-                l -> ["GlobalSecondaryIndexUpdates" .= l]
+                l  -> ["GlobalSecondaryIndexUpdates" .= l]

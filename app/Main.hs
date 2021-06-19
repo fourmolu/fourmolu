@@ -283,6 +283,14 @@ printerOptsParser = do
           "Number of spaces between top-level declarations"
             <> showDefaultValue poNewlinesBetweenDecls
       ]
+  poAlign <-
+    (optional . option parseBoundedEnum . mconcat)
+      [ long "align",
+        metavar "BOOL",
+        help $
+          "Whether to align some syntax elements horizontally"
+            <> showDefaultValue poAlign
+      ]
   pure PrinterOpts {..}
 
 ----------------------------------------------------------------------------

@@ -1,7 +1,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 singleLine = case () of
-    $x -> ()
+    $x               -> ()
     $(y "something") -> ()
 
 multiline = case () of

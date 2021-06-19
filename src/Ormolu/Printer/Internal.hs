@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -17,6 +18,8 @@ module Ormolu.Printer.Internal
     interferingTxt,
     atom,
     space,
+    align,
+    alignContext,
     newline,
     declNewline,
     useRecordDot,
@@ -60,7 +63,7 @@ import Control.Monad.Reader
 import Control.Monad.State.Strict
 import Data.Bool (bool)
 import Data.Coerce
-import Data.Functor.Identity (runIdentity)
+import Data.Functor.Identity (runIdentity, Identity(..))
 import Data.Maybe (listToMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -73,13 +76,15 @@ import Ormolu.Parser.CommentStream
 import Ormolu.Printer.SpanStream
 import Ormolu.Utils (showOutputable)
 import Outputable (Outputable)
+import Data.Bifunctor (second, bimap)
+import Data.Foldable (find)
 
 ----------------------------------------------------------------------------
 -- The 'R' monad
 
 -- | The 'R' monad hosts combinators that allow us to describe how to render
 -- AST.
-newtype R a = R (ReaderT RC (State SC) a)
+newtype R a = R (ReaderT RC (StateT SC (State AlignStack)) a)
   deriving (Functor, Applicative, Monad)
 
 -- | Reader context of 'R'. This should be used when we control rendering by
@@ -87,7 +92,7 @@ newtype R a = R (ReaderT RC (State SC) a)
 data RC = RC
   { -- | Indentation level, as the column index we need to start from after
     -- a newline if we break lines
-    rcIndent :: !Int,
+    rcIndent :: Int,
     -- | Current layout
     rcLayout :: Layout,
     -- | Spans of enclosing elements of AST
@@ -104,9 +109,9 @@ data RC = RC
 -- | State context of 'R'.
 data SC = SC
   { -- | Index of the next column to render
-    scColumn :: !Int,
+    scColumn :: Int,
     -- | Indentation level that was used for the current line
-    scIndent :: !Int,
+    scIndent :: Int,
     -- | Rendered source code so far
     scBuilder :: Builder,
     -- | Span stream
@@ -117,12 +122,25 @@ data SC = SC
     scCommentStream :: CommentStream,
     -- | Pending comment lines (in reverse order) to be inserted before next
     -- newline, 'Int' is the indentation level
-    scPendingComments :: ![(CommentPosition, Text)],
+    scPendingComments :: [(CommentPosition, Text)],
     -- | Whether to output a space before the next output
-    scRequestedDelimiter :: !RequestedDelimiter,
+    scRequestedDelimiter :: RequestedDelimiter,
     -- | An auxiliary marker for keeping track of last output element
-    scSpanMark :: !(Maybe SpanMark)
+    scSpanMark :: Maybe SpanMark,
+    -- | Have we already rendered an "align" this line (multiple alignments not
+    -- currently supported)
+    scAlignedThisLine :: Bool,
+    -- | The alignment of elements from the closest enclosing 'alignContext'
+    scAlignment :: AlignContext
   }
+
+type AlignStack = [AlignContext]
+
+-- | This is a queue which is built up in the inner state and the consumed in
+-- the outer state. Make sure that whenever this is modified in the inner
+-- state, the inverse is done to the outer state's copy (for example pushing
+-- one element and popping one element)
+newtype AlignContext = AlignContext { unAlignContext :: [Int] }
 
 -- | Make sure next output is delimited by one of the following.
 data RequestedDelimiter
@@ -136,6 +154,11 @@ data RequestedDelimiter
     AfterNewline
   | -- | We haven't printed anything yet
     VeryBeginning
+  | -- | Like 'RequestSpace' except multiple " "s could be inserted to reach a
+    -- specified alignment
+    RequestAlign
+  | -- | Behaves like 'RequestSpace' but breaks alignment groups
+    RequestAlignMulti
   deriving (Eq, Show)
 
 -- | 'Layout' options.
@@ -170,7 +193,7 @@ runR ::
   -- | Resulting rendition
   Text
 runR (R m) sstream cstream anns printerOpts recDot =
-  TL.toStrict . toLazyText . scBuilder $ execState (runReaderT m rc) sc
+  TL.toStrict . toLazyText . scBuilder $ evalState (execStateT (runReaderT m rc) sc) []
   where
     rc =
       RC
@@ -192,7 +215,9 @@ runR (R m) sstream cstream anns printerOpts recDot =
           scCommentStream = cstream,
           scPendingComments = [],
           scRequestedDelimiter = VeryBeginning,
-          scSpanMark = Nothing
+          scSpanMark = Nothing,
+          scAlignedThisLine = False,
+          scAlignment = error "unreachable"
         }
 
 ----------------------------------------------------------------------------
@@ -270,13 +295,33 @@ spit stype text = do
   R $ do
     i <- asks rcIndent
     c <- gets scColumn
-    closestEnclosing <- listToMaybe <$> asks rcEnclosingSpans
+    closestEnclosing <- asks (listToMaybe . rcEnclosingSpans)
+
+    -- Update our maximum alignment
+    -- Get our maximum alignment from the future, spooky
+    a <- case requestedDel of
+      RequestAlign -> do
+        lift . lift $ modify (\(AlignContext (x:xs):as) ->
+          AlignContext (max c x : xs) : as)
+        gets (head . unAlignContext . scAlignment)
+      RequestAlignMulti -> do
+        lift . lift $ modify (\(AlignContext xs:as) ->
+          AlignContext (0 : c : xs) : as)
+        modify' (\sc -> sc{scAlignment = AlignContext . drop 1 . unAlignContext . scAlignment $ sc})
+        gets (head . unAlignContext . scAlignment) <*
+          modify' (\sc -> sc{scAlignment = AlignContext . drop 1 . unAlignContext . scAlignment $ sc})
+      _ -> pure 0
+
     let indentedTxt = spaces <> text
         spaces = T.replicate spacesN " "
         spacesN =
           if c == 0
             then i
-            else bool 0 1 (requestedDel == RequestedSpace)
+            else case requestedDel of
+                   RequestedSpace -> 1
+                   RequestAlign -> a + 1 - c
+                   RequestAlignMulti -> a + 1 - c
+                   _ -> 0
     modify $ \sc ->
       sc
         { scBuilder = scBuilder sc <> fromText indentedTxt,
@@ -296,7 +341,7 @@ spit stype text = do
           scSpanMark =
             -- If there are pending comments, do not reset last comment
             -- location.
-            if (stype == CommentPart) || (not . null . scPendingComments) sc
+            if stype == CommentPart || (not . null . scPendingComments) sc
               then scSpanMark sc
               else Nothing
         }
@@ -317,6 +362,34 @@ space = R . modify $ \sc ->
         other -> other
     }
 
+align :: R ()
+align = getPrinterOpt poAlign >>= \case
+  False -> space
+  True  -> R $ do
+    alignedAlready <- gets scAlignedThisLine
+    layout         <- asks rcLayout
+    modify $ \sc -> sc
+      { scRequestedDelimiter = case scRequestedDelimiter sc of
+                                 RequestedNothing -> if alignedAlready
+                                   then RequestedSpace
+                                   else case layout of
+                                     SingleLine -> RequestAlign
+                                     MultiLine  -> RequestAlignMulti
+                                 other -> other
+      , scAlignedThisLine    = True
+      }
+
+alignContext :: R a -> R a
+alignContext (R (ReaderT x)) = getPrinterOpt poAlign >>= \case
+  False -> R (ReaderT x)
+  True  -> R $ ReaderT $ \rc -> StateT $ \sc -> StateT $ \ma ->
+    Identity
+      $ let StateT s1 = x rc
+            StateT s2 =
+              s1 sc { scAlignment = reverseAlignContext . head . snd $ r }
+            Identity r = s2 (AlignContext [0] : ma)
+        in  bimap (second (\sc' -> sc' { scAlignment = scAlignment sc })) tail r
+
 declNewline :: R ()
 declNewline = newlineRawN =<< getPrinterOpt poNewlinesBetweenDecls
 
@@ -331,6 +404,7 @@ declNewline = newlineRawN =<< getPrinterOpt poNewlinesBetweenDecls
 -- hard to output more than one blank newline in a row.
 newline :: R ()
 newline = do
+  R $ modify (\sc -> sc{scAlignedThisLine = False})
   indent <- R (gets scIndent)
   cs <- reverse <$> R (gets scPendingComments)
   case cs of
@@ -403,7 +477,7 @@ inciBy x (R m) = do
           }
   R (local modRC m)
   where
-    roundDownToNearest r n = (n `div` r) * r
+    roundDownToNearest r n = n `div` r * r
 
 -- | Set indentation level for the inner computation equal to current
 -- column. This makes sure that the entire inner block is uniformly
@@ -462,11 +536,11 @@ registerPendingCommentLine ::
   -- | 'Text' to output
   Text ->
   R ()
-registerPendingCommentLine position text = R $ do
+registerPendingCommentLine position text = R $
   modify $ \sc ->
-    sc
-      { scPendingComments = (position, text) : scPendingComments sc
-      }
+  sc
+    { scPendingComments = (position, text) : scPendingComments sc
+    }
 
 -- | Drop elements that begin before or at the same place as given
 -- 'SrcSpan'.
@@ -513,7 +587,7 @@ getEnclosingSpan ::
   (RealSrcSpan -> Bool) ->
   R (Maybe RealSrcSpan)
 getEnclosingSpan f =
-  listToMaybe . filter f <$> R (asks rcEnclosingSpans)
+  find f <$> R (asks rcEnclosingSpans)
 
 -- | Set 'RealSrcSpan' of enclosing span for the given computation.
 withEnclosingSpan :: RealSrcSpan -> R () -> R ()
@@ -595,3 +669,9 @@ dontUseBraces (R r) = R (local (\i -> i {rcCanUseBraces = False}) r)
 -- | Return 'True' if we can use braces in this context.
 canUseBraces :: R Bool
 canUseBraces = R (asks rcCanUseBraces)
+
+----------------------------------------------------------------------------
+-- Helpers for alignment
+
+reverseAlignContext :: AlignContext -> AlignContext
+reverseAlignContext = coerce (reverse @Int)

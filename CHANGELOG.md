@@ -14,6 +14,7 @@
   * `diff-friendly-import-export`
   * `respectful`
   * `haddock-style`
+  * `align`
 
 ### Upstream changes:
 

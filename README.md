@@ -38,6 +38,7 @@ diff-friendly-import-export: true # 'false' uses Ormolu-style lists
 respectful: true # don't be too opinionated about newlines etc.
 haddock-style: multi-line # '--' vs. '{-'
 newlines-between-decls: 1 # number of newlines between top-level declarations
+align: false # align syntax elements horizonally (quite diff-unfriendly!)
 ```
 
 See [here](fourmolu.yaml) for a config to simulate the behaviour of Ormolu.

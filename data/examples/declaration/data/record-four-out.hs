@@ -3,9 +3,9 @@ module Main where
 -- | Something.
 data Foo = Foo
     { -- | X
-      fooX :: Int
+      fooX           :: Int
     , -- | Y
-      fooY :: Int
+      fooY           :: Int
     , -- | BarBaz
       fooBar, fooBaz :: NonEmpty (Identity Bool)
     , -- | GagGog
