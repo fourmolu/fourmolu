@@ -13,7 +13,7 @@ where
 import Control.Monad
 import qualified Data.Text as T
 import GHC
-import Ormolu.Config (poDiffFriendlyImportExport)
+import Ormolu.Config (poAddSpaceBetweenImportedTypeAndConstructor, poDiffFriendlyImportExport)
 import Ormolu.Printer.Combinators
 import Ormolu.Printer.Meat.Common
 import Ormolu.Utils (RelativePos (..), attachRelativePos)
@@ -62,11 +62,8 @@ p_hsmodImport useQualifiedPost ImportDecl {..} = do
     space
     case ideclHiding of
       Nothing -> return ()
-      Just (hiding, _) ->
+      Just (hiding, L _ xs) -> do
         when hiding (txt "hiding")
-    case ideclHiding of
-      Nothing -> return ()
-      Just (_, L _ xs) -> do
         breakIfNotDiffFriendly
         parens' True $ do
           layout <- getLayout
@@ -87,12 +84,14 @@ p_lie encLayout relativePos = \case
     p_comma
   IEThingAll NoExtField l1 -> do
     located l1 p_ieWrappedName
-    space
+    addSpace <- getPrinterOpt poAddSpaceBetweenImportedTypeAndConstructor
+    when (addSpace) space
     txt "(..)"
     p_comma
   IEThingWith NoExtField l1 w xs _ -> sitcc $ do
     located l1 p_ieWrappedName
-    breakIfNotDiffFriendly
+    addSpace <- getPrinterOpt poAddSpaceBetweenImportedTypeAndConstructor
+    when (addSpace) breakIfNotDiffFriendly
     inci $ do
       let names :: [R ()]
           names = located' p_ieWrappedName <$> xs
