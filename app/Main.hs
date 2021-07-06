@@ -283,6 +283,14 @@ printerOptsParser = do
           "Number of spaces between top-level declarations"
             <> showDefaultValue poNewlinesBetweenDecls
       ]
+  poRecordConstructorsHanging <-
+    (optional . option parseBoundedEnum . mconcat)
+      [ long "record-constructors-handing",
+        metavar "BOOL",
+        help $
+          "Give the programmer more choice on where to insert blank lines"
+            <> showDefaultValue poRecordConstructorsHanging
+      ]
   pure PrinterOpts {..}
 
 ----------------------------------------------------------------------------
