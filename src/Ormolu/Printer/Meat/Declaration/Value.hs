@@ -569,7 +569,10 @@ p_hsExpr' s = \case
         (initp, lastp) = (NE.init args, NE.last args)
         initSpan =
           combineSrcSpans' $
-            getLoc f :| [(srcLocSpan . srcSpanStart . getLoc) lastp]
+            getLoc f
+              :| case s of
+                S -> map getLoc initp
+                N -> [(srcLocSpan . srcSpanStart . getLoc) lastp]
         -- Hang the last argument only if the initial arguments span one
         -- line.
         placement =
