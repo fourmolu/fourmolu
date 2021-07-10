@@ -32,6 +32,7 @@ Fourmolu looks for a `fourmolu.yaml` file in all parents of the current director
 ```yaml
 indentation: 4
 comma-style: leading # for lists, tuples etc. - can also be 'trailing'
+import-export-comma-style: leading # for module import export lists - can also be 'trailing'
 record-brace-space: false # rec {x = 1} vs. rec{x = 1}
 indent-wheres: false # 'false' means save space by only half-indenting the 'where' keyword
 diff-friendly-import-export: true # 'false' uses Ormolu-style lists

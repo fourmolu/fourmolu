@@ -13,7 +13,7 @@ where
 import Control.Monad
 import qualified Data.Text as T
 import GHC
-import Ormolu.Config (poDiffFriendlyImportExport)
+import Ormolu.Config (CommaStyle (..), PrinterOpts (poIECommaStyle), poDiffFriendlyImportExport)
 import Ormolu.Printer.Combinators
 import Ormolu.Printer.Meat.Common
 import Ormolu.Utils (RelativePos (..), attachRelativePos)
@@ -26,10 +26,11 @@ p_hsmodExports [] = do
 p_hsmodExports xs =
   parens' False $ do
     layout <- getLayout
+    commaStyle <- getPrinterOpt poIECommaStyle
     sep
       breakpoint
-      (\(p, l) -> sitcc (located l (p_lie layout p)))
-      (attachRelativePos xs)
+      (\(p, l) -> sitcc (located l (p_lie layout p commaStyle)))
+      (attachRelativePos' xs)
 
 p_hsmodImport :: Bool -> ImportDecl GhcPs -> R ()
 p_hsmodImport useQualifiedPost ImportDecl {..} = do
@@ -70,27 +71,26 @@ p_hsmodImport useQualifiedPost ImportDecl {..} = do
         breakIfNotDiffFriendly
         parens' True $ do
           layout <- getLayout
+          commaStyle <- getPrinterOpt poIECommaStyle
           sep
             breakpoint
-            (\(p, l) -> sitcc (located l (p_lie layout p)))
+            (\(p, l) -> sitcc (located l (p_lie layout p commaStyle)))
             (attachRelativePos xs)
     newline
 p_hsmodImport _ (XImportDecl x) = noExtCon x
 
-p_lie :: Layout -> RelativePos -> IE GhcPs -> R ()
-p_lie encLayout relativePos = \case
-  IEVar NoExtField l1 -> do
+
+p_lie :: Layout -> RelativePos -> CommaStyle -> IE GhcPs -> R ()
+p_lie encLayout relativePos commaStyle = \case
+  IEVar NoExtField l1 -> withComma $
     located l1 p_ieWrappedName
-    p_comma
-  IEThingAbs NoExtField l1 -> do
+  IEThingAbs NoExtField l1 -> withComma $
     located l1 p_ieWrappedName
-    p_comma
-  IEThingAll NoExtField l1 -> do
+  IEThingAll NoExtField l1 -> withComma $ do
     located l1 p_ieWrappedName
     space
     txt "(..)"
-    p_comma
-  IEThingWith NoExtField l1 w xs _ -> sitcc $ do
+  IEThingWith NoExtField l1 w xs _ -> sitcc $ withComma $ do
     located l1 p_ieWrappedName
     breakIfNotDiffFriendly
     inci $ do
@@ -102,10 +102,8 @@ p_lie encLayout relativePos = \case
           IEWildcard n ->
             let (before, after) = splitAt n names
              in before ++ [txt ".."] ++ after
-    p_comma
-  IEModuleContents NoExtField l1 -> do
+  IEModuleContents NoExtField l1 -> withComma $ do
     located l1 p_hsmodName
-    p_comma
   IEGroup NoExtField n str -> do
     case relativePos of
       SinglePos -> return ()
@@ -118,17 +116,47 @@ p_lie encLayout relativePos = \case
   IEDocNamed NoExtField str -> txt $ "-- $" <> T.pack str
   XIE x -> noExtCon x
   where
-    p_comma =
+    withComma m =
       case encLayout of
         SingleLine ->
           case relativePos of
-            SinglePos -> return ()
-            FirstPos -> comma
-            MiddlePos -> comma
-            LastPos -> return ()
-        MultiLine -> comma
+            SinglePos -> void m
+            FirstPos -> m >> comma
+            MiddlePos -> m >> comma
+            LastPos -> void m
+        MultiLine -> do
+          case commaStyle of
+            Leading ->
+                case relativePos of
+                     FirstPos -> m
+                     SinglePos -> m
+                     _ -> comma >> space >> m
+            Trailing -> m >> comma
 
 ----------------------------------------------------------------------------
+-- | Unlike the version in `Ormolu.Utils`, this version handles explicitly leading export documentation
+attachRelativePos' :: [LIE GhcPs] -> [(RelativePos, LIE GhcPs)]
+attachRelativePos' = \case
+  [] -> []
+  [x] -> [(SinglePos, x)]
+  -- Check if leading export is a Doc
+  (x@(L _ IEDoc {}) : xs) -> (FirstPos, x) : markDoc xs
+  (x@(L _ IEGroup {}) : xs) -> (FirstPos, x) : markDoc xs
+  (x@(L _ IEDocNamed {}) : xs) -> (FirstPos, x) : markDoc xs
+  (x : xs) -> (FirstPos, x) : markLast xs
+  where
+    markDoc [] = []
+    markDoc [x] = [(LastPos, x)]
+    markDoc (x@(L _ IEDoc {}) : xs) = (MiddlePos, x) : markDoc xs
+    markDoc (x@(L _ IEGroup {}) : xs) = (MiddlePos, x) : markDoc xs
+    markDoc (x@(L _ IEDocNamed{}) : xs) = (MiddlePos, x) : markDoc xs
+    -- First export after a Doc gets assigned a `FirstPos`
+    markDoc (x : xs) = (FirstPos, x) : markLast xs
+
+    markLast [] = []
+    markLast [x] = [(LastPos, x)]
+    markLast (x : xs) = (MiddlePos, x) : markLast xs
+
 -- Unlike the versions in 'Ormolu.Printer.Combinators', these do not depend on
 -- whether 'leadingCommas' is set. This is useful here is we choose to keep
 -- import and export lists independent of that setting.
@@ -146,7 +174,7 @@ parens' topLevelImport m =
       breakpoint'
       sitcc body
       vlayout (txt ")") (inciBy (-1) trailingParen)
-    False -> sitcc $ do
+    False -> do
       txt "("
       body
       txt ")"
@@ -154,9 +182,14 @@ parens' topLevelImport m =
     body = vlayout singleLine multiLine
     singleLine = m
     multiLine = do
-      space
-      sitcc m
-      newline
+      commaStyle <- getPrinterOpt poIECommaStyle
+      case commaStyle of
+        Leading ->
+          space >> m >> newline
+        Trailing -> do
+          space
+          sitcc m
+          newline
     trailingParen = if topLevelImport then txt " )" else txt ")"
 
 breakIfNotDiffFriendly :: R ()
