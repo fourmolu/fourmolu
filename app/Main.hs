@@ -368,7 +368,8 @@ printerOptsParser = do
       [ long "column-limit",
         metavar "WIDTH",
         help $
-          "Max length of a line"
+          "Max number of characters in a line. "
+            <> "Disclaimer: enabling this breaks idempotence in a few cases."
             <> showDefaultValue poColumnLimit
       ]
 

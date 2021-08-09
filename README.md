@@ -49,6 +49,7 @@ diff-friendly-import-export: true # 'false' uses Ormolu-style lists
 respectful: true # don't be too opinionated about newlines etc.
 haddock-style: multi-line # '--' vs. '{-'
 newlines-between-decls: 1 # number of newlines between top-level declarations
+column-limit: 80 # max number of characters in a line. Disclaimer: enabling this breaks idempotence in a few cases.
 ```
 
 See [here](fourmolu.yaml) for a config to simulate the behaviour of Ormolu.
