@@ -56,6 +56,10 @@ See [here](fourmolu.yaml) for a config to simulate the behaviour of Ormolu.
 
 These options can also be set on the command line (which takes precedence over config files). Run `fourmolu -h` to see all options.
 
+
+If enabled, the `column-limit` option might break idempotence. See an
+example in `data/examples/other/column-limit-tests.hs`.
+
 ## Installation
 
 To install the latest release from Hackage, simply install with Cabal or Stack:

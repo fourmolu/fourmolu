@@ -63,3 +63,34 @@ longFunction2 veryLongArg1 veryLongArg2 veryLongArg3 veryLongArg4 a veryLongArg6
 
 longFunction3 :: String -> String -> String -> Maybe Int -> Maybe Int -> Maybe Int -> String
 longFunction3 veryLongArg1 veryLongArg2 veryLongArg3 veryLongArg4 veryLongArgument5 veryLongArg6 = undefined
+
+-- For reference, this line had exactly 80 characters -------------------------|
+
+-- ----------------  Know limitation: idempotence is broken ----------------
+
+-- With the column-limit option set, fourmolu will not be idempotent in some
+-- cases. An example can be seen below, where the long line ends with a `do`.
+
+-- Original code
+testFund :: Maybe Int
+testFund =
+    firstTest oneFunctionArgument abcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcde $ do
+        result <- aRandomResult
+
+-- Will become this when formatted with column-limit set to 80.
+testFund :: Maybe Int
+testFund =
+    firstTest
+        oneFunctionArgument
+        abcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcde
+        $ do
+            result <- aRandomResult
+
+-- Which, if formatted again, will become this:
+testFund :: Maybe Int
+testFund =
+    firstTest
+        oneFunctionArgument
+        abcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcde
+        $ do
+            result <- aRandomResult
