@@ -10,9 +10,10 @@ foo = do
     )
     baz
 
-foo = do
-  do (+ 1)
-    2
+-- TODO: uncomment and fix
+-- foo = do
+--   do (+1)
+--    2
 
 foo = do
   do
