@@ -1,5 +1,8 @@
 ## Unreleased
 
+* Fixed issue with multiline haddocks in indented contexts ([#64](https://github.com/fourmolu/fourmolu/pull/64))
+* Avoid renaming magic comments ([#90](https://github.com/fourmolu/fourmolu/pull/90))
+
 ### Upstream changes:
 
 #### Ormolu 0.3.0.1
