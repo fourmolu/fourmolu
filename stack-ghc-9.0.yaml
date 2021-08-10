@@ -1,7 +1,6 @@
-resolver: lts-18.12
+resolver: nightly-2021-08-08
 
 extra-deps:
-  - Cabal-3.4.0.0
   - ghc-lib-parser-9.0.1.20210324
 
 ghc-options:
