@@ -82,6 +82,8 @@ jobs:
                   git ls-files '*.hs' '*.hs-boot' \
                     | grep -v '^region-tests/' \
                     | grep -v '^data/examples/' \
+                    | grep -v '^data/diff-tests/' \
+                    | grep -v '^data/parse-failures/' \
                     | xargs stack exec -- fourmolu --mode=inplace
                   git diff --exit-code
 
