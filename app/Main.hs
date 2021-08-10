@@ -257,7 +257,7 @@ configParser =
         short 'c',
         help "Fail if formatting is not idempotent"
       ]
-    <*> (option parseColorMode . mconcat)
+    <*> (option parseBoundedEnum . mconcat)
       [ long "color",
         metavar "WHEN",
         value Auto,
@@ -352,13 +352,6 @@ printerOptsParser = do
 ----------------------------------------------------------------------------
 -- Helpers
 
-parseColorMode :: ReadM ColorMode
-parseColorMode = eitherReader $ \case
-  "never" -> Right Never
-  "always" -> Right Always
-  "auto" -> Right Auto
-  s -> Left $ "unknown color mode: " ++ s
-
 -- | A standard parser of CLI option arguments, applicable to arguments that
 -- have a finite (preferably small) number of possible values. (Basically an
 -- inverse of 'toCLIArgument'.)
@@ -412,6 +405,11 @@ instance ToCLIArgument Mode where
   toCLIArgument Stdout = "stdout"
   toCLIArgument InPlace = "inplace"
   toCLIArgument Check = "check"
+
+instance ToCLIArgument ColorMode where
+  toCLIArgument Never = "never"
+  toCLIArgument Always = "always"
+  toCLIArgument Auto = "auto"
 
 showAllValues :: forall a. (Enum a, Bounded a, ToCLIArgument a) => String
 showAllValues = format (map toCLIArgument' [(minBound :: a) ..])

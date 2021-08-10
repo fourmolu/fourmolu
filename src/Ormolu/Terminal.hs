@@ -48,7 +48,7 @@ data RC = RC
 
 -- | Whether to use colors and other features of ANSI terminals.
 data ColorMode = Never | Always | Auto
-  deriving (Eq, Show)
+  deriving (Eq, Show, Enum, Bounded)
 
 -- | Run 'Term' monad.
 runTerm ::
