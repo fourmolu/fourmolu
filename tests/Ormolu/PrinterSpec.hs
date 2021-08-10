@@ -29,11 +29,11 @@ spec = do
             poHaddockStyle = pure HaddockSingleLine,
             poNewlinesBetweenDecls = pure 1
           }
-  sequence_ $ uncurry checkExample <$> [(ormoluOpts, ""), (defaultPrinterOpts, "-four")] <*> es
+  sequence_ $ checkExample <$> [(ormoluOpts, "ormolu", ""), (defaultPrinterOpts, "fourmolu", "-four")] <*> es
 
 -- | Check a single given example.
-checkExample :: PrinterOptsTotal -> String -> Path Rel File -> Spec
-checkExample po suffix srcPath' = it (fromRelFile srcPath' ++ " works") . withNiceExceptions $ do
+checkExample :: (PrinterOptsTotal, String, String) -> Path Rel File -> Spec
+checkExample (po, label, suffix) srcPath' = it (fromRelFile srcPath' ++ " works (" ++ label ++ ")") . withNiceExceptions $ do
   let srcPath = examplesDir </> srcPath'
       cfg = defaultConfig {cfgPrinterOpts = po}
   expectedOutputPath <- deriveOutput suffix srcPath
