@@ -44,7 +44,8 @@ checkExample po suffix srcPath' = it (fromRelFile srcPath' ++ " works") . withNi
   formatted0 <- ormoluFile cfg (fromRelFile srcPath)
   -- 3. Check the output against expected output. Thus all tests should
   -- include two files: input and expected output.
-  -- T.writeFile (fromRelFile expectedOutputPath) formatted0
+  -- <<< UNCOMMENT NEXT LINE TO REGENERATE OUTPUT FILES >>>
+  -- writeFile (fromRelFile expectedOutputPath) (T.unpack formatted0)
   expected <- readFileUtf8 $ fromRelFile expectedOutputPath
   shouldMatch False formatted0 expected
   -- 4. Check that running the formatter on the output produces the same
