@@ -79,29 +79,31 @@ p_hsmodImport useQualifiedPost ImportDecl {..} = do
     newline
 p_hsmodImport _ (XImportDecl x) = noExtCon x
 
-
 p_lie :: Layout -> RelativePos -> CommaStyle -> IE GhcPs -> R ()
 p_lie encLayout relativePos commaStyle = \case
-  IEVar NoExtField l1 -> withComma $
-    located l1 p_ieWrappedName
-  IEThingAbs NoExtField l1 -> withComma $
-    located l1 p_ieWrappedName
+  IEVar NoExtField l1 ->
+    withComma $
+      located l1 p_ieWrappedName
+  IEThingAbs NoExtField l1 ->
+    withComma $
+      located l1 p_ieWrappedName
   IEThingAll NoExtField l1 -> withComma $ do
     located l1 p_ieWrappedName
     space
     txt "(..)"
-  IEThingWith NoExtField l1 w xs _ -> sitcc $ withComma $ do
-    located l1 p_ieWrappedName
-    breakIfNotDiffFriendly
-    inci $ do
-      let names :: [R ()]
-          names = located' p_ieWrappedName <$> xs
-      parens' False . sep commaDel' sitcc $
-        case w of
-          NoIEWildcard -> names
-          IEWildcard n ->
-            let (before, after) = splitAt n names
-             in before ++ [txt ".."] ++ after
+  IEThingWith NoExtField l1 w xs _ -> sitcc $
+    withComma $ do
+      located l1 p_ieWrappedName
+      breakIfNotDiffFriendly
+      inci $ do
+        let names :: [R ()]
+            names = located' p_ieWrappedName <$> xs
+        parens' False . sep commaDel' sitcc $
+          case w of
+            NoIEWildcard -> names
+            IEWildcard n ->
+              let (before, after) = splitAt n names
+               in before ++ [txt ".."] ++ after
   IEModuleContents NoExtField l1 -> withComma $ do
     located l1 p_hsmodName
   IEGroup NoExtField n str -> do
@@ -127,13 +129,14 @@ p_lie encLayout relativePos commaStyle = \case
         MultiLine -> do
           case commaStyle of
             Leading ->
-                case relativePos of
-                     FirstPos -> m
-                     SinglePos -> m
-                     _ -> comma >> space >> m
+              case relativePos of
+                FirstPos -> m
+                SinglePos -> m
+                _ -> comma >> space >> m
             Trailing -> m >> comma
 
 ----------------------------------------------------------------------------
+
 -- | Unlike the version in `Ormolu.Utils`, this version handles explicitly leading export documentation
 attachRelativePos' :: [LIE GhcPs] -> [(RelativePos, LIE GhcPs)]
 attachRelativePos' = \case
@@ -149,7 +152,7 @@ attachRelativePos' = \case
     markDoc [x] = [(LastPos, x)]
     markDoc (x@(L _ IEDoc {}) : xs) = (MiddlePos, x) : markDoc xs
     markDoc (x@(L _ IEGroup {}) : xs) = (MiddlePos, x) : markDoc xs
-    markDoc (x@(L _ IEDocNamed{}) : xs) = (MiddlePos, x) : markDoc xs
+    markDoc (x@(L _ IEDocNamed {}) : xs) = (MiddlePos, x) : markDoc xs
     -- First export after a Doc gets assigned a `FirstPos`
     markDoc (x : xs) = (FirstPos, x) : markLast xs
 
