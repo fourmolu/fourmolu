@@ -118,6 +118,7 @@ p_lie encLayout relativePos commaStyle = \case
   IEDocNamed NoExtField str -> txt $ "-- $" <> T.pack str
   XIE x -> noExtCon x
   where
+    -- Add a comma to a import-export list element
     withComma m =
       case encLayout of
         SingleLine ->
@@ -148,6 +149,8 @@ attachRelativePos' = \case
   (x@(L _ IEDocNamed {}) : xs) -> (FirstPos, x) : markDoc xs
   (x : xs) -> (FirstPos, x) : markLast xs
   where
+    -- Mark leading documentation, making sure the first export gets assigned
+    -- a `FirstPos`
     markDoc [] = []
     markDoc [x] = [(LastPos, x)]
     markDoc (x@(L _ IEDoc {}) : xs) = (MiddlePos, x) : markDoc xs
