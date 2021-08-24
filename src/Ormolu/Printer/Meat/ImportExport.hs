@@ -187,8 +187,12 @@ parens' topLevelImport m =
     multiLine = do
       commaStyle <- getPrinterOpt poIECommaStyle
       case commaStyle of
-        Leading ->
-          space >> m >> newline
+        -- On leading commas, list elements are inline with the enclosing parentheses
+        Leading -> do
+          space
+          m
+          newline
+        -- On trailing commas, list elements are indented
         Trailing -> do
           space
           sitcc m
