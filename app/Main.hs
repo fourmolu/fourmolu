@@ -234,7 +234,7 @@ printerOptsParser = do
       ]
   poIECommaStyle <-
     (optional . option parseBoundedEnum . mconcat)
-      [ long "import-export-comma-style",
+      [ long "ie-comma-style",
         metavar "IESTYLE",
         help $
           "How to place commas in multi-line import and export lists: "
