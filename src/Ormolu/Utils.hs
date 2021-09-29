@@ -10,27 +10,25 @@ module Ormolu.Utils
     notImplemented,
     showOutputable,
     splitDocString,
-    typeArgToType,
     unSrcSpan,
     incSpanLine,
     separatedByBlank,
     separatedByBlankNE,
     onTheSameLine,
-    removeIndentation,
     groupBy',
   )
 where
 
-import Data.Char (isSpace)
 import Data.List (dropWhileEnd)
-import Data.List.NonEmpty (NonEmpty (..), nonEmpty)
+import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as NE
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
-import GHC
 import GHC.DynFlags (baseDynFlags)
-import qualified Outputable as GHC
+import GHC.Hs
+import GHC.Types.SrcLoc
+import qualified GHC.Utils.Outputable as GHC
 
 -- | Relative positions in a list.
 data RelativePos
@@ -86,23 +84,16 @@ splitDocString docStr =
         _ -> txt
     escapeCommentBraces = T.replace "{-" "{\\-" . T.replace "-}" "-\\}"
 
--- | Get 'LHsType' out of 'LHsTypeArg'.
-typeArgToType :: LHsTypeArg p -> LHsType p
-typeArgToType = \case
-  HsValArg tm -> tm
-  HsTypeArg _ ty -> ty
-  HsArgPar _ -> notImplemented "HsArgPar"
-
 -- | Get 'RealSrcSpan' out of 'SrcSpan' if the span is “helpful”.
 unSrcSpan :: SrcSpan -> Maybe RealSrcSpan
 unSrcSpan = \case
-  RealSrcSpan r -> Just r
+  RealSrcSpan r _ -> Just r
   UnhelpfulSpan _ -> Nothing
 
 -- | Increment line number in a 'SrcSpan'.
 incSpanLine :: Int -> SrcSpan -> SrcSpan
 incSpanLine i = \case
-  RealSrcSpan s ->
+  RealSrcSpan s _ ->
     let start = realSrcSpanStart s
         end = realSrcSpanEnd s
         incLine x =
@@ -110,7 +101,7 @@ incSpanLine i = \case
               line = srcLocLine x
               col = srcLocCol x
            in mkRealSrcLoc file (line + i) col
-     in RealSrcSpan (mkRealSrcSpan (incLine start) (incLine end))
+     in RealSrcSpan (mkRealSrcSpan (incLine start) (incLine end)) Nothing
   UnhelpfulSpan x -> UnhelpfulSpan x
 
 -- | Do two declarations have a blank between them?
@@ -129,19 +120,6 @@ separatedByBlankNE loc a b = separatedByBlank loc (NE.last a) (NE.head b)
 onTheSameLine :: SrcSpan -> SrcSpan -> Bool
 onTheSameLine a b =
   isOneLineSpan (mkSrcSpan (srcSpanEnd a) (srcSpanStart b))
-
--- | Remove indentation from a given 'String'. Return the input with
--- indentation removed and the detected indentation level.
-removeIndentation :: String -> (String, Int)
-removeIndentation (lines -> xs) = (unlines (drop n <$> xs), n)
-  where
-    n = case nonEmpty xs of
-      Nothing -> 0
-      Just l -> minimum (getIndent <$> l)
-    getIndent y =
-      if all isSpace y
-        then 0
-        else length (takeWhile isSpace y)
 
 -- | A generalisation of 'groupBy' to functions which aren't equivalences - a group ends
 -- when comparison fails with the previous element, rather than the first of the group.

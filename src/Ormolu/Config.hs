@@ -10,6 +10,7 @@
 -- | Configuration options used by the tool.
 module Ormolu.Config
   ( Config (..),
+    ColorMode (..),
     RegionIndices (..),
     RegionDeltas (..),
     defaultConfig,
@@ -43,7 +44,8 @@ import Data.Functor.Identity (Identity (..))
 import Data.YAML (Pos)
 import Data.YAML.Aeson (decode1)
 import GHC.Generics (Generic)
-import qualified SrcLoc as GHC
+import qualified GHC.Types.SrcLoc as GHC
+import Ormolu.Terminal (ColorMode (..))
 import System.Directory
   ( XdgDirectory (XdgConfig),
     findFile,
@@ -62,6 +64,8 @@ data Config region = Config
     cfgDebug :: !Bool,
     -- | Checks if re-formatting the result is idempotent
     cfgCheckIdempotence :: !Bool,
+    -- | Whether to use colors and other features of ANSI terminals
+    cfgColorMode :: !ColorMode,
     -- | Region selection
     cfgRegion :: !region,
     cfgPrinterOpts :: !PrinterOptsTotal
@@ -95,6 +99,7 @@ defaultConfig =
       cfgUnsafe = False,
       cfgDebug = False,
       cfgCheckIdempotence = False,
+      cfgColorMode = Auto,
       cfgRegion =
         RegionIndices
           { regionStartLine = Nothing,

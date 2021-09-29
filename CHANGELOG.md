@@ -1,3 +1,158 @@
+## Unreleased
+
+### Upstream changes:
+
+#### Ormolu 0.3.0.1
+
+* Improvements to `.cabal` file handling:
+   * When looking for a `.cabal` file, directories were previously
+     erroneously also considered. [Issue 781](
+     https://github.com/tweag/ormolu/issues/781).
+   * We now print a note if Ormolu was told to consider
+     `.cabal` files, but no suitable one could be found.
+   * Handle an empty `hs-source-dirs` correctly.
+   * Also consider modules which are only conditionally listed
+     in the `.cabal` file.
+
+* The special handling of CPP is now only applied if CPP is
+  actually enabled. [Issue 782](https://github.com/tweag/ormolu/issues/782).
+
+* The left hand side of the `:` operator now uses braces if
+  necessary. [Issue 780](https://github.com/tweag/ormolu/issues/780).
+
+#### Ormolu 0.3.0.0
+
+* Data declarations with multiline kind signatures are now formatted
+  correctly. [Issue 749](https://github.com/tweag/ormolu/issues/749).
+
+* Infix arrow command formations are formatted like usual operators.
+  This fixes [Issue 748](https://github.com/tweag/ormolu/issues/748).
+
+* `do` arrow commands are formatted more flexibly. Fixes [Issue
+  753](https://github.com/tweag/ormolu/issues/753).
+
+* Source code is always read and written using UTF8 and ignoring the native
+  line ending conventions. [Issue
+  717](https://github.com/tweag/ormolu/issues/717).
+
+* Opt-in support to respect default-extensions and default-language
+  from .cabal files. [Issue 517](https://github.com/tweag/ormolu/issues/517).
+
+* Empty case expressions are now rendered with braces. [Issue
+  765](https://github.com/tweag/ormolu/issues/765).
+
+* Omit braces on repeated application of `do` blocks. [Issue
+  735](https://github.com/tweag/ormolu/issues/735).
+
+* Improved handling of disabled regions. [PR 773](
+  https://github.com/tweag/ormolu/pull/773).
+   * Disabled regions are now exactly preserved, in particular
+     empty lines and trailing spaces. [Issue
+     673](https://github.com/tweag/ormolu/issues/673).
+   * Strings like `-}` can now be present in disabled regions.
+     [Issue 708](https://github.com/tweag/ormolu/issues/708).
+
+  This means that using CPP or magic comments in certain ways which
+  were only supported as a side effect previously (like in
+  [Issue 601](https://github.com/tweag/ormolu/issues/601))
+  will now result in formatting failures. Also see [Issue 774](
+  https://github.com/tweag/ormolu/issues/774).
+
+#### Ormolu 0.2.0.0
+
+* Now standalone kind signatures are grouped with type synonyms. [Issue
+  683](https://github.com/tweag/ormolu/issues/683).
+
+* `TemplateHaskell` is not enabled by default anymore. [Issue
+  699](https://github.com/tweag/ormolu/issues/699).
+
+* Made record dot pre-processor rendering idempotent in certain specific
+  cases. [Issue 701](https://github.com/tweag/ormolu/issues/701).
+
+* Added support for arrow command application. [Issue
+  716](https://github.com/tweag/ormolu/issues/716).
+
+* Switched to `ghc-lib-parser-9.0.1`. [PR
+  722](https://github.com/tweag/ormolu/pull/722).
+   * Support for the new language extensions:
+      * `LexicalNegation`, `LinearTypes`: disabled by default
+      * `QualifiedDo`: enabled by default
+   * Due to [upstream changes in whitespace sensitity](
+     https://gitlab.haskell.org/ghc/ghc/-/wikis/migration/9.0#whitespace-sensitive-and-),
+     `TypeApplications` is now *enabled* by default. [Issue
+     452](https://github.com/tweag/ormolu/issues/452).
+   * Haddocks on declarations in files without a `module` header are no longer
+     deleted. [Issue 480](https://github.com/tweag/ormolu/issues/480).
+   * Due to a change in Haddock parsing, empty Haddock comments on function
+     arguments now get deleted.
+
+* CTYPE pragmas are now preserved. [Issue 689](
+  https://github.com/tweag/ormolu/issues/689).
+
+* `TypeApplications` in data/type family instances are now supported. [Issue
+  698](https://github.com/tweag/ormolu/issues/698).
+
+* Formatting infix arrow command formations now preserves the AST. [Issue
+  718](https://github.com/tweag/ormolu/issues/718).
+
+* Surround code in brackets with spaces if it contains a `StarIsType` `*` to
+  prevent unparseable output. [Issue 704](https://github.com/tweag/ormolu/issues/704).
+
+* Formatting applied multiline constructs in do blocks now preserves the AST.
+  [Issue 707](https://github.com/tweag/ormolu/issues/707).
+
+  This will sometimes result in odd indentations, e.g. this snippet is a
+  fixed point:
+  ```haskell
+  foo = do
+    do
+      (+1)
+     1
+  ```
+
+* GHC options passed in via the CLI can now be overridden in local files.
+  Previously, if an extension was disabled via the CLI, it could not be
+  re-enabled per file.
+
+* `NegativeLiterals` is no longer enabled by default. Also, spaces after
+  negation via `-` are removed where possible. [Issue
+  694](https://github.com/tweag/ormolu/issues/694).
+
+* Minus signs in literal patterns are now preserved in all cases. [Issue
+  733](https://github.com/tweag/ormolu/issues/733).
+
+* Added support for left-to-right arrow application. [Issue
+  737](https://github.com/tweag/ormolu/issues/737).
+
+* Now `--mode check` fails on missing trailing blank lines. [Issue
+  743](https://github.com/tweag/ormolu/issues/743).
+
+* Fixed indentation of arrow forms in do blocks. [Issue
+  739](https://github.com/tweag/ormolu/issues/739).
+
+#### Ormolu 0.1.4.1
+
+* Added command line option `--color` to control how diffs are printed.
+  Standardized the way errors are printed.
+
+#### Ormolu 0.1.4.0
+
+* Added support for monad comprehensions. [Issue
+  665](https://github.com/tweag/ormolu/issues/665).
+
+* Fixed a bug when a space was inserted in front of promoted types even when
+  it wasn't strictly necessary. [Issue
+  668](https://github.com/tweag/ormolu/issues/668).
+
+* Now the checking mode displays diffs per file when unformatted files are
+  found. The rendering of the diffs is also improved. [Issue
+  656](https://github.com/tweag/ormolu/issues/656).
+
+#### Ormolu 0.1.3.1
+
+* Fixed a problem with multiline record updates using the record dot
+  preprocessor. [Issue 658](https://github.com/tweag/ormolu/issues/658).
+
 ## Fourmolu 0.3.0.0
 
 * New config option `newlines-between-decls`, to choose the number of blank lines between top-level declarations.

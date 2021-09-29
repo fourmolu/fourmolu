@@ -22,6 +22,7 @@ module Ormolu.Printer.Internal
     useRecordDot,
     inci,
     inciBy,
+    inciHalf,
     sitcc,
     Layout (..),
     enterLayout,
@@ -53,6 +54,9 @@ module Ormolu.Printer.Internal
 
     -- * Annotations
     getAnns,
+
+    -- * Extensions
+    isExtensionEnabled,
   )
 where
 
@@ -66,13 +70,17 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import Data.Text.Lazy.Builder
-import GHC
+import GHC.Data.EnumSet (EnumSet)
+import qualified GHC.Data.EnumSet as EnumSet
+import GHC.LanguageExtensions.Type
+import GHC.Parser.Annotation
+import GHC.Types.SrcLoc
+import GHC.Utils.Outputable (Outputable)
 import Ormolu.Config
 import Ormolu.Parser.Anns
 import Ormolu.Parser.CommentStream
 import Ormolu.Printer.SpanStream
 import Ormolu.Utils (showOutputable)
-import Outputable (Outputable)
 
 ----------------------------------------------------------------------------
 -- The 'R' monad
@@ -98,7 +106,9 @@ data RC = RC
     rcCanUseBraces :: Bool,
     -- | Whether the source could have used the record dot preprocessor
     rcUseRecDot :: Bool,
-    rcPrinterOpts :: PrinterOptsTotal
+    rcPrinterOpts :: PrinterOptsTotal,
+    -- | Enabled extensions
+    rcExtensions :: EnumSet Extension
   }
 
 -- | State context of 'R'.
@@ -154,7 +164,7 @@ data CommentPosition
     OnNextLine
   deriving (Eq, Show)
 
--- | Run an 'R' monad.
+-- | Run 'R' monad.
 runR ::
   -- | Monad to run
   R () ->
@@ -167,9 +177,11 @@ runR ::
   PrinterOptsTotal ->
   -- | Use Record Dot Syntax
   Bool ->
+  -- | Enabled extensions
+  EnumSet Extension ->
   -- | Resulting rendition
   Text
-runR (R m) sstream cstream anns printerOpts recDot =
+runR (R m) sstream cstream anns printerOpts recDot extensions =
   TL.toStrict . toLazyText . scBuilder $ execState (runReaderT m rc) sc
   where
     rc =
@@ -180,7 +192,8 @@ runR (R m) sstream cstream anns printerOpts recDot =
           rcAnns = anns,
           rcCanUseBraces = False,
           rcUseRecDot = recDot,
-          rcPrinterOpts = printerOpts
+          rcPrinterOpts = printerOpts,
+          rcExtensions = extensions
         }
     sc =
       SC
@@ -385,14 +398,6 @@ newlineRawN n = R . modify $ \sc ->
 useRecordDot :: R Bool
 useRecordDot = R (asks rcUseRecDot)
 
--- | Increase indentation level by one indentation step for the inner
--- computation. 'inci' should be used when a part of code must be more
--- indented relative to the parts outside of 'inci' in order for the output
--- to be valid Haskell. When layout is single-line there is no obvious
--- effect, but with multi-line layout correct indentation levels matter.
-inci :: R () -> R ()
-inci = inciBy 1
-
 -- | Like 'inci', but indents by the given fraction of a full step.
 inciBy :: Int -> R () -> R ()
 inciBy x (R m) = do
@@ -404,6 +409,19 @@ inciBy x (R m) = do
   R (local modRC m)
   where
     roundDownToNearest r n = (n `div` r) * r
+
+-- | Increase indentation level by one indentation step for the inner
+-- computation. 'inci' should be used when a part of code must be more
+-- indented relative to the parts outside of 'inci' in order for the output
+-- to be valid Haskell. When layout is single-line there is no obvious
+-- effect, but with multi-line layout correct indentation levels matter.
+inci :: R () -> R ()
+inci = inciBy 1
+
+-- | In rare cases, we have to indent by a positive amount smaller
+-- than 'indentStep'.
+inciHalf :: R () -> R ()
+inciHalf = inciBy 2
 
 -- | Set indentation level for the inner computation equal to current
 -- column. This makes sure that the entire inner block is uniformly
@@ -595,3 +613,9 @@ dontUseBraces (R r) = R (local (\i -> i {rcCanUseBraces = False}) r)
 -- | Return 'True' if we can use braces in this context.
 canUseBraces :: R Bool
 canUseBraces = R (asks rcCanUseBraces)
+
+----------------------------------------------------------------------------
+-- Extensions
+
+isExtensionEnabled :: Extension -> R Bool
+isExtensionEnabled ext = R . asks $ EnumSet.member ext . rcExtensions

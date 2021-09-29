@@ -1,7 +1,4 @@
-The GHC parser (in Haddock mode) failed:
-  src/Database/Esqueleto/Internal/Internal.hs:379:1
+Found .cabal file esqueleto.cabal, but it did not mention Setup.hs
+src/Database/Esqueleto/Internal/Internal.hs:405:1
+  The GHC parser (in Haddock mode) failed:
   lexical error in string/character literal at character 's'
-
-The GHC parser (in Haddock mode) failed:
-  test/PostgreSQL/Test.hs:562:9-41
-  parse error on input `-- | Check the result is not null'

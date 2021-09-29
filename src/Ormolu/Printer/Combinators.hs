@@ -12,6 +12,7 @@ module Ormolu.Printer.Combinators
     runR,
     getAnns,
     getEnclosingSpan,
+    isExtensionEnabled,
 
     -- * Combinators
 
@@ -24,8 +25,10 @@ module Ormolu.Printer.Combinators
     inci,
     inciIf,
     inciBy,
+    inciHalf,
     located,
     located',
+    realLocated,
     switchLayout,
     Layout (..),
     vlayout,
@@ -47,6 +50,7 @@ module Ormolu.Printer.Combinators
     backticks,
     banana,
     braces,
+    recordDotBraces,
     brackets,
     parens,
     parensHash,
@@ -70,10 +74,10 @@ where
 import Control.Monad
 import Data.List (intersperse)
 import Data.Text (Text)
+import GHC.Types.SrcLoc
 import Ormolu.Config
 import Ormolu.Printer.Comments
 import Ormolu.Printer.Internal
-import SrcLoc
 
 ----------------------------------------------------------------------------
 -- Basic
@@ -99,10 +103,19 @@ located ::
   (a -> R ()) ->
   R ()
 located (L (UnhelpfulSpan _) a) f = f a
-located (L (RealSrcSpan l) a) f = do
+located (L (RealSrcSpan l _) a) f = realLocated (L l a) f
+
+-- | See 'located'
+realLocated ::
+  -- | Thing to enter
+  RealLocated a ->
+  -- | How to render inner value
+  (a -> R ()) ->
+  R ()
+realLocated (L l a) f = do
   spitPrecedingComments l
   withEnclosingSpan l $
-    switchLayout [RealSrcSpan l] (f a)
+    switchLayout [RealSrcSpan l Nothing] (f a)
   spitFollowingComments l
 
 -- | A version of 'located' with arguments flipped.
@@ -217,12 +230,29 @@ backticks m = do
   txt "`"
 
 -- | Surround given entity by banana brackets (i.e., from arrow notation.)
-banana :: R () -> R ()
-banana = brackets_ True "(|" "|)" N
+banana :: BracketStyle -> R () -> R ()
+banana = brackets_ True "(|" "|)"
 
 -- | Surround given entity by curly braces @{@ and  @}@.
 braces :: BracketStyle -> R () -> R ()
 braces = brackets_ False "{" "}"
+
+-- | Surround record update fields which use RecordDot plugin entity by
+-- curly braces @{@ and @}@.
+--
+-- @since 0.1.3.1
+recordDotBraces :: R () -> R ()
+recordDotBraces m = sitcc (vlayout singleLine multiLine)
+  where
+    singleLine = do
+      txt "{"
+      m
+      txt "}"
+    multiLine = do
+      txt "{"
+      sitcc m
+      newline
+      txt "}"
 
 -- | Surround given entity by square brackets @[@ and @]@.
 brackets :: BracketStyle -> R () -> R ()
