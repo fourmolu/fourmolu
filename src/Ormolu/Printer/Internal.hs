@@ -21,6 +21,7 @@ module Ormolu.Printer.Internal
     declNewline,
     useRecordDot,
     inci,
+    inciBy,
     inciByFrac,
     inciHalf,
     sitcc,
@@ -398,17 +399,22 @@ newlineRawN n = R . modify $ \sc ->
 useRecordDot :: R Bool
 useRecordDot = R (asks rcUseRecDot)
 
+-- | Like 'inci', but indents by exactly the given number of steps.
+inciBy :: Int -> R () -> R ()
+inciBy step (R m) = R (local modRC m)
+  where
+    modRC rc =
+      rc
+        { rcIndent = roundDownToNearest step (rcIndent rc) + step
+        }
+    roundDownToNearest r n = (n `div` r) * r
+
 -- | Like 'inci', but indents by the given fraction of a full step.
 inciByFrac :: Int -> R () -> R ()
-inciByFrac x (R m) = do
-  step <- (`quot` x) <$> R (asks (runIdentity . poIndentation . rcPrinterOpts))
-  let modRC rc =
-        rc
-          { rcIndent = roundDownToNearest step (rcIndent rc) + step
-          }
-  R (local modRC m)
-  where
-    roundDownToNearest r n = (n `div` r) * r
+inciByFrac x m = do
+  indentStep <- R $ asks (runIdentity . poIndentation . rcPrinterOpts)
+  let step = indentStep `quot` x
+  inciBy step m
 
 -- | Increase indentation level by one indentation step for the inner
 -- computation. 'inci' should be used when a part of code must be more
