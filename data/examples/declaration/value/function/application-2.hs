@@ -8,10 +8,9 @@ foo = do
   $$( bar
     ) baz
 
--- TODO: uncomment and fix
--- foo = do
---   do (+1)
---    2
+foo = do
+  do (+1)
+   2
 
 foo = do
   do
