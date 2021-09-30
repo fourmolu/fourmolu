@@ -148,7 +148,7 @@ parens' topLevelImport m =
       txt "("
       breakpoint'
       sitcc body
-      vlayout (txt ")") (inciBy (-1) trailingParen)
+      vlayout (txt ")") (inciByFrac (-1) trailingParen)
     False -> sitcc $ do
       txt "("
       body

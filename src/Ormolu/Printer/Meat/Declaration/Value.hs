@@ -265,7 +265,7 @@ p_match' placer render style isInfix strictness m_pats GRHSs {..} = do
         unless (eqEmptyLocalBinds (unLoc grhssLocalBinds)) $ do
           breakpoint
           indentWhere <- getPrinterOpt poIndentWheres
-          bool (inciBy $ -2) id indentWhere $ txt "where"
+          bool (inciByFrac $ -2) id indentWhere $ txt "where"
           unless whereIsEmpty breakpoint
           inciIf indentWhere $ located grhssLocalBinds p_hsLocalBinds
   inciIf indentBody $ do

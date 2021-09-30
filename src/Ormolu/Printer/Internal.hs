@@ -21,7 +21,7 @@ module Ormolu.Printer.Internal
     declNewline,
     useRecordDot,
     inci,
-    inciBy,
+    inciByFrac,
     inciHalf,
     sitcc,
     Layout (..),
@@ -399,8 +399,8 @@ useRecordDot :: R Bool
 useRecordDot = R (asks rcUseRecDot)
 
 -- | Like 'inci', but indents by the given fraction of a full step.
-inciBy :: Int -> R () -> R ()
-inciBy x (R m) = do
+inciByFrac :: Int -> R () -> R ()
+inciByFrac x (R m) = do
   step <- (`quot` x) <$> R (asks (runIdentity . poIndentation . rcPrinterOpts))
   let modRC rc =
         rc
@@ -416,12 +416,12 @@ inciBy x (R m) = do
 -- to be valid Haskell. When layout is single-line there is no obvious
 -- effect, but with multi-line layout correct indentation levels matter.
 inci :: R () -> R ()
-inci = inciBy 1
+inci = inciByFrac 1
 
 -- | In rare cases, we have to indent by a positive amount smaller
 -- than 'indentStep'.
 inciHalf :: R () -> R ()
-inciHalf = inciBy 2
+inciHalf = inciByFrac 2
 
 -- | Set indentation level for the inner computation equal to current
 -- column. This makes sure that the entire inner block is uniformly

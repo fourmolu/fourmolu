@@ -24,7 +24,7 @@ module Ormolu.Printer.Combinators
     declNewline,
     inci,
     inciIf,
-    inciBy,
+    inciByFrac,
     inciHalf,
     located,
     located',
