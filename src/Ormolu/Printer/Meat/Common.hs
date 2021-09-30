@@ -11,15 +11,22 @@ module Ormolu.Printer.Meat.Common
     p_qualName,
     p_infixDefHelper,
     p_hsDocString,
+    p_sourceText,
   )
 where
 
 import Control.Monad
 import Data.List (intersperse, isPrefixOf)
 import qualified Data.Text as T
-import GHC hiding (GhcPs, IE)
-import Name (nameStableString)
-import OccName (OccName (..))
+import GHC.Hs.Doc
+import GHC.Hs.ImpExp
+import GHC.Parser.Annotation
+import GHC.Types.Basic
+import GHC.Types.Name (nameStableString)
+import GHC.Types.Name.Occurrence (OccName (..))
+import GHC.Types.Name.Reader
+import GHC.Types.SrcLoc
+import GHC.Unit.Module.Name
 import Ormolu.Config
 import Ormolu.Printer.Combinators
 import Ormolu.Utils
@@ -198,4 +205,9 @@ p_hsDocString hstyle needsNewline (L l str) = do
       -- attached to it and instead its location can be obtained from
       -- nearest enclosing span.
       UnhelpfulSpan _ -> getEnclosingSpan (const True)
-      RealSrcSpan spn -> pure $ Just spn
+      RealSrcSpan spn _ -> pure $ Just spn
+
+p_sourceText :: SourceText -> R ()
+p_sourceText = \case
+  NoSourceText -> pure ()
+  SourceText s -> space >> txt (T.pack s)
