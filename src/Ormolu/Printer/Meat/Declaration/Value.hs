@@ -604,7 +604,9 @@ p_hsExpr' s = \case
             -- Thus, we indent by half of indentStep when the function is
             -- a multi line do block or case expression.
             indentArg
-              | isOneLineSpan (getLoc func) = inci
+              | isOneLineSpan (getLoc func) = case unLoc func of
+                HsDo {} -> inciBy 2
+                _ -> inci
               | otherwise = case unLoc func of
                 HsDo {} -> inciHalf
                 HsCase {} -> inciHalf
