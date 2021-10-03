@@ -265,7 +265,7 @@ p_match' placer render style isInfix strictness m_pats GRHSs {..} = do
         unless (eqEmptyLocalBinds (unLoc grhssLocalBinds)) $ do
           breakpoint
           indentWhere <- getPrinterOpt poIndentWheres
-          bool (inciBy $ -2) id indentWhere $ txt "where"
+          bool (inciByFrac $ -2) id indentWhere $ txt "where"
           unless whereIsEmpty breakpoint
           inciIf indentWhere $ located grhssLocalBinds p_hsLocalBinds
   inciIf indentBody $ do
@@ -604,7 +604,9 @@ p_hsExpr' s = \case
             -- Thus, we indent by half of indentStep when the function is
             -- a multi line do block or case expression.
             indentArg
-              | isOneLineSpan (getLoc func) = inci
+              | isOneLineSpan (getLoc func) = case unLoc func of
+                HsDo {} -> inciBy 2
+                _ -> inci
               | otherwise = case unLoc func of
                 HsDo {} -> inciHalf
                 HsCase {} -> inciHalf

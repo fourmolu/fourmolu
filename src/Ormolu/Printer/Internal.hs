@@ -22,6 +22,7 @@ module Ormolu.Printer.Internal
     useRecordDot,
     inci,
     inciBy,
+    inciByFrac,
     inciHalf,
     sitcc,
     Layout (..),
@@ -398,17 +399,22 @@ newlineRawN n = R . modify $ \sc ->
 useRecordDot :: R Bool
 useRecordDot = R (asks rcUseRecDot)
 
--- | Like 'inci', but indents by the given fraction of a full step.
+-- | Like 'inci', but indents by exactly the given number of steps.
 inciBy :: Int -> R () -> R ()
-inciBy x (R m) = do
-  step <- (`quot` x) <$> R (asks (runIdentity . poIndentation . rcPrinterOpts))
-  let modRC rc =
-        rc
-          { rcIndent = roundDownToNearest step (rcIndent rc) + step
-          }
-  R (local modRC m)
+inciBy step (R m) = R (local modRC m)
   where
+    modRC rc =
+      rc
+        { rcIndent = roundDownToNearest step (rcIndent rc) + step
+        }
     roundDownToNearest r n = (n `div` r) * r
+
+-- | Like 'inci', but indents by the given fraction of a full step.
+inciByFrac :: Int -> R () -> R ()
+inciByFrac x m = do
+  indentStep <- R $ asks (runIdentity . poIndentation . rcPrinterOpts)
+  let step = indentStep `quot` x
+  inciBy step m
 
 -- | Increase indentation level by one indentation step for the inner
 -- computation. 'inci' should be used when a part of code must be more
@@ -416,12 +422,12 @@ inciBy x (R m) = do
 -- to be valid Haskell. When layout is single-line there is no obvious
 -- effect, but with multi-line layout correct indentation levels matter.
 inci :: R () -> R ()
-inci = inciBy 1
+inci = inciByFrac 1
 
 -- | In rare cases, we have to indent by a positive amount smaller
 -- than 'indentStep'.
 inciHalf :: R () -> R ()
-inciHalf = inciBy 2
+inciHalf = inciByFrac 2
 
 -- | Set indentation level for the inner computation equal to current
 -- column. This makes sure that the entire inner block is uniformly
