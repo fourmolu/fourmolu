@@ -49,6 +49,8 @@ To release a new version, do the following workflow:
     1. Download the `fourmolu-*.tar.gz` file from CI artifacts
     1. Upload tarball to Hackage
 
+1. If this is a new major version, update HLS to use it ([example](https://github.com/haskell/haskell-language-server/pull/2254)). It's rare that we'll be changing our API in a way that requires actual code changes.
+
 ## Merging upstream
 
 Fourmolu aims to continue merging upstream changes in Ormolu. Whenever Ormolu makes a new release (ideally within a week), the following steps should be run to merge the changes into Fourmolu.
