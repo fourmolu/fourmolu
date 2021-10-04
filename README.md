@@ -113,7 +113,7 @@ to `false`.
 
 ### Editor integration
 
-Fourmolu can be integrated with your editor via the [Haskell Language Server](https://github.com/haskell/haskell-language-server).
+Fourmolu can be integrated with your editor via the [Haskell Language Server](https://haskell-language-server.readthedocs.io/en/latest/index.html).
 
 ### Magic comments
 
