@@ -76,7 +76,6 @@ import Control.Monad
 import Data.List (intersperse)
 import Data.Text (Text)
 import GHC.Types.SrcLoc
-import GHC.Natural (naturalToInt)
 import Ormolu.Config
 import Ormolu.Printer.Comments
 import Ormolu.Printer.Internal
@@ -169,10 +168,10 @@ spansLayout colLimit = \case
       combinedSpan = foldr combineSrcSpans x xs
 
       shouldBreakSingleLine :: SrcSpan -> Bool
-      shouldBreakSingleLine (RealSrcSpan rs) =
+      shouldBreakSingleLine (RealSrcSpan rs _) =
         case colLimit of
           ColumnLimit maxLineLength ->
-            spanLineLength > naturalToInt maxLineLength
+            spanLineLength > fromIntegral maxLineLength
           NoLimit -> False
         where
           spanLineLength = srcSpanEndCol rs - srcSpanStartCol rs

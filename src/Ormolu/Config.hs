@@ -46,10 +46,9 @@ import Data.Functor.Identity (Identity (..))
 import Data.YAML (Pos)
 import Data.YAML.Aeson (decode1)
 import GHC.Generics (Generic)
+import GHC.Natural (Natural)
 import qualified GHC.Types.SrcLoc as GHC
 import Ormolu.Terminal (ColorMode (..))
-import GHC.Natural (Natural)
-import qualified SrcLoc as GHC
 import System.Directory
   ( XdgDirectory (XdgConfig),
     findFile,

@@ -444,6 +444,7 @@ instance ToCLIArgument ColorMode where
   toCLIArgument Never = "never"
   toCLIArgument Always = "always"
   toCLIArgument Auto = "auto"
+
 instance ToCLIArgument ColumnLimit where
   toCLIArgument (ColumnLimit lim) = "ColumnLimit " <> show lim
   toCLIArgument NoLimit = "NoLimit"

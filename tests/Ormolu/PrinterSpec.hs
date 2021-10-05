@@ -32,21 +32,21 @@ spec = do
           }
 
       lineBreakingExamples = map addSuffixForLineBreaking defaultExamples
-      withLineBreaking = defaultPrinterOpts {poColumnLimit = pure $ ColumnLimit 80}
+
   sequence_ $
-    ( uncurry
-        checkExample
-        <$> [(ormoluOpts, ""), (defaultPrinterOpts, "-four")]
+    ( checkExample
+        <$> [(ormoluOpts, "ormolu", ""), (defaultPrinterOpts, "fourmolu", "-four")]
         <*> defaultExamples
     )
-      <> (uncurry (checkExample withLineBreaking) <$> lineBreakingExamples)
+      <> (uncurry checkExample <$> lineBreakingExamples)
 
-addSuffixForLineBreaking :: Path Rel File -> (String, Path Rel File)
+addSuffixForLineBreaking :: Path Rel File -> ((PrinterOptsTotal, String, String), Path Rel File)
 addSuffixForLineBreaking path =
   if any (`isSuffixOf` toFilePath path) exceptionList
-    then ("-line-break", path)
-    else ("-four", path)
+    then ((withLineBreakingOpts, "auto-line-break", "-line-break"), path)
+    else ((withLineBreakingOpts, "fourmolu", "-four"), path)
   where
+    withLineBreakingOpts = defaultPrinterOpts {poColumnLimit = pure $ ColumnLimit 80}
     exceptionList =
       [ "rewrite-rule/prelude1.hs",
         "rewrite-rule/prelude4.hs",
