@@ -134,7 +134,7 @@ p_lie encLayout relativePos commaStyle = \case
           case commaStyle of
             Leading ->
               case relativePos of
-                FirstPos -> m
+                FirstPos -> inci m
                 SinglePos -> m
                 _ -> comma >> space >> m
             Trailing -> m >> comma
