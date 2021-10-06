@@ -9,13 +9,12 @@ module Ormolu.Printer.Meat.Module
 where
 
 import Control.Monad
-import qualified Data.Text as T
-import GHC
+import GHC.Hs
+import GHC.Types.SrcLoc
 import Ormolu.Config
 import Ormolu.Imports (normalizeImports)
 import Ormolu.Parser.CommentStream
 import Ormolu.Parser.Pragma
-import Ormolu.Parser.Shebang
 import Ormolu.Printer.Combinators
 import Ormolu.Printer.Comments
 import Ormolu.Printer.Meat.Common
@@ -28,23 +27,15 @@ import Ormolu.Printer.Meat.Pragma
 p_hsModule ::
   -- | Stack header
   Maybe (RealLocated Comment) ->
-  -- | Shebangs
-  [Shebang] ->
   -- | Pragmas and the associated comments
   [([RealLocated Comment], Pragma)] ->
-  -- | Whether to use postfix qualified imports
-  Bool ->
   -- | AST to print
-  HsModule GhcPs ->
+  HsModule ->
   R ()
-p_hsModule mstackHeader shebangs pragmas qualifiedPost HsModule {..} = do
+p_hsModule mstackHeader pragmas HsModule {..} = do
   let deprecSpan = maybe [] (\(L s _) -> [s]) hsmodDeprecMessage
       exportSpans = maybe [] (\(L s _) -> [s]) hsmodExports
   switchLayout (deprecSpan <> exportSpans) $ do
-    forM_ shebangs $ \(Shebang x) ->
-      located x $ \shebang -> do
-        txt (T.pack shebang)
-        newline
     forM_ mstackHeader $ \(L spn comment) -> do
       spitCommentNow spn comment
       newline
@@ -77,7 +68,7 @@ p_hsModule mstackHeader shebangs pragmas qualifiedPost HsModule {..} = do
     newline
     preserveGroups <- getPrinterOpt poRespectful
     forM_ (normalizeImports preserveGroups hsmodImports) $ \importGroup -> do
-      forM_ importGroup (located' (p_hsmodImport qualifiedPost))
+      forM_ importGroup (located' p_hsmodImport)
       newline
     declNewline
     switchLayout (getLoc <$> hsmodDecls) $ do

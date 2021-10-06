@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 sinkData h compression = do
     (uncompressedSize, crc32, compressedSize) <-
         case compression of
@@ -13,9 +15,9 @@ sinkData h compression = do
 #else
       BZip2   -> throwM BZip2Unsupported
 #endif
-    return
-        DataDescriptor
-            { ddCRC32 = fromIntegral crc32
-            , ddCompressedSize = compressedSize
-            , ddUncompressedSize = uncompressedSize
-            }
+  return
+      DataDescriptor
+          { ddCRC32 = fromIntegral crc32
+          , ddCompressedSize = compressedSize
+          , ddUncompressedSize = uncompressedSize
+          }

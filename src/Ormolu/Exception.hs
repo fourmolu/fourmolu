@@ -1,4 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 
 -- | 'OrmoluException' type and surrounding definitions.
 module Ormolu.Exception
@@ -8,71 +10,105 @@ module Ormolu.Exception
 where
 
 import Control.Exception
+import Control.Monad (forM_)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as NE
-import Data.Text (Text)
-import qualified GHC
-import Ormolu.Utils (showOutputable)
-import qualified Outputable as GHC
-import System.Exit (ExitCode (..), exitWith)
+import qualified Data.Text as T
+import GHC.Types.SrcLoc
+import Ormolu.Diff.Text (TextDiff, printTextDiff)
+import Ormolu.Terminal
+import System.Exit (ExitCode (..))
 import System.IO
 
 -- | Ormolu exception representing all cases when Ormolu can fail.
 data OrmoluException
   = -- | Parsing of original source code failed
-    OrmoluParsingFailed GHC.SrcSpan String
+    OrmoluParsingFailed SrcSpan String
   | -- | Parsing of formatted source code failed
-    OrmoluOutputParsingFailed GHC.SrcSpan String
+    OrmoluOutputParsingFailed SrcSpan String
   | -- | Original and resulting ASTs differ
-    OrmoluASTDiffers FilePath [GHC.SrcSpan]
+    OrmoluASTDiffers FilePath [SrcSpan]
   | -- | Formatted source code is not idempotent
-    OrmoluNonIdempotentOutput GHC.RealSrcLoc Text Text
+    OrmoluNonIdempotentOutput TextDiff
   | -- | Some GHC options were not recognized
     OrmoluUnrecognizedOpts (NonEmpty String)
+  | -- | Cabal file parsing failed
+    OrmoluCabalFileParsingFailed FilePath
+  | -- | Missing input file path when using stdin input and
+    -- accounting for .cabal files
+    OrmoluMissingStdinInputFile
   deriving (Eq, Show)
 
-instance Exception OrmoluException where
-  displayException = \case
-    OrmoluParsingFailed s e ->
-      showParsingErr "The GHC parser (in Haddock mode) failed:" s [e]
-    OrmoluOutputParsingFailed s e ->
-      showParsingErr "Parsing of formatted code failed:" s [e]
-        ++ "Please, consider reporting the bug.\n"
-    OrmoluASTDiffers path ss ->
-      unlines $
-        [ "AST of input and AST of formatted code differ."
-        ]
-          ++ fmap
-            withIndent
-            ( case fmap (\s -> "at " ++ showOutputable s) ss of
-                [] -> ["in " ++ path]
-                xs -> xs
-            )
-          ++ ["Please, consider reporting the bug."]
-    OrmoluNonIdempotentOutput loc left right ->
-      showParsingErr
-        "Formatting is not idempotent:"
-        loc
-        ["before: " ++ show left, "after:  " ++ show right]
-        ++ "Please, consider reporting the bug.\n"
-    OrmoluUnrecognizedOpts opts ->
-      unlines
-        [ "The following GHC options were not recognized:",
-          (withIndent . unwords . NE.toList) opts
-        ]
+instance Exception OrmoluException
+
+-- | Print an 'OrmoluException'.
+printOrmoluException ::
+  OrmoluException ->
+  Term ()
+printOrmoluException = \case
+  OrmoluParsingFailed s e -> do
+    bold (putSrcSpan s)
+    newline
+    put "  The GHC parser (in Haddock mode) failed:"
+    newline
+    put "  "
+    put (T.pack e)
+    newline
+  OrmoluOutputParsingFailed s e -> do
+    bold (putSrcSpan s)
+    newline
+    put "  Parsing of formatted code failed:"
+    put "  "
+    put (T.pack e)
+    newline
+  OrmoluASTDiffers path ss -> do
+    putS path
+    newline
+    put "  AST of input and AST of formatted code differ."
+    newline
+    forM_ ss $ \s -> do
+      put "    at "
+      putSrcSpan s
+      newline
+    put "  Please, consider reporting the bug."
+    newline
+  OrmoluNonIdempotentOutput diff -> do
+    printTextDiff diff
+    newline
+    put "  Formatting is not idempotent."
+    newline
+    put "  Please, consider reporting the bug."
+    newline
+  OrmoluUnrecognizedOpts opts -> do
+    put "The following GHC options were not recognized:"
+    newline
+    put "  "
+    (putS . unwords . NE.toList) opts
+    newline
+  OrmoluCabalFileParsingFailed cabalFile -> do
+    put "Parsing this .cabal file failed:"
+    newline
+    put $ "  " <> T.pack cabalFile
+    newline
+  OrmoluMissingStdinInputFile -> do
+    put "The --stdin-input-file option is necessary when using input"
+    newline
+    put "from stdin and accounting for .cabal files"
+    newline
 
 -- | Inside this wrapper 'OrmoluException' will be caught and displayed
--- nicely using 'displayException'.
+-- nicely.
 withPrettyOrmoluExceptions ::
-  -- | Action that may throw the exception
-  IO a ->
-  IO a
-withPrettyOrmoluExceptions m = m `catch` h
+  -- | Color mode
+  ColorMode ->
+  -- | Action that may throw an exception
+  IO ExitCode ->
+  IO ExitCode
+withPrettyOrmoluExceptions colorMode m = m `catch` h
   where
-    h :: OrmoluException -> IO a
     h e = do
-      hPutStrLn stderr (displayException e)
-      exitWith . ExitFailure $
+      runTerm (printOrmoluException e) colorMode stderr
+      return . ExitFailure $
         case e of
           -- Error code 1 is for 'error' or 'notImplemented'
           -- 2 used to be for erroring out on CPP
@@ -81,19 +117,5 @@ withPrettyOrmoluExceptions m = m `catch` h
           OrmoluASTDiffers {} -> 5
           OrmoluNonIdempotentOutput {} -> 6
           OrmoluUnrecognizedOpts {} -> 7
-
-----------------------------------------------------------------------------
--- Helpers
-
--- | Show a parse error.
-showParsingErr :: GHC.Outputable a => String -> a -> [String] -> String
-showParsingErr msg spn err =
-  unlines $
-    [ msg,
-      withIndent (showOutputable spn)
-    ]
-      ++ map withIndent err
-
--- | Indent with 2 spaces for readability.
-withIndent :: String -> String
-withIndent txt = "  " ++ txt
+          OrmoluCabalFileParsingFailed {} -> 8
+          OrmoluMissingStdinInputFile {} -> 9

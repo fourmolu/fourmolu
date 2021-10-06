@@ -9,14 +9,14 @@ workflows:
           name: test_latest
           latest: true
       - run_build_and_test:
+          name: test_ghc_9.0
+          stack_yaml: stack-ghc-9.0.yaml
+      - run_build_and_test:
           name: test_ghc_8.10
           stack_yaml: stack-ghc-8.10.yaml
       - run_build_and_test:
           name: test_ghc_8.8
           stack_yaml: stack-ghc-8.8.yaml
-      - run_build_and_test:
-          name: test_ghc_8.6
-          stack_yaml: stack-ghc-8.6.yaml
 
 jobs:
   run_build_and_test:
@@ -82,6 +82,8 @@ jobs:
                   git ls-files '*.hs' '*.hs-boot' \
                     | grep -v '^region-tests/' \
                     | grep -v '^data/examples/' \
+                    | grep -v '^data/diff-tests/' \
+                    | grep -v '^data/parse-failures/' \
                     | xargs stack exec -- fourmolu --mode=inplace
                   git diff --exit-code
 
