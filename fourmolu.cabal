@@ -1,56 +1,21 @@
-cabal-version:   1.18
-name:            fourmolu
-version:         0.3.0.0
-license:         BSD3
-license-file:    LICENSE.md
+cabal-version:      2.4
+name:               fourmolu
+version:            0.4.0.0
+license:            BSD-3-Clause
+license-file:       LICENSE.md
 maintainer:
     Matt Parsons <parsonsmatt@gmail.com>
     George Thomas <georgefsthomas@gmail.com>
-
-tested-with:     ghc ==8.6.5 ghc ==8.8.4 ghc ==8.10.1
-homepage:        https://github.com/parsonsmatt/fourmolu
-bug-reports:     https://github.com/parsonsmatt/fourmolu/issues
-synopsis:        A formatter for Haskell source code
-description:     A formatter for Haskell source code.
-category:        Development, Formatting
-build-type:      Simple
-data-files:
-    data/examples/declaration/annotation/*.hs
-    data/examples/declaration/class/*.hs
-    data/examples/declaration/data/*.hs
-    data/examples/declaration/data/gadt/*.hs
-    data/examples/declaration/default/*.hs
-    data/examples/declaration/deriving/*.hs
-    data/examples/declaration/foreign/*.hs
-    data/examples/declaration/instance/*.hs
-    data/examples/declaration/rewrite-rule/*.hs
-    data/examples/declaration/role-annotation/*.hs
-    data/examples/declaration/signature/complete/*.hs
-    data/examples/declaration/signature/fixity/*.hs
-    data/examples/declaration/signature/inline/*.hs
-    data/examples/declaration/signature/minimal/*.hs
-    data/examples/declaration/signature/pattern/*.hs
-    data/examples/declaration/signature/set-cost-centre/*.hs
-    data/examples/declaration/signature/specialize/*.hs
-    data/examples/declaration/signature/type/*.hs
-    data/examples/declaration/splice/*.hs
-    data/examples/declaration/type-families/closed-type-family/*.hs
-    data/examples/declaration/type-families/data-family/*.hs
-    data/examples/declaration/type-families/type-family/*.hs
-    data/examples/declaration/type-synonyms/*.hs
-    data/examples/declaration/type/*.hs
-    data/examples/declaration/value/function/*.hs
-    data/examples/declaration/value/function/arrow/*.hs
-    data/examples/declaration/value/function/comprehension/*.hs
-    data/examples/declaration/value/function/do/*.hs
-    data/examples/declaration/value/function/infix/*.hs
-    data/examples/declaration/value/function/pattern/*.hs
-    data/examples/declaration/value/other/*.hs
-    data/examples/declaration/value/pattern-synonyms/*.hs
-    data/examples/declaration/warning/*.hs
-    data/examples/import/*.hs
-    data/examples/module-header/*.hs
-    data/examples/other/*.hs
+tested-with:        ghc ==8.8.4 ghc ==8.10.7 ghc ==9.0.1
+homepage:           https://github.com/parsonsmatt/fourmolu
+bug-reports:        https://github.com/parsonsmatt/fourmolu/issues
+synopsis:           A formatter for Haskell source code
+description:        A formatter for Haskell source code.
+category:           Development, Formatting
+build-type:         Simple
+extra-source-files:
+    data/**/*.hs
+    data/**/*.txt
 
 extra-doc-files:
     CHANGELOG.md
@@ -69,7 +34,8 @@ library
     exposed-modules:
         Ormolu
         Ormolu.Config
-        Ormolu.Diff
+        Ormolu.Diff.ParseResult
+        Ormolu.Diff.Text
         Ormolu.Exception
         Ormolu.Imports
         Ormolu.Parser
@@ -77,7 +43,6 @@ library
         Ormolu.Parser.CommentStream
         Ormolu.Parser.Pragma
         Ormolu.Parser.Result
-        Ormolu.Parser.Shebang
         Ormolu.Printer
         Ormolu.Printer.Combinators
         Ormolu.Printer.Comments
@@ -106,31 +71,35 @@ library
         Ormolu.Printer.SpanStream
         Ormolu.Processing.Common
         Ormolu.Processing.Cpp
-        Ormolu.Processing.Postprocess
         Ormolu.Processing.Preprocess
+        Ormolu.Terminal
         Ormolu.Utils
+        Ormolu.Utils.Extensions
+        Ormolu.Utils.IO
 
     hs-source-dirs:   src
-    other-modules:
-        GHC
-        GHC.DynFlags
-
+    other-modules:    GHC.DynFlags
     default-language: Haskell2010
     build-depends:
+        Diff >=0.4 && <1.0,
         aeson >=1.4.0.0 && <1.6,
+        ansi-terminal >=0.10 && <1.0,
         base >=4.12 && <5.0,
-        bytestring >=0.2 && <0.11,
+        bytestring >=0.2 && <0.12,
         containers >=0.5 && <0.7,
         directory >=1.3.3 && <1.4,
         dlist >=0.8 && <2.0,
         exceptions >=0.6 && <0.11,
         filepath >=1.4.2.1 && <1.5,
-        ghc-lib-parser >=8.10 && <8.11,
+        ghc-lib-parser >=9.0 && <9.1,
         HsYAML >=0.2 && <0.3,
         HsYAML-aeson >=0.2 && <0.3,
         mtl >=2.0 && <3.0,
         syb >=0.7 && <0.8,
-        text >=0.2 && <1.3
+        text >=0.2 && <1.3,
+        filepath >=1.2 && <1.5,
+        directory ^>=1.3,
+        Cabal ^>=3.4
 
     if flag(dev)
         ghc-options:
@@ -141,16 +110,21 @@ library
     else
         ghc-options: -O2 -Wall
 
+    if impl(ghc <8.10.0)
+        ghc-options: -fmax-pmcheck-iterations=3000000
+
 executable fourmolu
     main-is:          Main.hs
     hs-source-dirs:   app
     other-modules:    Paths_fourmolu
+    autogen-modules:  Paths_fourmolu
     default-language: Haskell2010
     build-depends:
-        fourmolu -any,
+        fourmolu,
         base >=4.12 && <5.0,
         directory >=1.3.3 && <1.4,
-        ghc-lib-parser >=8.10 && <8.11,
+        filepath >=1.2 && <1.5,
+        ghc-lib-parser >=9.0 && <9.1,
         gitrev >=1.3 && <1.4,
         optparse-applicative >=0.14 && <0.17,
         text >=0.2 && <1.3
@@ -165,23 +139,29 @@ executable fourmolu
         ghc-options: -O2 -Wall -rtsopts
 
 test-suite tests
-    type:             exitcode-stdio-1.0
-    main-is:          Spec.hs
-    build-tools:      hspec-discover >=2.0 && <3.0
-    hs-source-dirs:   tests
+    type:               exitcode-stdio-1.0
+    main-is:            Spec.hs
+    build-tool-depends: hspec-discover:hspec-discover >=2.0 && <3.0
+    hs-source-dirs:     tests
     other-modules:
+        Ormolu.CabalExtensionsSpec
+        Ormolu.Diff.TextSpec
+        Ormolu.Parser.OptionsSpec
+        Ormolu.Parser.ParseFailureSpec
         Ormolu.Parser.PragmaSpec
         Ormolu.PrinterSpec
 
-    default-language: Haskell2010
+    default-language:   Haskell2010
     build-depends:
+        fourmolu,
         base >=4.12 && <5.0,
         containers >=0.5 && <0.7,
+        directory ^>=1.3,
         filepath >=1.2 && <1.5,
         hspec >=2.0 && <3.0,
-        fourmolu -any,
-        path >=0.6 && <0.9,
+        path >=0.6 && <0.10,
         path-io >=1.4.2 && <2.0,
+        temporary ^>=1.3,
         text >=0.2 && <1.3
 
     if flag(dev)

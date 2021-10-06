@@ -1,3 +1,4 @@
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -11,7 +12,14 @@ where
 import Control.Monad
 import Data.Maybe (isJust, maybeToList)
 import qualified Data.Text as Text
-import GHC
+import GHC.Hs.Decls
+import GHC.Hs.Extension
+import GHC.Hs.Type
+import GHC.Parser.Annotation
+import GHC.Types.Basic
+import GHC.Types.ForeignCall
+import GHC.Types.Name.Reader
+import GHC.Types.SrcLoc
 import Ormolu.Config
 import Ormolu.Printer.Combinators
 import Ormolu.Printer.Meat.Common
@@ -24,7 +32,7 @@ p_dataDecl ::
   -- | Type constructor
   Located RdrName ->
   -- | Type patterns
-  [LHsType GhcPs] ->
+  HsTyPats GhcPs ->
   -- | Lexical fixity
   LexicalFixity ->
   -- | Data definition
@@ -37,27 +45,37 @@ p_dataDecl style name tpats fixity HsDataDefn {..} = do
   txt $ case style of
     Associated -> mempty
     Free -> " instance"
-  let constructorSpans = getLoc name : fmap getLoc tpats
-  switchLayout constructorSpans $ do
+  case unLoc <$> dd_cType of
+    Nothing -> pure ()
+    Just (CType prag header (type_, _)) -> do
+      p_sourceText prag
+      case header of
+        Nothing -> pure ()
+        Just (Header h _) -> space *> p_sourceText h
+      p_sourceText type_
+      txt " #-}"
+  let constructorSpans = getLoc name : fmap lhsTypeArgSrcSpan tpats
+      sigSpans = maybeToList . fmap getLoc $ dd_kindSig
+      declHeaderSpans = constructorSpans ++ sigSpans
+  switchLayout declHeaderSpans $ do
     breakpoint
-    inci $
-      p_infixDefHelper
-        (isInfix fixity)
-        True
-        (p_rdrName name)
-        (located' p_hsType <$> tpats)
-  case dd_kindSig of
-    Nothing -> return ()
-    Just k -> do
-      space
-      txt "::"
-      space
-      located k p_hsType
+    inci $ do
+      switchLayout constructorSpans $
+        p_infixDefHelper
+          (isInfix fixity)
+          True
+          (p_rdrName name)
+          (p_lhsTypeArg <$> tpats)
+      forM_ dd_kindSig $ \k -> do
+        space
+        txt "::"
+        breakpoint
+        inci $ located k p_hsType
   let gadt = isJust dd_kindSig || any (isGadt . unLoc) dd_cons
   unless (null dd_cons) $
     if gadt
       then inci $ do
-        switchLayout constructorSpans $ do
+        switchLayout declHeaderSpans $ do
           breakpoint
           txt "where"
         breakpoint
@@ -85,7 +103,6 @@ p_dataDecl style name tpats fixity HsDataDefn {..} = do
   unless (null $ unLoc dd_derivs) breakpoint
   inci . located dd_derivs $ \xs ->
     sep newline (located' p_hsDerivingClause) xs
-p_dataDecl _ _ _ _ (XHsDataDefn x) = noExtCon x
 
 p_conDecl ::
   Bool ->
@@ -97,7 +114,7 @@ p_conDecl singleConstRec = \case
     let conDeclSpn =
           fmap getLoc con_names
             <> [getLoc con_forall]
-            <> conTyVarsSpans con_qvars
+            <> fmap getLoc con_qvars
             <> maybeToList (fmap getLoc con_mb_cxt)
             <> conArgsSpans con_args
     switchLayout conDeclSpn $ do
@@ -116,25 +133,31 @@ p_conDecl singleConstRec = \case
                 then newline
                 else breakpoint
         interArgBreak
-        when (unLoc con_forall) $ do
-          p_forallBndrs ForallInvis p_hsTyVarBndr (hsq_explicit con_qvars)
-          interArgBreak
-        forM_ con_mb_cxt p_lhsContext
-        case con_args of
-          PrefixCon xs -> do
-            sep breakpoint (located' p_hsType) xs
-            unless (null xs) $ do
-              space
-              txt "->"
-              breakpoint
-          RecCon l -> do
-            located l p_conDeclFields
-            unless (null $ unLoc l) $ do
-              space
-              txt "->"
-              breakpoint
-          InfixCon _ _ -> notImplemented "InfixCon"
-        p_hsType (unLoc con_res_ty)
+        conTy <- case con_args of
+          PrefixCon xs ->
+            let go (HsScaled a b) t = L (combineLocs t b) (HsFunTy NoExtField a b t)
+             in pure $ foldr go con_res_ty xs
+          RecCon r@(L l rs) ->
+            pure
+              . L (combineLocs r con_res_ty)
+              $ HsFunTy
+                NoExtField
+                (HsUnrestrictedArrow NormalSyntax)
+                (L l $ HsRecTy NoExtField rs)
+                con_res_ty
+          InfixCon _ _ -> notImplemented "InfixCon" -- NOTE(amesgen) should be unreachable
+        let qualTy = case con_mb_cxt of
+              Nothing -> conTy
+              Just qs ->
+                L (combineLocs qs conTy) $
+                  HsQualTy NoExtField qs conTy
+        let quantifiedTy =
+              if unLoc con_forall
+                then
+                  L (combineLocs con_forall qualTy) $
+                    HsForAllTy NoExtField (mkHsForAllInvisTele con_qvars) qualTy
+                else qualTy
+        p_hsType (unLoc quantifiedTy)
   ConDeclH98 {..} -> do
     mapM_ (p_hsDocString Pipe True) con_doc
     let conDeclWithContextSpn =
@@ -146,7 +169,7 @@ p_conDecl singleConstRec = \case
           getLoc con_name : conArgsSpans con_args
     switchLayout conDeclWithContextSpn $ do
       when (unLoc con_forall) $ do
-        p_forallBndrs ForallInvis p_hsTyVarBndr con_ex_tvs
+        p_forallBndrs ForAllInvis p_hsTyVarBndr con_ex_tvs
         breakpoint
         indent <- getPrinterOpt poIndentation
         vlayout (pure ()) . txt $ Text.replicate (indent - 2) " "
@@ -155,33 +178,27 @@ p_conDecl singleConstRec = \case
         PrefixCon xs -> do
           p_rdrName con_name
           unless (null xs) breakpoint
-          inci . sitcc $ sep breakpoint (sitcc . located' p_hsTypePostDoc) xs
+          inci . sitcc $ sep breakpoint (sitcc . located' p_hsTypePostDoc) (hsScaledThing <$> xs)
         RecCon l -> do
           p_rdrName con_name
           breakpoint
           inciIf (not singleConstRec) (located l p_conDeclFields)
-        InfixCon x y -> do
+        InfixCon (HsScaled _ x) (HsScaled _ y) -> do
           located x p_hsType
           breakpoint
           inci $ do
             p_rdrName con_name
             space
             located y p_hsType
-  XConDecl x -> noExtCon x
 
 conArgsSpans :: HsConDeclDetails GhcPs -> [SrcSpan]
 conArgsSpans = \case
   PrefixCon xs ->
-    getLoc <$> xs
+    getLoc . hsScaledThing <$> xs
   RecCon l ->
     [getLoc l]
   InfixCon x y ->
-    [getLoc x, getLoc y]
-
-conTyVarsSpans :: LHsQTyVars GhcPs -> [SrcSpan]
-conTyVarsSpans = \case
-  HsQTvs {..} -> getLoc <$> hsq_explicit
-  XLHsQTyVars x -> noExtCon x
+    getLoc . hsScaledThing <$> [x, y]
 
 p_lhsContext ::
   LHsContext GhcPs ->
@@ -198,7 +215,6 @@ isGadt :: ConDecl GhcPs -> Bool
 isGadt = \case
   ConDeclGADT {} -> True
   ConDeclH98 {} -> False
-  XConDecl {} -> False
 
 p_hsDerivingClause ::
   HsDerivingClause GhcPs ->
@@ -239,9 +255,6 @@ p_hsDerivingClause HsDerivingClause {..} = do
           txt "via"
           space
           located hsib_body p_hsType
-      ViaStrategy (XHsImplicitBndrs x) ->
-        noExtCon x
-p_hsDerivingClause (XHsDerivingClause x) = noExtCon x
 
 ----------------------------------------------------------------------------
 -- Helpers

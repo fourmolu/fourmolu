@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
@@ -9,33 +10,36 @@ module Ormolu.Parser
   )
 where
 
-import Bag (bagToList)
-import qualified CmdLineParser as GHC
 import Control.Exception
-import Control.Monad.IO.Class
+import Control.Monad.Except
+import Data.Functor
 import qualified Data.List as L
 import qualified Data.List.NonEmpty as NE
 import Data.Ord (Down (Down))
-import qualified Data.Text as T
-import DynFlags as GHC
-import ErrUtils (Severity (..), errMsgSeverity, errMsgSpan)
-import qualified FastString as GHC
-import GHC hiding (IE, UnicodeSyntax)
+import GHC.Data.Bag (bagToList)
+import qualified GHC.Data.EnumSet as EnumSet
+import qualified GHC.Data.FastString as GHC
+import qualified GHC.Data.StringBuffer as GHC
+import qualified GHC.Driver.CmdLine as GHC
+import GHC.Driver.Session as GHC
+import qualified GHC.Driver.Types as GHC
 import GHC.DynFlags (baseDynFlags)
 import GHC.LanguageExtensions.Type (Extension (..))
-import qualified HeaderInfo as GHC
-import qualified HscTypes as GHC
-import qualified Lexer as GHC
+import qualified GHC.Parser as GHC
+import qualified GHC.Parser.Header as GHC
+import qualified GHC.Parser.Lexer as GHC
+import GHC.Types.SrcLoc
+import GHC.Unit.Module.Name
+import GHC.Utils.Error (Severity (..), errMsgSeverity, errMsgSpan)
+import qualified GHC.Utils.Panic as GHC
 import Ormolu.Config
 import Ormolu.Exception
 import Ormolu.Parser.Anns
 import Ormolu.Parser.CommentStream
 import Ormolu.Parser.Result
-import Ormolu.Processing.Preprocess (preprocess)
-import Ormolu.Utils (incSpanLine, removeIndentation)
-import qualified Panic as GHC
-import qualified Parser as GHC
-import qualified StringBuffer as GHC
+import Ormolu.Processing.Common
+import Ormolu.Processing.Preprocess
+import Ormolu.Utils (incSpanLine)
 
 -- | Parse a complete module from string.
 parseModule ::
@@ -48,12 +52,9 @@ parseModule ::
   String ->
   m
     ( [GHC.Warn],
-      Either (SrcSpan, String) ParseResult
+      Either (SrcSpan, String) [SourceSnippet]
     )
-parseModule Config {..} path rawInput = liftIO $ do
-  let (literalPrefix, indentedInput, literalSuffix, extraComments) =
-        preprocess path rawInput cfgRegion
-      (input, indent) = removeIndentation indentedInput
+parseModule config@Config {..} path rawInput = liftIO $ do
   -- It's important that 'setDefaultExts' is done before
   -- 'parsePragmasIntoDynFlags', because otherwise we might enable an
   -- extension that was explicitly disabled in the file.
@@ -71,6 +72,23 @@ parseModule Config {..} path rawInput = liftIO $ do
                 (mkSrcLoc (GHC.mkFastString path) 1 1)
                 (mkSrcLoc (GHC.mkFastString path) 1 1)
          in throwIO (OrmoluParsingFailed loc err)
+  let cppEnabled = EnumSet.member Cpp (GHC.extensionFlags dynFlags)
+  snippets <- runExceptT . forM (preprocess cppEnabled cfgRegion rawInput) $ \case
+    Right region ->
+      fmap ParsedSnippet . ExceptT $
+        parseModuleSnippet (config $> region) dynFlags path rawInput
+    Left raw -> pure $ RawSnippet raw
+  pure (warnings, snippets)
+
+parseModuleSnippet ::
+  MonadIO m =>
+  Config RegionDeltas ->
+  DynFlags ->
+  FilePath ->
+  String ->
+  m (Either (SrcSpan, String) ParseResult)
+parseModuleSnippet Config {..} dynFlags path rawInput = liftIO $ do
+  let (input, indent) = removeIndentation . linesInRegion cfgRegion $ rawInput
   let useRecordDot =
         "record-dot-preprocessor" == pgm_F dynFlags
           || any
@@ -97,24 +115,20 @@ parseModule Config {..} path rawInput = liftIO $ do
             -- later stages; but we fail in those cases.
             Just err -> Left err
             Nothing ->
-              let (stackHeader, shebangs, pragmas, comments) =
-                    mkCommentStream input extraComments pstate
+              let (stackHeader, pragmas, comments) =
+                    mkCommentStream input pstate
                in Right
                     ParseResult
                       { prParsedSource = hsModule,
                         prAnns = mkAnns pstate,
                         prStackHeader = stackHeader,
-                        prShebangs = shebangs,
                         prPragmas = pragmas,
                         prCommentStream = comments,
                         prUseRecordDot = useRecordDot,
-                        prImportQualifiedPost =
-                          GHC.xopt ImportQualifiedPost dynFlags,
-                        prLiteralPrefix = T.pack literalPrefix,
-                        prLiteralSuffix = T.pack literalSuffix,
+                        prExtensions = GHC.extensionFlags dynFlags,
                         prIndent = indent
                       }
-  return (warnings, r)
+  return r
 
 -- | Enable all language extensions that we think should be enabled by
 -- default for ease of use.
@@ -137,17 +151,20 @@ manualExts =
     TransformListComp, -- steals the group keyword
     UnboxedTuples, -- breaks (#) lens operator
     MagicHash, -- screws {-# these things #-}
-    TypeApplications, -- steals (@) operator on some cases
     AlternativeLayoutRule,
     AlternativeLayoutRuleTransitional,
     MonadComprehensions,
     UnboxedSums,
     UnicodeSyntax, -- gives special meanings to operators like (→)
+    TemplateHaskell, -- changes how $foo is parsed
     TemplateHaskellQuotes, -- enables TH subset of quasi-quotes, this
     -- apparently interferes with QuasiQuotes in
     -- weird ways
-    ImportQualifiedPost -- affects how Ormolu renders imports, so the
+    ImportQualifiedPost, -- affects how Ormolu renders imports, so the
     -- decision of enabling this style is left to the user
+    NegativeLiterals, -- with this, `- 1` and `-1` have differing AST
+    LexicalNegation, -- implies NegativeLiterals
+    LinearTypes -- steals the (%) type operator in some cases
   ]
 
 -- | Run a 'GHC.P' computation.
@@ -164,7 +181,7 @@ runParser ::
   GHC.ParseResult a
 runParser parser flags filename input = GHC.unP parser parseState
   where
-    location = GHC.mkRealSrcLoc (GHC.mkFastString filename) 1 1
+    location = mkRealSrcLoc (GHC.mkFastString filename) 1 1
     buffer = GHC.stringToStringBuffer input
     parseState = GHC.mkPState flags buffer location
 
@@ -202,9 +219,9 @@ parsePragmasIntoDynFlags ::
   IO (Either String ([GHC.Warn], DynFlags))
 parsePragmasIntoDynFlags flags extraOpts filepath str =
   catchErrors $ do
-    let opts = GHC.getOptions flags (GHC.stringToStringBuffer str) filepath
+    let fileOpts = GHC.getOptions flags (GHC.stringToStringBuffer str) filepath
     (flags', leftovers, warnings) <-
-      parseDynamicFilePragma flags (opts <> extraOpts)
+      parseDynamicFilePragma flags (extraOpts <> fileOpts)
     case NE.nonEmpty leftovers of
       Nothing -> return ()
       Just unrecognizedOpts ->
