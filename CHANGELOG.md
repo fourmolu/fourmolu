@@ -6,6 +6,17 @@
 
 ### Upstream changes:
 
+#### Ormolu 0.3.1.0
+
+* Allow check mode when working with stdin input. [Issue 634](
+  https://github.com/tweag/ormolu/issues/634).
+* Now guards are printed on a new line if at least one guard is multiline or
+  if all guards together occupy more than one line. The body of each guard
+  is also indented one level deeper in that case. [Issue
+  712](https://github.com/tweag/ormolu/issues/712).
+* Invalid Haddock comments are no longer silently deleted, but rather converted
+  into regular comments. [Issue 474](https://github.com/tweag/ormolu/issues/474).
+
 #### Ormolu 0.3.0.1
 
 * Improvements to `.cabal` file handling:
