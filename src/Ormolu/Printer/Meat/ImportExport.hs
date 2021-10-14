@@ -131,7 +131,7 @@ p_lie encLayout relativePos = \case
             LastPos -> return ()
         MultiLine -> comma
 
--- --------------------------------------------------------------------------
+----------------------------------------------------------------------------
 -- Unlike the versions in 'Ormolu.Printer.Combinators', these do not depend on
 -- whether 'leadingCommas' is set. This is useful here is we choose to keep
 -- import and export lists independent of that setting.

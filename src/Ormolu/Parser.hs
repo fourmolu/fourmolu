@@ -204,7 +204,7 @@ instance Ord SeverityOrd where
       f SevWarning = 6
       f SevError = 7
 
--- --------------------------------------------------------------------------
+----------------------------------------------------------------------------
 -- Helpers taken from HLint
 
 parsePragmasIntoDynFlags ::

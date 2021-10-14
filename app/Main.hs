@@ -128,7 +128,7 @@ formatOne CabalDefaultExtensionsOpts {..} mode config mpath =
   where
     configPlus dynOpts = config {cfgDynOptions = cfgDynOptions config ++ dynOpts}
 
--- --------------------------------------------------------------------------
+----------------------------------------------------------------------------
 -- Command line options parsing
 
 data Opts = Opts
@@ -349,7 +349,7 @@ printerOptsParser = do
       ]
   pure PrinterOpts {..}
 
--- --------------------------------------------------------------------------
+----------------------------------------------------------------------------
 -- Helpers
 
 -- | A standard parser of CLI option arguments, applicable to arguments that

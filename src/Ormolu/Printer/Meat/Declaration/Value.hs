@@ -1204,7 +1204,7 @@ p_stringLit src =
        in map (\((p, x), n) -> (p, x, n)) z
     orig (_, x, _) = x
 
--- --------------------------------------------------------------------------
+----------------------------------------------------------------------------
 -- Helpers
 
 -- | Return the wrapping function controlling the use of braces according to

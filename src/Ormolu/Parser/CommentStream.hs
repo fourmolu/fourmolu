@@ -29,7 +29,7 @@ import GHC.Types.SrcLoc
 import Ormolu.Parser.Pragma
 import Ormolu.Utils (onTheSameLine, showOutputable)
 
--- --------------------------------------------------------------------------
+----------------------------------------------------------------------------
 -- Comment stream
 
 -- | A stream of 'RealLocated' 'Comment's in ascending order with respect to
@@ -72,7 +72,7 @@ showCommentStream (CommentStream xs) =
   where
     showComment (L l str) = showOutputable l ++ " " ++ show str
 
--- --------------------------------------------------------------------------
+----------------------------------------------------------------------------
 -- Comment
 
 -- | A wrapper for a single comment. The 'Bool' indicates whether there were
@@ -152,7 +152,7 @@ hasAtomsBefore (Comment atomsBefore _) = atomsBefore
 isMultilineComment :: Comment -> Bool
 isMultilineComment (Comment _ (x :| _)) = "{-" `L.isPrefixOf` x
 
--- --------------------------------------------------------------------------
+----------------------------------------------------------------------------
 -- Helpers
 
 -- | Detect and extract stack header if it is present.

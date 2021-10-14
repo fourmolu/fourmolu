@@ -20,7 +20,7 @@ import GHC.Types.SrcLoc
 import Ormolu.Parser.CommentStream
 import Ormolu.Printer.Internal
 
--- --------------------------------------------------------------------------
+----------------------------------------------------------------------------
 -- Top-level
 
 -- | Output all preceding comments for an element at given location.
@@ -53,7 +53,7 @@ spitRemainingComments = do
   newline
   void $ handleCommentSeries spitRemainingComment
 
--- --------------------------------------------------------------------------
+----------------------------------------------------------------------------
 -- Single-comment functions
 
 -- | Output a single preceding comment for an element at given location.
@@ -113,7 +113,7 @@ spitRemainingComment = do
     spitCommentNow l comment
     newline
 
--- --------------------------------------------------------------------------
+----------------------------------------------------------------------------
 -- Helpers
 
 -- | Output series of comments.

@@ -79,7 +79,7 @@ import Ormolu.Config
 import Ormolu.Printer.Comments
 import Ormolu.Printer.Internal
 
--- --------------------------------------------------------------------------
+----------------------------------------------------------------------------
 -- Basic
 
 -- | Indent the inner expression if the first argument is 'True'.
@@ -164,7 +164,7 @@ breakpoint = vlayout space newline
 breakpoint' :: R ()
 breakpoint' = vlayout (return ()) newline
 
--- --------------------------------------------------------------------------
+----------------------------------------------------------------------------
 -- Formatting lists
 
 -- | Render a collection of elements inserting a separator between them.
@@ -211,7 +211,7 @@ sepSemi f xs = vlayout singleLine multiLine
     multiLine =
       sep newline (dontUseBraces . f) xs
 
--- --------------------------------------------------------------------------
+----------------------------------------------------------------------------
 -- Wrapping
 
 -- | 'BracketStyle' controlling how closing bracket is rendered.
@@ -323,7 +323,7 @@ brackets_ needBreaks open close style m = sitcc (vlayout singleLine multiLine)
       newline
       inciIf (style == S) (txt close)
 
--- --------------------------------------------------------------------------
+----------------------------------------------------------------------------
 -- Literals
 
 -- | Print @,@.

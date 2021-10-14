@@ -83,7 +83,7 @@ import Ormolu.Parser.CommentStream
 import Ormolu.Printer.SpanStream
 import Ormolu.Utils (showOutputable)
 
--- --------------------------------------------------------------------------
+----------------------------------------------------------------------------
 -- The 'R' monad
 
 -- | The 'R' monad hosts combinators that allow us to describe how to render
@@ -209,7 +209,7 @@ runR (R m) sstream cstream anns printerOpts recDot extensions =
           scSpanMark = Nothing
         }
 
--- --------------------------------------------------------------------------
+----------------------------------------------------------------------------
 -- Internal functions
 
 -- | Type of the thing to output. Influences the primary low-level rendering
@@ -473,7 +473,7 @@ getLayout = R (asks rcLayout)
 getPrinterOpt :: (forall f. PrinterOpts f -> f a) -> R a
 getPrinterOpt f = R $ asks $ runIdentity . f . rcPrinterOpts
 
--- --------------------------------------------------------------------------
+----------------------------------------------------------------------------
 -- Special helpers for comment placement
 
 -- | Register a comment line for outputting. It will be inserted right
@@ -552,7 +552,7 @@ withEnclosingSpan spn (R m) = R (local modRC m)
 thisLineSpans :: R [RealSrcSpan]
 thisLineSpans = R (gets scThisLineSpans)
 
--- --------------------------------------------------------------------------
+----------------------------------------------------------------------------
 -- Stateful markers
 
 -- | An auxiliary marker for keeping track of last output element.
@@ -596,7 +596,7 @@ setSpanMark spnMark = R . modify $ \sc ->
 getSpanMark :: R (Maybe SpanMark)
 getSpanMark = R (gets scSpanMark)
 
--- --------------------------------------------------------------------------
+----------------------------------------------------------------------------
 -- Annotations
 
 -- | For a given span return 'AnnKeywordId's associated with it.
@@ -605,7 +605,7 @@ getAnns ::
   R [AnnKeywordId]
 getAnns spn = lookupAnns spn <$> R (asks rcAnns)
 
--- --------------------------------------------------------------------------
+----------------------------------------------------------------------------
 -- Helpers for braces
 
 -- | Make the inner computation use braces around single-line layouts.
@@ -620,7 +620,7 @@ dontUseBraces (R r) = R (local (\i -> i {rcCanUseBraces = False}) r)
 canUseBraces :: R Bool
 canUseBraces = R (asks rcCanUseBraces)
 
--- --------------------------------------------------------------------------
+----------------------------------------------------------------------------
 -- Extensions
 
 isExtensionEnabled :: Extension -> R Bool

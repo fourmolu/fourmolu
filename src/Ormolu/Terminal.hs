@@ -31,7 +31,7 @@ import Ormolu.Utils (showOutputable)
 import System.Console.ANSI
 import System.IO (Handle, hFlush, hPutStr)
 
--- --------------------------------------------------------------------------
+----------------------------------------------------------------------------
 -- The 'Term' monad
 
 -- | Terminal monad.
@@ -68,7 +68,7 @@ runTerm (Term m) colorMode rcHandle = do
   hFlush rcHandle
   return x
 
--- --------------------------------------------------------------------------
+----------------------------------------------------------------------------
 -- Styling
 
 -- | Make the inner computation output bold text.
@@ -99,7 +99,7 @@ withSGR sgrs (Term m) = Term $ do
       return x
     else m
 
--- --------------------------------------------------------------------------
+----------------------------------------------------------------------------
 -- Printing
 
 -- | Output 'Text'.
