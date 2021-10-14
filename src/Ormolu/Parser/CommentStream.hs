@@ -96,17 +96,33 @@ mkComment ls (L l s) = (ls', comment)
   where
     comment =
       L l . Comment atomsBefore . removeConseqBlanks . fmap dropTrailing $
-        if "{-" `L.isPrefixOf` s
-          then case NE.nonEmpty (lines s) of
-            Nothing -> s :| []
-            Just (x :| xs) ->
-              let getIndent y =
-                    if all isSpace y
-                      then startIndent
-                      else length (takeWhile isSpace y)
-                  n = minimum (startIndent : fmap getIndent xs)
-               in x :| (drop n <$> xs)
-          else s :| []
+        case take 2 s of
+          -- multiline comments
+          "{-" -> do
+            case NE.nonEmpty (lines s) of
+              Nothing -> s :| []
+              Just (x :| xs) ->
+                let getIndent y =
+                      if all isSpace y
+                        then startIndent
+                        else length (takeWhile isSpace y)
+                    n = minimum (startIndent : fmap getIndent xs)
+                in x :| (drop n <$> xs)
+          -- single line comments
+          "--" -> do
+            -- check the first three characters to see if there's a space after the `--` block
+            -- if there isn't, add one in.  For example, this takes something like `--foo` and 
+            -- and returns `-- foo`
+            case take 3 s of
+              -- this is the happy path, the comment is formatted as expected
+              -- this could probably be improved to also catch multi
+              "-- " -> s :| []
+              -- yikes, we've got a comment like this: `--foo`
+              _ -> do
+                -- insert a space after the comment marker
+                let s' = insertAt " " s 3
+                s' :| []
+          _ -> s :| []
     (atomsBefore, ls') =
       case dropWhile ((< commentLine) . fst) ls of
         [] -> (False, [])
@@ -115,6 +131,7 @@ mkComment ls (L l s) = (ls', comment)
             "--" -> (False, ls'')
             "{-" -> (False, ls'')
             _ -> (True, ls'')
+    insertAt x xs n = take (n - 1) xs ++ x ++ drop (n - 1) xs
     dropTrailing = L.dropWhileEnd isSpace
     startIndent = srcSpanStartCol l - 1
     commentLine = srcSpanStartLine l
