@@ -97,7 +97,7 @@ mkComment ls (L l s) = (ls', comment)
     comment =
       L l . Comment atomsBefore . removeConseqBlanks . fmap dropTrailing $
         case take 2 s of
-          -- multiline comments
+          -- multiline or inline comments
           "{-" -> do
             case NE.nonEmpty (lines s) of
               Nothing -> s :| []
@@ -115,9 +115,8 @@ mkComment ls (L l s) = (ls', comment)
             -- and returns `-- foo`
             case take 3 s of
               -- this is the happy path, the comment is formatted as expected
-              -- this could probably be improved to also catch multi
               "-- " -> s :| []
-              -- this is also a happy path, it's probably a separator
+              -- this is also a happy path, since it's probably a separator
               "---" -> s :| []
               -- Any other case means it's possible we've got a comment like this: `--foo`
               _ -> do
