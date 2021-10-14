@@ -4,7 +4,8 @@
 [![Hackage](https://img.shields.io/hackage/v/fourmolu.svg?style=flat)](https://hackage.haskell.org/package/fourmolu)
 
 * [Configuration](#configuration)
-* [Building and installation](#building-and-installation)
+* [Installation](#installation)
+* [Building from source](#building-from-source)
 * [Usage](#usage)
     * [Editor integration](#editor-integration)
     * [Magic comments](#magic-comments)
@@ -54,11 +55,21 @@ See [here](fourmolu.yaml) for a config to simulate the behaviour of Ormolu.
 
 These options can also be set on the command line (which takes precedence over config files). Run `fourmolu -h` to see all options.
 
-## Building and installation
+## Installation
 
-Simply run `cabal v2-install fourmolu`, to install the latest release from Hackage.
+To install the latest release from Hackage, simply install with Cabal or Stack:
 
-You can also clone this repository, then build with Cabal or Stack.
+```console
+$ cabal install fourmolu
+$ stack install fourmolu
+```
+
+## Building from source
+
+```console
+$ cabal build
+$ stack build
+```
 
 ## Usage
 
@@ -91,6 +102,14 @@ To check if files are are already formatted (useful on CI):
 ```console
 $ fourmolu --mode check $(find . -name '*.hs')
 ```
+
+#### :zap: Beware git's `core.autocrlf` on Windows :zap:
+Fourmolu's output always uses LF line endings. In particular,
+`fourmolu --mode check` will fail if its input is correctly formatted
+*except* that it has CRLF line endings. This situation can happen on Windows
+when checking out a git repository without having set [`core.autocrlf`](
+https://www.git-scm.com/docs/git-config#Documentation/git-config.txt-coreautocrlf)
+to `false`.
 
 ### Editor integration
 
@@ -146,7 +165,7 @@ Exit code | Meaning
 8         | Cabal file parsing failed
 9         | Missing input file path when using stdin input and accounting for .cabal files
 100       | In checking mode: unformatted files
-101       | Inplace and check modes do not work with stdin
+101       | Inplace mode does not work with stdin
 102       | Other issue (with multiple input files)
 400       | Failed to load Fourmolu configuration file
 
