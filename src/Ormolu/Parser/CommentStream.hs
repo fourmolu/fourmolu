@@ -107,7 +107,7 @@ mkComment ls (L l s) = (ls', comment)
                         then startIndent
                         else length (takeWhile isSpace y)
                     n = minimum (startIndent : fmap getIndent xs)
-                 in x :| (drop n <$> xs)
+                  in x :| (drop n <$> xs)
           -- single line comments
           "--" -> do
             -- check the first three characters to see if there's a space after the `--` block
