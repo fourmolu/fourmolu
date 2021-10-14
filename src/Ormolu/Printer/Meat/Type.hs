@@ -296,7 +296,7 @@ p_lhsTypeArg = \case
   -- NOTE(amesgen) is this unreachable or just not implemented?
   HsArgPar _ -> notImplemented "HsArgPar"
 
-----------------------------------------------------------------------------
+-- --------------------------------------------------------------------------
 -- Conversion functions
 
 tyVarsToTypes :: LHsQTyVars GhcPs -> [LHsType GhcPs]

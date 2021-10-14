@@ -256,7 +256,7 @@ p_hsDerivingClause HsDerivingClause {..} = do
           space
           located hsib_body p_hsType
 
-----------------------------------------------------------------------------
+-- --------------------------------------------------------------------------
 -- Helpers
 
 isInfix :: LexicalFixity -> Bool

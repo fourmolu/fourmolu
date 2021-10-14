@@ -165,7 +165,7 @@ buildFixityMap getOpName opTree =
         [] -> InBetween
         xs' -> maximum xs'
 
-----------------------------------------------------------------------------
+-- --------------------------------------------------------------------------
 -- Helpers
 
 -- | Convert an 'OpTree' to with all operators having the same fixity and

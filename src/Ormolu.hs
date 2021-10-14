@@ -132,7 +132,7 @@ ormoluStdin ::
 ormoluStdin cfg =
   liftIO getContents >>= ormolu cfg "<stdin>"
 
-----------------------------------------------------------------------------
+-- --------------------------------------------------------------------------
 -- Helpers
 
 -- | A wrapper around 'parseModule'.

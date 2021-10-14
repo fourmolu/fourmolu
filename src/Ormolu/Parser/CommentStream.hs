@@ -29,7 +29,7 @@ import GHC.Types.SrcLoc
 import Ormolu.Parser.Pragma
 import Ormolu.Utils (onTheSameLine, showOutputable)
 
-----------------------------------------------------------------------------
+-- --------------------------------------------------------------------------
 -- Comment stream
 
 -- | A stream of 'RealLocated' 'Comment's in ascending order with respect to
@@ -72,7 +72,7 @@ showCommentStream (CommentStream xs) =
   where
     showComment (L l str) = showOutputable l ++ " " ++ show str
 
-----------------------------------------------------------------------------
+-- --------------------------------------------------------------------------
 -- Comment
 
 -- | A wrapper for a single comment. The 'Bool' indicates whether there were
@@ -107,11 +107,11 @@ mkComment ls (L l s) = (ls', comment)
                         then startIndent
                         else length (takeWhile isSpace y)
                     n = minimum (startIndent : fmap getIndent xs)
-                in x :| (drop n <$> xs)
+                 in x :| (drop n <$> xs)
           -- single line comments
           "--" -> do
             -- check the first three characters to see if there's a space after the `--` block
-            -- if there isn't, add one in.  For example, this takes something like `--foo` and 
+            -- if there isn't, add one in.  For example, this takes something like `--foo` and
             -- and returns `-- foo`
             case take 3 s of
               -- this is the happy path, the comment is formatted as expected
@@ -149,7 +149,7 @@ hasAtomsBefore (Comment atomsBefore _) = atomsBefore
 isMultilineComment :: Comment -> Bool
 isMultilineComment (Comment _ (x :| _)) = "{-" `L.isPrefixOf` x
 
-----------------------------------------------------------------------------
+-- --------------------------------------------------------------------------
 -- Helpers
 
 -- | Detect and extract stack header if it is present.

@@ -101,7 +101,7 @@ p_tyFamInstEqn HsIB {hsib_body = FamEqn {..}} = do
     breakpoint
     inci (located feqn_rhs p_hsType)
 
-----------------------------------------------------------------------------
+-- --------------------------------------------------------------------------
 -- Helpers
 
 isInfix :: LexicalFixity -> Bool
