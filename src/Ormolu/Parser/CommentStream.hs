@@ -117,7 +117,10 @@ mkComment ls (L l s) = (ls', comment)
               -- this is the happy path, the comment is formatted as expected
               -- this could probably be improved to also catch multi
               "-- " -> s :| []
-              -- yikes, we've got a comment like this: `--foo`
+              -- this is also a happy path, it's probably a separator
+              "---" -> s :| []
+              -- Any other case means it's possible we've got a comment like this: `--foo`
+              -- TODO: is there a way to check for an alphanum fuzzily in this case?
               _ -> do
                 -- insert a space after the comment marker
                 let s' = insertAt " " s 3
