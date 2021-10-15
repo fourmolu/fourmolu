@@ -303,7 +303,7 @@ p_grhs' placer render style (GRHS NoExtField guards body) =
     xs -> do
       txt "|"
       space
-      sitcc (sep commaDel (sitcc . located' p_stmt) xs)
+      sitccIfTrailing (sep commaDel (sitcc . located' p_stmt) xs)
       space
       inci $ case style of
         EqualSign -> equals
