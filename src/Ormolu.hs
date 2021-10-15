@@ -105,9 +105,6 @@ ormolu cfgWithIndices path str = do
 
 -- | Load a file and format it. The file stays intact and the rendered
 -- version is returned as 'Text'.
---
--- > ormoluFile cfg path =
--- >   liftIO (readFile path) >>= ormolu cfg path
 ormoluFile ::
   MonadIO m =>
   -- | Ormolu configuration
@@ -120,9 +117,6 @@ ormoluFile cfg path =
   readFileUtf8 path >>= ormolu cfg path . T.unpack
 
 -- | Read input from stdin and format it.
---
--- > ormoluStdin cfg =
--- >   liftIO (hGetContents stdin) >>= ormolu cfg "<stdin>"
 ormoluStdin ::
   MonadIO m =>
   -- | Ormolu configuration
@@ -130,7 +124,7 @@ ormoluStdin ::
   -- | Resulting rendition
   m Text
 ormoluStdin cfg =
-  liftIO getContents >>= ormolu cfg "<stdin>"
+  getContentsUtf8 >>= ormolu cfg "<stdin>" . T.unpack
 
 ----------------------------------------------------------------------------
 -- Helpers
