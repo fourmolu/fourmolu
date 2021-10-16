@@ -1,3 +1,7 @@
+## Unreleased
+
+* Fixed issue with leading commas in guards ([#123](https://github.com/fourmolu/fourmolu/pull/123))
+
 ## Fourmolu 0.4.0.0
 
 * Write "Loaded config from" message to `stderr` instead of `stdout` ([#42](https://github.com/fourmolu/fourmolu/pull/42))
