@@ -303,7 +303,7 @@ p_grhs' placer render style (GRHS NoExtField guards body) =
     xs -> do
       txt "|"
       space
-      sitcc (sep commaDel (sitcc . located' p_stmt) xs)
+      sitccIfTrailing (sep commaDel (sitcc . located' p_stmt) xs)
       space
       inci $ case style of
         EqualSign -> equals
@@ -715,14 +715,10 @@ p_hsExpr' s = \case
                   (breakpoint >> txt "|" >> space)
                   p_seqBody
               p_seqBody =
-                sitcc'
+                sitccIfTrailing
                   . sep
                     commaDel
                     (located' (sitcc . p_stmt))
-              sitcc' x =
-                getPrinterOpt poCommaStyle >>= \case
-                  Leading -> id x
-                  Trailing -> sitcc x
               stmts = init xs
               yield = last xs
               lists = foldr (liftAppend . gatherStmt) [] stmts

@@ -25,6 +25,7 @@ module Ormolu.Printer.Internal
     inciByFrac,
     inciHalf,
     sitcc,
+    sitccIfTrailing,
     Layout (..),
     enterLayout,
     vlayout,
@@ -442,6 +443,14 @@ sitcc (R m) = do
           { rcIndent = max i (c + bool 0 1 (requestedDel == RequestedSpace))
           }
   R (local modRC m)
+
+-- | When using trailing commas, same as 'sitcc'; when using leading commas,
+-- runs the input action unmodified.
+sitccIfTrailing :: R () -> R ()
+sitccIfTrailing x =
+  getPrinterOpt poCommaStyle >>= \case
+    Leading -> id x
+    Trailing -> sitcc x
 
 -- | Set 'Layout' for internal computation.
 enterLayout :: Layout -> R () -> R ()
