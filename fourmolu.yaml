@@ -3,5 +3,5 @@ comma-style: trailing
 record-brace-space: true
 indent-wheres: true
 diff-friendly-import-export: false
-respectful: false
+respectful: true
 haddock-style: single-line

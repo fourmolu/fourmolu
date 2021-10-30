@@ -50,7 +50,18 @@ haddock-style: multi-line # '--' vs. '{-'
 newlines-between-decls: 1 # number of newlines between top-level declarations
 ```
 
-See [here](fourmolu.yaml) for a config to simulate the behaviour of Ormolu.
+A config to simulate the behaviour of Ormolu ([as far as currently possible](https://github.com/fourmolu/fourmolu/issues/38)) would be:
+
+```yaml
+indentation: 2
+comma-style: trailing
+record-brace-space: true
+indent-wheres: true
+diff-friendly-import-export: false
+respectful: false
+haddock-style: single-line
+newlines-between-decls: 1
+```
 
 These options can also be set on the command line (which takes precedence over config files). Run `fourmolu -h` to see all options.
 
