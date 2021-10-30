@@ -1,4 +1,6 @@
 data PlusLevel' t
-    = -- | @n + ℓ@.
-      Plus Integer (LevelAtom' t)
+    = Plus
+    -- ^ @n + ℓ@.
+        Integer
+        (LevelAtom' t)
     deriving (Show, Data)
