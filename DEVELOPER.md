@@ -104,3 +104,9 @@ Fourmolu aims to continue merging upstream changes in Ormolu. Whenever Ormolu ma
         fi
     done
     ```
+
+## HLint
+
+Ormolu isn't HLint-clean, so Fourmolu can't be fully.
+
+If you're using HLS you may wish to disable HLint on this codebase entirely. In VSCode, for example, add `"haskell.plugin.hlint.diagnosticsOn": false` to `fourmolu/.vscode/settings.json`.
