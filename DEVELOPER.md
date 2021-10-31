@@ -8,6 +8,36 @@ Some things to keep in mind when making changes:
     * Avoid refactoring where possible, don't reformat untouched code
     * Since we continuously merge in changes from Ormolu, reducing the number of potential conflicts goes a long way towards maintainability of this project.
 
+## Instant feedback with GHCID
+
+We often want to immediately see how changes to Fourmolu's source code affect outputs. Try adding something like this to `Ormolu.hs`:
+
+```hs
+import qualified Data.Text.IO as T
+import System.Directory (getHomeDirectory)
+import System.FilePath ((</>))
+
+main :: IO ()
+main = do
+  dir <- (</> "Desktop") <$> getHomeDirectory
+  ormoluFile conf (dir </> "In.hs") >>= T.writeFile (dir </> "Out.hs")
+  where
+    conf =
+      defaultConfig
+        { cfgUnsafe = True,
+          cfgPrinterOpts =
+            defaultPrinterOpts
+              { poCommaStyle = pure Trailing
+              }
+        }
+```
+
+Put some interesting code in `In.hs`. The contents of `Out.hs` can be kept up to date to reflect the result of running Fourmolu on it, by running:
+
+```
+ghcid -c 'cabal repl' -W -r --reload=$HOME/Desktop/In.hs
+```
+
 ## Release a new version
 
 To release a new version, do the following workflow:
