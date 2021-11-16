@@ -22,6 +22,7 @@ import Data.Version (showVersion)
 import Development.GitRev
 import Options.Applicative
 import Ormolu
+import Ormolu.CLI
 import Ormolu.Config
 import Ormolu.Diff.Text (diffText, printTextDiff)
 import Ormolu.Parser (manualExts)
@@ -389,41 +390,10 @@ parseBoundedEnum =
   where
     argumentToValue = map (\x -> (toCLIArgument x, x)) [minBound ..]
 
--- | Values that appear as arguments of CLI options and thus have
--- a corresponding textual representation.
-class ToCLIArgument a where
-  -- | Convert a value to its representation as a CLI option argument.
-  toCLIArgument :: a -> String
-
-  -- | Convert a value to its representation as a CLI option argument wrapped
-  -- in apostrophes.
-  toCLIArgument' :: a -> String
-  toCLIArgument' x = "'" <> toCLIArgument x <> "'"
-
-instance ToCLIArgument Bool where
-  toCLIArgument True = "true"
-  toCLIArgument False = "false"
-
-instance ToCLIArgument CommaStyle where
-  toCLIArgument Leading = "leading"
-  toCLIArgument Trailing = "trailing"
-
-instance ToCLIArgument Int where
-  toCLIArgument = show
-
-instance ToCLIArgument HaddockPrintStyle where
-  toCLIArgument HaddockSingleLine = "single-line"
-  toCLIArgument HaddockMultiLine = "multi-line"
-
 instance ToCLIArgument Mode where
   toCLIArgument Stdout = "stdout"
   toCLIArgument InPlace = "inplace"
   toCLIArgument Check = "check"
-
-instance ToCLIArgument ColorMode where
-  toCLIArgument Never = "never"
-  toCLIArgument Always = "always"
-  toCLIArgument Auto = "auto"
 
 showAllValues :: forall a. (Enum a, Bounded a, ToCLIArgument a) => String
 showAllValues = format (map toCLIArgument' [(minBound :: a) ..])

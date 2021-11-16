@@ -5,9 +5,11 @@ module Ormolu.PrinterSpec (spec) where
 import Control.Exception
 import Control.Monad
 import Data.List (isSuffixOf)
+import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Ormolu
+import Ormolu.CLI.TH
 import Ormolu.Config
 import Ormolu.Utils.IO
 import Path
@@ -15,21 +17,45 @@ import Path.IO
 import qualified System.FilePath as F
 import Test.Hspec
 
+bundles :: [(String, PrinterOptsTotal)]
+bundles =
+  [ ( "ormolu",
+      PrinterOpts
+        { poIndentation = pure 2,
+          poCommaStyle = pure Trailing,
+          poIndentWheres = pure True,
+          poRecordBraceSpace = pure True,
+          poDiffFriendlyImportExport = pure False,
+          poRespectful = pure False,
+          poHaddockStyle = pure HaddockSingleLine,
+          poNewlinesBetweenDecls = pure 1
+        }
+    ),
+    ("fourmolu", defaultPrinterOpts)
+  ]
+
+singleOpts :: [PrinterOptsTotal]
+singleOpts =
+  [ defaultPrinterOpts {poIndentation = pure 2},
+    defaultPrinterOpts {poCommaStyle = pure Trailing},
+    defaultPrinterOpts {poIndentWheres = pure True},
+    defaultPrinterOpts {poRecordBraceSpace = pure True},
+    defaultPrinterOpts {poDiffFriendlyImportExport = pure False},
+    defaultPrinterOpts {poRespectful = pure False},
+    defaultPrinterOpts {poHaddockStyle = pure HaddockSingleLine},
+    defaultPrinterOpts {poNewlinesBetweenDecls = pure 2}
+  ]
+
+getSoLabel :: PrinterOptsTotal -> String
+getSoLabel po =
+  let [(k, Just v)] = filter (isJust . snd) $ zip $$poFieldNames ($displayCustomPrinterOpts po)
+   in k <> "=" <> v
+
 spec :: Spec
 spec = do
   es <- runIO locateExamples
-  let ormoluOpts =
-        PrinterOpts
-          { poIndentation = pure 2,
-            poCommaStyle = pure Trailing,
-            poIndentWheres = pure True,
-            poRecordBraceSpace = pure True,
-            poDiffFriendlyImportExport = pure False,
-            poRespectful = pure False,
-            poHaddockStyle = pure HaddockSingleLine,
-            poNewlinesBetweenDecls = pure 1
-          }
-  sequence_ $ checkExample <$> [(ormoluOpts, "ormolu", ""), (defaultPrinterOpts, "fourmolu", "-four")] <*> es
+  sequence_ $ checkExample <$> [(po, n, "-bundle=" <> n) | (n, po) <- bundles] <*> es
+  sequence_ $ checkExample <$> [(po, getSoLabel po, "-option=" <> getSoLabel po) | po <- singleOpts] <*> es
 
 -- | Check a single given example.
 checkExample :: (PrinterOptsTotal, String, String) -> Path Rel File -> Spec
