@@ -2,6 +2,7 @@ resolver: nightly-2021-08-08
 
 extra-deps:
   - ghc-lib-parser-9.0.1.20210324
+  - th-compat-0.1.3@sha256:a16dd922947a6877defe52c4c38d1ab48ed3f85a826930f5d1a568741d619993,2888
 
 ghc-options:
   '$locals': -Werror

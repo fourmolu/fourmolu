@@ -6,16 +6,17 @@ module Ormolu.CLI.TH where
 
 import Control.Monad (zipWithM)
 import Data.Functor.Identity (runIdentity)
-import "template-haskell" Language.Haskell.TH
+import "template-haskell" Language.Haskell.TH hiding (newName)
 import Language.Haskell.TH.Datatype
+import Language.Haskell.TH.Syntax.Compat
 import Ormolu.CLI (toCLI, toCLIArgument)
 import Ormolu.Config (PrinterOpts (..), defaultPrinterOpts)
 
-poFieldNames :: Q (TExp [String])
-poFieldNames = do
+poFieldNames :: SpliceQ [String]
+poFieldNames = liftSplice $ do
   ConstructorInfo {constructorVariant = RecordConstructor names} <- reifyConstructor 'PrinterOpts
   let names' = toCLI . nameBase <$> names
-  [||names'||]
+  examineSplice [||names'||]
 
 displayCustomPrinterOpts :: Q Exp
 displayCustomPrinterOpts = do
