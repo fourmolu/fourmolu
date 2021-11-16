@@ -10,16 +10,17 @@ where
 
 import Data.Aeson (camelTo2)
 import Data.Functor.Identity (runIdentity)
-import "template-haskell" Language.Haskell.TH
+import "template-haskell" Language.Haskell.TH hiding (newName)
 import Language.Haskell.TH.Datatype
+import Language.Haskell.TH.Syntax.Compat
 import Ormolu.CLI
 import Ormolu.Config (PrinterOpts (..), defaultPrinterOpts)
 
-poFieldNames :: Q (TExp [String])
-poFieldNames = do
+poFieldNames :: SpliceQ [String]
+poFieldNames = liftSplice $ do
   ConstructorInfo {constructorVariant = RecordConstructor names} <- reifyConstructor 'PrinterOpts
   let namesStrs = toCLI . nameBase <$> names
-  [||namesStrs||]
+  examineSplice [||namesStrs||]
 
 displayCustomPrinterOpts :: Q Exp
 displayCustomPrinterOpts = do
