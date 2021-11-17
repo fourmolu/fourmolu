@@ -42,6 +42,25 @@ import Ormolu.Printer
 import Ormolu.Utils (showOutputable)
 import Ormolu.Utils.IO
 
+import qualified Data.Text.IO as T
+import System.Directory (getHomeDirectory)
+import System.FilePath ((</>))
+import Text.Pretty.Simple
+
+main :: IO ()
+main = do
+  dir <- (</> "Desktop") <$> getHomeDirectory
+  ormoluFile conf (dir </> "In.hs") >>= T.writeFile (dir </> "Out.hs")
+  where
+    conf =
+      defaultConfig
+        { cfgPrinterOpts =
+            defaultPrinterOpts
+              { poNewlinesBetweenDecls = pure 2
+              }
+              -- , cfgUnsafe = True
+        }
+
 -- | Format a 'String', return formatted version as 'Text'.
 --
 -- The function
@@ -84,7 +103,9 @@ ormolu cfgWithIndices path str = do
         path
         (T.unpack txt)
     unless (cfgUnsafe cfg) $ do
-      when (length result0 /= length result1) $
+      when (length result0 /= length result1) $ do
+        pPrint result1
+        pPrint result0
         liftIO $ throwIO (OrmoluASTDiffers path [])
       forM_ (result0 `zip` result1) $ \case
         (ParsedSnippet s, ParsedSnippet s') -> case diffParseResult s s' of

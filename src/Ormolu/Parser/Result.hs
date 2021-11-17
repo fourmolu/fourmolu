@@ -18,6 +18,7 @@ import Ormolu.Parser.Pragma (Pragma)
 
 -- | Either a 'ParseResult', or a raw snippet.
 data SourceSnippet = RawSnippet Text | ParsedSnippet ParseResult
+  deriving Show
 
 -- | A collection of data that represents a parsed module in Ormolu.
 data ParseResult = ParseResult
@@ -38,3 +39,5 @@ data ParseResult = ParseResult
     -- | Indentation level, can be non-zero in case of region formatting
     prIndent :: Int
   }
+instance Show ParseResult where
+  show pr = "PR"

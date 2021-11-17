@@ -84,6 +84,7 @@ library
     other-modules:    GHC.DynFlags
     default-language: Haskell2010
     build-depends:
+        pretty-simple,
         Diff >=0.4 && <1.0,
         aeson >=1.4.0.0 && <1.6,
         ansi-terminal >=0.10 && <1.0,
