@@ -77,15 +77,13 @@ jobs:
           condition: << parameters.latest >>
           steps:
             - run:
-                name: Lint
+                name: Install pre-commit
                 command: |
-                  git ls-files '*.hs' '*.hs-boot' \
-                    | grep -v '^region-tests/' \
-                    | grep -v '^data/examples/' \
-                    | grep -v '^data/diff-tests/' \
-                    | grep -v '^data/parse-failures/' \
-                    | xargs stack exec -- fourmolu --mode=inplace
-                  git diff --exit-code
+                  sudo apt-get install -y python3-pip
+                  python3 -m pip install pre-commit
+            - run:
+                name: Lint
+                command: pre-commit run --all-files --show-diff-on-failure
 
       # test
       - run:
