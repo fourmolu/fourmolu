@@ -1,0 +1,25 @@
+repos:
+  - repo: local
+    hooks:
+      - id: fourmolu
+        name: fourmolu
+        entry: stack exec -- fourmolu --mode=inplace
+        language: system
+        files: '\.(hs|hs-boot)$'
+        exclude: |
+          (?x)^(
+            region-tests/
+            | data/examples/
+            | data/diff-tests/
+            | data/parse-failures/
+          )
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.0.1
+    hooks:
+      - id: check-merge-conflict
+      - id: check-symlinks
+      # do not turn these on, to prevent merge conflicts when
+      # merging upstream ormolu changes
+      # - id: end-of-file-fixer
+      # - id: trailing-whitespace
