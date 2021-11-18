@@ -187,6 +187,8 @@ If there are any options you'd like to see, let us know. If it's not too complic
 
 Run `cabal test` and `./format.sh` before submitting any pull requests.
 
+If you're adding a new customization, please add a new test set for it in the `PrinterSpec` module.
+
 ## License
 
 See [LICENSE.md](LICENSE.md).
