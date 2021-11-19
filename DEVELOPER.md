@@ -8,6 +8,12 @@ Some things to keep in mind when making changes:
     * Avoid refactoring where possible, don't reformat untouched code
     * Since we continuously merge in changes from Ormolu, reducing the number of potential conflicts goes a long way towards maintainability of this project.
 
+### Pre-commit hooks
+
+We highly recommend turning on pre-commit hooks to run checks every time you commit. To do so, install [`pre-commit`](https://pre-commit.com/) and run `pre-commit install` in this directory.
+
+This is optional, but is run in CI regardless.
+
 ## Instant feedback with GHCID
 
 We often want to immediately see how changes to Fourmolu's source code affect outputs. Try adding something like this to `Ormolu.hs`:
