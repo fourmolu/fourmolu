@@ -113,6 +113,10 @@ library
     if impl(ghc <8.10.0)
         ghc-options: -fmax-pmcheck-iterations=3000000
 
+flag executable
+    description: Build fourmolu executable
+    default: True
+
 executable fourmolu
     main-is:          Main.hs
     hs-source-dirs:   app
@@ -137,6 +141,9 @@ executable fourmolu
 
     else
         ghc-options: -O2 -Wall -rtsopts
+
+    if !flag(executable)
+        buildable: False
 
 test-suite tests
     type:               exitcode-stdio-1.0
