@@ -11,6 +11,7 @@ module Ormolu.Printer.Meat.Common
     p_qualName,
     p_infixDefHelper,
     p_hsDocString,
+    p_hsDocString',
     p_sourceText,
   )
 where
@@ -140,7 +141,22 @@ p_hsDocString ::
   -- | The doc string to render
   LHsDocString ->
   R ()
-p_hsDocString hstyle needsNewline (L l str) = do
+p_hsDocString hstyle needsNewline lstr = do
+  poHStyle <- getPrinterOpt poHaddockStyle
+  p_hsDocString' poHStyle hstyle needsNewline lstr
+
+-- | Print a Haddock.
+p_hsDocString' ::
+  -- | 'haddock-style' configuration option
+  HaddockPrintStyle ->
+  -- | Haddock style
+  HaddockStyle ->
+  -- | Finish the doc string with a newline
+  Bool ->
+  -- | The doc string to render
+  LHsDocString ->
+  R ()
+p_hsDocString' poHStyle hstyle needsNewline (L l str) = do
   let isCommentSpan = \case
         HaddockSpan _ _ -> True
         CommentSpan _ -> True
@@ -151,10 +167,9 @@ p_hsDocString hstyle needsNewline (L l str) = do
 
   mSrcSpan <- getSrcSpan l
 
-  printStyle <- getPrinterOpt poHaddockStyle
   let useSingleLineComments =
         or
-          [ printStyle == HaddockSingleLine,
+          [ poHStyle == HaddockSingleLine,
             length docLines <= 1,
             -- Use multiple single-line comments when the whole comment is indented
             maybe False ((> 1) . srcSpanStartCol) mSrcSpan
@@ -170,7 +185,7 @@ p_hsDocString hstyle needsNewline (L l str) = do
     else do
       txt . T.concat $
         [ "{-",
-          case (hstyle, printStyle) of
+          case (hstyle, poHStyle) of
             (Pipe, HaddockMultiLineCompact) -> ""
             _ -> " ",
           haddockDelim

@@ -61,7 +61,11 @@ p_hsModule mstackHeader pragmas hsmod@HsModule {..} = do
 p_hsModuleHeader :: HsModule -> LocatedA ModuleName -> R ()
 p_hsModuleHeader HsModule {..} moduleName = do
   located moduleName $ \name -> do
-    forM_ hsmodHaddockModHeader (p_hsDocString Pipe True)
+    poHStyle <-
+      getPrinterOpt poHaddockStyleModule >>= \case
+        PrintStyleInherit -> getPrinterOpt poHaddockStyle
+        PrintStyleOverride style -> pure style
+    forM_ hsmodHaddockModHeader (p_hsDocString' poHStyle Pipe True)
     p_hsmodName name
 
   forM_ hsmodDeprecMessage $ \w -> do
