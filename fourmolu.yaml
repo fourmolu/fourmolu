@@ -7,6 +7,7 @@ indent-wheres: true
 record-brace-space: true
 newlines-between-decls: 1
 haddock-style: single-line
+haddock-style-module:
 let-style: inline
 in-style: right-align
 unicode: never
