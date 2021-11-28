@@ -1,7 +1,4 @@
-resolver: nightly-2021-08-08
-
-extra-deps:
-  - ghc-lib-parser-9.0.1.20210324
+resolver: nightly-2021-11-28
 
 ghc-options:
   '$locals': -Werror
