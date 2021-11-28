@@ -1,4 +1,3 @@
-
 instance A.ToJSON UpdateTable where
     toJSON a =
         A.object $

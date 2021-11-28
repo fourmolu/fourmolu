@@ -1,4 +1,3 @@
-
 functionName ::
     ( C1
     , C2

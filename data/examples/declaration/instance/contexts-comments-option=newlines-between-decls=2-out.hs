@@ -1,4 +1,3 @@
-
 instance
     ( Read a -- Foo
     , Read b

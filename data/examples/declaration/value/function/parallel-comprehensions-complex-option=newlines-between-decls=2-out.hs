@@ -1,4 +1,3 @@
-
 baz x y z w =
     [ ( a
       , b

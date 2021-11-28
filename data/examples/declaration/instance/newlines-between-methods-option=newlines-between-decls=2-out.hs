@@ -1,4 +1,3 @@
-
 instance Num a => Num (Diff a) where
     D u dudx + D v dvdx = D (u + v) (dudx + dvdx)
     D u dudx - D v dvdx = D (u - v) (dudx - dvdx)

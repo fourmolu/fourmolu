@@ -1,4 +1,3 @@
-
 -- Empty foralls are handled correctly in different situations.
 
 data D = forall. D Int

@@ -1,4 +1,3 @@
-
 {-# RULES
 "map/map" forall f g xs. map f (map g xs) = map (f . g) xs
 "map/append" forall f xs ys. map f (xs ++ ys) = map f xs ++ map f ys

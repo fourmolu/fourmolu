@@ -1,4 +1,3 @@
-
 foo =
     if undefined
         then -- then comment

@@ -1,4 +1,3 @@
-
 -- A list of the element and all its parents up to the root node.
 getPath tree t =
     t :

@@ -1,4 +1,3 @@
-
 instance DemoteNodeTypes ('[] :: [NodeType]) where
     demoteNodeTypes _ = []
 

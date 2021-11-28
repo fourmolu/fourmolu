@@ -1,4 +1,3 @@
-
 foo = bar
   where
     Foo bar baz = quux

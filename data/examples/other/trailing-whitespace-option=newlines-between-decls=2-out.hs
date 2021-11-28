@@ -1,4 +1,3 @@
-
 -- Here is a comment with trailing whitespace.
 foo = 5
 

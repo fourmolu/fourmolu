@@ -1,4 +1,3 @@
-
 foobarbar :: Int -> Bool
 foobarbar
     | x <- 5

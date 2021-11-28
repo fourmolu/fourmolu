@@ -1,4 +1,3 @@
-
 function :: Int -> Int
 function a =
     aReallyLongFunctionNameThatShouldStayOnThisLineToAvoidOverflowing 10000 a

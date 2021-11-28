@@ -1,4 +1,3 @@
-
 data Foo a = Foo a
 data VT v m r = VT v m r
 

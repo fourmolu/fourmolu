@@ -1,4 +1,3 @@
-
 foo :: Num a => a -> a
 foo = id
 {-# SPECIALIZE foo :: Int -> Int #-}

@@ -1,4 +1,3 @@
-
 f = unFoo . foo bar baz 3 $ do
     act
     ret

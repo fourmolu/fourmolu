@@ -1,4 +1,3 @@
-
 type family Id a = result | result -> a where
     Id a = a
 

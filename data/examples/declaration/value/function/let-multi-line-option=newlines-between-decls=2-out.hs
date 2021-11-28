@@ -1,4 +1,3 @@
-
 foo :: Int -> Int
 foo x =
     let z = y

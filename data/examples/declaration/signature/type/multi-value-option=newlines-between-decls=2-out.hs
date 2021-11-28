@@ -1,4 +1,3 @@
-
 foo, bar :: Int
 foo = 1
 bar = 2

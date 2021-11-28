@@ -1,4 +1,3 @@
-
 foo x = x{a = 3}
 bar x =
     x

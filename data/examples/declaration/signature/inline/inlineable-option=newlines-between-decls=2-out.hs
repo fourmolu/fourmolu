@@ -1,4 +1,3 @@
-
 foo :: Int -> Int
 foo = id
 {-# INLINEABLE foo #-}

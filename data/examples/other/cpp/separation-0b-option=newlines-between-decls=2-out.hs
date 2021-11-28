@@ -8,6 +8,5 @@ instance Stream s => Monad (ParsecT e s m) where
   fail   = Fail.fail
 #endif
 
-
 foo :: Int
 foo = undefined

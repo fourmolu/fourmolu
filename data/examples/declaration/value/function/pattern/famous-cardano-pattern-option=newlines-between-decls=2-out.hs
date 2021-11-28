@@ -1,4 +1,3 @@
-
 ( getNodeSettingsR
         :<|> getNodeInfoR
         :<|> getNextUpdateR

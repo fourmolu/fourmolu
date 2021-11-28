@@ -1,4 +1,3 @@
-
 mergeErrorReply :: ParseError -> Reply s u a -> Reply s u a
 mergeErrorReply err1 reply -- XXX where to put it?
     =

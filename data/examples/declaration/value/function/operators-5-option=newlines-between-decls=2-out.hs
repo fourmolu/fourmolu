@@ -1,4 +1,3 @@
-
 foo =
     map bar $
         [ baz

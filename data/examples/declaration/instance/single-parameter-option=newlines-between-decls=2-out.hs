@@ -1,4 +1,3 @@
-
 instance Monoid Int where (<>) x y = x + y
 
 

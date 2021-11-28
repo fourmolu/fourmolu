@@ -1,4 +1,3 @@
-
 (*) :: Int -> Int -> Int
 x * y = z
 

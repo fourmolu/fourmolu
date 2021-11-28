@@ -1,4 +1,3 @@
-
 magnify ::
     forall outertag innertag t outer inner m a.
     ( forall x. Coercible (t m x) (m x)

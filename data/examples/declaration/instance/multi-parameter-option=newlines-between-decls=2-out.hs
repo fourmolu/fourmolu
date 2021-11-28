@@ -1,4 +1,3 @@
-
 instance MonadReader a ((->) a) where ask = id
 
 

@@ -1,4 +1,3 @@
-
 {-# RULES
 "map/map" [2]
     map

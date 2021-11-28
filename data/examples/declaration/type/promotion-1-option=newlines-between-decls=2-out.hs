@@ -1,4 +1,3 @@
-
 type S2 = Proxy ('[ '[], '[]])
 type S4 = Proxy ('( 'Just, ' T'T))
 type S5 = Proxy ('[ 'Just, 'TT'T])

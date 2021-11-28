@@ -6,7 +6,6 @@ foo :: Char
 foo =  'a'
 {- FOURMOLU_ENABLE -}
 
-
 bar :: Char
 bar = 'b'
 
@@ -14,7 +13,6 @@ bar = 'b'
 baz :: Char
 baz =  'c'
 {- ORMOLU_ENABLE -}
-
 
 qux :: Char
 qux = 'd'

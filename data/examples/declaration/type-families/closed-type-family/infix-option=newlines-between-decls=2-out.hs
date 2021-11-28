@@ -1,4 +1,3 @@
-
 type family (x :: N) + (y :: N) :: N where
     'Zero + y = y
     'Succ n + y = 'Succ (n + y)

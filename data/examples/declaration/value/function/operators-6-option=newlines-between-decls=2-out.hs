@@ -1,4 +1,3 @@
-
 type PermuteRef =
     "a"
         :> ( "b" :> "c" :> End

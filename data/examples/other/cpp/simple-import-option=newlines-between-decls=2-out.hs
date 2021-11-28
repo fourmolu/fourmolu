@@ -13,6 +13,5 @@ import Text.Megaparsec.Char
 import Data.Semigroup ((<>))
 #endif
 
-
 main :: IO ()
 main = return ()

@@ -1,4 +1,3 @@
-
 foo = do bar
 foo = do bar; baz
 foo = do

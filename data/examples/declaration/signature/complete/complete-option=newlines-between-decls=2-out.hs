@@ -1,4 +1,3 @@
-
 {-# COMPLETE A, B, C :: Foo #-}
 
 

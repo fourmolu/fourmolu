@@ -1,4 +1,3 @@
-
 foo xs = baz
   where
     bar =

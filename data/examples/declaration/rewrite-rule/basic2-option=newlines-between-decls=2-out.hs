@@ -1,4 +1,3 @@
-
 {-# RULES
 "++" xs ++ ys = augment (\c n -> foldr c n xs) ys
 "concat" xs `concat` ys = augment (\c n -> foldr c n xs) ys

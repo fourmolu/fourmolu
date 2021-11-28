@@ -1,4 +1,3 @@
-
 deriving instance
     {-# OVERLAPPABLE #-}
     Ord

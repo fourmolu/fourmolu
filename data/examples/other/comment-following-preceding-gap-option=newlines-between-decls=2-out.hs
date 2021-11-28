@@ -1,4 +1,3 @@
-
 foo = bar
   where
     baz = return (quux) -- Foo

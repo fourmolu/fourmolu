@@ -382,7 +382,7 @@ newlineRawN n = R . modify $ \sc ->
       n' = case requestedDel of
         AfterNewline -> n - 1
         RequestedNewline -> n - 1
-        VeryBeginning -> n - 1
+        VeryBeginning -> 0
         _ -> n
    in sc
         { scBuilder = builderSoFar <> mconcat (replicate n' "\n"),

@@ -1,4 +1,3 @@
-
 {-# RULES "rd_tyvs" forall a. forall (x :: a). id x = x #-}
 
 

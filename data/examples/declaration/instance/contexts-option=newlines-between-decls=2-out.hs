@@ -1,4 +1,3 @@
-
 instance Eq a => Eq [a] where (==) _ _ = False
 
 

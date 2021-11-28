@@ -1,4 +1,3 @@
-
 foo = Foo{a = 3}
 bar =
     Bar
