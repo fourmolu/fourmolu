@@ -1,4 +1,7 @@
 resolver: nightly-2021-11-28
 
+extra-deps:
+  - aeson-2.0.2.0
+
 ghc-options:
   '$locals': -Werror
