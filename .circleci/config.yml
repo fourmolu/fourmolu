@@ -9,6 +9,9 @@ workflows:
           name: test_latest
           latest: true
       - run_build_and_test:
+          name: test_ghc_9.2
+          stack_yaml: stack-ghc-9.2.yaml
+      - run_build_and_test:
           name: test_ghc_9.0
           stack_yaml: stack-ghc-9.0.yaml
       - run_build_and_test:
