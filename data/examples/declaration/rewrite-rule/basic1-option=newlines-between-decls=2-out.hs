@@ -1,4 +1,3 @@
-
 {-# RULES
 "fold/build" foldr k z (build g) = g k z
     #-}

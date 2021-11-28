@@ -1,4 +1,3 @@
-
 baz :: Int -> Int
 baz x | x < 0 = x
 baz x | otherwise = x

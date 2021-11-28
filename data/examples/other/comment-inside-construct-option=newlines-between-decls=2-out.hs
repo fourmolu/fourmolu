@@ -1,4 +1,3 @@
-
 xs =
     [ outer list item
     ,

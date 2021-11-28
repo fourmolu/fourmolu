@@ -1,4 +1,3 @@
-
 data ErrorMessage' s
     = -- | Show the text as is.
       Text s

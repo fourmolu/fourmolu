@@ -1,4 +1,3 @@
-
 foo = x + y + z
   where
     x = 10

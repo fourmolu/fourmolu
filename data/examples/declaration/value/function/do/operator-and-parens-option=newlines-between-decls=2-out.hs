@@ -1,4 +1,3 @@
-
 scientifically :: (Scientific -> a) -> Parser a
 scientifically h = do
     something

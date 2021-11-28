@@ -1,4 +1,3 @@
-
 foo =
     testCase "Foo" testFoo :
     testCase "Bar" testBar :

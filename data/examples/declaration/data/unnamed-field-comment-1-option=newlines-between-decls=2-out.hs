@@ -1,4 +1,3 @@
-
 data X
     = B
         !Int

@@ -1,4 +1,3 @@
-
 data GADT0 a where
     GADT01, GADT02 :: Int -> GADT0 a
 

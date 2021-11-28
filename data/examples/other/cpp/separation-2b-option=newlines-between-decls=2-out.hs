@@ -10,6 +10,5 @@ ffff     = 0xffff
 ffffffff = 0xffffffff
 #endif
 
-
 foo :: Int
 foo = undefined

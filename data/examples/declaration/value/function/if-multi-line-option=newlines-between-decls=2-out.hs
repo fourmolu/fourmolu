@@ -1,4 +1,3 @@
-
 foo :: Int -> Int
 foo x =
     if x > 5

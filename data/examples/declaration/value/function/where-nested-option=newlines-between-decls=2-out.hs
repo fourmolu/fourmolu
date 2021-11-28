@@ -1,4 +1,3 @@
-
 foo = bar
   where
     f1 = f1

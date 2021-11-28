@@ -1,4 +1,3 @@
-
 foo :: Int -> Int
 foo x
     | x == 5 = 10

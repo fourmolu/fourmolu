@@ -1,4 +1,3 @@
-
 {-# RULES
 "unpack" [~1] forall a. unpackCString # a = build (unpackFoldrCString # a)
 "unpack-list" [1] forall a. unpackFoldrCString # a (:) [] = unpackCString # a

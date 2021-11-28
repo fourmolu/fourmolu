@@ -1,4 +1,3 @@
-
 class Foo a where
     -- | Foo.
     foo ::

@@ -1,4 +1,3 @@
-
 instance Num X where
     (+) = undefined
 

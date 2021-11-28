@@ -1,4 +1,3 @@
-
 foo =
     reportSDoc "tc.cc" 30 $
         sep $ do

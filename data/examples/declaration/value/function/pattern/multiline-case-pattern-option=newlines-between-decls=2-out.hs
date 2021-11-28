@@ -1,4 +1,3 @@
-
 readerBench doc name =
     runPure $ case (getReader name, getWriter name) of
         ( Right (TextReader r, rexts)

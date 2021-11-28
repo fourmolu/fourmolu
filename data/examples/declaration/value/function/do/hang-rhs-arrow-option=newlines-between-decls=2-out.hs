@@ -1,4 +1,3 @@
-
 foo = do
     something <- case bar of
         Foo -> return 1

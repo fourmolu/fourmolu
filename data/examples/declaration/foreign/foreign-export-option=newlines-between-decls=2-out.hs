@@ -1,4 +1,3 @@
-
 foreign export ccall foo :: Int -> IO Int
 
 

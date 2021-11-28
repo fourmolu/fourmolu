@@ -1,4 +1,3 @@
-
 foo :: Int -> Int
 foo x = f x where f z = z
 

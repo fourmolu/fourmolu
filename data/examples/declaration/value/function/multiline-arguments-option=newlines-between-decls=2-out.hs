@@ -1,4 +1,3 @@
-
 foo :: Int -> Int -> Int -> Int
 foo
     (Foo g o)

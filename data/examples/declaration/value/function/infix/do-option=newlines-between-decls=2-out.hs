@@ -1,4 +1,3 @@
-
 main =
     do stuff
     `finally` do

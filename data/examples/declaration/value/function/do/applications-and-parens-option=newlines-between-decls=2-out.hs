@@ -1,4 +1,3 @@
-
 warningFor var place = do
     guard $ isVariableName var
     guard . not $ isInArray var place || isGuarded place

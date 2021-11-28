@@ -1,4 +1,3 @@
-
 doForeign :: Vars -> [Name] -> [Term] -> Idris LExp
 doForeign x = x
   where

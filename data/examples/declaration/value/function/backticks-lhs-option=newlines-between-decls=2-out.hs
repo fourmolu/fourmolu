@@ -1,4 +1,3 @@
-
 x `op1` (Just 0) = True
 op1 x (Just _) = False
 op1 x Nothing = undefined

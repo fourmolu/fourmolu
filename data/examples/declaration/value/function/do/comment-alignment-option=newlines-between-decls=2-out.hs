@@ -1,4 +1,3 @@
-
 main = do
     case blah of
         Nothing -> return ()

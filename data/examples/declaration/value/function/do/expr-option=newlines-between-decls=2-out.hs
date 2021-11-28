@@ -1,4 +1,3 @@
-
 quux = something $ do
     foo
     case x of

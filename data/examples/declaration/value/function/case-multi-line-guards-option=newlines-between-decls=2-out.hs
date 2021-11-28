@@ -1,4 +1,3 @@
-
 withGuards :: Int -> Int
 withGuards x =
     case x of

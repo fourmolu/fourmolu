@@ -1,4 +1,3 @@
-
 -- |Something.
 foo ::
     -- |Foo.

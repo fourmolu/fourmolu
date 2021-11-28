@@ -1,4 +1,3 @@
-
 main = do
     a <- bar
     let a = b; c = d

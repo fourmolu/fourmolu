@@ -1,4 +1,3 @@
-
 clientFunc1 :: SomeType1
 clientFunc2 :: SomeType2
 clientFunc3 :: SomeType3

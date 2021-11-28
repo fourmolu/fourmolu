@@ -1,4 +1,3 @@
-
 data PlusLevel' t
     = -- | @n + ℓ@.
       Plus Integer (LevelAtom' t)

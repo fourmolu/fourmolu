@@ -1,4 +1,3 @@
-
 foo :: Boom -> Int
 foo Boom{..} = 10
 

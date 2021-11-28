@@ -13,6 +13,5 @@ decompressingPipe BZip2   = BZ.bunzip2
 decompressingPipe BZip2   = throwM BZip2Unsupported
 #endif
 
-
 foo :: Int
 foo = undefined

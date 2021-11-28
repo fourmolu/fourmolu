@@ -1,4 +1,3 @@
-
 foo = 2
 
 {- ORMOLU_DISABLE -}

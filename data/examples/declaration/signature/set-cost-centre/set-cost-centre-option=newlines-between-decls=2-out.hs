@@ -1,4 +1,3 @@
-
 f x y = g (x + y)
   where
     g z = z

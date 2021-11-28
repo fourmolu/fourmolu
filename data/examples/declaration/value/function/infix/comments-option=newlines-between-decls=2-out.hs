@@ -1,4 +1,3 @@
-
 main =
     bar $ -- bar
         baz -- baz

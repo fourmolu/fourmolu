@@ -1,4 +1,3 @@
-
 f =
     Foo <$> bar
         <*> baz

@@ -1,4 +1,3 @@
-
 newNames :: [(String, String)]
 newNames =
     let (*) = flip (,)

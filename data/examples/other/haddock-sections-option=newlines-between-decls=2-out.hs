@@ -1,4 +1,3 @@
-
 {- $weird #anchor#
 
  Section 1

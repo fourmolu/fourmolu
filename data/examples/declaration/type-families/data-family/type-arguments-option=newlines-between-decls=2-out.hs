@@ -1,4 +1,3 @@
-
 type PickType :: forall k. (k -> Type) -> Type
 data family PickType m
 

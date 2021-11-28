@@ -1,4 +1,3 @@
-
 type Foo = Cluster '[ 'NodeCore, 'NodeRelay', 'NodeEdge]
 
 

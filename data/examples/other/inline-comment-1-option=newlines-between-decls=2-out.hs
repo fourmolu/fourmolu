@@ -1,4 +1,3 @@
-
 showPs env ((n, _, Let _ t v) : bs) =
     "  " ++ show n ++ " : "
         ++ showEnv env ({- normalise ctxt env -} t)

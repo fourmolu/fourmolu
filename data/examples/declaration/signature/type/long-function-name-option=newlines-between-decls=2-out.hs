@@ -1,4 +1,3 @@
-
 longFunctionName ::
     a ->
     b ->
