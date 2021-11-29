@@ -1,7 +1,7 @@
-resolver: nightly-2021-08-08
+resolver: nightly-2021-11-28
 
 extra-deps:
-  - ghc-lib-parser-9.0.1.20210324
+  - aeson-2.0.2.0
 
 ghc-options:
   '$locals': -Werror
