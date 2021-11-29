@@ -12,6 +12,8 @@ Some things to keep in mind when making changes:
 
 We highly recommend turning on pre-commit hooks to run checks every time you commit. To do so, install [`pre-commit`](https://pre-commit.com/) and run `pre-commit install` in this directory.
 
+`pre-commit` will run `fourmolu` on the source code on every commit, automatically detecting whether you built `fourmolu` with Stack or Cabal. If the auto-detection isn't working out, you can override it by setting `export BUILD_TYPE=stack/cabal` in your environment.
+
 This is optional, but is run in CI regardless.
 
 ## Instant feedback with GHCID
