@@ -1,6 +1,8 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ViewPatterns #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 -- | Parser for Haskell source code.
@@ -12,7 +14,9 @@ where
 
 import Control.Exception
 import Control.Monad.Except
+import Data.Char (isSpace)
 import Data.Functor
+import Data.Generics
 import qualified Data.List as L
 import qualified Data.List.NonEmpty as NE
 import Data.Ord (Down (Down))
@@ -22,19 +26,20 @@ import qualified GHC.Data.FastString as GHC
 import qualified GHC.Data.StringBuffer as GHC
 import qualified GHC.Driver.CmdLine as GHC
 import GHC.Driver.Session as GHC
-import qualified GHC.Driver.Types as GHC
 import GHC.DynFlags (baseDynFlags)
+import GHC.Hs hiding (UnicodeSyntax)
 import GHC.LanguageExtensions.Type (Extension (..))
 import qualified GHC.Parser as GHC
+import GHC.Parser.Errors.Ppr (pprError)
 import qualified GHC.Parser.Header as GHC
 import qualified GHC.Parser.Lexer as GHC
+import qualified GHC.Types.SourceError as GHC (handleSourceError)
 import GHC.Types.SrcLoc
-import GHC.Unit.Module.Name
 import GHC.Utils.Error (Severity (..), errMsgSeverity, errMsgSpan)
 import qualified GHC.Utils.Panic as GHC
 import Ormolu.Config
 import Ormolu.Exception
-import Ormolu.Parser.Anns
+import Ormolu.Imports (normalizeImports)
 import Ormolu.Parser.CommentStream
 import Ormolu.Parser.Result
 import Ormolu.Processing.Common
@@ -89,25 +94,23 @@ parseModuleSnippet ::
   m (Either (SrcSpan, String) ParseResult)
 parseModuleSnippet Config {..} dynFlags path rawInput = liftIO $ do
   let (input, indent) = removeIndentation . linesInRegion cfgRegion $ rawInput
-  let useRecordDot =
-        "record-dot-preprocessor" == pgm_F dynFlags
-          || any
-            (("RecordDotPreprocessor" ==) . moduleNameString)
-            (pluginModNames dynFlags)
-      pStateErrors = \pstate ->
-        let errs = bagToList $ GHC.getErrorMessages pstate dynFlags
+  let pStateErrors = \pstate ->
+        let errs = fmap pprError . bagToList $ GHC.getErrorMessages pstate
             fixupErrSpan = incSpanLine (regionPrefixLength cfgRegion)
          in case L.sortOn (Down . SeverityOrd . errMsgSeverity) errs of
               [] -> Nothing
               err : _ ->
                 -- Show instance returns a short error message
                 Just (fixupErrSpan (errMsgSpan err), show err)
-      r = case runParser GHC.parseModule dynFlags path input of
+      parser = case cfgSourceType of
+        ModuleSource -> GHC.parseModule
+        SignatureSource -> GHC.parseSignature
+      r = case runParser parser dynFlags path input of
         GHC.PFailed pstate ->
           case pStateErrors pstate of
             Just err -> Left err
             Nothing -> error "PFailed does not have an error"
-        GHC.POk pstate (L _ hsModule) ->
+        GHC.POk pstate (L _ (normalizeModule -> hsModule)) ->
           case pStateErrors pstate of
             -- Some parse errors (pattern/arrow syntax in expr context)
             -- do not cause a parse error, but they are replaced with "_"
@@ -116,24 +119,54 @@ parseModuleSnippet Config {..} dynFlags path rawInput = liftIO $ do
             Just err -> Left err
             Nothing ->
               let (stackHeader, pragmas, comments) =
-                    mkCommentStream input pstate hsModule
+                    mkCommentStream input hsModule
                in Right
                     ParseResult
                       { prParsedSource = hsModule,
-                        prAnns = mkAnns pstate,
+                        prSourceType = cfgSourceType,
                         prStackHeader = stackHeader,
                         prPragmas = pragmas,
                         prCommentStream = comments,
-                        prUseRecordDot = useRecordDot,
                         prExtensions = GHC.extensionFlags dynFlags,
                         prIndent = indent
                       }
   return r
 
+-- | Normalize a 'HsModule' by sorting its import\/export lists, dropping
+-- blank comments, etc.
+normalizeModule :: HsModule -> HsModule
+normalizeModule hsmod =
+  everywhere
+    (mkT dropBlankTypeHaddocks)
+    hsmod
+      { hsmodImports =
+          concat $ normalizeImports True (hsmodImports hsmod),
+        hsmodDecls =
+          filter (not . isBlankDocD . unLoc) (hsmodDecls hsmod),
+        hsmodHaddockModHeader =
+          mfilter (not . isBlankDocString . unLoc) (hsmodHaddockModHeader hsmod),
+        hsmodExports =
+          (fmap . fmap) (filter (not . isBlankDocIE . unLoc)) (hsmodExports hsmod)
+      }
+  where
+    isBlankDocString = all isSpace . unpackHDS
+    isBlankDocD = \case
+      DocD _ s -> isBlankDocString $ docDeclDoc s
+      _ -> False
+    isBlankDocIE = \case
+      IEGroup _ _ s -> isBlankDocString s
+      IEDoc _ s -> isBlankDocString s
+      _ -> False
+
+    dropBlankTypeHaddocks = \case
+      L _ (HsDocTy _ ty (L _ ds)) :: LHsType GhcPs
+        | isBlankDocString ds -> ty
+      a -> a
+
 -- | Enable all language extensions that we think should be enabled by
 -- default for ease of use.
 setDefaultExts :: DynFlags -> DynFlags
-setDefaultExts flags = L.foldl' xopt_set flags autoExts
+setDefaultExts flags = L.foldl' xopt_set (lang_set flags (Just Haskell2010)) autoExts
   where
     autoExts = allExts L.\\ manualExts
     allExts = [minBound .. maxBound]
@@ -164,7 +197,9 @@ manualExts =
     -- decision of enabling this style is left to the user
     NegativeLiterals, -- with this, `- 1` and `-1` have differing AST
     LexicalNegation, -- implies NegativeLiterals
-    LinearTypes -- steals the (%) type operator in some cases
+    LinearTypes, -- steals the (%) type operator in some cases
+    OverloadedRecordDot, -- f.g parses differently
+    OverloadedRecordUpdate -- qualified fields are not supported
   ]
 
 -- | Run a 'GHC.P' computation.
@@ -183,7 +218,15 @@ runParser parser flags filename input = GHC.unP parser parseState
   where
     location = mkRealSrcLoc (GHC.mkFastString filename) 1 1
     buffer = GHC.stringToStringBuffer input
-    parseState = GHC.mkPState flags buffer location
+    parseState = GHC.initParserState (opts flags) buffer location
+    opts =
+      GHC.mkParserOpts
+        <$> GHC.warningFlags
+        <*> GHC.extensionFlags
+        <*> GHC.safeImportsOn
+        <*> GHC.gopt GHC.Opt_Haddock
+        <*> GHC.gopt GHC.Opt_KeepRawTokenStream
+        <*> const True
 
 -- | Wrap GHC's 'Severity' to add 'Ord' instance.
 newtype SeverityOrd = SeverityOrd Severity

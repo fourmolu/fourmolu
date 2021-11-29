@@ -10,12 +10,13 @@ module Ormolu.Utils
     notImplemented,
     showOutputable,
     splitDocString,
-    unSrcSpan,
     incSpanLine,
     separatedByBlank,
     separatedByBlankNE,
     onTheSameLine,
     groupBy',
+    HasSrcSpan (..),
+    getLoc',
   )
 where
 
@@ -25,10 +26,11 @@ import qualified Data.List.NonEmpty as NE
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
+import GHC.Driver.Ppr
 import GHC.DynFlags (baseDynFlags)
 import GHC.Hs
 import GHC.Types.SrcLoc
-import qualified GHC.Utils.Outputable as GHC
+import GHC.Utils.Outputable
 
 -- | Relative positions in a list.
 data RelativePos
@@ -58,8 +60,8 @@ notImplemented :: String -> a
 notImplemented msg = error $ "not implemented yet: " ++ msg
 
 -- | Pretty-print an 'GHC.Outputable' thing.
-showOutputable :: GHC.Outputable o => o -> String
-showOutputable = GHC.showSDoc baseDynFlags . GHC.ppr
+showOutputable :: Outputable o => o -> String
+showOutputable = showSDoc baseDynFlags . ppr
 
 -- | Split and normalize a doc string. The result is a list of lines that
 -- make up the comment.
@@ -84,12 +86,6 @@ splitDocString docStr =
         _ -> txt
     escapeCommentBraces = T.replace "{-" "{\\-" . T.replace "-}" "-\\}"
 
--- | Get 'RealSrcSpan' out of 'SrcSpan' if the span is “helpful”.
-unSrcSpan :: SrcSpan -> Maybe RealSrcSpan
-unSrcSpan = \case
-  RealSrcSpan r _ -> Just r
-  UnhelpfulSpan _ -> Nothing
-
 -- | Increment line number in a 'SrcSpan'.
 incSpanLine :: Int -> SrcSpan -> SrcSpan
 incSpanLine i = \case
@@ -108,8 +104,8 @@ incSpanLine i = \case
 separatedByBlank :: (a -> SrcSpan) -> a -> a -> Bool
 separatedByBlank loc a b =
   fromMaybe False $ do
-    endA <- srcSpanEndLine <$> unSrcSpan (loc a)
-    startB <- srcSpanStartLine <$> unSrcSpan (loc b)
+    endA <- srcSpanEndLine <$> srcSpanToRealSrcSpan (loc a)
+    startB <- srcSpanStartLine <$> srcSpanToRealSrcSpan (loc b)
     pure (startB - endA >= 2)
 
 -- | Do two declaration groups have a blank between them?
@@ -130,3 +126,15 @@ groupBy' eq = flip foldr [] $ \x -> \case
     if x `eq` y
       then (x :| y : ys) : zs
       else pure x : (y :| ys) : zs
+
+class HasSrcSpan l where
+  loc' :: l -> SrcSpan
+
+instance HasSrcSpan SrcSpan where
+  loc' = id
+
+instance HasSrcSpan (SrcSpanAnn' ann) where
+  loc' = locA
+
+getLoc' :: HasSrcSpan l => GenLocated l a -> SrcSpan
+getLoc' = loc' . getLoc
