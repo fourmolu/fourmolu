@@ -2,7 +2,12 @@ resolver: nightly-2021-11-28
 compiler: ghc-9.2
 
 extra-deps:
-  - aeson-2.0.2.0
+  - aeson-2.0.2.0  # not strictly needed, but including to make sure aeson-2 is tested
+  - attoparsec-0.14.2
+  - base-compat-0.12.1
+  - base-compat-batteries-0.12.1
+  - Cabal-3.6.2.0
+  - ghc-lib-parser-9.2.1.20211101
 
 ghc-options:
   '$locals': -Werror
