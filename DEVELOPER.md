@@ -106,6 +106,7 @@ Fourmolu aims to continue merging upstream changes in Ormolu. Whenever Ormolu ma
 * Conflicts at the following paths should be resolved by keeping the files DELETED (i.e. if there's a "deleted by us" conflict, use `git rm` to avoid adding the file to our repo):
     * `.github/`
     * `.buildkite/`
+    * `CONTRIBUTING.md`
     * `DESIGN.md`
     * `default.nix`
     * `nix/`
@@ -125,8 +126,7 @@ Fourmolu aims to continue merging upstream changes in Ormolu. Whenever Ormolu ma
 
 * Regenerate test files
 
-    1. Comment out the line in `PrinterSpec.hs` after the "UNCOMMENT NEXT LINE TO REGENERATE OUTPUT FILES" comment
-    1. Run tests and commit any new `*-four-out.hs` files
+    1. Run tests with `ORMOLU_REGENERATE_EXAMPLES=1` set in the environment and commit any new `*-four-out.hs` files
 
 * Remove any redundant Fourmolu output files
 

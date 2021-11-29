@@ -36,7 +36,7 @@ normalizeImports preserveGroups =
         . fmap (\x -> (importId x, g x))
     )
     . if preserveGroups
-      then map toList . groupBy' (\x y -> not $ separatedByBlank getLoc x y)
+      then map toList . groupBy' (\x y -> not $ separatedByBlank getLocA x y)
       else pure
   where
     g :: LImportDecl GhcPs -> LImportDecl GhcPs
