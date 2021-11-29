@@ -4,7 +4,6 @@ type family
     where
     Id a =
         a
-
 type family
     G
         (a :: k)
@@ -14,7 +13,6 @@ type family
     where
     G a b c =
         (a, b)
-
 type family
     F a ::
         * -> *

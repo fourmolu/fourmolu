@@ -1,7 +1,7 @@
 -- |Something.
 foo ::
-  -- |Foo.
-  Int ->
-  -- |Bar.
-  IO ()
+    -- |Foo.
+    Int ->
+    -- |Bar.
+    IO ()
 foo _ = pure () -- comment
