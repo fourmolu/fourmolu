@@ -109,6 +109,7 @@ Fourmolu aims to continue merging upstream changes in Ormolu. Whenever Ormolu ma
     * `CONTRIBUTING.md`
     * `DESIGN.md`
     * `default.nix`
+    * `format.sh`
     * `nix/`
     * `shell.nix`
     * `weeder.dhall`

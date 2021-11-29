@@ -196,7 +196,7 @@ Exit code | Meaning
 
 If there are any options you'd like to see, let us know. If it's not too complicated to implement (and especially if you implement it yourself!) then we'll probably add it.
 
-Run `cabal test` and `./format.sh` before submitting any pull requests.
+See `DEVELOPER.md` for documentation.
 
 ## License
 
