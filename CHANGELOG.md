@@ -41,14 +41,6 @@
      705](https://github.com/tweag/ormolu/issues/705).
    * Support for the `GHC2021` language.
 
-## Fourmolu 0.4.0.0
-
-* Write "Loaded config from" message to `stderr` instead of `stdout` ([#42](https://github.com/fourmolu/fourmolu/pull/42))
-* Fixed issue with multiline haddocks in indented contexts ([#64](https://github.com/fourmolu/fourmolu/pull/64))
-* Avoid renaming magic comments ([#90](https://github.com/fourmolu/fourmolu/pull/90))
-
-### Upstream changes:
-
 #### Ormolu 0.3.1.0
 
 * Allow check mode when working with stdin input. [Issue 634](
@@ -61,6 +53,14 @@
 
 * Invalid Haddock comments are no longer silently deleted, but rather converted
   into regular comments. [Issue 474](https://github.com/tweag/ormolu/issues/474).
+
+## Fourmolu 0.4.0.0
+
+* Write "Loaded config from" message to `stderr` instead of `stdout` ([#42](https://github.com/fourmolu/fourmolu/pull/42))
+* Fixed issue with multiline haddocks in indented contexts ([#64](https://github.com/fourmolu/fourmolu/pull/64))
+* Avoid renaming magic comments ([#90](https://github.com/fourmolu/fourmolu/pull/90))
+
+### Upstream changes:
 
 #### Ormolu 0.3.0.1
 
