@@ -653,8 +653,8 @@ p_hsExpr' s = \case
             -- a multi line do block or case expression.
             indentArg
               | isOneLineSpan (getLocA func) = case unLoc func of
-                HsDo {} -> inciBy 2
-                _ -> inci
+                  HsDo {} -> inciBy 2
+                  _ -> inci
               | otherwise = case unLoc func of
                   HsDo {} -> inciHalf
                   HsCase {} -> inciHalf

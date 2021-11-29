@@ -134,15 +134,15 @@ viewModel model@Model {..} =
             ]
         ]
           <> [ div_
-                 [class_ "columns"]
-                 [ pre_
-                     [class_ "column is-half is-family-code"]
-                     [ text . ms . prettyAST . fromMisoString $ input
-                     ],
-                   pre_
-                     [class_ "column is-half is-family-code"]
-                     [text . ms . prettyAST . T.unpack $ m | m <- toList output]
-                 ]
+                [class_ "columns"]
+                [ pre_
+                    [class_ "column is-half is-family-code"]
+                    [ text . ms . prettyAST . fromMisoString $ input
+                    ],
+                  pre_
+                    [class_ "column is-half is-family-code"]
+                    [text . ms . prettyAST . T.unpack $ m | m <- toList output]
+                ]
                | showParseResult
              ]
     ]
