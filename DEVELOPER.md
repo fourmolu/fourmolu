@@ -111,6 +111,7 @@ Fourmolu aims to continue merging upstream changes in Ormolu. Whenever Ormolu ma
     * `default.nix`
     * `nix/`
     * `shell.nix`
+    * `weeder.dhall`
 
 * Conflicts at the following paths should be resolved by throwing out Ormolu's changes and keeping our changes (i.e. if there's a conflict, use `git checkout --ours`):
     * `stack.yaml`
