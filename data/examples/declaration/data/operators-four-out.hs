@@ -1,9 +1,11 @@
 data ErrorMessage' s
-    = -- | Show the text as is.
-      Text s
-    | -- | Pretty print the type.
-      -- @ShowType :: k -> ErrorMessage@
-      forall t. ShowType t
+    = Text
+    -- ^ Show the text as is.
+        s
+    | forall t. ShowType
+    -- ^ Pretty print the type.
+    -- @ShowType :: k -> ErrorMessage@
+        t
     | -- | Put two pieces of error message next
       -- to each other.
       ErrorMessage' s :<>: ErrorMessage' s

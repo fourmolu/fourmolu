@@ -22,6 +22,7 @@ import GHC.Types.Name.Reader
 import GHC.Types.SrcLoc
 import Ormolu.Config
 import Ormolu.Printer.Combinators
+import Ormolu.Printer.Internal (enterLayout)
 import Ormolu.Printer.Meat.Common
 import Ormolu.Printer.Meat.Type
 import Ormolu.Utils
@@ -159,7 +160,10 @@ p_conDecl singleConstRec = \case
                 else qualTy
         p_hsType (unLoc quantifiedTy)
   ConDeclH98 {..} -> do
-    mapM_ (p_hsDocString Pipe True) con_doc
+    case con_args of
+      PrefixCon _ -> pure ()
+      RecCon _ -> mapM_ (p_hsDocString Pipe True) con_doc
+      InfixCon _ _ -> mapM_ (p_hsDocString Pipe True) con_doc
     let conDeclWithContextSpn =
           [getLoc con_forall]
             <> fmap getLoc con_ex_tvs
@@ -177,8 +181,16 @@ p_conDecl singleConstRec = \case
       switchLayout conDeclSpn $ case con_args of
         PrefixCon xs -> do
           p_rdrName con_name
-          unless (null xs) breakpoint
-          inci . sitcc $ sep breakpoint (sitcc . located' p_hsTypePostDoc) (hsScaledThing <$> xs)
+          inciByFrac (-2) $ do
+            case con_doc of
+              Just d -> do
+                newline
+                p_hsDocString Caret False d
+                unless (null xs) newline
+                enterLayout MultiLine . inci . sitcc $ sep breakpoint (sitcc . located' p_hsTypePostDoc) (hsScaledThing <$> xs)
+              Nothing -> do
+                unless (null xs) breakpoint
+                inci . sitcc $ sep breakpoint (sitcc . located' p_hsTypePostDoc) (hsScaledThing <$> xs)
         RecCon l -> do
           p_rdrName con_name
           breakpoint

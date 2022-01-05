@@ -2,9 +2,11 @@ module Main where
 
 -- | Foo.
 data Foo
-    = -- | Something
-      Foo Int Int
-    | -- | Something else
-      Bar
+    = Foo
+    -- ^ Something
+        Int
+        Int
+    | Bar
+    -- ^ Something else
         Char
         Char

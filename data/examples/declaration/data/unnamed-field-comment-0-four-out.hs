@@ -1,6 +1,6 @@
 data Foo
-    = -- | Bar
-      Bar
+    = Bar
+    -- ^ Bar
         Field1
         -- ^ Field 1
         Field2

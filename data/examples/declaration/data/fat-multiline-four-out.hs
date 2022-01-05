@@ -2,11 +2,11 @@ module Main where
 
 -- | Something.
 data Foo
-    = -- | Foo
-      Foo
+    = Foo
+    -- ^ Foo
         Int
         Int
-    | -- | Bar
-      Bar
+    | Bar
+    -- ^ Bar
         Bool
         Bool
