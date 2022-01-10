@@ -7,12 +7,23 @@ Some things to keep in mind when making changes:
 * Make the minimal amount of changes
     * Avoid refactoring where possible, don't reformat untouched code
     * Since we continuously merge in changes from Ormolu, reducing the number of potential conflicts goes a long way towards maintainability of this project.
+    * This includes behavior changes that drastically change how `fourmolu` formats Fourmolu's source code itself
+
+### Running `fourmolu`
+
+After building from source (see `README.md`), you can run Fourmolu with
+
+```bash
+scripts/run-fourmolu.sh --cabal-default-extensions --mode=inplace ...
+```
+
+This script automatically detects whether you built `fourmolu` with Stack or Cabal. If the auto-detection isn't working out, you can override it by setting `export BUILD_TYPE={stack,cabal}` in your environment.
+
+This is automatically run on Fourmolu's source code in the pre-commit hooks (see the "Pre-commit hooks" section) and is checked in CI. If you're not using the pre-commit hooks, use the above command to manually style the files you changed (see `.pre-commit-config.yaml` for the files to exclude).
 
 ### Pre-commit hooks
 
 We highly recommend turning on pre-commit hooks to run checks every time you commit. To do so, install [`pre-commit`](https://pre-commit.com/) and run `pre-commit install` in this directory.
-
-`pre-commit` will run `fourmolu` on the source code on every commit, automatically detecting whether you built `fourmolu` with Stack or Cabal. If the auto-detection isn't working out, you can override it by setting `export BUILD_TYPE=stack/cabal` in your environment.
 
 This is optional, but is run in CI regardless.
 
