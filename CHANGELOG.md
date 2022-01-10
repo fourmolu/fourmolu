@@ -1,6 +1,7 @@
-## Unreleased
+## Fourmolu 0.4.0.0
 
 * Fixed issue with leading commas in guards ([#123](https://github.com/fourmolu/fourmolu/pull/123))
+* Use trailing haddocks for record fields when using leading commas ([#124](https://github.com/fourmolu/fourmolu/pull/124))
 
 ### Upstream changes:
 
