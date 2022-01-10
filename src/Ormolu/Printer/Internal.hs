@@ -19,7 +19,7 @@ module Ormolu.Printer.Internal
     space,
     newline,
     declNewline,
-    useRecordDot,
+    askSourceType,
     inci,
     inciBy,
     inciByFrac,
@@ -54,9 +54,6 @@ module Ormolu.Printer.Internal
     setSpanMark,
     getSpanMark,
 
-    -- * Annotations
-    getAnns,
-
     -- * Extensions
     isExtensionEnabled,
   )
@@ -75,11 +72,9 @@ import Data.Text.Lazy.Builder
 import GHC.Data.EnumSet (EnumSet)
 import qualified GHC.Data.EnumSet as EnumSet
 import GHC.LanguageExtensions.Type
-import GHC.Parser.Annotation
 import GHC.Types.SrcLoc
 import GHC.Utils.Outputable (Outputable)
 import Ormolu.Config
-import Ormolu.Parser.Anns
 import Ormolu.Parser.CommentStream
 import Ormolu.Printer.SpanStream
 import Ormolu.Utils (showOutputable)
@@ -102,15 +97,13 @@ data RC = RC
     rcLayout :: Layout,
     -- | Spans of enclosing elements of AST
     rcEnclosingSpans :: [RealSrcSpan],
-    -- | Collection of annotations
-    rcAnns :: Anns,
     -- | Whether the last expression in the layout can use braces
     rcCanUseBraces :: Bool,
-    -- | Whether the source could have used the record dot preprocessor
-    rcUseRecDot :: Bool,
     rcPrinterOpts :: PrinterOptsTotal,
     -- | Enabled extensions
-    rcExtensions :: EnumSet Extension
+    rcExtensions :: EnumSet Extension,
+    -- | Whether the source is a signature or a regular module
+    rcSourceType :: SourceType
   }
 
 -- | State context of 'R'.
@@ -174,16 +167,14 @@ runR ::
   SpanStream ->
   -- | Comment stream
   CommentStream ->
-  -- | Annotations
-  Anns ->
   PrinterOptsTotal ->
-  -- | Use Record Dot Syntax
-  Bool ->
+  -- | Whether the source is a signature or a regular module
+  SourceType ->
   -- | Enabled extensions
   EnumSet Extension ->
   -- | Resulting rendition
   Text
-runR (R m) sstream cstream anns printerOpts recDot extensions =
+runR (R m) sstream cstream printerOpts sourceType extensions =
   TL.toStrict . toLazyText . scBuilder $ execState (runReaderT m rc) sc
   where
     rc =
@@ -191,11 +182,10 @@ runR (R m) sstream cstream anns printerOpts recDot extensions =
         { rcIndent = 0,
           rcLayout = MultiLine,
           rcEnclosingSpans = [],
-          rcAnns = anns,
           rcCanUseBraces = False,
-          rcUseRecDot = recDot,
           rcPrinterOpts = printerOpts,
-          rcExtensions = extensions
+          rcExtensions = extensions,
+          rcSourceType = sourceType
         }
     sc =
       SC
@@ -396,9 +386,9 @@ newlineRawN n = R . modify $ \sc ->
             _ -> AfterNewline
         }
 
--- | Return 'True' if we should print record dot syntax.
-useRecordDot :: R Bool
-useRecordDot = R (asks rcUseRecDot)
+-- | Return the source type.
+askSourceType :: R SourceType
+askSourceType = R (asks rcSourceType)
 
 -- | Like 'inci', but indents by exactly the given number of steps.
 inciBy :: Int -> R () -> R ()
@@ -604,15 +594,6 @@ setSpanMark spnMark = R . modify $ \sc ->
 -- | Get span of last output comment.
 getSpanMark :: R (Maybe SpanMark)
 getSpanMark = R (gets scSpanMark)
-
-----------------------------------------------------------------------------
--- Annotations
-
--- | For a given span return 'AnnKeywordId's associated with it.
-getAnns ::
-  SrcSpan ->
-  R [AnnKeywordId]
-getAnns spn = lookupAnns spn <$> R (asks rcAnns)
 
 ----------------------------------------------------------------------------
 -- Helpers for braces

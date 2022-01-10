@@ -9,7 +9,7 @@ module Ormolu.Printer.Meat.Module
 where
 
 import Control.Monad
-import GHC.Hs
+import GHC.Hs hiding (comment)
 import GHC.Types.SrcLoc
 import Ormolu.Config
 import Ormolu.Imports (normalizeImports)
@@ -23,7 +23,8 @@ import Ormolu.Printer.Meat.Declaration.Warning
 import Ormolu.Printer.Meat.ImportExport
 import Ormolu.Printer.Meat.Pragma
 
--- | Render a module.
+-- | Render a module-like entity (either a regular module or a backpack
+-- signature).
 p_hsModule ::
   -- | Stack header
   Maybe (RealLocated Comment) ->
@@ -33,8 +34,8 @@ p_hsModule ::
   HsModule ->
   R ()
 p_hsModule mstackHeader pragmas HsModule {..} = do
-  let deprecSpan = maybe [] (\(L s _) -> [s]) hsmodDeprecMessage
-      exportSpans = maybe [] (\(L s _) -> [s]) hsmodExports
+  let deprecSpan = maybe [] (pure . getLocA) hsmodDeprecMessage
+      exportSpans = maybe [] (pure . getLocA) hsmodExports
   switchLayout (deprecSpan <> exportSpans) $ do
     forM_ mstackHeader $ \(L spn comment) -> do
       spitCommentNow spn comment
@@ -71,7 +72,7 @@ p_hsModule mstackHeader pragmas HsModule {..} = do
       forM_ importGroup (located' p_hsmodImport)
       newline
     declNewline
-    switchLayout (getLoc <$> hsmodDecls) $ do
+    switchLayout (getLocA <$> hsmodDecls) $ do
       preserveSpacing <- getPrinterOpt poRespectful
       (if preserveSpacing then p_hsDeclsRespectGrouping else p_hsDecls) Free hsmodDecls
       newline

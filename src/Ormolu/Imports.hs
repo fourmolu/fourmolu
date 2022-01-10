@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TypeFamilies #-}
 
 -- | Manipulations on import lists.
 module Ormolu.Imports
@@ -15,17 +16,21 @@ import Data.Function (on)
 import Data.List (foldl', nubBy, sortBy, sortOn)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import GHC.Data.FastString (FastString)
-import GHC.Hs.Extension
+import GHC.Data.FastString
+import GHC.Hs
 import GHC.Hs.ImpExp as GHC
-import GHC.Types.Basic
 import GHC.Types.Name.Reader
+import GHC.Types.SourceText
 import GHC.Types.SrcLoc
 import GHC.Unit.Module.Name
 import GHC.Unit.Types
 import Ormolu.Utils (groupBy', notImplemented, separatedByBlank, showOutputable)
 
--- | Sort, group and normalize imports. Assumes input list is sorted by source location.
+-- | Sort, group and normalize imports.
+--
+-- Assumes input list is sorted by source location. Output list is not necessarily
+-- sorted by source location, so this function should be called at most once on a
+-- given input list.
 normalizeImports :: Bool -> [LImportDecl GhcPs] -> [[LImportDecl GhcPs]]
 normalizeImports preserveGroups =
   map
@@ -35,9 +40,10 @@ normalizeImports preserveGroups =
         . fmap (\x -> (importId x, g x))
     )
     . if preserveGroups
-      then map toList . groupBy' (\x y -> not $ separatedByBlank getLoc x y)
+      then map toList . groupBy' (\x y -> not $ separatedByBlank getLocA x y)
       else pure
   where
+    g :: LImportDecl GhcPs -> LImportDecl GhcPs
     g (L l ImportDecl {..}) =
       L
         l
@@ -69,7 +75,7 @@ combineImports (L lx ImportDecl {..}) (L _ y) =
 data ImportId = ImportId
   { importIsPrelude :: Bool,
     importIdName :: ModuleName,
-    importPkgQual :: Maybe FastString,
+    importPkgQual :: Maybe LexicalFastString,
     importSource :: IsBootInterface,
     importSafe :: Bool,
     importQualified :: Bool,
@@ -85,7 +91,7 @@ importId (L _ ImportDecl {..}) =
   ImportId
     { importIsPrelude = isPrelude,
       importIdName = moduleName,
-      importPkgQual = sl_fs <$> ideclPkgQual,
+      importPkgQual = LexicalFastString . sl_fs <$> ideclPkgQual,
       importSource = ideclSource,
       importSafe = ideclSafe,
       importQualified = case ideclQualified of
@@ -115,39 +121,38 @@ normalizeLies = sortOn (getIewn . unLoc) . M.elems . foldl' combine M.empty
           alter = \case
             Nothing -> Just . L new_l $
               case new of
-                IEThingWith NoExtField n wildcard g flbl ->
-                  IEThingWith NoExtField n wildcard (normalizeWNames g) flbl
+                IEThingWith _ n wildcard g ->
+                  IEThingWith EpAnnNotUsed n wildcard (normalizeWNames g)
                 other -> other
             Just old ->
               let f = \case
-                    IEVar NoExtField n -> IEVar NoExtField n
-                    IEThingAbs NoExtField _ -> new
-                    IEThingAll NoExtField n -> IEThingAll NoExtField n
-                    IEThingWith NoExtField n wildcard g flbl ->
+                    IEVar _ n -> IEVar NoExtField n
+                    IEThingAbs _ _ -> new
+                    IEThingAll _ n -> IEThingAll EpAnnNotUsed n
+                    IEThingWith _ n wildcard g ->
                       case new of
                         IEVar NoExtField _ ->
                           error "Ormolu.Imports broken presupposition"
-                        IEThingAbs NoExtField _ ->
-                          IEThingWith NoExtField n wildcard g flbl
-                        IEThingAll NoExtField n' ->
-                          IEThingAll NoExtField n'
-                        IEThingWith NoExtField n' wildcard' g' flbl' ->
+                        IEThingAbs _ _ ->
+                          IEThingWith EpAnnNotUsed n wildcard g
+                        IEThingAll _ n' ->
+                          IEThingAll EpAnnNotUsed n'
+                        IEThingWith _ n' wildcard' g' ->
                           let combinedWildcard =
                                 case (wildcard, wildcard') of
                                   (IEWildcard _, _) -> IEWildcard 0
                                   (_, IEWildcard _) -> IEWildcard 0
                                   _ -> NoIEWildcard
                            in IEThingWith
-                                NoExtField
+                                EpAnnNotUsed
                                 n'
                                 combinedWildcard
                                 (normalizeWNames (g <> g'))
-                                flbl'
-                        IEModuleContents NoExtField _ -> notImplemented "IEModuleContents"
+                        IEModuleContents _ _ -> notImplemented "IEModuleContents"
                         IEGroup NoExtField _ _ -> notImplemented "IEGroup"
                         IEDoc NoExtField _ -> notImplemented "IEDoc"
                         IEDocNamed NoExtField _ -> notImplemented "IEDocNamed"
-                    IEModuleContents NoExtField _ -> notImplemented "IEModuleContents"
+                    IEModuleContents _ _ -> notImplemented "IEModuleContents"
                     IEGroup NoExtField _ _ -> notImplemented "IEGroup"
                     IEDoc NoExtField _ -> notImplemented "IEDoc"
                     IEDocNamed NoExtField _ -> notImplemented "IEDocNamed"
@@ -166,10 +171,10 @@ instance Ord IEWrappedNameOrd where
 getIewn :: IE GhcPs -> IEWrappedNameOrd
 getIewn = \case
   IEVar NoExtField x -> IEWrappedNameOrd (unLoc x)
-  IEThingAbs NoExtField x -> IEWrappedNameOrd (unLoc x)
-  IEThingAll NoExtField x -> IEWrappedNameOrd (unLoc x)
-  IEThingWith NoExtField x _ _ _ -> IEWrappedNameOrd (unLoc x)
-  IEModuleContents NoExtField _ -> notImplemented "IEModuleContents"
+  IEThingAbs _ x -> IEWrappedNameOrd (unLoc x)
+  IEThingAll _ x -> IEWrappedNameOrd (unLoc x)
+  IEThingWith _ x _ _ -> IEWrappedNameOrd (unLoc x)
+  IEModuleContents _ _ -> notImplemented "IEModuleContents"
   IEGroup NoExtField _ _ -> notImplemented "IEGroup"
   IEDoc NoExtField _ -> notImplemented "IEDoc"
   IEDocNamed NoExtField _ -> notImplemented "IEDocNamed"
@@ -181,14 +186,14 @@ compareLIewn = compareIewn `on` unLoc
 -- | Compare two @'IEWrapppedName' 'RdrName'@ things.
 compareIewn :: IEWrappedName RdrName -> IEWrappedName RdrName -> Ordering
 compareIewn (IEName x) (IEName y) = unLoc x `compareRdrName` unLoc y
-compareIewn (IEName _) (IEPattern _) = LT
-compareIewn (IEName _) (IEType _) = LT
-compareIewn (IEPattern _) (IEName _) = GT
-compareIewn (IEPattern x) (IEPattern y) = unLoc x `compareRdrName` unLoc y
-compareIewn (IEPattern _) (IEType _) = LT
-compareIewn (IEType _) (IEName _) = GT
-compareIewn (IEType _) (IEPattern _) = GT
-compareIewn (IEType x) (IEType y) = unLoc x `compareRdrName` unLoc y
+compareIewn (IEName _) (IEPattern _ _) = LT
+compareIewn (IEName _) (IEType _ _) = LT
+compareIewn (IEPattern _ _) (IEName _) = GT
+compareIewn (IEPattern _ x) (IEPattern _ y) = unLoc x `compareRdrName` unLoc y
+compareIewn (IEPattern _ _) (IEType _ _) = LT
+compareIewn (IEType _ _) (IEName _) = GT
+compareIewn (IEType _ _) (IEPattern _ _) = GT
+compareIewn (IEType _ x) (IEType _ y) = unLoc x `compareRdrName` unLoc y
 
 compareRdrName :: RdrName -> RdrName -> Ordering
 compareRdrName x y =

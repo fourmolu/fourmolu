@@ -12,8 +12,7 @@ where
 
 import Control.Monad
 import qualified Data.Text as T
-import GHC.Hs.Extension
-import GHC.Hs.ImpExp
+import GHC.Hs
 import GHC.LanguageExtensions.Type
 import GHC.Types.SrcLoc
 import GHC.Unit.Types
@@ -86,15 +85,15 @@ p_lie encLayout relativePos = \case
   IEVar NoExtField l1 -> do
     located l1 p_ieWrappedName
     p_comma
-  IEThingAbs NoExtField l1 -> do
+  IEThingAbs _ l1 -> do
     located l1 p_ieWrappedName
     p_comma
-  IEThingAll NoExtField l1 -> do
+  IEThingAll _ l1 -> do
     located l1 p_ieWrappedName
     space
     txt "(..)"
     p_comma
-  IEThingWith NoExtField l1 w xs _ -> sitcc $ do
+  IEThingWith _ l1 w xs -> sitcc $ do
     located l1 p_ieWrappedName
     breakIfNotDiffFriendly
     inci $ do
@@ -107,7 +106,7 @@ p_lie encLayout relativePos = \case
             let (before, after) = splitAt n names
              in before ++ [txt ".."] ++ after
     p_comma
-  IEModuleContents NoExtField l1 -> do
+  IEModuleContents _ l1 -> do
     located l1 p_hsmodName
     p_comma
   IEGroup NoExtField n str -> do

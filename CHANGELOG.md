@@ -2,6 +2,58 @@
 
 * Fixed issue with leading commas in guards ([#123](https://github.com/fourmolu/fourmolu/pull/123))
 
+### Upstream changes:
+
+#### Ormolu 0.4.0.0
+
+* When a guard is located on its own line, the body associated with this
+  guard is indented by one extra level, so that it can easily be
+  distinguished from the guard predicate or pattern. [Issue
+  806](https://github.com/tweag/ormolu/issues/806).
+
+* Now a space is forced after `--` in line comments. [Issue
+  808](https://github.com/tweag/ormolu/issues/808).
+
+* Allow formatting Backpack signature files (`.hsig`). The switch between
+  regular module mode and signature mode is based on the file extension by
+  default, but can be overridden with the `-t / --source-type` command line
+  option. [Issue 600](https://github.com/tweag/ormolu/issues/600).
+
+* Blank Haddock comments are now eliminated. This also fixes issues with
+  differing ASTs in some special cases. [Issue
+  726](https://github.com/tweag/ormolu/issues/726).
+
+* Rewrite rules that are never active are now formatted correctly.
+  [Issue 823](https://github.com/tweag/ormolu/issues/823).
+
+* Promoted infix data constructors are now formatted correctly. [Issue 768](
+  https://github.com/tweag/ormolu/issues/768).
+
+* Switched to `ghc-lib-parser-9.2`.
+  [Issue 794](https://github.com/tweag/ormolu/issues/794).
+   * Support for the new syntax-related language extensions:
+     `OverloadedRecordDot` and `OverloadedRecordUpdate`
+     (disabled by default).
+     [Issue 709](https://github.com/tweag/ormolu/issues/709).
+   * Removed support for `record-dot-preprocessor`. For the getter syntax,
+     consider using `OverloadedRecordDot` instead. [Issue
+     659](https://github.com/tweag/ormolu/issues/659). [Issue
+     705](https://github.com/tweag/ormolu/issues/705).
+   * Support for the `GHC2021` language.
+
+#### Ormolu 0.3.1.0
+
+* Allow check mode when working with stdin input. [Issue 634](
+  https://github.com/tweag/ormolu/issues/634).
+
+* Now guards are printed on a new line if at least one guard is multiline or
+  if all guards together occupy more than one line. The body of each guard
+  is also indented one level deeper in that case. [Issue
+  712](https://github.com/tweag/ormolu/issues/712).
+
+* Invalid Haddock comments are no longer silently deleted, but rather converted
+  into regular comments. [Issue 474](https://github.com/tweag/ormolu/issues/474).
+
 ## Fourmolu 0.4.0.0
 
 * Write "Loaded config from" message to `stderr` instead of `stdout` ([#42](https://github.com/fourmolu/fourmolu/pull/42))
@@ -9,17 +61,6 @@
 * Avoid renaming magic comments ([#90](https://github.com/fourmolu/fourmolu/pull/90))
 
 ### Upstream changes:
-
-#### Ormolu 0.3.1.0
-
-* Allow check mode when working with stdin input. [Issue 634](
-  https://github.com/tweag/ormolu/issues/634).
-* Now guards are printed on a new line if at least one guard is multiline or
-  if all guards together occupy more than one line. The body of each guard
-  is also indented one level deeper in that case. [Issue
-  712](https://github.com/tweag/ormolu/issues/712).
-* Invalid Haddock comments are no longer silently deleted, but rather converted
-  into regular comments. [Issue 474](https://github.com/tweag/ormolu/issues/474).
 
 #### Ormolu 0.3.0.1
 

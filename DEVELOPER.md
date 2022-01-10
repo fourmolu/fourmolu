@@ -7,6 +7,19 @@ Some things to keep in mind when making changes:
 * Make the minimal amount of changes
     * Avoid refactoring where possible, don't reformat untouched code
     * Since we continuously merge in changes from Ormolu, reducing the number of potential conflicts goes a long way towards maintainability of this project.
+    * This includes behavior changes that drastically change how `fourmolu` formats Fourmolu's source code itself
+
+### Running `fourmolu`
+
+After building from source (see `README.md`), you can run Fourmolu with
+
+```bash
+scripts/run-fourmolu.sh --cabal-default-extensions --mode=inplace ...
+```
+
+This script automatically detects whether you built `fourmolu` with Stack or Cabal. If the auto-detection isn't working out, you can override it by setting `export BUILD_TYPE={stack,cabal}` in your environment.
+
+This is automatically run on Fourmolu's source code in the pre-commit hooks (see the "Pre-commit hooks" section) and is checked in CI. If you're not using the pre-commit hooks, use the above command to manually style the files you changed (see `.pre-commit-config.yaml` for the files to exclude).
 
 ### Pre-commit hooks
 
@@ -106,10 +119,13 @@ Fourmolu aims to continue merging upstream changes in Ormolu. Whenever Ormolu ma
 * Conflicts at the following paths should be resolved by keeping the files DELETED (i.e. if there's a "deleted by us" conflict, use `git rm` to avoid adding the file to our repo):
     * `.github/`
     * `.buildkite/`
+    * `CONTRIBUTING.md`
     * `DESIGN.md`
     * `default.nix`
+    * `format.sh`
     * `nix/`
     * `shell.nix`
+    * `weeder.dhall`
 
 * Conflicts at the following paths should be resolved by throwing out Ormolu's changes and keeping our changes (i.e. if there's a conflict, use `git checkout --ours`):
     * `stack.yaml`
@@ -125,8 +141,7 @@ Fourmolu aims to continue merging upstream changes in Ormolu. Whenever Ormolu ma
 
 * Regenerate test files
 
-    1. Comment out the line in `PrinterSpec.hs` after the "UNCOMMENT NEXT LINE TO REGENERATE OUTPUT FILES" comment
-    1. Run tests and commit any new `*-four-out.hs` files
+    1. Run tests with `ORMOLU_REGENERATE_EXAMPLES=1` set in the environment and commit any new `*-four-out.hs` files
 
 * Remove any redundant Fourmolu output files
 

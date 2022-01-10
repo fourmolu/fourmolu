@@ -19,7 +19,7 @@ import Data.ByteString (ByteString)
 import Data.Foldable
 import Data.Generics
 import GHC.Hs
-import GHC.Types.Basic
+import GHC.Types.SourceText
 import GHC.Types.SrcLoc
 import Ormolu.Imports (normalizeImports)
 import Ormolu.Parser.CommentStream
@@ -32,6 +32,7 @@ data ParseResultDiff
     Same
   | -- | Two parse results differ
     Different [SrcSpan]
+  deriving (Show)
 
 instance Semigroup ParseResultDiff where
   Same <> a = a
@@ -73,6 +74,8 @@ diffCommentStream (CommentStream cs) (CommentStream cs')
 --     * ordering of import lists
 --     * style (ASCII vs Unicode) of arrows
 --     * LayoutInfo (brace style) in extension fields
+--     * Empty contexts in type classes
+--     * Parens around derived type classes
 matchIgnoringSrcSpans :: Data a => a -> a -> ParseResultDiff
 matchIgnoringSrcSpans a = genericQuery a
   where
@@ -82,27 +85,33 @@ matchIgnoringSrcSpans a = genericQuery a
       -- implement 'toConstr', so we have to deal with it in a special way.
       | Just x' <- cast x,
         Just y' <- cast y =
-        if x' == (y' :: ByteString)
-          then Same
-          else Different []
+          if x' == (y' :: ByteString)
+            then Same
+            else Different []
       | typeOf x == typeOf y,
         toConstr x == toConstr y =
-        mconcat $
-          gzipWithQ
-            ( genericQuery
-                `extQ` srcSpanEq
-                `extQ` sourceTextEq
-                `extQ` hsDocStringEq
-                `extQ` importDeclQualifiedStyleEq
-                `extQ` unicodeArrowStyleEq
-                `extQ` layoutInfoEq
-                `ext2Q` forLocated
-            )
-            x
-            y
+          mconcat $
+            gzipWithQ
+              ( genericQuery
+                  `extQ` srcSpanEq
+                  `ext1Q` epAnnEq
+                  `extQ` sourceTextEq
+                  `extQ` hsDocStringEq
+                  `extQ` importDeclQualifiedStyleEq
+                  `extQ` unicodeArrowStyleEq
+                  `extQ` layoutInfoEq
+                  `extQ` classDeclCtxEq
+                  `extQ` derivedTyClsParensEq
+                  `extQ` epaCommentsEq
+                  `ext2Q` forLocated
+              )
+              x
+              y
       | otherwise = Different []
     srcSpanEq :: SrcSpan -> GenericQ ParseResultDiff
     srcSpanEq _ _ = Same
+    epAnnEq :: EpAnn a -> GenericQ ParseResultDiff
+    epAnnEq _ _ = Same
     sourceTextEq :: SourceText -> GenericQ ParseResultDiff
     sourceTextEq _ _ = Same
     importDeclQualifiedStyleEq ::
@@ -127,7 +136,7 @@ matchIgnoringSrcSpans a = genericQuery a
       GenLocated e0 e1 ->
       GenericQ ParseResultDiff
     forLocated x@(L mspn _) y =
-      maybe id appendSpan (cast mspn) (genericQuery x y)
+      maybe id appendSpan (cast `ext1Q` (Just . locA) $ mspn) (genericQuery x y)
     appendSpan :: SrcSpan -> ParseResultDiff -> ParseResultDiff
     appendSpan s (Different ss) | fresh && helpful = Different (s : ss)
       where
@@ -137,8 +146,8 @@ matchIgnoringSrcSpans a = genericQuery a
     -- as we normalize arrow styles (e.g. -> vs →), we consider them equal here
     unicodeArrowStyleEq :: HsArrow GhcPs -> GenericQ ParseResultDiff
     unicodeArrowStyleEq (HsUnrestrictedArrow _) (castArrow -> Just (HsUnrestrictedArrow _)) = Same
-    unicodeArrowStyleEq (HsLinearArrow _) (castArrow -> Just (HsLinearArrow _)) = Same
-    unicodeArrowStyleEq (HsExplicitMult _ t) (castArrow -> Just (HsExplicitMult _ t')) = genericQuery t t'
+    unicodeArrowStyleEq (HsLinearArrow _ _) (castArrow -> Just (HsLinearArrow _ _)) = Same
+    unicodeArrowStyleEq (HsExplicitMult _ _ t) (castArrow -> Just (HsExplicitMult _ _ t')) = genericQuery t t'
     unicodeArrowStyleEq _ _ = Different []
     castArrow :: Typeable a => a -> Maybe (HsArrow GhcPs)
     castArrow = cast
@@ -146,3 +155,13 @@ matchIgnoringSrcSpans a = genericQuery a
     layoutInfoEq :: LayoutInfo -> GenericQ ParseResultDiff
     layoutInfoEq _ (cast -> Just (_ :: LayoutInfo)) = Same
     layoutInfoEq _ _ = Different []
+    classDeclCtxEq :: TyClDecl GhcPs -> GenericQ ParseResultDiff
+    classDeclCtxEq ClassDecl {tcdCtxt = Just (L _ []), ..} tc' = genericQuery ClassDecl {tcdCtxt = Nothing, ..} tc'
+    classDeclCtxEq tc tc' = genericQuery tc tc'
+    derivedTyClsParensEq :: DerivClauseTys GhcPs -> GenericQ ParseResultDiff
+    derivedTyClsParensEq (DctSingle NoExtField sigTy) dct' = genericQuery (DctMulti NoExtField [sigTy]) dct'
+    derivedTyClsParensEq dct dct' = genericQuery dct dct'
+    -- EpAnnComments ~ XCGRHSs GhcPs
+    epaCommentsEq :: EpAnnComments -> GenericQ ParseResultDiff
+    epaCommentsEq _ (cast -> Just (_ :: EpAnnComments)) = Same
+    epaCommentsEq _ _ = Different []
