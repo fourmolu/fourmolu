@@ -94,6 +94,11 @@ To release a new version, do the following workflow:
 1. Create PR as usual and merge into `master`
     1. In the `test_latest` CI job, check the output of the `stack sdist` step for any warnings.
 
+1. Create a release on GitHub on the merge commit
+    * The tag version should be of the format vX.Y.Z
+    * The release title should be the same as the tag version
+    * The release body should contain everything in `CHANGELOG.md` in the section for this version
+
 1. Upload the package to Hackage
     1. Download the `fourmolu-*.tar.gz` file from CI artifacts
     1. Upload tarball to Hackage
