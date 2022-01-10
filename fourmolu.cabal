@@ -6,6 +6,7 @@ license-file:       LICENSE.md
 maintainer:
     Matt Parsons <parsonsmatt@gmail.com>
     George Thomas <georgefsthomas@gmail.com>
+    Brandon Chinn <brandonchinn178@gmail.com>
 tested-with:        ghc ==8.10.7 ghc ==9.0.1 ghc ==9.2.1
 homepage:           https://github.com/parsonsmatt/fourmolu
 bug-reports:        https://github.com/parsonsmatt/fourmolu/issues
