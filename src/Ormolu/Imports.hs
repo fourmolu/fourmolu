@@ -26,7 +26,11 @@ import GHC.Unit.Module.Name
 import GHC.Unit.Types
 import Ormolu.Utils (groupBy', notImplemented, separatedByBlank, showOutputable)
 
--- | Sort, group and normalize imports. Assumes input list is sorted by source location.
+-- | Sort, group and normalize imports.
+--
+-- Assumes input list is sorted by source location. Output list is not necessarily
+-- sorted by source location, so this function should be called at most once on a
+-- given input list.
 normalizeImports :: Bool -> [LImportDecl GhcPs] -> [[LImportDecl GhcPs]]
 normalizeImports preserveGroups =
   map

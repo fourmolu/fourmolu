@@ -39,7 +39,6 @@ import GHC.Utils.Error (Severity (..), errMsgSeverity, errMsgSpan)
 import qualified GHC.Utils.Panic as GHC
 import Ormolu.Config
 import Ormolu.Exception
-import Ormolu.Imports (normalizeImports)
 import Ormolu.Parser.CommentStream
 import Ormolu.Parser.Result
 import Ormolu.Processing.Common
@@ -132,7 +131,7 @@ parseModuleSnippet Config {..} dynFlags path rawInput = liftIO $ do
                       }
   return r
 
--- | Normalize a 'HsModule' by sorting its import\/export lists, dropping
+-- | Normalize a 'HsModule' by sorting its export lists, dropping
 -- blank comments, etc.
 normalizeModule :: HsModule -> HsModule
 normalizeModule hsmod =
@@ -140,7 +139,7 @@ normalizeModule hsmod =
     (mkT dropBlankTypeHaddocks)
     hsmod
       { hsmodImports =
-          concat $ normalizeImports True (hsmodImports hsmod),
+          hsmodImports hsmod,
         hsmodDecls =
           filter (not . isBlankDocD . unLoc) (hsmodDecls hsmod),
         hsmodHaddockModHeader =
