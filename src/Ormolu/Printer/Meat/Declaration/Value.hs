@@ -317,7 +317,8 @@ p_grhs' parentPlacement placer render style (GRHS _ guards body) =
       -- then we indent one level more for readability. Otherwise (all
       -- guards are on the same line) we do not need to indent, as it would
       -- look like double indentation without a good reason.
-      inciIf (parentPlacement == Normal) (placeHanging placement p_body)
+      indent <- getPrinterOpt poIndentation
+      inciIf (indent <= 2 && parentPlacement == Normal) (placeHanging placement p_body)
   where
     placement =
       case endOfGuards of
