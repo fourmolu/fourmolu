@@ -10,6 +10,8 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 -- | Configuration options used by the tool.
 module Ormolu.Config
@@ -52,6 +54,8 @@ import Data.String (fromString)
 import qualified Data.Yaml as Yaml
 import GHC.Generics (Generic)
 import qualified GHC.Types.SrcLoc as GHC
+import Ormolu.Config.TH
+import Ormolu.Config.Types
 import Ormolu.Fixity (FixityMap)
 import Ormolu.Fixity.Parser (parseFixityDeclaration)
 import Ormolu.Terminal (ColorMode (..))
@@ -162,39 +166,6 @@ dynOptionToLocatedStr (DynOption o) = GHC.L GHC.noSrcSpan o
 ----------------------------------------------------------------------------
 -- Fourmolu configuration
 
--- | Options controlling formatting output.
-data PrinterOpts f = PrinterOpts
-  { -- | Number of spaces to use for indentation
-    poIndentation :: f Int,
-    -- | Whether to place commas at start or end of lines
-    poCommaStyle :: f CommaStyle,
-    -- | Whether to place commas at start or end of import-export lines
-    poImportExportCommaStyle :: f CommaStyle,
-    -- | Whether to indent `where` blocks
-    poIndentWheres :: f Bool,
-    -- | Leave space before opening record brace
-    poRecordBraceSpace :: f Bool,
-    -- | Trailing commas with parentheses on separate lines
-    poDiffFriendlyImportExport :: f Bool,
-    -- | Be less opinionated about spaces/newlines etc.
-    poRespectful :: f Bool,
-    -- | How to print doc comments
-    poHaddockStyle :: f HaddockPrintStyle,
-    -- | Number of newlines between top-level decls
-    poNewlinesBetweenDecls :: f Int
-  }
-  deriving (Generic)
-
-data CommaStyle
-  = Leading
-  | Trailing
-  deriving (Eq, Ord, Show, Generic, Bounded, Enum)
-
-data HaddockPrintStyle
-  = HaddockSingleLine
-  | HaddockMultiLine
-  deriving (Eq, Ord, Show, Generic, Bounded, Enum)
-
 -- | A version of 'PrinterOpts' where any field can be empty.
 -- This corresponds to the information in a config file or in CLI options.
 type PrinterOptsPartial = PrinterOpts Maybe
@@ -207,7 +178,7 @@ instance Semigroup PrinterOptsPartial where
   (<>) = fillMissingPrinterOpts
 
 instance Monoid PrinterOptsPartial where
-  mempty = PrinterOpts Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+  mempty = $(allNothing 'PrinterOpts)
 
 instance Aeson.FromJSON PrinterOptsPartial where
   parseJSON =
@@ -232,18 +203,17 @@ overFields :: (forall a. f a -> g a) -> PrinterOpts f -> PrinterOpts g
 overFields f = runIdentity . overFieldsM (Identity . f)
 
 overFieldsM :: Monad m => (forall a. f a -> m (g a)) -> PrinterOpts f -> m (PrinterOpts g)
-overFieldsM f PrinterOpts {..} = do
-  -- TODO: make it impossible to reorder two fields with the same type
-  PrinterOpts
-    <$> f poIndentation
-    <*> f poCommaStyle
-    <*> f poImportExportCommaStyle
-    <*> f poIndentWheres
-    <*> f poRecordBraceSpace
-    <*> f poDiffFriendlyImportExport
-    <*> f poRespectful
-    <*> f poHaddockStyle
-    <*> f poNewlinesBetweenDecls
+overFieldsM f $(unpackFieldsWithSuffix 'PrinterOpts "0") = do
+  poIndentation <- f poIndentation0
+  poCommaStyle <- f poCommaStyle0
+  poImportExportCommaStyle <- f poImportExportCommaStyle0
+  poIndentWheres <- f poIndentWheres0
+  poRecordBraceSpace <- f poRecordBraceSpace0
+  poDiffFriendlyImportExport <- f poDiffFriendlyImportExport0
+  poRespectful <- f poRespectful0
+  poHaddockStyle <- f poHaddockStyle0
+  poNewlinesBetweenDecls <- f poNewlinesBetweenDecls0
+  return PrinterOpts {..}
 
 defaultPrinterOpts :: PrinterOptsTotal
 defaultPrinterOpts = overFields (Identity . metaDefault) printerOptsMeta
