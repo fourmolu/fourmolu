@@ -1,8 +1,10 @@
+{-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -38,13 +40,15 @@ module Ormolu.Config
   )
 where
 
+import Control.Monad (forM, mzero)
 import Data.Aeson ((.!=), (.:?))
 import qualified Data.Aeson as Aeson
-import Data.Char (isLower)
+import qualified Data.Aeson.Types as Aeson
 import Data.Functor.Identity (Identity (..))
 import qualified Data.Map.Strict as Map
 import Data.Set (Set)
 import qualified Data.Set as Set
+import Data.String (fromString)
 import qualified Data.Yaml as Yaml
 import GHC.Generics (Generic)
 import qualified GHC.Types.SrcLoc as GHC
@@ -207,10 +211,15 @@ instance Monoid PrinterOptsPartial where
 
 instance Aeson.FromJSON PrinterOptsPartial where
   parseJSON =
-    Aeson.genericParseJSON
-      Aeson.defaultOptions
-        { Aeson.fieldLabelModifier = Aeson.camelTo2 '-' . dropWhile isLower
-        }
+    Aeson.withObject "PrinterOpts" $ \o ->
+      overFieldsM (parseField o) printerOptsMeta
+    where
+      parseField :: Aeson.Object -> PrinterOptsFieldMeta a -> Aeson.Parser (Maybe a)
+      parseField o PrinterOptsFieldMeta {metaName} = do
+        let key = fromString metaName
+        mValue <- o Aeson..:? key
+        forM mValue $ \value ->
+          parseJSON value Aeson.<?> Aeson.Key key
 
 -- | A version of 'PrinterOpts' without empty fields.
 type PrinterOptsTotal = PrinterOpts Identity
@@ -220,18 +229,21 @@ deriving instance Eq PrinterOptsTotal
 deriving instance Show PrinterOptsTotal
 
 overFields :: (forall a. f a -> g a) -> PrinterOpts f -> PrinterOpts g
-overFields f PrinterOpts {..} =
+overFields f = runIdentity . overFieldsM (Identity . f)
+
+overFieldsM :: Monad m => (forall a. f a -> m (g a)) -> PrinterOpts f -> m (PrinterOpts g)
+overFieldsM f PrinterOpts {..} = do
+  -- TODO: make it impossible to reorder two fields with the same type
   PrinterOpts
-    { poIndentation = f poIndentation,
-      poCommaStyle = f poCommaStyle,
-      poImportExportCommaStyle = f poImportExportCommaStyle,
-      poIndentWheres = f poIndentWheres,
-      poRecordBraceSpace = f poRecordBraceSpace,
-      poDiffFriendlyImportExport = f poDiffFriendlyImportExport,
-      poRespectful = f poRespectful,
-      poHaddockStyle = f poHaddockStyle,
-      poNewlinesBetweenDecls = f poNewlinesBetweenDecls
-    }
+    <$> f poIndentation
+    <*> f poCommaStyle
+    <*> f poImportExportCommaStyle
+    <*> f poIndentWheres
+    <*> f poRecordBraceSpace
+    <*> f poDiffFriendlyImportExport
+    <*> f poRespectful
+    <*> f poHaddockStyle
+    <*> f poNewlinesBetweenDecls
 
 defaultPrinterOpts :: PrinterOptsTotal
 defaultPrinterOpts = overFields (Identity . metaDefault) printerOptsMeta
@@ -252,7 +264,9 @@ fillMissingPrinterOpts p1 p2 = overFields fillField printerOptsMeta
 -- | Source of truth for how PrinterOpts is parsed from configuration sources.
 data PrinterOptsFieldMeta a where
   PrinterOptsFieldMeta ::
-    { -- In future versions of GHC, this could be replaced with a
+    PrinterOptsFieldType a =>
+    { metaName :: String,
+      -- In future versions of GHC, this could be replaced with a
       -- `metaProxyField = Proxy @"poIndentation"` field using `HasField`
       -- https://gitlab.haskell.org/ghc/ghc/-/issues/20989
       metaGetField :: forall f. PrinterOpts f -> f a,
@@ -265,64 +279,82 @@ printerOptsMeta =
   PrinterOpts
     { poIndentation =
         PrinterOptsFieldMeta
-          { metaGetField = poIndentation,
+          { metaName = "indentation",
+            metaGetField = poIndentation,
             metaDefault = 4
           },
       poCommaStyle =
         PrinterOptsFieldMeta
-          { metaGetField = poCommaStyle,
+          { metaName = "comma-style",
+            metaGetField = poCommaStyle,
             metaDefault = Leading
           },
       poImportExportCommaStyle =
         PrinterOptsFieldMeta
-          { metaGetField = poImportExportCommaStyle,
+          { metaName = "import-export-comma-style",
+            metaGetField = poImportExportCommaStyle,
             metaDefault = Trailing
           },
       poIndentWheres =
         PrinterOptsFieldMeta
-          { metaGetField = poIndentWheres,
+          { metaName = "indent-wheres",
+            metaGetField = poIndentWheres,
             metaDefault = False
           },
       poRecordBraceSpace =
         PrinterOptsFieldMeta
-          { metaGetField = poRecordBraceSpace,
+          { metaName = "record-brace-space",
+            metaGetField = poRecordBraceSpace,
             metaDefault = False
           },
       poDiffFriendlyImportExport =
         PrinterOptsFieldMeta
-          { metaGetField = poDiffFriendlyImportExport,
+          { metaName = "diff-friendly-import-export",
+            metaGetField = poDiffFriendlyImportExport,
             metaDefault = True
           },
       poRespectful =
         PrinterOptsFieldMeta
-          { metaGetField = poRespectful,
+          { metaName = "respectful",
+            metaGetField = poRespectful,
             metaDefault = True
           },
       poHaddockStyle =
         PrinterOptsFieldMeta
-          { metaGetField = poHaddockStyle,
+          { metaName = "haddock-style",
+            metaGetField = poHaddockStyle,
             metaDefault = HaddockMultiLine
           },
       poNewlinesBetweenDecls =
         PrinterOptsFieldMeta
-          { metaGetField = poNewlinesBetweenDecls,
+          { metaName = "newlines-between-decls",
+            metaGetField = poNewlinesBetweenDecls,
             metaDefault = 1
           }
     }
 
-instance Aeson.FromJSON CommaStyle where
-  parseJSON =
-    Aeson.genericParseJSON
-      Aeson.defaultOptions
-        { Aeson.constructorTagModifier = Aeson.camelTo2 '-'
-        }
+class PrinterOptsFieldType a where
+  parseJSON :: Aeson.Value -> Aeson.Parser a
+  default parseJSON :: Aeson.FromJSON a => Aeson.Value -> Aeson.Parser a
+  parseJSON = Aeson.parseJSON
 
-instance Aeson.FromJSON HaddockPrintStyle where
+instance PrinterOptsFieldType Bool
+
+instance PrinterOptsFieldType Int
+
+instance PrinterOptsFieldType CommaStyle where
   parseJSON =
-    Aeson.genericParseJSON
-      Aeson.defaultOptions
-        { Aeson.constructorTagModifier = drop (length ("haddock-" :: String)) . Aeson.camelTo2 '-'
-        }
+    Aeson.withText "CommaStyle" $ \case
+      "leading" -> pure Leading
+      "trailing" -> pure Trailing
+      _ -> mzero
+
+instance PrinterOptsFieldType HaddockPrintStyle where
+  parseJSON =
+    Aeson.withText "HaddockPrintStyle" $ \case
+      "single-line" -> pure HaddockSingleLine
+      "multi-line" -> pure HaddockMultiLine
+      _ -> mzero
 
 ----------------------------------------------------------------------------
 -- Loading Fourmolu configuration
