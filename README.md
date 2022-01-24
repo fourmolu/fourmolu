@@ -83,9 +83,11 @@ $ stack install fourmolu
 ## Building from source
 
 ```console
-$ cabal build
-$ stack build
+$ cabal build -fdev
+$ stack build --flag fourmolu:dev
 ```
+
+The `dev` flag may be omitted in your local workflow as you work, but CI may not pass if you only build without the `dev` flag.
 
 ## Usage
 
