@@ -84,6 +84,44 @@ main = do
                 else 102
   exitWith exitCode
 
+-- | Build the full config, by adding 'PrinterOpts' from a file, if found.
+mkConfig :: FilePath -> Opts -> IO (Config RegionIndices)
+mkConfig path Opts {..} = do
+  mFourmoluConfig <-
+    loadConfigFile path >>= \case
+      ConfigLoaded f cfg -> do
+        unless optQuiet $
+          hPutStrLn stderr $
+            "Loaded config from: " <> f
+        printDebug $ show cfg
+        return $ Just cfg
+      ConfigParseError f e -> do
+        hPutStrLn stderr $
+          unlines
+            [ "Failed to load " <> f <> ":",
+              Yaml.prettyPrintParseException e
+            ]
+        exitWith $ ExitFailure 400
+      ConfigNotFound searchDirs -> do
+        printDebug
+          . unlines
+          $ ("No " ++ show configFileName ++ " found in any of:")
+            : map ("  " ++) searchDirs
+        return Nothing
+  return $
+    optConfig
+      { cfgPrinterOpts =
+          fillMissingPrinterOpts
+            (optPrinterOpts <> maybe mempty cfgFilePrinterOpts mFourmoluConfig)
+            (cfgPrinterOpts optConfig),
+        cfgFixityOverrides =
+          -- cfgFileFixities should go on the right so that command line
+          -- fixity overrides takes precedence.
+          cfgFixityOverrides optConfig <> maybe mempty cfgFileFixities mFourmoluConfig
+      }
+  where
+    printDebug = when (cfgDebug optConfig) . hPutStrLn stderr
+
 -- | Format a single input.
 formatOne ::
   -- | How to use .cabal files
@@ -364,6 +402,16 @@ configParser =
         )
     <*> pure defaultPrinterOpts
 
+sourceTypeParser :: Parser (Maybe SourceType)
+sourceTypeParser =
+  (option parseSourceType . mconcat)
+    [ long "source-type",
+      short 't',
+      metavar "TYPE",
+      value Nothing,
+      help "Set the type of source; TYPE can be 'module', 'sig', or 'auto' (the default)"
+    ]
+
 printerOptsParser :: Parser PrinterOptsPartial
 printerOptsParser = do
   poIndentation <-
@@ -445,16 +493,6 @@ printerOptsParser = do
       ]
   pure PrinterOpts {..}
 
-sourceTypeParser :: Parser (Maybe SourceType)
-sourceTypeParser =
-  (option parseSourceType . mconcat)
-    [ long "source-type",
-      short 't',
-      metavar "TYPE",
-      value Nothing,
-      help "Set the type of source; TYPE can be 'module', 'sig', or 'auto' (the default)"
-    ]
-
 ----------------------------------------------------------------------------
 -- Helpers
 
@@ -527,44 +565,6 @@ showDefaultValue =
     . toCLIArgument'
     . runIdentity
     . ($ defaultPrinterOpts)
-
--- | Build the full config, by adding 'PrinterOpts' from a file, if found.
-mkConfig :: FilePath -> Opts -> IO (Config RegionIndices)
-mkConfig path Opts {..} = do
-  mFourmoluConfig <-
-    loadConfigFile path >>= \case
-      ConfigLoaded f cfg -> do
-        unless optQuiet $
-          hPutStrLn stderr $
-            "Loaded config from: " <> f
-        printDebug $ show cfg
-        return $ Just cfg
-      ConfigParseError f e -> do
-        hPutStrLn stderr $
-          unlines
-            [ "Failed to load " <> f <> ":",
-              Yaml.prettyPrintParseException e
-            ]
-        exitWith $ ExitFailure 400
-      ConfigNotFound searchDirs -> do
-        printDebug
-          . unlines
-          $ ("No " ++ show configFileName ++ " found in any of:")
-            : map ("  " ++) searchDirs
-        return Nothing
-  return $
-    optConfig
-      { cfgPrinterOpts =
-          fillMissingPrinterOpts
-            (optPrinterOpts <> maybe mempty cfgFilePrinterOpts mFourmoluConfig)
-            (cfgPrinterOpts optConfig),
-        cfgFixityOverrides =
-          -- cfgFileFixities should go on the right so that command line
-          -- fixity overrides takes precedence.
-          cfgFixityOverrides optConfig <> maybe mempty cfgFileFixities mFourmoluConfig
-      }
-  where
-    printDebug = when (cfgDebug optConfig) . hPutStrLn stderr
 
 -- | Parse 'Mode'.
 parseMode :: ReadM Mode
