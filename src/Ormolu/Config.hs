@@ -244,26 +244,19 @@ fillMissingPrinterOpts ::
   PrinterOptsPartial ->
   PrinterOpts f ->
   PrinterOpts f
-fillMissingPrinterOpts p1 p2 =
-  PrinterOpts
-    { poIndentation = fillField poIndentation,
-      poCommaStyle = fillField poCommaStyle,
-      poImportExportCommaStyle = fillField poImportExportCommaStyle,
-      poIndentWheres = fillField poIndentWheres,
-      poRecordBraceSpace = fillField poRecordBraceSpace,
-      poDiffFriendlyImportExport = fillField poDiffFriendlyImportExport,
-      poRespectful = fillField poRespectful,
-      poHaddockStyle = fillField poHaddockStyle,
-      poNewlinesBetweenDecls = fillField poNewlinesBetweenDecls
-    }
+fillMissingPrinterOpts p1 p2 = overFields fillField printerOptsMeta
   where
-    fillField :: (forall g. PrinterOpts g -> g a) -> f a
-    fillField f = maybe (f p2) pure $ f p1
+    fillField :: PrinterOptsFieldMeta a -> f a
+    fillField meta = maybe (metaGetField meta p2) pure (metaGetField meta p1)
 
 -- | Source of truth for how PrinterOpts is parsed from configuration sources.
 data PrinterOptsFieldMeta a where
   PrinterOptsFieldMeta ::
-    { metaDefault :: a
+    { -- In future versions of GHC, this could be replaced with a
+      -- `metaProxyField = Proxy @"poIndentation"` field using `HasField`
+      -- https://gitlab.haskell.org/ghc/ghc/-/issues/20989
+      metaGetField :: forall f. PrinterOpts f -> f a,
+      metaDefault :: a
     } ->
     PrinterOptsFieldMeta a
 
@@ -272,39 +265,48 @@ printerOptsMeta =
   PrinterOpts
     { poIndentation =
         PrinterOptsFieldMeta
-          { metaDefault = 4
+          { metaGetField = poIndentation,
+            metaDefault = 4
           },
       poCommaStyle =
         PrinterOptsFieldMeta
-          { metaDefault = Leading
+          { metaGetField = poCommaStyle,
+            metaDefault = Leading
           },
       poImportExportCommaStyle =
         PrinterOptsFieldMeta
-          { metaDefault = Trailing
+          { metaGetField = poImportExportCommaStyle,
+            metaDefault = Trailing
           },
       poIndentWheres =
         PrinterOptsFieldMeta
-          { metaDefault = False
+          { metaGetField = poIndentWheres,
+            metaDefault = False
           },
       poRecordBraceSpace =
         PrinterOptsFieldMeta
-          { metaDefault = False
+          { metaGetField = poRecordBraceSpace,
+            metaDefault = False
           },
       poDiffFriendlyImportExport =
         PrinterOptsFieldMeta
-          { metaDefault = True
+          { metaGetField = poDiffFriendlyImportExport,
+            metaDefault = True
           },
       poRespectful =
         PrinterOptsFieldMeta
-          { metaDefault = True
+          { metaGetField = poRespectful,
+            metaDefault = True
           },
       poHaddockStyle =
         PrinterOptsFieldMeta
-          { metaDefault = HaddockMultiLine
+          { metaGetField = poHaddockStyle,
+            metaDefault = HaddockMultiLine
           },
       poNewlinesBetweenDecls =
         PrinterOptsFieldMeta
-          { metaDefault = 1
+          { metaGetField = poNewlinesBetweenDecls,
+            metaDefault = 1
           }
     }
 
