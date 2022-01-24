@@ -265,7 +265,7 @@ optsParser =
             [ short 'i',
               help "A shortcut for --mode inplace"
             ]
-            <|> (option parseBoundedEnum . mconcat)
+            <|> (option parseMode . mconcat)
               [ long "mode",
                 short 'm',
                 metavar "MODE",
@@ -343,7 +343,7 @@ configParser =
     -- autodection based on the input file extension (not available here)
     -- before storing the resolved value in the config struct.
     <*> pure ModuleSource
-    <*> (option parseBoundedEnum . mconcat)
+    <*> (option parseColorMode . mconcat)
       [ long "color",
         metavar "WHEN",
         value Auto,
@@ -506,16 +506,6 @@ instance ToCLIArgument HaddockPrintStyle where
   toCLIArgument HaddockSingleLine = "single-line"
   toCLIArgument HaddockMultiLine = "multi-line"
 
-instance ToCLIArgument Mode where
-  toCLIArgument Stdout = "stdout"
-  toCLIArgument InPlace = "inplace"
-  toCLIArgument Check = "check"
-
-instance ToCLIArgument ColorMode where
-  toCLIArgument Never = "never"
-  toCLIArgument Always = "always"
-  toCLIArgument Auto = "auto"
-
 showAllValues :: forall a. (Enum a, Bounded a, ToCLIArgument a) => String
 showAllValues = format (map toCLIArgument' [(minBound :: a) ..])
   where
@@ -580,9 +570,25 @@ mkConfigFromCWD opts = do
   cwd <- getCurrentDirectory
   mkConfig cwd opts
 
+-- | Parse 'Mode'.
+parseMode :: ReadM Mode
+parseMode = eitherReader $ \case
+  "stdout" -> Right Stdout
+  "inplace" -> Right InPlace
+  "check" -> Right Check
+  s -> Left $ "unknown mode: " ++ s
+
 -- | Parse a fixity declaration.
 parseFixityDeclaration :: ReadM [(String, FixityInfo)]
 parseFixityDeclaration = eitherReader parseFixityDeclarationStr
+
+-- | Parse 'ColorMode'.
+parseColorMode :: ReadM ColorMode
+parseColorMode = eitherReader $ \case
+  "never" -> Right Never
+  "always" -> Right Always
+  "auto" -> Right Auto
+  s -> Left $ "unknown color mode: " ++ s
 
 -- | Parse the 'SourceType'. 'Nothing' means that autodetection based on
 -- file extension is requested.
