@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
@@ -218,19 +219,22 @@ deriving instance Eq PrinterOptsTotal
 
 deriving instance Show PrinterOptsTotal
 
-defaultPrinterOpts :: PrinterOptsTotal
-defaultPrinterOpts =
+overFields :: (forall a. f a -> g a) -> PrinterOpts f -> PrinterOpts g
+overFields f PrinterOpts {..} =
   PrinterOpts
-    { poIndentation = pure 4,
-      poCommaStyle = pure Leading,
-      poImportExportCommaStyle = pure Trailing,
-      poIndentWheres = pure False,
-      poRecordBraceSpace = pure False,
-      poDiffFriendlyImportExport = pure True,
-      poRespectful = pure True,
-      poHaddockStyle = pure HaddockMultiLine,
-      poNewlinesBetweenDecls = pure 1
+    { poIndentation = f poIndentation,
+      poCommaStyle = f poCommaStyle,
+      poImportExportCommaStyle = f poImportExportCommaStyle,
+      poIndentWheres = f poIndentWheres,
+      poRecordBraceSpace = f poRecordBraceSpace,
+      poDiffFriendlyImportExport = f poDiffFriendlyImportExport,
+      poRespectful = f poRespectful,
+      poHaddockStyle = f poHaddockStyle,
+      poNewlinesBetweenDecls = f poNewlinesBetweenDecls
     }
+
+defaultPrinterOpts :: PrinterOptsTotal
+defaultPrinterOpts = overFields (Identity . metaDefault) printerOptsMeta
 
 -- | Fill the field values that are 'Nothing' in the first argument
 -- with the values of the corresponding fields of the second argument.
@@ -255,6 +259,54 @@ fillMissingPrinterOpts p1 p2 =
   where
     fillField :: (forall g. PrinterOpts g -> g a) -> f a
     fillField f = maybe (f p2) pure $ f p1
+
+-- | Source of truth for how PrinterOpts is parsed from configuration sources.
+data PrinterOptsFieldMeta a where
+  PrinterOptsFieldMeta ::
+    { metaDefault :: a
+    } ->
+    PrinterOptsFieldMeta a
+
+printerOptsMeta :: PrinterOpts PrinterOptsFieldMeta
+printerOptsMeta =
+  PrinterOpts
+    { poIndentation =
+        PrinterOptsFieldMeta
+          { metaDefault = 4
+          },
+      poCommaStyle =
+        PrinterOptsFieldMeta
+          { metaDefault = Leading
+          },
+      poImportExportCommaStyle =
+        PrinterOptsFieldMeta
+          { metaDefault = Trailing
+          },
+      poIndentWheres =
+        PrinterOptsFieldMeta
+          { metaDefault = False
+          },
+      poRecordBraceSpace =
+        PrinterOptsFieldMeta
+          { metaDefault = False
+          },
+      poDiffFriendlyImportExport =
+        PrinterOptsFieldMeta
+          { metaDefault = True
+          },
+      poRespectful =
+        PrinterOptsFieldMeta
+          { metaDefault = True
+          },
+      poHaddockStyle =
+        PrinterOptsFieldMeta
+          { metaDefault = HaddockMultiLine
+          },
+      poNewlinesBetweenDecls =
+        PrinterOptsFieldMeta
+          { metaDefault = 1
+          }
+    }
 
 instance Aeson.FromJSON CommaStyle where
   parseJSON =
