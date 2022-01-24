@@ -8,6 +8,3 @@ extra-deps:
   - base-compat-batteries-0.12.1
   - Cabal-3.6.2.0
   - ghc-lib-parser-9.2.1.20211101
-
-ghc-options:
-  '$locals': -Werror

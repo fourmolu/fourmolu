@@ -70,7 +70,7 @@ jobs:
       # build
       - run:
           name: Build
-          command: stack build --test --no-run-tests
+          command: stack build --test --no-run-tests --flag fourmolu:dev
 
       # lint
       - when:
@@ -88,7 +88,9 @@ jobs:
       # test
       - run:
           name: Test
-          command: stack test
+          command:
+            # keep the dev flag here to avoid rebuilding from the build step
+            stack test --flag fourmolu:dev
 
       # build haddock
       - when:
