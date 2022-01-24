@@ -52,9 +52,10 @@ main :: IO ()
 main = do
   opts@Opts {..} <- execParser optsParserInfo
 
+  cwd <- getCurrentDirectory
   cfg <- case optInputFiles of
-    [] -> mkConfigFromCWD opts
-    ["-"] -> mkConfigFromCWD opts
+    [] -> mkConfig cwd opts
+    ["-"] -> mkConfig cwd opts
     file : _ -> mkConfig file opts
   let formatOne' =
         formatOne
@@ -564,11 +565,6 @@ mkConfig path Opts {..} = do
       }
   where
     printDebug = when (cfgDebug optConfig) . hPutStrLn stderr
-
-mkConfigFromCWD :: Opts -> IO (Config RegionIndices)
-mkConfigFromCWD opts = do
-  cwd <- getCurrentDirectory
-  mkConfig cwd opts
 
 -- | Parse 'Mode'.
 parseMode :: ReadM Mode
