@@ -1,14 +1,10 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 
@@ -411,151 +407,19 @@ sourceTypeParser =
     ]
 
 printerOptsParser :: Parser PrinterOptsTotal
-printerOptsParser = do
-  poIndentation <-
-    (option auto . mconcat)
-      [ long "indentation",
-        metavar "WIDTH",
-        help "Number of spaces per indentation step",
-        withPrinterOptsDefault poIndentation
-      ]
-  poCommaStyle <-
-    (option parseBoundedEnum . mconcat)
-      [ long "comma-style",
-        metavar "STYLE",
-        help $
-          "How to place commas in multi-line lists, records etc: "
-            <> showAllValues @CommaStyle,
-        withPrinterOptsDefault poCommaStyle
-      ]
-  poImportExportCommaStyle <-
-    (option parseBoundedEnum . mconcat)
-      [ long "import-export-comma-style",
-        metavar "IESTYLE",
-        help $
-          "How to place commas in multi-line import and export lists: "
-            <> showAllValues @CommaStyle,
-        withPrinterOptsDefault poImportExportCommaStyle
-      ]
-  poIndentWheres <-
-    (option parseBoundedEnum . mconcat)
-      [ long "indent-wheres",
-        metavar "BOOL",
-        help $
-          "Whether to indent 'where' bindings past the preceding body"
-            <> " (rather than half-indenting the 'where' keyword)",
-        withPrinterOptsDefault poIndentWheres
-      ]
-  poRecordBraceSpace <-
-    (option parseBoundedEnum . mconcat)
-      [ long "record-brace-space",
-        metavar "BOOL",
-        help "Whether to leave a space before an opening record brace",
-        withPrinterOptsDefault poRecordBraceSpace
-      ]
-  poDiffFriendlyImportExport <-
-    (option parseBoundedEnum . mconcat)
-      [ long "diff-friendly-import-export",
-        metavar "BOOL",
-        help $
-          "Whether to make use of extra commas in import/export lists"
-            <> " (as opposed to Ormolu's style)",
-        withPrinterOptsDefault poDiffFriendlyImportExport
-      ]
-  poRespectful <-
-    (option parseBoundedEnum . mconcat)
-      [ long "respectful",
-        metavar "BOOL",
-        help "Give the programmer more choice on where to insert blank lines",
-        withPrinterOptsDefault poRespectful
-      ]
-  poHaddockStyle <-
-    (option parseBoundedEnum . mconcat)
-      [ long "haddock-style",
-        metavar "STYLE",
-        help $
-          "How to print Haddock comments: "
-            <> showAllValues @HaddockPrintStyle,
-        withPrinterOptsDefault poHaddockStyle
-      ]
-  poNewlinesBetweenDecls <-
-    (option auto . mconcat)
-      [ long "newlines-between-decls",
-        metavar "HEIGHT",
-        help "Number of spaces between top-level declarations",
-        withPrinterOptsDefault poNewlinesBetweenDecls
-      ]
-  pure PrinterOpts {..}
+printerOptsParser = overFieldsM mkOption printerOptsMeta
+  where
+    mkOption PrinterOptsFieldMeta {..} =
+      option (Identity <$> eitherReader parseText) . mconcat $
+        [ long metaName,
+          metavar metaPlaceholder,
+          help metaHelp,
+          showDefaultWith (showText . runIdentity),
+          value $ Identity metaDefault
+        ]
 
 ----------------------------------------------------------------------------
 -- Helpers
-
--- | A standard parser of CLI option arguments, applicable to arguments that
--- have a finite (preferably small) number of possible values. (Basically an
--- inverse of 'toCLIArgument'.)
-parseBoundedEnum ::
-  forall a.
-  (Enum a, Bounded a, ToCLIArgument a) =>
-  ReadM (Identity a)
-parseBoundedEnum =
-  eitherReader
-    ( \s ->
-        case lookup s argumentToValue of
-          Just v -> Right $ pure v
-          Nothing ->
-            Left $
-              "unknown value: '"
-                <> s
-                <> "'\nValid values are: "
-                <> showAllValues @a
-                <> "."
-    )
-  where
-    argumentToValue = map (\x -> (toCLIArgument x, x)) [minBound ..]
-
--- | Values that appear as arguments of CLI options and thus have
--- a corresponding textual representation.
-class ToCLIArgument a where
-  -- | Convert a value to its representation as a CLI option argument.
-  toCLIArgument :: a -> String
-
-  -- | Convert a value to its representation as a CLI option argument wrapped
-  -- in apostrophes.
-  toCLIArgument' :: a -> String
-  toCLIArgument' x = "'" <> toCLIArgument x <> "'"
-
-instance ToCLIArgument Bool where
-  toCLIArgument True = "true"
-  toCLIArgument False = "false"
-
-instance ToCLIArgument CommaStyle where
-  toCLIArgument Leading = "leading"
-  toCLIArgument Trailing = "trailing"
-
-instance ToCLIArgument Int where
-  toCLIArgument = show
-
-instance ToCLIArgument HaddockPrintStyle where
-  toCLIArgument HaddockSingleLine = "single-line"
-  toCLIArgument HaddockMultiLine = "multi-line"
-
-showAllValues :: forall a. (Enum a, Bounded a, ToCLIArgument a) => String
-showAllValues = format (map toCLIArgument' [(minBound :: a) ..])
-  where
-    format [] = []
-    format [x] = x
-    format [x1, x2] = x1 <> " or " <> x2
-    format (x : xs) = x <> ", " <> format xs
-
-withPrinterOptsDefault ::
-  (HasValue f, ToCLIArgument a) =>
-  (PrinterOptsTotal -> Identity a) ->
-  Mod f (Identity a)
-withPrinterOptsDefault f =
-  mconcat
-    [ showDefaultWith (toCLIArgument . runIdentity),
-      value $ f defaultPrinterOpts
-    ]
 
 -- | Parse 'Mode'.
 parseMode :: ReadM Mode

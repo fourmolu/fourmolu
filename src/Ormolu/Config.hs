@@ -1,3 +1,4 @@
+{-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -39,6 +40,13 @@ module Ormolu.Config
     configFileName,
     FourmoluConfig (..),
     ConfigFileLoadResult (..),
+
+    -- ** Utilities
+    PrinterOptsFieldMeta (..),
+    PrinterOptsFieldType (..),
+    printerOptsMeta,
+    overFields,
+    overFieldsM,
   )
 where
 
@@ -68,6 +76,7 @@ import System.Directory
   )
 import System.FilePath (splitPath, (</>))
 import Text.Megaparsec (errorBundlePretty)
+import Text.Printf (printf)
 import Text.Read (readEither)
 
 -- | Type of sources that can be formatted by Ormolu.
@@ -204,7 +213,7 @@ deriving instance Show PrinterOptsTotal
 overFields :: (forall a. f a -> g a) -> PrinterOpts f -> PrinterOpts g
 overFields f = runIdentity . overFieldsM (Identity . f)
 
-overFieldsM :: Monad m => (forall a. f a -> m (g a)) -> PrinterOpts f -> m (PrinterOpts g)
+overFieldsM :: Applicative m => (forall a. f a -> m (g a)) -> PrinterOpts f -> m (PrinterOpts g)
 overFieldsM f $(unpackFieldsWithSuffix 'PrinterOpts "0") = do
   poIndentation <- f poIndentation0
   poCommaStyle <- f poCommaStyle0
@@ -242,6 +251,8 @@ data PrinterOptsFieldMeta a where
       -- `metaProxyField = Proxy @"poIndentation"` field using `HasField`
       -- https://gitlab.haskell.org/ghc/ghc/-/issues/20989
       metaGetField :: forall f. PrinterOpts f -> f a,
+      metaPlaceholder :: String,
+      metaHelp :: String,
       metaDefault :: a
     } ->
     PrinterOptsFieldMeta a
@@ -253,54 +264,89 @@ printerOptsMeta =
         PrinterOptsFieldMeta
           { metaName = "indentation",
             metaGetField = poIndentation,
+            metaPlaceholder = "WIDTH",
+            metaHelp = "Number of spaces per indentation step",
             metaDefault = 4
           },
       poCommaStyle =
         PrinterOptsFieldMeta
           { metaName = "comma-style",
             metaGetField = poCommaStyle,
+            metaPlaceholder = "STYLE",
+            metaHelp =
+              printf
+                "How to place commas in multi-line lists, records, etc. (choices: %s)"
+                (showAllValues commaStyleMap),
             metaDefault = Leading
           },
       poImportExportCommaStyle =
         PrinterOptsFieldMeta
           { metaName = "import-export-comma-style",
             metaGetField = poImportExportCommaStyle,
+            metaPlaceholder = "STYLE",
+            metaHelp =
+              printf
+                "How to place commas in multi-line import and export lists (choices: %s)"
+                (showAllValues commaStyleMap),
             metaDefault = Trailing
           },
       poIndentWheres =
         PrinterOptsFieldMeta
           { metaName = "indent-wheres",
             metaGetField = poIndentWheres,
+            metaPlaceholder = "BOOL",
+            metaHelp =
+              unwords
+                [ "Whether to indent 'where' bindings past the preceding body",
+                  "(rather than half-indenting the 'where' keyword)"
+                ],
             metaDefault = False
           },
       poRecordBraceSpace =
         PrinterOptsFieldMeta
           { metaName = "record-brace-space",
             metaGetField = poRecordBraceSpace,
+            metaPlaceholder = "BOOL",
+            metaHelp = "Whether to leave a space before an opening record brace",
             metaDefault = False
           },
       poDiffFriendlyImportExport =
         PrinterOptsFieldMeta
           { metaName = "diff-friendly-import-export",
             metaGetField = poDiffFriendlyImportExport,
+            metaPlaceholder = "BOOL",
+            metaHelp =
+              unwords
+                [ "Whether to make use of extra commas in import/export lists",
+                  "(as opposed to Ormolu's style)"
+                ],
             metaDefault = True
           },
       poRespectful =
         PrinterOptsFieldMeta
           { metaName = "respectful",
             metaGetField = poRespectful,
+            metaPlaceholder = "BOOL",
+            metaHelp = "Give the programmer more choice on where to insert blank lines",
             metaDefault = True
           },
       poHaddockStyle =
         PrinterOptsFieldMeta
           { metaName = "haddock-style",
             metaGetField = poHaddockStyle,
+            metaPlaceholder = "STYLE",
+            metaHelp =
+              printf
+                "How to print Haddock comments (choices: %s)"
+                (showAllValues haddockPrintStyleMap),
             metaDefault = HaddockMultiLine
           },
       poNewlinesBetweenDecls =
         PrinterOptsFieldMeta
           { metaName = "newlines-between-decls",
             metaGetField = poNewlinesBetweenDecls,
+            metaPlaceholder = "HEIGHT",
+            metaHelp = "Number of spaces between top-level declarations",
             metaDefault = 1
           }
     }
