@@ -25,7 +25,7 @@ spec =
     stdTest "trimming" "spaced" "spaced-v2"
     stdTest "trailing-blank-line" "no-trailing-blank-line" "with-trailing-blank-line"
 
--- | Test diff printig.
+-- | Test diff printing.
 stdTest ::
   -- | Name of the test case
   String ->
@@ -45,7 +45,7 @@ stdTest name pathA pathB = it name $ do
   expectedDiffText <-
     parseRelFile expectedDiffPath
       >>= readFileUtf8 . toFilePath . (diffOutputsDir </>)
-  let Just actualDiff = diffText inputA inputB "TEST"
+  Just actualDiff <- pure $ diffText inputA inputB "TEST"
   actualDiffText <- printDiff actualDiff
   actualDiffText `shouldBe` expectedDiffText
 

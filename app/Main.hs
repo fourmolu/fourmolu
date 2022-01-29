@@ -16,6 +16,7 @@ import Data.Bool (bool)
 import Data.Functor.Identity (Identity (..))
 import Data.List (intercalate, sort)
 import Data.Maybe (fromMaybe, mapMaybe)
+import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import Data.Version (showVersion)
 import Development.GitRev
@@ -43,7 +44,12 @@ main = do
     [] -> mkConfigFromCWD opts
     ["-"] -> mkConfigFromCWD opts
     file : _ -> mkConfig file opts
-  let formatOne' = formatOne optCabalDefaultExtensions optMode cfg
+  let formatOne' =
+        formatOne
+          optCabalDefaultExtensions
+          optMode
+          optSourceType
+          cfg
 
   exitCode <- case optInputFiles of
     [] -> formatOne' Nothing
@@ -71,62 +77,86 @@ formatOne ::
   CabalDefaultExtensionsOpts ->
   -- | Mode of operation
   Mode ->
+  -- | The 'SourceType' requested by the user
+  Maybe SourceType ->
   -- | Configuration
   Config RegionIndices ->
   -- | File to format or stdin as 'Nothing'
   Maybe FilePath ->
   IO ExitCode
-formatOne CabalDefaultExtensionsOpts {..} mode config mpath =
-  withPrettyOrmoluExceptions (cfgColorMode config) $
+formatOne CabalDefaultExtensionsOpts {..} mode reqSourceType rawConfig mpath =
+  withPrettyOrmoluExceptions (cfgColorMode rawConfig) $ do
     case FP.normalise <$> mpath of
+      -- input source = STDIN
       Nothing -> do
-        extraDynOptions <-
-          if optUseCabalDefaultExtensions
-            then case optStdinInputFile of
-              Just stdinInputFile ->
-                getCabalExtensionDynOptions stdinInputFile
-              Nothing -> throwIO OrmoluMissingStdinInputFile
-            else pure []
-        r <- ormoluStdin (configPlus extraDynOptions)
+        resultConfig <-
+          patchConfig Nothing
+            <$> if optUseCabalDefaultExtensions
+              then case optStdinInputFile of
+                Just stdinInputFile ->
+                  getCabalExtensionDynOptions stdinInputFile
+                Nothing -> throwIO OrmoluMissingStdinInputFile
+              else pure []
         case mode of
           Stdout -> do
-            TIO.putStr r
-            return ExitSuccess
-          _ -> do
-            hPutStrLn
-              stderr
-              "This feature is not supported when input comes from stdin."
-            -- 101 is different from all the other exit codes we already use.
-            return (ExitFailure 101)
-      Just inputFile -> do
-        extraDynOptions <-
-          if optUseCabalDefaultExtensions
-            then getCabalExtensionDynOptions inputFile
-            else pure []
-        originalInput <- readFileUtf8 inputFile
-        formattedInput <- ormoluFile (configPlus extraDynOptions) inputFile
-        case mode of
-          Stdout -> do
-            TIO.putStr formattedInput
+            ormoluStdin resultConfig >>= TIO.putStr
             return ExitSuccess
           InPlace -> do
-            -- Only write when the contents have changed, in order to avoid
-            -- updating the modified timestamp if the file was already correctly
-            -- formatted.
+            hPutStrLn
+              stderr
+              "In place editing is not supported when input comes from stdin."
+            -- 101 is different from all the other exit codes we already use.
+            return (ExitFailure 101)
+          Check -> do
+            -- ormoluStdin is not used because we need the originalInput
+            originalInput <- getContentsUtf8
+            let stdinRepr = "<stdin>"
+            formattedInput <-
+              ormolu resultConfig stdinRepr (T.unpack originalInput)
+            handleDiff originalInput formattedInput stdinRepr
+      -- input source = a file
+      Just inputFile -> do
+        resultConfig <-
+          patchConfig (Just (detectSourceType inputFile))
+            <$> if optUseCabalDefaultExtensions
+              then getCabalExtensionDynOptions inputFile
+              else pure []
+        case mode of
+          Stdout -> do
+            ormoluFile resultConfig inputFile >>= TIO.putStr
+            return ExitSuccess
+          InPlace -> do
+            -- ormoluFile is not used because we need originalInput
+            originalInput <- readFileUtf8 inputFile
+            formattedInput <-
+              ormolu resultConfig inputFile (T.unpack originalInput)
             when (formattedInput /= originalInput) $
               writeFileUtf8 inputFile formattedInput
             return ExitSuccess
-          Check ->
-            case diffText originalInput formattedInput inputFile of
-              Nothing -> return ExitSuccess
-              Just diff -> do
-                runTerm (printTextDiff diff) (cfgColorMode config) stderr
-                -- 100 is different to all the other exit code that are emitted
-                -- either from an 'OrmoluException' or from 'error' and
-                -- 'notImplemented'.
-                return (ExitFailure 100)
+          Check -> do
+            -- ormoluFile is not used because we need originalInput
+            originalInput <- readFileUtf8 inputFile
+            formattedInput <-
+              ormolu resultConfig inputFile (T.unpack originalInput)
+            handleDiff originalInput formattedInput inputFile
   where
-    configPlus dynOpts = config {cfgDynOptions = cfgDynOptions config ++ dynOpts}
+    patchConfig mdetectedSourceType dynOpts =
+      rawConfig
+        { cfgDynOptions = cfgDynOptions rawConfig ++ dynOpts,
+          cfgSourceType =
+            fromMaybe
+              ModuleSource
+              (reqSourceType <|> mdetectedSourceType)
+        }
+    handleDiff originalInput formattedInput fileRepr =
+      case diffText originalInput formattedInput fileRepr of
+        Nothing -> return ExitSuccess
+        Just diff -> do
+          runTerm (printTextDiff diff) (cfgColorMode rawConfig) stderr
+          -- 100 is different to all the other exit code that are emitted
+          -- either from an 'OrmoluException' or from 'error' and
+          -- 'notImplemented'.
+          return (ExitFailure 100)
 
 ----------------------------------------------------------------------------
 -- Command line options parsing
@@ -138,6 +168,8 @@ data Opts = Opts
     optConfig :: !(Config RegionIndices),
     -- | Options for respecting default-extensions from .cabal files
     optCabalDefaultExtensions :: CabalDefaultExtensionsOpts,
+    -- | Source type option, where 'Nothing' means autodetection
+    optSourceType :: !(Maybe SourceType),
     -- | Fourmolu-specific options
     optPrinterOpts :: !PrinterOptsPartial,
     -- | Haskell source files to format or stdin (when the list is empty)
@@ -214,6 +246,7 @@ optsParser =
         )
     <*> configParser
     <*> cabalDefaultExtensionsParser
+    <*> sourceTypeParser
     <*> printerOptsParser
     <*> (many . strArgument . mconcat)
       [ metavar "FILE",
@@ -257,6 +290,10 @@ configParser =
         short 'c',
         help "Fail if formatting is not idempotent"
       ]
+    -- We cannot parse the source type here, because we might need to do
+    -- autodection based on the input file extension (not available here)
+    -- before storing the resolved value in the config struct.
+    <*> pure ModuleSource
     <*> (option parseBoundedEnum . mconcat)
       [ long "color",
         metavar "WHEN",
@@ -357,6 +394,16 @@ printerOptsParser = do
             <> showDefaultValue poNewlinesBetweenDecls
       ]
   pure PrinterOpts {..}
+
+sourceTypeParser :: Parser (Maybe SourceType)
+sourceTypeParser =
+  (option parseSourceType . mconcat)
+    [ long "source-type",
+      short 't',
+      metavar "TYPE",
+      value Nothing,
+      help "Set the type of source; TYPE can be 'module', 'sig', or 'auto' (the default)"
+    ]
 
 ----------------------------------------------------------------------------
 -- Helpers
@@ -478,3 +525,12 @@ mkConfigFromCWD :: Opts -> IO (Config RegionIndices)
 mkConfigFromCWD opts = do
   cwd <- getCurrentDirectory
   mkConfig cwd opts
+
+-- | Parse the 'SourceType'. 'Nothing' means that autodetection based on
+-- file extension is requested.
+parseSourceType :: ReadM (Maybe SourceType)
+parseSourceType = eitherReader $ \case
+  "module" -> Right (Just ModuleSource)
+  "sig" -> Right (Just SignatureSource)
+  "auto" -> Right Nothing
+  s -> Left $ "unknown source type: " ++ s

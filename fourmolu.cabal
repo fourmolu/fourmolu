@@ -1,12 +1,13 @@
 cabal-version:      2.4
 name:               fourmolu
-version:            0.4.0.0
+version:            0.5.0.1
 license:            BSD-3-Clause
 license-file:       LICENSE.md
 maintainer:
     Matt Parsons <parsonsmatt@gmail.com>
     George Thomas <georgefsthomas@gmail.com>
-tested-with:        ghc ==8.8.4 ghc ==8.10.7 ghc ==9.0.1
+    Brandon Chinn <brandonchinn178@gmail.com>
+tested-with:        ghc ==8.10.7 ghc ==9.0.1 ghc ==9.2.1
 homepage:           https://github.com/parsonsmatt/fourmolu
 bug-reports:        https://github.com/parsonsmatt/fourmolu/issues
 synopsis:           A formatter for Haskell source code
@@ -39,7 +40,6 @@ library
         Ormolu.Exception
         Ormolu.Imports
         Ormolu.Parser
-        Ormolu.Parser.Anns
         Ormolu.Parser.CommentStream
         Ormolu.Parser.Pragma
         Ormolu.Parser.Result
@@ -82,16 +82,17 @@ library
     default-language: Haskell2010
     build-depends:
         Diff >=0.4 && <1.0,
-        aeson >=1.4.0.0 && <1.6,
+        aeson >=1.4.0.0 && <2.1,
         ansi-terminal >=0.10 && <1.0,
-        base >=4.12 && <5.0,
+        base >=4.14 && <5.0,
         bytestring >=0.2 && <0.12,
         containers >=0.5 && <0.7,
         directory >=1.3.3 && <1.4,
         dlist >=0.8 && <2.0,
+        array >=0.5 && <0.6,
         exceptions >=0.6 && <0.11,
         filepath >=1.4.2.1 && <1.5,
-        ghc-lib-parser >=9.0 && <9.1,
+        ghc-lib-parser >=9.2 && <9.3,
         HsYAML >=0.2 && <0.3,
         HsYAML-aeson >=0.2 && <0.3,
         mtl >=2.0 && <3.0,
@@ -99,7 +100,7 @@ library
         text >=0.2 && <1.3,
         filepath >=1.2 && <1.5,
         directory ^>=1.3,
-        Cabal ^>=3.4
+        Cabal >=3.6 && <3.7
 
     if flag(dev)
         ghc-options:
@@ -109,9 +110,6 @@ library
 
     else
         ghc-options: -O2 -Wall
-
-    if impl(ghc <8.10.0)
-        ghc-options: -fmax-pmcheck-iterations=3000000
 
 executable fourmolu
     main-is:          Main.hs
@@ -124,7 +122,7 @@ executable fourmolu
         base >=4.12 && <5.0,
         directory >=1.3.3 && <1.4,
         filepath >=1.2 && <1.5,
-        ghc-lib-parser >=9.0 && <9.1,
+        ghc-lib-parser >=9.2 && <9.3,
         gitrev >=1.3 && <1.4,
         optparse-applicative >=0.14 && <0.17,
         text >=0.2 && <1.3
@@ -154,7 +152,7 @@ test-suite tests
     default-language:   Haskell2010
     build-depends:
         fourmolu,
-        base >=4.12 && <5.0,
+        base >=4.14 && <5.0,
         containers >=0.5 && <0.7,
         directory ^>=1.3,
         filepath >=1.2 && <1.5,

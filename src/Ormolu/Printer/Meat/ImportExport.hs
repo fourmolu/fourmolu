@@ -12,8 +12,7 @@ where
 
 import Control.Monad
 import qualified Data.Text as T
-import GHC.Hs.Extension
-import GHC.Hs.ImpExp
+import GHC.Hs
 import GHC.LanguageExtensions.Type
 import GHC.Types.SrcLoc
 import GHC.Unit.Types
@@ -21,6 +20,8 @@ import Ormolu.Config (CommaStyle (..), PrinterOpts (poIECommaStyle), poDiffFrien
 import Ormolu.Printer.Combinators
 import Ormolu.Printer.Meat.Common
 import Ormolu.Utils (RelativePos (..), attachRelativePos)
+
+{- HLINT ignore "Use camelCase" -}
 
 p_hsmodExports :: [LIE GhcPs] -> R ()
 p_hsmodExports [] = do
@@ -88,14 +89,14 @@ p_lie encLayout relativePos commaStyle = \case
   IEVar NoExtField l1 ->
     withComma $
       located l1 p_ieWrappedName
-  IEThingAbs NoExtField l1 ->
+  IEThingAbs _ l1 ->
     withComma $
       located l1 p_ieWrappedName
-  IEThingAll NoExtField l1 -> withComma $ do
+  IEThingAll _ l1 -> withComma $ do
     located l1 p_ieWrappedName
     space
     txt "(..)"
-  IEThingWith NoExtField l1 w xs _ -> sitcc $
+  IEThingWith _ l1 w xs  -> sitcc $
     withComma $ do
       located l1 p_ieWrappedName
       breakIfNotDiffFriendly
@@ -108,7 +109,7 @@ p_lie encLayout relativePos commaStyle = \case
             IEWildcard n ->
               let (before, after) = splitAt n names
                in before ++ [txt ".."] ++ after
-  IEModuleContents NoExtField l1 -> withComma $ do
+  IEModuleContents _ l1 -> withComma $ do
     located l1 p_hsmodName
   IEGroup NoExtField n str -> do
     case relativePos of
@@ -138,7 +139,6 @@ p_lie encLayout relativePos commaStyle = \case
                 SinglePos -> m
                 _ -> comma >> space >> m
             Trailing -> m >> comma
-
 ----------------------------------------------------------------------------
 
 -- | Unlike the version in `Ormolu.Utils`, this version handles explicitly leading export documentation

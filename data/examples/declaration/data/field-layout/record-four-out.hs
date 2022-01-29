@@ -2,11 +2,11 @@ module Main where
 
 -- | Foo.
 data Foo = Foo
-    { -- | Something
-      foo :: Foo Int Int
-    , -- | Something else
-      bar ::
+    { foo :: Foo Int Int
+    -- ^ Something
+    , bar ::
         Bar
             Char
             Char
+    -- ^ Something else
     }

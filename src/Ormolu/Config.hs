@@ -13,6 +13,7 @@ module Ormolu.Config
     ColorMode (..),
     RegionIndices (..),
     RegionDeltas (..),
+    SourceType (..),
     defaultConfig,
     PrinterOpts (..),
     PrinterOptsPartial,
@@ -54,6 +55,14 @@ import System.Directory
   )
 import System.FilePath (splitPath, (</>))
 
+-- | Type of sources that can be formatted by Ormolu.
+data SourceType
+  = -- | Consider the input as a regular Haskell module
+    ModuleSource
+  | -- | Consider the input as a Backpack module signature
+    SignatureSource
+  deriving (Eq, Show)
+
 -- | Ormolu configuration.
 data Config region = Config
   { -- | Dynamic options to pass to GHC parser
@@ -64,13 +73,15 @@ data Config region = Config
     cfgDebug :: !Bool,
     -- | Checks if re-formatting the result is idempotent
     cfgCheckIdempotence :: !Bool,
+    -- | How to parse the input (regular haskell module or Backpack file)
+    cfgSourceType :: !SourceType,
     -- | Whether to use colors and other features of ANSI terminals
     cfgColorMode :: !ColorMode,
     -- | Region selection
     cfgRegion :: !region,
     cfgPrinterOpts :: !PrinterOptsTotal
   }
-  deriving (Eq, Show, Functor)
+  deriving (Eq, Show, Functor, Generic)
 
 -- | Region selection as the combination of start and end line numbers.
 data RegionIndices = RegionIndices
@@ -99,6 +110,7 @@ defaultConfig =
       cfgUnsafe = False,
       cfgDebug = False,
       cfgCheckIdempotence = False,
+      cfgSourceType = ModuleSource,
       cfgColorMode = Auto,
       cfgRegion =
         RegionIndices

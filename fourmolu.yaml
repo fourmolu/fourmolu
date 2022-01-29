@@ -1,8 +1,8 @@
 indentation: 2
 comma-style: trailing
-ie-comma-style: trailing
+ie-comma-style: leading
 record-brace-space: true
 indent-wheres: true
 diff-friendly-import-export: false
-respectful: false
+respectful: true
 haddock-style: single-line

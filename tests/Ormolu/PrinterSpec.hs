@@ -5,14 +5,18 @@ module Ormolu.PrinterSpec (spec) where
 import Control.Exception
 import Control.Monad
 import Data.List (isSuffixOf)
+import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.IO as T
 import Ormolu
 import Ormolu.Config
 import Ormolu.Utils.IO
 import Path
 import Path.IO
+import System.Environment (lookupEnv)
 import qualified System.FilePath as F
+import System.IO.Unsafe (unsafePerformIO)
 import Test.Hspec
 
 spec :: Spec
@@ -43,22 +47,27 @@ spec = do
 checkExample :: (PrinterOptsTotal, String, String) -> Path Rel File -> Spec
 checkExample (po, label, suffix) srcPath' = it (fromRelFile srcPath' ++ " works (" ++ label ++ ")") . withNiceExceptions $ do
   let srcPath = examplesDir </> srcPath'
-      cfg = defaultConfig {cfgPrinterOpts = po}
+      inputPath = fromRelFile srcPath
+      config =
+        defaultConfig
+          { cfgPrinterOpts = po,
+            cfgSourceType = detectSourceType inputPath
+          }
   expectedOutputPath <- deriveOutput suffix srcPath
   -- 1. Given input snippet of source code parse it and pretty print it.
   -- 2. Parse the result of pretty-printing again and make sure that AST
   -- is the same as AST of the original snippet. (This happens in
   -- 'ormoluFile' automatically.)
-  formatted0 <- ormoluFile cfg (fromRelFile srcPath)
+  formatted0 <- ormoluFile config inputPath
   -- 3. Check the output against expected output. Thus all tests should
   -- include two files: input and expected output.
-  -- <<< UNCOMMENT NEXT LINE TO REGENERATE OUTPUT FILES >>>
-  -- writeFile (fromRelFile expectedOutputPath) (T.unpack formatted0)
+  when shouldRegenerateOutput $
+    T.writeFile (fromRelFile expectedOutputPath) formatted0
   expected <- readFileUtf8 $ fromRelFile expectedOutputPath
   shouldMatch False formatted0 expected
   -- 4. Check that running the formatter on the output produces the same
   -- output again (the transformation is idempotent).
-  formatted1 <- ormolu cfg "<formatted>" (T.unpack formatted0)
+  formatted1 <- ormolu config "<formatted>" (T.unpack formatted0)
   shouldMatch True formatted1 formatted0
 
 -- | Build list of examples for testing.
@@ -77,7 +86,7 @@ isInput :: Path Rel File -> Bool
 isInput path =
   let s = fromRelFile path
       (s', exts) = F.splitExtensions s
-   in exts == ".hs" && not ("-out" `isSuffixOf` s')
+   in exts `elem` [".hs", ".hsig"] && not ("-out" `isSuffixOf` s')
 
 -- | Does the given path contain import export examples?
 isIEInput :: Path Rel File -> Bool
@@ -90,7 +99,9 @@ isIEInput path =
 deriveOutput :: String -> Path Rel File -> IO (Path Rel File)
 deriveOutput suffix path =
   parseRelFile $
-    F.addExtension (F.dropExtensions (fromRelFile path) ++ suffix ++ "-out") "hs"
+    F.addExtension (radical ++ suffix ++ "-out") exts
+  where
+    (radical, exts) = F.splitExtensions (fromRelFile path)
 
 -- | A version of 'shouldBe' that is specialized to comparing 'Text' values.
 -- It also prints multi-line snippets in a more readable form.
@@ -122,3 +133,8 @@ withNiceExceptions m = m `catch` h
   where
     h :: OrmoluException -> IO ()
     h = expectationFailure . displayException
+
+shouldRegenerateOutput :: Bool
+shouldRegenerateOutput =
+  unsafePerformIO $ isJust <$> lookupEnv "ORMOLU_REGENERATE_EXAMPLES"
+{-# NOINLINE shouldRegenerateOutput #-}

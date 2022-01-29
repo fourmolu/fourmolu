@@ -3,15 +3,15 @@ module Main where
 -- | Something.
 data Foo
     = Foo
-        { -- | X
-          fooX :: Int
-        , -- | Y
-          fooY :: Int
+        { fooX :: Int
+        -- ^ X
+        , fooY :: Int
+        -- ^ Y
         }
     | Bar
-        { -- | X
-          barX :: Int
-        , -- | Y
-          barY :: Int
+        { barX :: Int
+        -- ^ X
+        , barY :: Int
+        -- ^ Y
         }
     deriving (Eq, Show)

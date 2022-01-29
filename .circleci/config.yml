@@ -9,14 +9,14 @@ workflows:
           name: test_latest
           latest: true
       - run_build_and_test:
+          name: test_ghc_9.2
+          stack_yaml: stack-ghc-9.2.yaml
+      - run_build_and_test:
           name: test_ghc_9.0
           stack_yaml: stack-ghc-9.0.yaml
       - run_build_and_test:
           name: test_ghc_8.10
           stack_yaml: stack-ghc-8.10.yaml
-      - run_build_and_test:
-          name: test_ghc_8.8
-          stack_yaml: stack-ghc-8.8.yaml
 
 jobs:
   run_build_and_test:
@@ -70,27 +70,27 @@ jobs:
       # build
       - run:
           name: Build
-          command: stack build --test --no-run-tests
+          command: stack build --test --no-run-tests --flag fourmolu:dev
 
       # lint
       - when:
           condition: << parameters.latest >>
           steps:
             - run:
-                name: Lint
+                name: Install pre-commit
                 command: |
-                  git ls-files '*.hs' '*.hs-boot' \
-                    | grep -v '^region-tests/' \
-                    | grep -v '^data/examples/' \
-                    | grep -v '^data/diff-tests/' \
-                    | grep -v '^data/parse-failures/' \
-                    | xargs stack exec -- fourmolu --mode=inplace
-                  git diff --exit-code
+                  sudo apt-get install -y python3-pip
+                  python3 -m pip install pre-commit
+            - run:
+                name: Lint
+                command: pre-commit run --all-files --show-diff-on-failure
 
       # test
       - run:
           name: Test
-          command: stack test
+          command:
+            # keep the dev flag here to avoid rebuilding from the build step
+            stack test --flag fourmolu:dev
 
       # build haddock
       - when:
