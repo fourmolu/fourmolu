@@ -27,7 +27,7 @@ spec = do
         PrinterOpts
           { poIndentation = pure 2,
             poCommaStyle = pure Trailing,
-            poIECommaStyle = pure Trailing,
+            poImportExportCommaStyle = pure Trailing,
             poIndentWheres = pure True,
             poRecordBraceSpace = pure True,
             poDiffFriendlyImportExport = pure False,
@@ -37,7 +37,7 @@ spec = do
           }
   let fourmoluIEOpts =
         defaultPrinterOpts
-          { poIECommaStyle = pure Leading,
+          { poImportExportCommaStyle = pure Leading,
             poDiffFriendlyImportExport = pure False
           }
   sequence_ $ checkExample <$> [(ormoluOpts, "ormolu", ""), (defaultPrinterOpts, "fourmolu", "-four")] <*> es
