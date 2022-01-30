@@ -127,7 +127,7 @@ data PrinterOpts f = PrinterOpts
     -- | Whether to place commas at start or end of lines
     poCommaStyle :: f CommaStyle,
     -- | Whether to place commas at start or end of import-export lines
-    poIECommaStyle :: f CommaStyle,
+    poImportExportCommaStyle :: f CommaStyle,
     -- | Whether to indent `where` blocks
     poIndentWheres :: f Bool,
     -- | Leave space before opening record brace
@@ -169,7 +169,7 @@ defaultPrinterOpts =
   PrinterOpts
     { poIndentation = pure 4,
       poCommaStyle = pure Leading,
-      poIECommaStyle = pure Trailing,
+      poImportExportCommaStyle = pure Trailing,
       poIndentWheres = pure False,
       poRecordBraceSpace = pure False,
       poDiffFriendlyImportExport = pure True,
@@ -190,7 +190,7 @@ fillMissingPrinterOpts p1 p2 =
   PrinterOpts
     { poIndentation = fillField poIndentation,
       poCommaStyle = fillField poCommaStyle,
-      poIECommaStyle = fillField poIECommaStyle,
+      poImportExportCommaStyle = fillField poImportExportCommaStyle,
       poIndentWheres = fillField poIndentWheres,
       poRecordBraceSpace = fillField poRecordBraceSpace,
       poDiffFriendlyImportExport = fillField poDiffFriendlyImportExport,

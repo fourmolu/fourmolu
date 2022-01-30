@@ -16,7 +16,7 @@ import GHC.Hs
 import GHC.LanguageExtensions.Type
 import GHC.Types.SrcLoc
 import GHC.Unit.Types
-import Ormolu.Config (CommaStyle (..), PrinterOpts (poIECommaStyle), poDiffFriendlyImportExport)
+import Ormolu.Config (CommaStyle (..), PrinterOpts (poImportExportCommaStyle), poDiffFriendlyImportExport)
 import Ormolu.Printer.Combinators
 import Ormolu.Printer.Meat.Common
 import Ormolu.Utils (RelativePos (..), attachRelativePos)
@@ -31,7 +31,7 @@ p_hsmodExports [] = do
 p_hsmodExports xs =
   parens' False $ do
     layout <- getLayout
-    commaStyle <- getPrinterOpt poIECommaStyle
+    commaStyle <- getPrinterOpt poImportExportCommaStyle
     sep
       breakpoint
       (\(p, l) -> sitcc (located l (p_lie layout p commaStyle)))
@@ -77,7 +77,7 @@ p_hsmodImport ImportDecl {..} = do
         breakIfNotDiffFriendly
         parens' True $ do
           layout <- getLayout
-          commaStyle <- getPrinterOpt poIECommaStyle
+          commaStyle <- getPrinterOpt poImportExportCommaStyle
           sep
             breakpoint
             (\(p, l) -> sitcc (located l (p_lie layout p commaStyle)))
@@ -96,7 +96,7 @@ p_lie encLayout relativePos commaStyle = \case
     located l1 p_ieWrappedName
     space
     txt "(..)"
-  IEThingWith _ l1 w xs  -> sitcc $
+  IEThingWith _ l1 w xs -> sitcc $
     withComma $ do
       located l1 p_ieWrappedName
       breakIfNotDiffFriendly
@@ -139,6 +139,7 @@ p_lie encLayout relativePos commaStyle = \case
                 SinglePos -> m
                 _ -> comma >> space >> m
             Trailing -> m >> comma
+
 ----------------------------------------------------------------------------
 
 -- | Unlike the version in `Ormolu.Utils`, this version handles explicitly leading export documentation
@@ -191,7 +192,7 @@ parens' topLevelImport m =
     body = vlayout singleLine multiLine
     singleLine = m
     multiLine = do
-      commaStyle <- getPrinterOpt poIECommaStyle
+      commaStyle <- getPrinterOpt poImportExportCommaStyle
       case commaStyle of
         -- On leading commas, list elements are inline with the enclosing parentheses
         Leading -> do

@@ -333,14 +333,14 @@ printerOptsParser = do
             <> showAllValues @CommaStyle
             <> showDefaultValue poCommaStyle
       ]
-  poIECommaStyle <-
+  poImportExportCommaStyle <-
     (optional . option parseBoundedEnum . mconcat)
-      [ long "ie-comma-style",
+      [ long "import-export-comma-style",
         metavar "IESTYLE",
         help $
           "How to place commas in multi-line import and export lists: "
             <> showAllValues @CommaStyle
-            <> showDefaultValue poIECommaStyle
+            <> showDefaultValue poImportExportCommaStyle
       ]
   poIndentWheres <-
     (optional . option parseBoundedEnum . mconcat)
