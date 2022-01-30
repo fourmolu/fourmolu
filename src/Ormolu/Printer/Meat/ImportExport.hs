@@ -31,10 +31,9 @@ p_hsmodExports [] = do
 p_hsmodExports xs =
   parens' False $ do
     layout <- getLayout
-    commaStyle <- getPrinterOpt poImportExportCommaStyle
     sep
       breakpoint
-      (\(p, l) -> sitcc (located l (p_lie layout p commaStyle)))
+      (\(p, l) -> sitcc (located l (p_lie layout p)))
       (attachRelativePos' xs)
 
 p_hsmodImport :: ImportDecl GhcPs -> R ()
@@ -77,15 +76,14 @@ p_hsmodImport ImportDecl {..} = do
         breakIfNotDiffFriendly
         parens' True $ do
           layout <- getLayout
-          commaStyle <- getPrinterOpt poImportExportCommaStyle
           sep
             breakpoint
-            (\(p, l) -> sitcc (located l (p_lie layout p commaStyle)))
+            (\(p, l) -> sitcc (located l (p_lie layout p)))
             (attachRelativePos xs)
     newline
 
-p_lie :: Layout -> RelativePos -> CommaStyle -> IE GhcPs -> R ()
-p_lie encLayout relativePos commaStyle = \case
+p_lie :: Layout -> RelativePos -> IE GhcPs -> R ()
+p_lie encLayout relativePos = \case
   IEVar NoExtField l1 ->
     withComma $
       located l1 p_ieWrappedName
@@ -132,6 +130,7 @@ p_lie encLayout relativePos commaStyle = \case
             MiddlePos -> m >> comma
             LastPos -> void m
         MultiLine -> do
+          commaStyle <- getPrinterOpt poImportExportCommaStyle
           case commaStyle of
             Leading ->
               case relativePos of
