@@ -115,6 +115,7 @@ p_lie encLayout relativePos = \case
       FirstPos -> return ()
       MiddlePos -> newline
       LastPos -> newline
+      FirstAfterDocPos -> newline
     p_hsDocString (Asterisk n) False (noLoc str)
   IEDoc NoExtField str ->
     p_hsDocString Pipe False (noLoc str)
@@ -129,12 +130,14 @@ p_lie encLayout relativePos = \case
             FirstPos -> m >> comma
             MiddlePos -> m >> comma
             LastPos -> void m
+            FirstAfterDocPos -> m >> comma
         MultiLine -> do
           commaStyle <- getPrinterOpt poImportExportCommaStyle
           case commaStyle of
             Leading ->
               case relativePos of
                 FirstPos -> m
+                FirstAfterDocPos -> inciBy 2 m
                 SinglePos -> m
                 _ -> comma >> space >> m
             Trailing -> m >> comma
@@ -156,11 +159,11 @@ attachRelativePos' = \case
     -- a `FirstPos`
     markDoc [] = []
     markDoc [x] = [(LastPos, x)]
-    markDoc (x@(L _ IEDoc {}) : xs) = (MiddlePos, x) : markDoc xs
-    markDoc (x@(L _ IEGroup {}) : xs) = (MiddlePos, x) : markDoc xs
-    markDoc (x@(L _ IEDocNamed {}) : xs) = (MiddlePos, x) : markDoc xs
+    markDoc (x@(L _ IEDoc {}) : xs) = (FirstAfterDocPos, x) : markDoc xs
+    markDoc (x@(L _ IEGroup {}) : xs) = (FirstAfterDocPos, x) : markDoc xs
+    markDoc (x@(L _ IEDocNamed {}) : xs) = (FirstAfterDocPos, x) : markDoc xs
     -- First export after a Doc gets assigned a `FirstPos`
-    markDoc (x : xs) = (FirstPos, x) : markLast xs
+    markDoc (x : xs) = (FirstAfterDocPos, x) : markLast xs
 
     markLast [] = []
     markLast [x] = [(LastPos, x)]

@@ -4,7 +4,7 @@
 -- | Header.
 module My.Module
     ( -- * Something
-    foo
+      foo
     , bar
     -- | A multiline
     -- comment here

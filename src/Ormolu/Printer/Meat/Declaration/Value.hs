@@ -44,7 +44,7 @@ import GHC.Types.SourceText
 import GHC.Types.SrcLoc
 import Ormolu.Config
 import Ormolu.Printer.Combinators
-import Ormolu.Printer.Internal (inciBy, sitccIfTrailing)
+import Ormolu.Printer.Internal (sitccIfTrailing)
 import Ormolu.Printer.Meat.Common
 import {-# SOURCE #-} Ormolu.Printer.Meat.Declaration
 import Ormolu.Printer.Meat.Declaration.Signature
@@ -525,6 +525,7 @@ p_hsLocalBinds = \case
           FirstPos -> br
           MiddlePos -> br
           LastPos -> id
+          FirstAfterDocPos -> br
         p_item' (p, item) =
           positionToBracing p $
             withSpacing (either p_valDecl p_sigDecl) item

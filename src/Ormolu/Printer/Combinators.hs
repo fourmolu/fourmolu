@@ -22,6 +22,7 @@ module Ormolu.Printer.Combinators
     newline,
     declNewline,
     inci,
+    inciBy,
     inciIf,
     inciByFrac,
     inciHalf,

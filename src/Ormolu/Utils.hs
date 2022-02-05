@@ -38,6 +38,7 @@ data RelativePos
   | FirstPos
   | MiddlePos
   | LastPos
+  | FirstAfterDocPos
   deriving (Eq, Show)
 
 -- | Attach 'RelativePos'es to elements of a given list.
