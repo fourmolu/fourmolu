@@ -94,19 +94,18 @@ p_lie encLayout relativePos = \case
     located l1 p_ieWrappedName
     space
     txt "(..)"
-  IEThingWith _ l1 w xs -> sitcc $
-    withComma $ do
-      located l1 p_ieWrappedName
-      breakIfNotDiffFriendly
-      inci $ do
-        let names :: [R ()]
-            names = located' p_ieWrappedName <$> xs
-        parens' False . sep commaDel' sitcc $
-          case w of
-            NoIEWildcard -> names
-            IEWildcard n ->
-              let (before, after) = splitAt n names
-               in before ++ [txt ".."] ++ after
+  IEThingWith _ l1 w xs -> sitcc . withComma $ do
+    located l1 p_ieWrappedName
+    breakIfNotDiffFriendly
+    inci $ do
+      let names :: [R ()]
+          names = located' p_ieWrappedName <$> xs
+      parens' False . sep commaDel' sitcc $
+        case w of
+          NoIEWildcard -> names
+          IEWildcard n ->
+            let (before, after) = splitAt n names
+             in before ++ [txt ".."] ++ after
   IEModuleContents _ l1 -> withComma $ do
     indentDoc $ located l1 p_hsmodName
   IEGroup NoExtField n str -> do
