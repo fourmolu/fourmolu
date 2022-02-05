@@ -108,7 +108,7 @@ p_lie encLayout relativePos = \case
               let (before, after) = splitAt n names
                in before ++ [txt ".."] ++ after
   IEModuleContents _ l1 -> withComma $ do
-    located l1 p_hsmodName
+    indentDoc $ located l1 p_hsmodName
   IEGroup NoExtField n str -> do
     case relativePos of
       SinglePos -> return ()
@@ -116,10 +116,11 @@ p_lie encLayout relativePos = \case
       MiddlePos -> newline
       LastPos -> newline
       FirstAfterDocPos -> newline
-    p_hsDocString (Asterisk n) False (noLoc str)
+    indentDoc $ p_hsDocString (Asterisk n) False (noLoc str)
   IEDoc NoExtField str ->
-    p_hsDocString Pipe False (noLoc str)
-  IEDocNamed NoExtField str -> txt $ "-- $" <> T.pack str
+    indentDoc $
+      p_hsDocString Pipe False (noLoc str)
+  IEDocNamed NoExtField str -> indentDoc $ txt $ "-- $" <> T.pack str
   where
     -- Add a comma to a import-export list element
     withComma m =
@@ -141,6 +142,15 @@ p_lie encLayout relativePos = \case
                 SinglePos -> m
                 _ -> comma >> space >> m
             Trailing -> m >> comma
+    indentDoc m = do
+      commaStyle <- getPrinterOpt poImportExportCommaStyle
+      case commaStyle of
+        Trailing -> m
+        Leading ->
+          case relativePos of
+            SinglePos -> m
+            FirstPos -> m
+            _ -> inciBy 2 m
 
 ----------------------------------------------------------------------------
 

@@ -1,8 +1,8 @@
 module Magic
     ( -- * Something
-    -- $explanation
+      -- $explanation
 
-    -- ** Another level
+      -- ** Another level
       foo
     , bar
     )
