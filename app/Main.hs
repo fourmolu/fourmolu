@@ -384,6 +384,14 @@ printerOptsParser = do
           "Number of spaces between top-level declarations"
             <> showDefaultValue poNewlinesBetweenDecls
       ]
+  poConsistentLet <-
+    (optional . option parseBoundedEnum . mconcat)
+      [ long "consistent-let",
+        metavar "BOOL",
+        help $
+          "Whether to lay out 'let' similar to 'do', 'case', and '\\case'"
+            <> showDefaultValue poConsistentLet
+      ]
   pure PrinterOpts {..}
 
 sourceTypeParser :: Parser (Maybe SourceType)

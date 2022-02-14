@@ -96,7 +96,9 @@ p_matchGroup ::
   MatchGroupStyle ->
   MatchGroup GhcPs (LHsExpr GhcPs) ->
   R ()
-p_matchGroup = p_matchGroup' exprPlacement p_hsExpr
+p_matchGroup style mg = do
+  exprPlacement <- getExprPlacement
+  p_matchGroup' exprPlacement p_hsExpr style mg
 
 p_matchGroup' ::
   ( Anno (GRHS GhcPs (LocatedA body)) ~ SrcSpan,
@@ -165,7 +167,9 @@ p_match ::
   -- | Equations
   GRHSs GhcPs (LHsExpr GhcPs) ->
   R ()
-p_match = p_match' exprPlacement p_hsExpr
+p_match style isInfix strictness m_pats grhss = do
+  exprPlacement <- getExprPlacement
+  p_match' exprPlacement p_hsExpr style isInfix strictness m_pats grhss
 
 p_match' ::
   (Anno (GRHS GhcPs (LocatedA body)) ~ SrcSpan) =>
@@ -290,7 +294,9 @@ p_match' placer render style isInfix strictness m_pats GRHSs {..} = do
     inci p_where
 
 p_grhs :: GroupStyle -> GRHS GhcPs (LHsExpr GhcPs) -> R ()
-p_grhs = p_grhs' Normal exprPlacement p_hsExpr
+p_grhs style grhs = do
+  exprPlacement <- getExprPlacement
+  p_grhs' Normal exprPlacement p_hsExpr style grhs
 
 p_grhs' ::
   -- | Placement of the parent RHS construct
@@ -348,6 +354,7 @@ p_hsCmd' s = \case
         (HsHigherOrderApp, True) -> txt "-<<"
         (HsFirstOrderApp, False) -> txt ">-"
         (HsHigherOrderApp, False) -> txt ">>-"
+      exprPlacement <- getExprPlacement
       placeHanging (exprPlacement (unLoc input)) $
         located r p_hsExpr
   HsCmdArrForm _ form Prefix _ cmds -> banana s $ do
@@ -410,7 +417,9 @@ withSpacing f l = located l $ \x -> do
         _ -> setSpanMark (StatementSpan currentSpn)
 
 p_stmt :: Stmt GhcPs (LHsExpr GhcPs) -> R ()
-p_stmt = p_stmt' exprPlacement p_hsExpr
+p_stmt render = do
+  exprPlacement <- getExprPlacement
+  p_stmt' exprPlacement p_hsExpr render
 
 p_stmt' ::
   ( Anno (Stmt GhcPs (LocatedA body)) ~ SrcSpanAnnA,
@@ -439,8 +448,14 @@ p_stmt' placer render = \case
   BodyStmt _ body _ _ -> located body render
   LetStmt _ binds -> do
     txt "let"
-    space
-    sitcc $ p_hsLocalBinds binds
+    consistentLet <- getPrinterOpt poConsistentLet
+    if consistentLet
+      then do
+        breakpoint
+        inci $ p_hsLocalBinds binds
+      else do
+        space
+        sitcc $ p_hsLocalBinds binds
   ParStmt {} ->
     -- 'ParStmt' should always be eliminated in 'gatherStmt' already, such
     -- that it never occurs in 'p_stmt''. Consequently, handling it here
@@ -583,6 +598,7 @@ p_hsRecField p_lbl HsRecField {..} = do
   unless hsRecPun $ do
     space
     equals
+    exprPlacement <- getExprPlacement
     let placement =
           if onTheSameLine (getLoc hsRecFieldLbl) (getLocA hsRecFieldArg)
             then exprPlacement (unLoc hsRecFieldArg)
@@ -615,9 +631,11 @@ p_hsExpr' s = \case
       r -> atom r
   HsLam _ mgroup ->
     p_matchGroup Lambda mgroup
-  HsLamCase _ mgroup ->
+  HsLamCase _ mgroup -> do
+    exprPlacement <- getExprPlacement
     p_lamcase exprPlacement p_hsExpr mgroup
   HsApp _ f x -> do
+    exprPlacement <- getExprPlacement
     let -- In order to format function applications with multiple parameters
         -- nicer, traverse the AST to gather the function and all the
         -- parameters together.
@@ -657,6 +675,7 @@ p_hsExpr' s = \case
                   HsDo {} -> inciBy 2
                   _ -> inci
               | otherwise = case unLoc func of
+                  HsLet {} -> inciHalf
                   HsDo {} -> inciHalf
                   HsCase {} -> inciHalf
                   HsLamCase {} -> inciHalf
@@ -736,9 +755,11 @@ p_hsExpr' s = \case
           sep commaDel p_arg args
   ExplicitSum _ tag arity e ->
     p_unboxedSum N tag arity (located e p_hsExpr)
-  HsCase _ e mgroup ->
+  HsCase _ e mgroup -> do
+    exprPlacement <- getExprPlacement
     p_case exprPlacement p_hsExpr e mgroup
-  HsIf _ if' then' else' ->
+  HsIf _ if' then' else' -> do
+    exprPlacement <- getExprPlacement
     p_if exprPlacement p_hsExpr if' then' else'
   HsMultiIf _ guards -> do
     txt "if"
@@ -750,6 +771,7 @@ p_hsExpr' s = \case
     let doBody moduleName header = do
           forM_ moduleName $ \m -> atom m *> txt "."
           txt header
+          exprPlacement <- getExprPlacement
           p_stmts exprPlacement (p_hsExpr' S) es
         compBody = brackets N . located es $ \xs -> do
           let p_parBody =
@@ -988,13 +1010,13 @@ p_if placer render if' then' else' = do
     located else' $ \x ->
       placeHanging (placer x) (render x)
 
-p_let ::
+p_ugly_let ::
   -- | Render
   (body -> R ()) ->
   HsLocalBinds GhcPs ->
   LocatedA body ->
   R ()
-p_let render localBinds e = sitcc $ do
+p_ugly_let render localBinds e = sitcc $ do
   txt "let"
   space
   dontUseBraces $ sitcc (p_hsLocalBinds localBinds)
@@ -1002,6 +1024,32 @@ p_let render localBinds e = sitcc $ do
   txt "in"
   space
   sitcc (located e render)
+
+p_consistent_let ::
+  -- | Render
+  (body -> R ()) ->
+  HsLocalBinds GhcPs ->
+  LocatedA body ->
+  R ()
+p_consistent_let render localBinds e = do
+  txt "let"
+  breakpoint
+  inci $ do
+    dontUseBraces $ p_hsLocalBinds localBinds
+    breakpoint
+    txt "in"
+    space
+    located e render
+
+p_let ::
+  -- | Render
+  (body -> R ()) ->
+  HsLocalBinds GhcPs ->
+  LocatedA body ->
+  R ()
+p_let render localBinds e = do
+  consistentLet <- getPrinterOpt poConsistentLet
+  bool p_ugly_let p_consistent_let consistentLet render localBinds e
 
 p_pat :: Pat GhcPs -> R ()
 p_pat = \case
@@ -1285,30 +1333,35 @@ cmdTopPlacement :: HsCmdTop GhcPs -> Placement
 cmdTopPlacement (HsCmdTop _ (L _ x)) = cmdPlacement x
 
 -- | Check if given expression has a hanging form.
-exprPlacement :: HsExpr GhcPs -> Placement
-exprPlacement = \case
-  -- Only hang lambdas with single line parameter lists
-  HsLam _ mg -> case mg of
-    MG _ (L _ [L _ (Match _ _ (x : xs) _)]) _
-      | isOneLineSpan (combineSrcSpans' $ fmap getLocA (x :| xs)) ->
-          Hanging
-    _ -> Normal
-  HsLamCase _ _ -> Hanging
-  HsCase _ _ _ -> Hanging
-  HsDo _ (DoExpr _) _ -> Hanging
-  HsDo _ (MDoExpr _) _ -> Hanging
-  OpApp _ _ op y ->
-    case (fmap getOpNameStr . getOpName . unLoc) op of
-      Just "$" -> exprPlacement (unLoc y)
-      _ -> Normal
-  HsApp _ _ y -> exprPlacement (unLoc y)
-  HsProc _ p _ ->
-    -- Indentation breaks if pattern is longer than one line and left
-    -- hanging. Consequently, only apply hanging when it is safe.
-    if isOneLineSpan (getLocA p)
-      then Hanging
-      else Normal
-  _ -> Normal
+getExprPlacement :: R (HsExpr GhcPs -> Placement)
+getExprPlacement = do
+  consistentLet <- getPrinterOpt poConsistentLet
+  let exprPlacement :: HsExpr GhcPs -> Placement
+      exprPlacement = \case
+        -- Only hang lambdas with single line parameter lists
+        HsLam _ mg -> case mg of
+          MG _ (L _ [L _ (Match _ _ (x : xs) _)]) _
+            | isOneLineSpan (combineSrcSpans' $ fmap getLocA (x :| xs)) ->
+                Hanging
+          _ -> Normal
+        HsLamCase _ _ -> Hanging
+        HsCase _ _ _ -> Hanging
+        HsLet _ _ _ | consistentLet -> Hanging
+        HsDo _ (DoExpr _) _ -> Hanging
+        HsDo _ (MDoExpr _) _ -> Hanging
+        OpApp _ _ op y ->
+          case (fmap getOpNameStr . getOpName . unLoc) op of
+            Just "$" -> exprPlacement (unLoc y)
+            _ -> Normal
+        HsApp _ _ y -> exprPlacement (unLoc y)
+        HsProc _ p _ ->
+          -- Indentation breaks if pattern is longer than one line and left
+          -- hanging. Consequently, only apply hanging when it is safe.
+          if isOneLineSpan (getLocA p)
+            then Hanging
+            else Normal
+        _ -> Normal
+  return exprPlacement
 
 withGuards :: [LGRHS GhcPs body] -> Bool
 withGuards = any (checkOne . unLoc)
@@ -1335,6 +1388,7 @@ p_exprOpTree ::
   R ()
 p_exprOpTree s (OpNode x) = located x (p_hsExpr' s)
 p_exprOpTree s (OpBranch x op y) = do
+  exprPlacement <- getExprPlacement
   let placement = opBranchPlacement exprPlacement x y
       -- Distinguish holes used in infix notation.
       -- eg. '1 _foo 2' and '1 `_foo` 2'
