@@ -1,4 +1,4 @@
-resolver: nightly-2021-11-28
+resolver: nightly-2022-03-03
 
 extra-deps:
   - Cabal-3.6.2.0
