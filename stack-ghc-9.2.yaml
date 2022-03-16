@@ -1,5 +1,5 @@
 resolver: nightly-2022-03-03
-compiler: ghc-9.2
+compiler: ghc-9.2.1
 
 extra-deps:
   - base-compat-0.12.1
