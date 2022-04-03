@@ -259,7 +259,7 @@ p_forallBndrs vis p tyvars =
 
 p_conDeclFields :: [LConDeclField GhcPs] -> R ()
 p_conDeclFields xs =
-  braces N $ sep commaDel (located' p_conDeclField) xs
+  braces N $ sep commaDel (sitcc . located' p_conDeclField) xs
 
 p_conDeclField :: ConDeclField GhcPs -> R ()
 p_conDeclField ConDeclField {..} = do
@@ -276,7 +276,7 @@ p_conDeclField ConDeclField {..} = do
   breakpoint
   sitcc . inci $ p_hsType (unLoc cd_fld_type)
   when (commaStyle == Leading) $
-    mapM_ ((newline >>) . p_hsDocString Caret False) cd_fld_doc
+    mapM_ (inciByFrac (-1) . (newline >>) . p_hsDocString Caret False) cd_fld_doc
 
 tyOpTree :: LHsType GhcPs -> OpTree (LHsType GhcPs) (LocatedN RdrName)
 tyOpTree (L _ (HsOpTy _ l op r)) =
