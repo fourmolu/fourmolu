@@ -1,3 +1,8 @@
+## Unreleased
+
+* Fixed regression in 0.5.0.0 with multiline tuples ([#162](https://github.com/fourmolu/fourmolu/pull/162))
+* Add `import-export-comma-style` configuration to allow leading commas in module import/export lists
+
 ## Fourmolu 0.5.0.0
 
 * Fixed issue with leading commas in guards ([#123](https://github.com/fourmolu/fourmolu/pull/123))
