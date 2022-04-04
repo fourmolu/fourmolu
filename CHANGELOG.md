@@ -1,6 +1,7 @@
 ## Unreleased
 
 * Fixed regression in 0.5.0.0 with multiline tuples ([#162](https://github.com/fourmolu/fourmolu/pull/162))
+* Fixed regression in 0.5.0.0 with multiline record types ([#160](https://github.com/fourmolu/fourmolu/pull/160))
 * Add `import-export-comma-style` configuration to allow leading commas in module import/export lists
 
 ## Fourmolu 0.5.0.0
