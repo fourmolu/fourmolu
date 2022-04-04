@@ -8,6 +8,8 @@ Some things to keep in mind when making changes:
     * Avoid refactoring where possible, don't reformat untouched code
     * Since we continuously merge in changes from Ormolu, reducing the number of potential conflicts goes a long way towards maintainability of this project.
     * This includes behavior changes that drastically change how `fourmolu` formats Fourmolu's source code itself
+* Add a comment to `CHANGELOG.md` when adding features, fixing bugs, or otherwise changing behaviors that users can see.
+    * If there isn't already an `Unreleased` section, add one
 
 ### Running `fourmolu`
 
@@ -66,7 +68,7 @@ To release a new version, do the following workflow:
     1. Bump version in `fourmolu.cabal`
         * All version bumps should follow [PvP](https://pvp.haskell.org/)
 
-    1. Curate `CHANGELOG.md`, creating a new section for this version and moving everything previously in `Unreleased` into the new section (keeping `Unreleased` as a section)
+    1. Curate `CHANGELOG.md`, renaming the `Unreleased` section to `Fourmolu X.Y.Z`
 
        It should roughly follow this format:
 
