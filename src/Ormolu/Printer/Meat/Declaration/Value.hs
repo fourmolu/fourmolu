@@ -720,9 +720,10 @@ p_hsExpr' s = \case
         isMissing = \case
           Missing _ -> True
           _ -> False
-        p_arg = \case
-          Present _ x -> located x p_hsExprListItem
-          Missing _ -> pure ()
+        p_arg =
+          sitcc . \case
+            Present _ x -> located x p_hsExprListItem
+            Missing _ -> pure ()
         parens' =
           case boxity of
             Boxed -> parens
