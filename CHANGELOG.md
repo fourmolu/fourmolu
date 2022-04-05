@@ -1,4 +1,4 @@
-## Unreleased
+## Fourmolu 0.6.0.0
 
 * Fixed regression in 0.5.0.0 with multiline tuples ([#162](https://github.com/fourmolu/fourmolu/pull/162))
 * Fixed regression in 0.5.0.0 with multiline record types ([#160](https://github.com/fourmolu/fourmolu/pull/160))
