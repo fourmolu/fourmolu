@@ -157,7 +157,7 @@ p_conDecl singleConstRec = \case
     mapM_ (p_hsDocString Pipe True) con_doc
     let conDeclWithContextSpn =
           [RealSrcSpan real Nothing | AddEpAnn AnnForall (EpaSpan real) <- epAnnAnns con_ext]
-          <> fmap getLocA con_ex_tvs
+            <> fmap getLocA con_ex_tvs
             <> maybeToList (fmap getLocA con_mb_cxt)
             <> conDeclSpn
         conDeclSpn = getLocA con_name : conArgsSpans

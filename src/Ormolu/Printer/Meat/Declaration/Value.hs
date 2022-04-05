@@ -1381,13 +1381,22 @@ p_exprOpTree s (OpBranch x op y) = do
                 p_op
                 space
                 p_y
-          case x of
-            -- This case prevents an operator from being indented past the start of a `do` block
-            -- constituting its left operand, thus altering the AST.
-            -- This is only relevant when the `do` block is on one line, as otherwise we will
-            -- insert a newline after `do` anyway.
-            OpNode (unLoc -> HsDo _ _ _) | isOneLineSpan (opTreeLoc x) -> breakpoint >> opAndRhs
-            _ -> placeHanging placement opAndRhs
+              -- distinguish do-block from list comprehensions, which are
+              -- apparently parsed as `HsDo _ ListComp _`
+              isActualDoBlock = \case
+                OpNode (unLoc -> HsDo _ ctx _) ->
+                  case ctx of
+                    DoExpr _ -> True
+                    MDoExpr _ -> True
+                    _ -> False
+                _ -> False
+          -- This case prevents an operator from being indented past the start of a `do` block
+          -- constituting its left operand, thus altering the AST.
+          -- This is only relevant when the `do` block is on one line, as otherwise we will
+          -- insert a newline after `do` anyway.
+          if isActualDoBlock x && isOneLineSpan (opTreeLoc x)
+            then breakpoint >> opAndRhs
+            else placeHanging placement opAndRhs
 
 pattern CmdTopCmd :: HsCmd GhcPs -> LHsCmdTop GhcPs
 pattern CmdTopCmd cmd <- (L _ (HsCmdTop _ (L _ cmd)))
