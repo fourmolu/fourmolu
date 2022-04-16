@@ -6,9 +6,6 @@ module My.Module (
     -- * Something
     foo,
     bar,
-    -- | A multiline
-    -- comment here
-    bar2,
 
     -- * Another thing
     (<?>),
