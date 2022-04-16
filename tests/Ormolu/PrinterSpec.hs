@@ -11,6 +11,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Ormolu
+import Ormolu.Config
 import Ormolu.Fixity
 import Ormolu.Utils.IO
 import Path
@@ -22,8 +23,26 @@ import Test.Hspec
 
 spec :: Spec
 spec = do
+  -- PrinterOpts for normal Ormolu output + default Fourmolu output
+  let ormoluOpts =
+        PrinterOpts
+          { poIndentation = pure 2,
+            poCommaStyle = pure Trailing,
+            poImportExportCommaStyle = pure Trailing,
+            poIndentWheres = pure True,
+            poRecordBraceSpace = pure True,
+            poDiffFriendlyImportExport = pure False,
+            poRespectful = pure False,
+            poHaddockStyle = pure HaddockSingleLine,
+            poNewlinesBetweenDecls = pure 1
+          }
+  let fourmoluOpts = defaultPrinterOpts
+
   es <- runIO locateExamples
-  forM_ es checkExample
+  sequence_ $
+    checkExample
+      <$> [(ormoluOpts, "ormolu", "-out"), (fourmoluOpts, "fourmolu", "-four-out")]
+      <*> es
 
 -- | Fixities that are to be used with the test examples.
 testsuiteFixities :: FixityMap
@@ -34,16 +53,17 @@ testsuiteFixities =
     ]
 
 -- | Check a single given example.
-checkExample :: Path Rel File -> Spec
-checkExample srcPath' = it (fromRelFile srcPath' ++ " works") . withNiceExceptions $ do
+checkExample :: (PrinterOptsTotal, String, String) -> Path Rel File -> Spec
+checkExample (opts, label, suffix) srcPath' = it (fromRelFile srcPath' ++ " works (" ++ label ++ ")") . withNiceExceptions $ do
   let srcPath = examplesDir </> srcPath'
       inputPath = fromRelFile srcPath
       config =
         defaultConfig
-          { cfgSourceType = detectSourceType inputPath,
+          { cfgPrinterOpts = opts,
+            cfgSourceType = detectSourceType inputPath,
             cfgFixityOverrides = testsuiteFixities
           }
-  expectedOutputPath <- deriveOutput srcPath
+  expectedOutputPath <- deriveOutput srcPath suffix
   -- 1. Given input snippet of source code parse it and pretty print it.
   -- 2. Parse the result of pretty-printing again and make sure that AST
   -- is the same as AST of the original snippet. (This happens in
@@ -74,10 +94,10 @@ isInput path =
    in exts `elem` [".hs", ".hsig"] && not ("-out" `isSuffixOf` s')
 
 -- | For given path of input file return expected name of output.
-deriveOutput :: Path Rel File -> IO (Path Rel File)
-deriveOutput path =
+deriveOutput :: Path Rel File -> String -> IO (Path Rel File)
+deriveOutput path suffix =
   parseRelFile $
-    F.addExtension (radical ++ "-out") exts
+    F.addExtension (radical ++ suffix) exts
   where
     (radical, exts) = F.splitExtensions (fromRelFile path)
 
