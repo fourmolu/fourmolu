@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Ormolu.PrinterSpec (spec) where
@@ -23,25 +24,22 @@ import Test.Hspec
 
 spec :: Spec
 spec = do
-  -- PrinterOpts for normal Ormolu output + default Fourmolu output
-  let ormoluOpts =
-        PrinterOpts
-          { poIndentation = pure 2,
-            poCommaStyle = pure Trailing,
-            poImportExportCommaStyle = pure Trailing,
-            poIndentWheres = pure True,
-            poRecordBraceSpace = pure True,
-            poDiffFriendlyImportExport = pure False,
-            poRespectful = pure False,
-            poHaddockStyle = pure HaddockSingleLine,
-            poNewlinesBetweenDecls = pure 1
+  -- Config for normal Ormolu output + default Fourmolu output
+  ormoluConfig <-
+    runIO $
+      loadConfigFile "fourmolu.yaml" >>= \case
+        ConfigLoaded _ cfg -> pure cfg
+        result -> error $ "Could not load config file: " ++ show result
+  let fourmoluConfig =
+        FourmoluConfig
+          { cfgFilePrinterOpts = mempty,
+            cfgFileFixities = mempty
           }
-  let fourmoluOpts = defaultPrinterOpts
 
   es <- runIO locateExamples
   sequence_ $
     checkExample
-      <$> [(ormoluOpts, "ormolu", "-out"), (fourmoluOpts, "fourmolu", "-four-out")]
+      <$> [(ormoluConfig, "ormolu", "-out"), (fourmoluConfig, "fourmolu", "-four-out")]
       <*> es
 
 -- | Fixities that are to be used with the test examples.
@@ -53,15 +51,15 @@ testsuiteFixities =
     ]
 
 -- | Check a single given example.
-checkExample :: (PrinterOptsTotal, String, String) -> Path Rel File -> Spec
-checkExample (opts, label, suffix) srcPath' = it (fromRelFile srcPath' ++ " works (" ++ label ++ ")") . withNiceExceptions $ do
+checkExample :: (FourmoluConfig, String, String) -> Path Rel File -> Spec
+checkExample (cfg, label, suffix) srcPath' = it (fromRelFile srcPath' ++ " works (" ++ label ++ ")") . withNiceExceptions $ do
   let srcPath = examplesDir </> srcPath'
       inputPath = fromRelFile srcPath
       config =
         defaultConfig
-          { cfgPrinterOpts = opts,
+          { cfgPrinterOpts = fillMissingPrinterOpts (cfgFilePrinterOpts cfg) defaultPrinterOpts,
             cfgSourceType = detectSourceType inputPath,
-            cfgFixityOverrides = testsuiteFixities
+            cfgFixityOverrides = testsuiteFixities <> cfgFileFixities cfg
           }
   expectedOutputPath <- deriveOutput srcPath suffix
   -- 1. Given input snippet of source code parse it and pretty print it.

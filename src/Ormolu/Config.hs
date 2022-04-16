@@ -298,6 +298,7 @@ data ConfigFileLoadResult
   = ConfigLoaded FilePath FourmoluConfig
   | ConfigParseError FilePath Yaml.ParseException
   | ConfigNotFound [FilePath]
+  deriving (Show)
 
 -- | Expected file name for YAML config.
 configFileName :: FilePath
