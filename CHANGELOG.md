@@ -1,3 +1,7 @@
+## Unreleased
+
+* Add `--quiet` flag to make the output quieter
+
 ## Fourmolu 0.6.0.0
 
 * Fixed regression in 0.5.0.0 with multiline tuples ([#162](https://github.com/fourmolu/fourmolu/pull/162))
