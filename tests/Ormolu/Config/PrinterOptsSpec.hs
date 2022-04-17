@@ -54,10 +54,15 @@ spec =
     runTestGroup
     [ TestGroup
         { label = "indentation",
-          testCases = [2, 3, 4],
-          updateConfig = \indent opts -> opts {poIndentation = pure indent},
-          showTestCase = show,
-          testCaseSuffix = suffix1
+          testCases = (,) <$> [2, 3, 4] <*> allOptions,
+          updateConfig = \(indent, indentWheres) opts ->
+            opts
+              { poIndentation = pure indent,
+                poIndentWheres = pure indentWheres
+              },
+          showTestCase = \(indent, indentWheres) ->
+            show indent ++ if indentWheres then " + indent wheres" else "",
+          testCaseSuffix = suffix2
         },
       TestGroup
         { label = "comma-style",
