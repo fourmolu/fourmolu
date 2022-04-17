@@ -62,7 +62,8 @@ spec =
               },
           showTestCase = \(indent, indentWheres) ->
             show indent ++ if indentWheres then " + indent wheres" else "",
-          testCaseSuffix = suffix2
+          testCaseSuffix = \(indent, indentWheres) ->
+            suffixWith [show indent, if indentWheres then "indent_wheres" else ""]
         },
       TestGroup
         { label = "comma-style",
@@ -81,7 +82,8 @@ spec =
               },
           showTestCase = \(commaStyle, diffFriendly) ->
             show commaStyle ++ if diffFriendly then " + diff friendly" else "",
-          testCaseSuffix = suffix2
+          testCaseSuffix = \(commaStyle, diffFriendly) ->
+            suffixWith [show commaStyle, if diffFriendly then "diff_friendly" else ""]
         },
       TestGroup
         { label = "record-brace-space",
@@ -124,7 +126,6 @@ spec =
 
     suffixWith xs = concatMap ('-' :) . filter (not . null) $ xs
     suffix1 a1 = suffixWith [show a1]
-    suffix2 (a1, a2) = suffixWith [show a1, show a2]
 
 runTestGroup :: TestGroup -> Spec
 runTestGroup TestGroup {..} =
