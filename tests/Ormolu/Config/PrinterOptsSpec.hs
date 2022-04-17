@@ -58,9 +58,19 @@ spec =
           updateConfig = \indent opts -> opts {poIndentation = pure indent},
           showTestCase = show,
           testCaseSuffix = suffix1
+        },
+      TestGroup
+        { label = "comma-style",
+          testCases = allOptions,
+          updateConfig = \commaStyle opts -> opts {poCommaStyle = pure commaStyle},
+          showTestCase = show,
+          testCaseSuffix = suffix1
         }
     ]
   where
+    allOptions :: (Enum a, Bounded a) => [a]
+    allOptions = [minBound .. maxBound]
+
     suffixWith xs = concatMap ('-' :) xs
     suffix1 a1 = suffixWith [show a1]
 
