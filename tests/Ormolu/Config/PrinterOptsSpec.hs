@@ -96,6 +96,13 @@ spec =
           updateConfig = \respectful opts -> opts {poRespectful = pure respectful},
           showTestCase = show,
           testCaseSuffix = suffix1
+        },
+      TestGroup
+        { label = "haddock-style",
+          testCases = allOptions,
+          updateConfig = \haddockStyle opts -> opts {poHaddockStyle = pure haddockStyle},
+          showTestCase = show,
+          testCaseSuffix = suffix1
         }
     ]
   where
