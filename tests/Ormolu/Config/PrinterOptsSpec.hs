@@ -82,6 +82,13 @@ spec =
           showTestCase = \(commaStyle, diffFriendly) ->
             show commaStyle ++ if diffFriendly then " + diff friendly" else "",
           testCaseSuffix = suffix2
+        },
+      TestGroup
+        { label = "record-brace-space",
+          testCases = allOptions,
+          updateConfig = \recordBraceSpace opts -> opts {poRecordBraceSpace = pure recordBraceSpace},
+          showTestCase = show,
+          testCaseSuffix = suffix1
         }
     ]
   where
