@@ -39,29 +39,50 @@ We share all bar one of Ormolu's goals:
 
 ## Configuration
 
-Fourmolu looks for a `fourmolu.yaml` file in all parents of the current directory, followed by [the XDG config directory](https://hackage.haskell.org/package/directory/docs/System-Directory.html#v:XdgConfig). A complete configuration file, corresponding to Fourmolu's default options, looks like:
+### Available options
+
+| Configuration option | Valid options | Description |
+|----------------------|---------------|-------------|
+| `indentation`        | any integer   | Number of spaces to use as indentation |
+| `comma-style`        | `leading`, `trailing` | Where to put the comma in lists, tuples, etc. |
+| `import-export-comma-style` | `leading`, `trailing` | Where to put the comma in import/export lists |
+| `indent-wheres`      | `true`, `false` | `false` means save space by only half-indenting the `where` keyword |
+| `record-brace-space` | `true`, `false` | `rec {x = 1}` vs `rec{x = 1}` |
+| `diff-friendly-import-export` | `true`, `false` | Make multiline import/export lists as diff-friendly as possible (keeping the open-parentheses on the same line as the `import` line or not) |
+| `respectful`         | `true`, `false` | Whether to respect user-specified newlines, e.g. in import groupings |
+| `haddock-style`      | `multi-line`, `single-line` | Whether multiline haddocks should use `{-` or `--` |
+| `newlines-between-decls` | any integer | number of newlines between top-level declarations |
+| `fixities`           | A list of strings for defining fixities; see the "Language extensions, dependencies, and fixities" section below |
+
+For examples of each of these options, see the [test files](https://github.com/fourmolu/fourmolu/tree/master/data/fourmolu/).
+
+### Specifying configuration
+
+Configuration options may be specified in either a `fourmolu.yaml` file or via command-line options. Fourmolu looks for a `fourmolu.yaml` file in all parents of the current directory, followed by [the XDG config directory](https://hackage.haskell.org/package/directory/docs/System-Directory.html#v:XdgConfig).
+
+A complete configuration file, corresponding to Fourmolu's default options, looks like:
 
 ```yaml
 indentation: 4
-comma-style: leading # for lists, tuples etc. - can also be 'trailing'
-import-export-comma-style: leading # for module import export lists - can also be 'trailing'
-record-brace-space: false # rec {x = 1} vs. rec{x = 1}
-indent-wheres: false # 'false' means save space by only half-indenting the 'where' keyword
-diff-friendly-import-export: true # 'false' uses Ormolu-style lists
-respectful: true # don't be too opinionated about newlines etc.
-haddock-style: multi-line # '--' vs. '{-'
-newlines-between-decls: 1 # number of newlines between top-level declarations
-fixities: [] # fixity information, see the section about fixities below.
+comma-style: leading
+import-export-comma-style: leading
+indent-wheres: false
+record-brace-space: false
+diff-friendly-import-export: true
+respectful: true
+haddock-style: multi-line
+newlines-between-decls: 1
+fixities: []
 ```
 
-A config to simulate the behaviour of Ormolu ([as far as currently possible](https://github.com/fourmolu/fourmolu/issues/38)) would be:
+The configuration that most closely matches Ormolu's styling is:
 
 ```yaml
 indentation: 2
 comma-style: trailing
 import-export-comma-style: trailing
-record-brace-space: true
 indent-wheres: true
+record-brace-space: true
 diff-friendly-import-export: false
 respectful: false
 haddock-style: single-line
@@ -69,7 +90,7 @@ newlines-between-decls: 1
 fixities: []
 ```
 
-These options can also be set on the command line (which takes precedence over config files). Run `fourmolu -h` to see all options.
+Command-line options override options in a configuration file. Run `fourmolu --help` to see all options.
 
 ## Installation
 
