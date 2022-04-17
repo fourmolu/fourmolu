@@ -103,13 +103,26 @@ spec =
           updateConfig = \haddockStyle opts -> opts {poHaddockStyle = pure haddockStyle},
           showTestCase = show,
           testCaseSuffix = suffix1
+        },
+      TestGroup
+        { label = "newlines-between-decls",
+          testCases = (,) <$> [0, 1, 2] <*> allOptions,
+          updateConfig = \(newlines, respectful) opts ->
+            opts
+              { poNewlinesBetweenDecls = pure newlines,
+                poRespectful = pure respectful
+              },
+          showTestCase = \(newlines, respectful) ->
+            show newlines ++ if respectful then " (respectful)" else "",
+          testCaseSuffix = \(newlines, respectful) ->
+            suffixWith [show newlines, if respectful then "respectful" else ""]
         }
     ]
   where
     allOptions :: (Enum a, Bounded a) => [a]
     allOptions = [minBound .. maxBound]
 
-    suffixWith xs = concatMap ('-' :) xs
+    suffixWith xs = concatMap ('-' :) . filter (not . null) $ xs
     suffix1 a1 = suffixWith [show a1]
     suffix2 (a1, a2) = suffixWith [show a1, show a2]
 
