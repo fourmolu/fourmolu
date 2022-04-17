@@ -164,6 +164,8 @@ formatOne CabalDefaultExtensionsOpts {..} mode reqSourceType rawConfig mpath =
 data Opts = Opts
   { -- | Mode of operation
     optMode :: !Mode,
+    -- | Whether to make the output quieter
+    optQuiet :: !Bool,
     -- | Ormolu 'Config'
     optConfig :: !(Config RegionIndices),
     -- | Options for respecting default-extensions from .cabal files
@@ -244,6 +246,11 @@ optsParser =
                 help "Mode of operation: 'stdout' (the default), 'inplace', or 'check'"
               ]
         )
+    <*> (switch . mconcat)
+      [ long "quiet",
+        short 'q',
+        help "Make output quieter"
+      ]
     <*> configParser
     <*> cabalDefaultExtensionsParser
     <*> sourceTypeParser
@@ -494,7 +501,8 @@ mkConfig path Opts {..} = do
   filePrinterOpts <-
     loadConfigFile path >>= \case
       ConfigLoaded f po -> do
-        hPutStrLn stderr $ "Loaded config from: " <> f
+        unless optQuiet $
+          hPutStrLn stderr $ "Loaded config from: " <> f
         printDebug $ show po
         return $ Just po
       ConfigParseError f (_pos, err) -> do
