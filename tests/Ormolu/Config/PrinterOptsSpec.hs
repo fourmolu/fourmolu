@@ -65,6 +65,18 @@ spec =
           updateConfig = \commaStyle opts -> opts {poCommaStyle = pure commaStyle},
           showTestCase = show,
           testCaseSuffix = suffix1
+        },
+      TestGroup
+        { label = "import-export",
+          testCases = (,) <$> allOptions <*> allOptions,
+          updateConfig = \(commaStyle, diffFriendly) opts ->
+            opts
+              { poImportExportCommaStyle = pure commaStyle,
+                poDiffFriendlyImportExport = pure diffFriendly
+              },
+          showTestCase = \(commaStyle, diffFriendly) ->
+            show commaStyle ++ if diffFriendly then " + diff friendly" else "",
+          testCaseSuffix = suffix2
         }
     ]
   where
@@ -73,6 +85,7 @@ spec =
 
     suffixWith xs = concatMap ('-' :) xs
     suffix1 a1 = suffixWith [show a1]
+    suffix2 (a1, a2) = suffixWith [show a1, show a2]
 
 runTestGroup :: TestGroup -> Spec
 runTestGroup TestGroup {..} =
