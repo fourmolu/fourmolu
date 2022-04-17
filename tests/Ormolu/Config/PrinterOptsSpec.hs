@@ -89,6 +89,13 @@ spec =
           updateConfig = \recordBraceSpace opts -> opts {poRecordBraceSpace = pure recordBraceSpace},
           showTestCase = show,
           testCaseSuffix = suffix1
+        },
+      TestGroup
+        { label = "respectful",
+          testCases = allOptions,
+          updateConfig = \respectful opts -> opts {poRespectful = pure respectful},
+          showTestCase = show,
+          testCaseSuffix = suffix1
         }
     ]
   where
