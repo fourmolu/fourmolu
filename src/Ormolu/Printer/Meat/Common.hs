@@ -161,16 +161,23 @@ p_hsDocString hstyle needsNewline (L l str) = do
           ]
 
   let txt' x = unless (T.null x) (txt x)
-      body s = do
-        sequence_ $ intersperse (newline >> s) $ map txt' docLines
+      body s = sequence_ $ intersperse s $ map txt' docLines
 
   if useSingleLineComments
     then do
       txt $ "-- " <> haddockDelim
-      body $ txt "--"
+      body $ newline >> txt "--"
     else do
       txt $ "{- " <> haddockDelim
-      body $ pure ()
+      -- 'newline' doesn't allow multiple blank newlines, which changes the comment
+      -- if the user writes a comment with multiple newlines. So we have to do this
+      -- to force the printer to output a newline. The HaddockSingleLine branch
+      -- doesn't have this problem because each newline has at least "--".
+      --
+      -- 'newline' also takes indentation into account, but since multiline comments
+      -- are never used in an indented context (see useSingleLineComments), this is
+      -- safe
+      body $ txt "\n"
       newline
       txt "-}"
 
