@@ -148,7 +148,6 @@ p_hsDocString hstyle needsNewline (L l str) = do
   -- Make sure the Haddock is separated by a newline from other comments.
   when goesAfterComment newline
   let txt' x = unless (T.null x) (txt x)
-      docLines = splitDocString str
       body s = do
         txt $ case hstyle of
           Pipe -> " |"
@@ -161,24 +160,20 @@ p_hsDocString hstyle needsNewline (L l str) = do
       HaddockSingleLine -> pure True
       -- Use multiple single-line comments when the whole comment is indented
       HaddockMultiLine -> maybe False ((> 1) . srcSpanStartCol) <$> getSrcSpan l
-  if single
+  if single || length docLines <= 1
     then do
       txt "--"
       body $ txt "--"
-    else
-      if length docLines <= 1
-        then do
-          txt "--"
-          body $ pure ()
-        else do
-          txt "{-"
-          body $ pure ()
-          newline
-          txt "-}"
+    else do
+      txt "{-"
+      body $ pure ()
+      newline
+      txt "-}"
 
   when needsNewline newline
   getSrcSpan l >>= mapM_ (setSpanMark . HaddockSpan hstyle)
   where
+    docLines = splitDocString str
     getSrcSpan = \case
       -- It's often the case that the comment itself doesn't have a span
       -- attached to it and instead its location can be obtained from
