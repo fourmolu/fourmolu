@@ -16,6 +16,7 @@ module Ormolu.Printer.Meat.Common
 where
 
 import Control.Monad
+import Data.Foldable (traverse_)
 import Data.List (intersperse)
 import qualified Data.Text as T
 import GHC.Hs.Doc
@@ -147,6 +148,18 @@ p_hsDocString hstyle needsNewline (L l str) = do
   goesAfterComment <- maybe False isCommentSpan <$> getSpanMark
   -- Make sure the Haddock is separated by a newline from other comments.
   when goesAfterComment newline
+
+  mSrcSpan <- getSrcSpan l
+
+  printStyle <- getPrinterOpt poHaddockStyle
+  let useSingleLineComments =
+        or
+          [ printStyle == HaddockSingleLine,
+            length docLines <= 1,
+            -- Use multiple single-line comments when the whole comment is indented
+            maybe False ((> 1) . srcSpanStartCol) mSrcSpan
+          ]
+
   let txt' x = unless (T.null x) (txt x)
       body s = do
         txt $ case hstyle of
@@ -155,12 +168,8 @@ p_hsDocString hstyle needsNewline (L l str) = do
           Asterisk n -> " " <> T.replicate n "*"
           Named name -> " $" <> T.pack name
         sequence_ $ intersperse (newline >> s) $ map txt' docLines
-  single <-
-    getPrinterOpt poHaddockStyle >>= \case
-      HaddockSingleLine -> pure True
-      -- Use multiple single-line comments when the whole comment is indented
-      HaddockMultiLine -> maybe False ((> 1) . srcSpanStartCol) <$> getSrcSpan l
-  if single || length docLines <= 1
+
+  if useSingleLineComments
     then do
       txt "--"
       body $ txt "--"
@@ -171,7 +180,7 @@ p_hsDocString hstyle needsNewline (L l str) = do
       txt "-}"
 
   when needsNewline newline
-  getSrcSpan l >>= mapM_ (setSpanMark . HaddockSpan hstyle)
+  traverse_ (setSpanMark . HaddockSpan hstyle) mSrcSpan
   where
     docLines = splitDocString str
     getSrcSpan = \case
