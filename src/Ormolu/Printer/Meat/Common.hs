@@ -162,19 +162,14 @@ p_hsDocString hstyle needsNewline (L l str) = do
 
   let txt' x = unless (T.null x) (txt x)
       body s = do
-        txt $ case hstyle of
-          Pipe -> " |"
-          Caret -> " ^"
-          Asterisk n -> " " <> T.replicate n "*"
-          Named name -> " $" <> T.pack name
         sequence_ $ intersperse (newline >> s) $ map txt' docLines
 
   if useSingleLineComments
     then do
-      txt "--"
+      txt $ "-- " <> haddockDelim
       body $ txt "--"
     else do
-      txt "{-"
+      txt $ "{- " <> haddockDelim
       body $ pure ()
       newline
       txt "-}"
@@ -183,6 +178,12 @@ p_hsDocString hstyle needsNewline (L l str) = do
   traverse_ (setSpanMark . HaddockSpan hstyle) mSrcSpan
   where
     docLines = splitDocString str
+    haddockDelim =
+      case hstyle of
+        Pipe -> "|"
+        Caret -> "^"
+        Asterisk n -> T.replicate n "*"
+        Named name -> "$" <> T.pack name
     getSrcSpan = \case
       -- It's often the case that the comment itself doesn't have a span
       -- attached to it and instead its location can be obtained from
