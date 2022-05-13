@@ -8,7 +8,7 @@ repos:
         files: '\.(hs|hs-boot)$'
         exclude: |
           (?x)^(
-            region-tests/
+            region-tests/(?!Main.hs)
             | data/examples/
             | data/diff-tests/
             | data/parse-failures/
