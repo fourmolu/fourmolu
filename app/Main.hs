@@ -545,7 +545,8 @@ mkConfig path Opts {..} = do
     loadConfigFile path >>= \case
       ConfigLoaded f po -> do
         unless optQuiet $
-          hPutStrLn stderr $ "Loaded config from: " <> f
+          hPutStrLn stderr $
+            "Loaded config from: " <> f
         printDebug $ show po
         return $ Just po
       ConfigParseError f (_pos, err) -> do
@@ -559,8 +560,8 @@ mkConfig path Opts {..} = do
       ConfigNotFound searchDirs -> do
         printDebug
           . unlines
-          $ ("No " ++ show configFileName ++ " found in any of:") :
-          map ("  " ++) searchDirs
+          $ ("No " ++ show configFileName ++ " found in any of:")
+            : map ("  " ++) searchDirs
         return Nothing
   return $
     optConfig
