@@ -26,6 +26,9 @@ module Ormolu.Printer.Combinators
     inciIf,
     inciByFrac,
     inciHalf,
+    askSourceType,
+    askFixityOverrides,
+    askFixityMap,
     located,
     located',
     switchLayout,
@@ -66,6 +69,10 @@ module Ormolu.Printer.Combinators
     HaddockStyle (..),
     setSpanMark,
     getSpanMark,
+
+    -- ** Placement
+    Placement (..),
+    placeHanging,
   )
 where
 
@@ -316,3 +323,32 @@ commaDel =
 -- | Print @=@. Do not use @'txt' "="@.
 equals :: R ()
 equals = interferingTxt "="
+
+----------------------------------------------------------------------------
+-- Placement
+
+-- | Expression placement. This marks the places where expressions that
+-- implement handing forms may use them.
+data Placement
+  = -- | Multi-line layout should cause
+    -- insertion of a newline and indentation
+    -- bump
+    Normal
+  | -- | Expressions that have hanging form
+    -- should use it and avoid bumping one level
+    -- of indentation
+    Hanging
+  deriving (Eq, Show)
+
+-- | Place a thing that may have a hanging form. This function handles how
+-- to separate it from preceding expressions and whether to bump indentation
+-- depending on what sort of expression we have.
+placeHanging :: Placement -> R () -> R ()
+placeHanging placement m =
+  case placement of
+    Hanging -> do
+      space
+      m
+    Normal -> do
+      breakpoint
+      inci m

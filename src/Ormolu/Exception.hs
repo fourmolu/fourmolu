@@ -1,6 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TupleSections #-}
 
 -- | 'OrmoluException' type and surrounding definitions.
 module Ormolu.Exception
@@ -13,12 +12,15 @@ import Control.Exception
 import Control.Monad (forM_)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as NE
+import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Void (Void)
 import GHC.Types.SrcLoc
 import Ormolu.Diff.Text (TextDiff, printTextDiff)
 import Ormolu.Terminal
 import System.Exit (ExitCode (..))
 import System.IO
+import Text.Megaparsec (ParseErrorBundle, errorBundlePretty)
 
 -- | Ormolu exception representing all cases when Ormolu can fail.
 data OrmoluException
@@ -27,7 +29,7 @@ data OrmoluException
   | -- | Parsing of formatted source code failed
     OrmoluOutputParsingFailed SrcSpan String
   | -- | Original and resulting ASTs differ
-    OrmoluASTDiffers FilePath [SrcSpan]
+    OrmoluASTDiffers TextDiff [RealSrcSpan]
   | -- | Formatted source code is not idempotent
     OrmoluNonIdempotentOutput TextDiff
   | -- | Some GHC options were not recognized
@@ -37,6 +39,8 @@ data OrmoluException
   | -- | Missing input file path when using stdin input and
     -- accounting for .cabal files
     OrmoluMissingStdinInputFile
+  | -- | A parse error in a fixity overrides file
+    OrmoluFixityOverridesParseError (ParseErrorBundle Text Void)
   deriving (Eq, Show)
 
 instance Exception OrmoluException
@@ -61,16 +65,18 @@ printOrmoluException = \case
     put "  "
     put (T.pack e)
     newline
-  OrmoluASTDiffers path ss -> do
-    putS path
+  OrmoluASTDiffers diff ss -> do
+    printTextDiff diff
     newline
     put "  AST of input and AST of formatted code differ."
     newline
     forM_ ss $ \s -> do
       put "    at "
-      putSrcSpan s
+      putRealSrcSpan s
       newline
     put "  Please, consider reporting the bug."
+    newline
+    put "  To format anyway, use --unsafe."
     newline
   OrmoluNonIdempotentOutput diff -> do
     printTextDiff diff
@@ -94,6 +100,9 @@ printOrmoluException = \case
     put "The --stdin-input-file option is necessary when using input"
     newline
     put "from stdin and accounting for .cabal files"
+    newline
+  OrmoluFixityOverridesParseError errorBundle -> do
+    putS (errorBundlePretty errorBundle)
     newline
 
 -- | Inside this wrapper 'OrmoluException' will be caught and displayed
@@ -119,3 +128,4 @@ withPrettyOrmoluExceptions colorMode m = m `catch` h
           OrmoluUnrecognizedOpts {} -> 7
           OrmoluCabalFileParsingFailed {} -> 8
           OrmoluMissingStdinInputFile {} -> 9
+          OrmoluFixityOverridesParseError {} -> 10

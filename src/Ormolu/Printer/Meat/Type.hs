@@ -26,13 +26,13 @@ import Control.Monad
 import Data.Foldable (for_)
 import GHC.Hs
 import GHC.Types.Basic hiding (isPromoted)
-import GHC.Types.Name.Reader
 import GHC.Types.SourceText
 import GHC.Types.SrcLoc
 import GHC.Types.Var
 import Ormolu.Config
 import Ormolu.Printer.Combinators
 import Ormolu.Printer.Meat.Common
+import {-# SOURCE #-} Ormolu.Printer.Meat.Declaration.OpTree (p_tyOpTree, tyOpTree)
 import {-# SOURCE #-} Ormolu.Printer.Meat.Declaration.Value (p_hsSplice, p_stringLit)
 import Ormolu.Printer.Operators
 import Ormolu.Utils
@@ -124,11 +124,13 @@ p_hsType' multilineArgs docStyle = \case
      in parens' $ sep commaDel (sitcc . located' p_hsType) xs
   HsSumTy _ xs ->
     parensHash N $
-      sep (txt "|" >> breakpoint) (sitcc . located' p_hsType) xs
-  HsOpTy _ x op y ->
-    sitcc $
-      let opTree = OpBranch (tyOpTree x) op (tyOpTree y)
-       in p_tyOpTree (reassociateOpTree Just opTree)
+      sep (space >> txt "|" >> breakpoint) (sitcc . located' p_hsType) xs
+  HsOpTy _ x op y -> do
+    fixityOverrides <- askFixityOverrides
+    fixityMap <- askFixityMap
+    let opTree = OpBranches [tyOpTree x, tyOpTree y] [op]
+    p_tyOpTree
+      (reassociateOpTree (Just . unLoc) fixityOverrides fixityMap opTree)
   HsParTy _ t ->
     parens N $ sitcc $ located t p_hsType
   HsIParamTy _ n t -> sitcc $ do
@@ -277,22 +279,6 @@ p_conDeclField ConDeclField {..} = do
   sitcc . inci $ p_hsType (unLoc cd_fld_type)
   when (commaStyle == Leading) $
     mapM_ (inciByFrac (-1) . (newline >>) . p_hsDocString Caret False) cd_fld_doc
-
-tyOpTree :: LHsType GhcPs -> OpTree (LHsType GhcPs) (LocatedN RdrName)
-tyOpTree (L _ (HsOpTy _ l op r)) =
-  OpBranch (tyOpTree l) op (tyOpTree r)
-tyOpTree n = OpNode n
-
-p_tyOpTree :: OpTree (LHsType GhcPs) (LocatedN RdrName) -> R ()
-p_tyOpTree (OpNode n) = located n p_hsType
-p_tyOpTree (OpBranch l op r) = do
-  switchLayout [opTreeLoc l] $
-    p_tyOpTree l
-  breakpoint
-  inci . switchLayout [opTreeLoc r] $ do
-    p_rdrName op
-    space
-    p_tyOpTree r
 
 p_lhsTypeArg :: LHsTypeArg GhcPs -> R ()
 p_lhsTypeArg = \case

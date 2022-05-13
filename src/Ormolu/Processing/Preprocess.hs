@@ -67,7 +67,8 @@ preprocess cppEnabled region rawInput = rawSnippetsAndRegionsToFormat
         if all isSpace (linesInRegion r rawInput)
           then [blankRawSnippet]
           else
-            [blankRawSnippet | isBlankLine regionPrefixLength] <> [Right r]
+            [blankRawSnippet | isBlankLine regionPrefixLength]
+              <> [Right r]
               <> [blankRawSnippet | isBlankLine (rawLineLength - regionSuffixLength - 1)]
       Left r -> [Left r]
       where
@@ -172,11 +173,10 @@ isMagicComment ::
   String ->
   -- | String to test
   String ->
-  -- | Whether or not the two strings watch
-  Bool
-isMagicComment expected s0 = isJust $ do
+  -- | If the two strings match, we return the rest of the line.
+  Maybe String
+isMagicComment expected s0 = do
   let trim = dropWhile isSpace
   s1 <- trim <$> L.stripPrefix "{-" (trim s0)
   s2 <- trim <$> L.stripPrefix expected s1
-  s3 <- L.stripPrefix "-}" s2
-  guard (all isSpace s3)
+  L.stripPrefix "-}" s2

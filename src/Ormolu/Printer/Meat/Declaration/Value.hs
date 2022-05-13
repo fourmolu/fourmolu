@@ -1,8 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -14,6 +12,10 @@ module Ormolu.Printer.Meat.Declaration.Value
     p_hsExpr,
     p_hsSplice,
     p_stringLit,
+    p_hsExpr',
+    p_hsCmdTop,
+    exprPlacement,
+    cmdTopPlacement,
   )
 where
 
@@ -38,7 +40,6 @@ import GHC.LanguageExtensions.Type (Extension (NegativeLiterals))
 import GHC.Parser.CharClass (is_space)
 import GHC.Types.Basic
 import GHC.Types.Fixity
-import GHC.Types.Name.Occurrence (occNameString)
 import GHC.Types.Name.Reader
 import GHC.Types.SourceText
 import GHC.Types.SrcLoc
@@ -47,6 +48,7 @@ import Ormolu.Printer.Combinators
 import Ormolu.Printer.Internal (sitccIfTrailing)
 import Ormolu.Printer.Meat.Common
 import {-# SOURCE #-} Ormolu.Printer.Meat.Declaration
+import {-# SOURCE #-} Ormolu.Printer.Meat.Declaration.OpTree
 import Ormolu.Printer.Meat.Declaration.Signature
 import Ormolu.Printer.Meat.Type
 import Ormolu.Printer.Operators
@@ -64,19 +66,6 @@ data MatchGroupStyle
 data GroupStyle
   = EqualSign
   | RightArrow
-
--- | Expression placement. This marks the places where expressions that
--- implement handing forms may use them.
-data Placement
-  = -- | Multi-line layout should cause
-    -- insertion of a newline and indentation
-    -- bump
-    Normal
-  | -- | Expressions that have hanging form
-    -- should use it and avoid bumping one level
-    -- of indentation
-    Hanging
-  deriving (Eq, Show)
 
 p_valDecl :: HsBindLR GhcPs GhcPs -> R ()
 p_valDecl = \case
@@ -354,10 +343,14 @@ p_hsCmd' s = \case
     located form p_hsExpr
     unless (null cmds) $ do
       breakpoint
-      inci (sequence_ (intersperse breakpoint (located' p_hsCmdTop <$> cmds)))
-  HsCmdArrForm _ form Infix _ [left, right] ->
-    let opTree = OpBranch (cmdOpTree left) form (cmdOpTree right)
-     in p_cmdOpTree (reassociateOpTree getOpName opTree)
+      inci (sequence_ (intersperse breakpoint (located' (p_hsCmdTop N) <$> cmds)))
+  HsCmdArrForm _ form Infix _ [left, right] -> do
+    fixityOverrides <- askFixityOverrides
+    fixityMap <- askFixityMap
+    let opTree = OpBranches [cmdOpTree left, cmdOpTree right] [form]
+    p_cmdOpTree
+      s
+      (reassociateOpTree (getOpName . unLoc) fixityOverrides fixityMap opTree)
   HsCmdArrForm _ _ Infix _ _ -> notImplemented "HsCmdArrForm"
   HsCmdApp _ cmd expr -> do
     located cmd (p_hsCmd' s)
@@ -377,8 +370,9 @@ p_hsCmd' s = \case
     txt "do"
     p_stmts cmdPlacement (p_hsCmd' S) es
 
-p_hsCmdTop :: HsCmdTop GhcPs -> R ()
-p_hsCmdTop (HsCmdTop _ cmd) = located cmd p_hsCmd
+-- | Print a top-level command.
+p_hsCmdTop :: BracketStyle -> HsCmdTop GhcPs -> R ()
+p_hsCmdTop s (HsCmdTop _ cmd) = located cmd (p_hsCmd' s)
 
 -- | Render an expression preserving blank lines between such consecutive
 -- expressions found in the original source code.
@@ -692,8 +686,12 @@ p_hsExpr' s = \case
         _ -> return ()
       located (hswc_body a) p_hsType
   OpApp _ x op y -> do
-    let opTree = OpBranch (exprOpTree x) op (exprOpTree y)
-    p_exprOpTree s (reassociateOpTree getOpName opTree)
+    fixityOverrides <- askFixityOverrides
+    fixityMap <- askFixityMap
+    let opTree = OpBranches [exprOpTree x, exprOpTree y] [op]
+    p_exprOpTree
+      s
+      (reassociateOpTree (getOpName . unLoc) fixityOverrides fixityMap opTree)
   NegApp _ e _ -> do
     negativeLiterals <- isExtensionEnabled NegativeLiterals
     let isLiteral = case unLoc e of
@@ -857,7 +855,7 @@ p_hsExpr' s = \case
       breakpoint
     txt "->"
     placeHanging (cmdTopPlacement (unLoc e)) $
-      located e p_hsCmdTop
+      located e (p_hsCmdTop N)
   HsStatic _ e -> do
     txt "static"
     breakpoint
@@ -874,21 +872,25 @@ p_hsExpr' s = \case
 
 p_patSynBind :: PatSynBind GhcPs GhcPs -> R ()
 p_patSynBind PSB {..} = do
-  let rhs = do
+  let rhs conSpans = do
         space
+        let pattern_def_spans = [getLocA psb_id, getLocA psb_def] ++ conSpans
         case psb_dir of
-          Unidirectional -> do
-            txt "<-"
-            breakpoint
-            located psb_def p_pat
-          ImplicitBidirectional -> do
-            equals
-            breakpoint
-            located psb_def p_pat
+          Unidirectional ->
+            switchLayout pattern_def_spans $ do
+              txt "<-"
+              breakpoint
+              located psb_def p_pat
+          ImplicitBidirectional ->
+            switchLayout pattern_def_spans $ do
+              equals
+              breakpoint
+              located psb_def p_pat
           ExplicitBidirectional mgroup -> do
-            txt "<-"
-            breakpoint
-            located psb_def p_pat
+            switchLayout pattern_def_spans $ do
+              txt "<-"
+              breakpoint
+              located psb_def p_pat
             breakpoint
             txt "where"
             breakpoint
@@ -899,22 +901,25 @@ p_patSynBind PSB {..} = do
       space
       p_rdrName psb_id
       inci $ do
-        switchLayout (getLocA <$> xs) $ do
+        let conSpans = getLocA <$> xs
+        switchLayout conSpans $ do
           unless (null xs) breakpoint
           sitcc (sep breakpoint p_rdrName xs)
-        rhs
+        rhs conSpans
     PrefixCon (v : _) _ -> absurd v
     RecCon xs -> do
       space
       p_rdrName psb_id
       inci $ do
-        switchLayout (getLocA . recordPatSynPatVar <$> xs) $ do
+        let conSpans = getLocA . recordPatSynPatVar <$> xs
+        switchLayout conSpans $ do
           unless (null xs) breakpointPreRecordBrace
           braces N $
             sep commaDel (p_rdrName . recordPatSynPatVar) xs
-        rhs
+        rhs conSpans
     InfixCon l r -> do
-      switchLayout [getLocA l, getLocA r] $ do
+      let conSpans = [getLocA l, getLocA r]
+      switchLayout conSpans $ do
         space
         p_rdrName l
         breakpoint
@@ -922,7 +927,7 @@ p_patSynBind PSB {..} = do
           p_rdrName psb_id
           space
           p_rdrName r
-      inci rhs
+      inci (rhs conSpans)
 
 p_case ::
   ( Anno (GRHS GhcPs (LocatedA body)) ~ SrcSpan,
@@ -1183,9 +1188,7 @@ p_hsBracket epAnn = \case
           Just HsStarTy {} -> True
           _ -> False
 
--- Print the source text of a string literal while indenting
--- gaps correctly.
-
+-- | Print the source text of a string literal while indenting gaps correctly.
 p_stringLit :: String -> R ()
 p_stringLit src =
   let s = splitGaps src
@@ -1252,21 +1255,7 @@ getGRHSSpan :: GRHS GhcPs (LocatedA body) -> SrcSpan
 getGRHSSpan (GRHS _ guards body) =
   combineSrcSpans' $ getLocA body :| map getLocA guards
 
--- | Place a thing that may have a hanging form. This function handles how
--- to separate it from preceding expressions and whether to bump indentation
--- depending on what sort of expression we have.
-placeHanging :: Placement -> R () -> R ()
-placeHanging placement m =
-  case placement of
-    Hanging -> do
-      space
-      m
-    Normal -> do
-      breakpoint
-      inci m
-
--- | Check if given block contains single expression which has a hanging
--- form.
+-- | Determine placement of a given block.
 blockPlacement ::
   (body -> Placement) ->
   [LGRHS GhcPs (LocatedA body)] ->
@@ -1274,7 +1263,7 @@ blockPlacement ::
 blockPlacement placer [L _ (GRHS _ _ (L _ x))] = placer x
 blockPlacement _ _ = Normal
 
--- | Check if given command has a hanging form.
+-- | Determine placement of a given command.
 cmdPlacement :: HsCmd GhcPs -> Placement
 cmdPlacement = \case
   HsCmdLam _ _ -> Hanging
@@ -1283,6 +1272,7 @@ cmdPlacement = \case
   HsCmdDo _ _ -> Hanging
   _ -> Normal
 
+-- | Determine placement of a top level command.
 cmdTopPlacement :: HsCmdTop GhcPs -> Placement
 cmdTopPlacement (HsCmdTop _ (L _ x)) = cmdPlacement x
 
@@ -1312,138 +1302,12 @@ exprPlacement = \case
       else Normal
   _ -> Normal
 
+-- | Return 'True' if any of the RHS expressions has guards.
 withGuards :: [LGRHS GhcPs body] -> Bool
 withGuards = any (checkOne . unLoc)
   where
     checkOne (GRHS _ [] _) = False
     checkOne _ = True
-
-exprOpTree :: LHsExpr GhcPs -> OpTree (LHsExpr GhcPs) (LHsExpr GhcPs)
-exprOpTree (L _ (OpApp _ x op y)) = OpBranch (exprOpTree x) op (exprOpTree y)
-exprOpTree n = OpNode n
-
-getOpName :: HsExpr GhcPs -> Maybe RdrName
-getOpName = \case
-  HsVar _ (L _ a) -> Just a
-  _ -> Nothing
-
-getOpNameStr :: RdrName -> String
-getOpNameStr = occNameString . rdrNameOcc
-
-p_exprOpTree ::
-  -- | Bracket style to use
-  BracketStyle ->
-  OpTree (LHsExpr GhcPs) (LHsExpr GhcPs) ->
-  R ()
-p_exprOpTree s (OpNode x) = located x (p_hsExpr' s)
-p_exprOpTree s (OpBranch x op y) = do
-  let placement = opBranchPlacement exprPlacement x y
-      -- Distinguish holes used in infix notation.
-      -- eg. '1 _foo 2' and '1 `_foo` 2'
-      opWrapper = case unLoc op of
-        HsUnboundVar _ _ -> backticks
-        _ -> id
-  ub <- opBranchBraceStyle placement
-  let opNameStr = (fmap getOpNameStr . getOpName . unLoc) op
-      gotDollar = opNameStr == Just "$"
-      gotColon = opNameStr == Just ":"
-      lhs =
-        switchLayout [opTreeLoc x] $
-          p_exprOpTree s x
-      p_op = located op (opWrapper . p_hsExpr)
-      p_y = switchLayout [opTreeLoc y] (p_exprOpTree N y)
-      isDoBlock = \case
-        OpNode (L _ HsDo {}) -> True
-        _ -> False
-  if
-      | gotColon -> do
-          ub lhs
-          space
-          p_op
-          case placement of
-            Hanging -> do
-              space
-              p_y
-            Normal -> do
-              breakpoint
-              inciIf (isDoBlock y) p_y
-      | gotDollar
-          && isOneLineSpan (opTreeLoc x)
-          && placement == Normal -> do
-          useBraces lhs
-          space
-          p_op
-          breakpoint
-          inci p_y
-      | otherwise -> do
-          ub lhs
-          let opAndRhs = do
-                p_op
-                space
-                p_y
-              -- distinguish do-block from list comprehensions, which are
-              -- apparently parsed as `HsDo _ ListComp _`
-              isActualDoBlock = \case
-                OpNode (unLoc -> HsDo _ ctx _) ->
-                  case ctx of
-                    DoExpr _ -> True
-                    MDoExpr _ -> True
-                    _ -> False
-                _ -> False
-          -- This case prevents an operator from being indented past the start of a `do` block
-          -- constituting its left operand, thus altering the AST.
-          -- This is only relevant when the `do` block is on one line, as otherwise we will
-          -- insert a newline after `do` anyway.
-          if isActualDoBlock x && isOneLineSpan (opTreeLoc x)
-            then breakpoint >> opAndRhs
-            else placeHanging placement opAndRhs
-
-pattern CmdTopCmd :: HsCmd GhcPs -> LHsCmdTop GhcPs
-pattern CmdTopCmd cmd <- (L _ (HsCmdTop _ (L _ cmd)))
-
-cmdOpTree :: LHsCmdTop GhcPs -> OpTree (LHsCmdTop GhcPs) (LHsExpr GhcPs)
-cmdOpTree = \case
-  CmdTopCmd (HsCmdArrForm _ op Infix _ [x, y]) ->
-    OpBranch (cmdOpTree x) op (cmdOpTree y)
-  n -> OpNode n
-
-p_cmdOpTree :: OpTree (LHsCmdTop GhcPs) (LHsExpr GhcPs) -> R ()
-p_cmdOpTree = \case
-  OpNode n -> located n p_hsCmdTop
-  OpBranch x op y -> do
-    let placement = opBranchPlacement cmdTopPlacement x y
-    ub <- opBranchBraceStyle placement
-    ub $ p_cmdOpTree x
-    placeHanging placement $ do
-      located op p_hsExpr
-      space
-      p_cmdOpTree y
-
-opBranchPlacement ::
-  HasSrcSpan l =>
-  -- | Placement of nodes
-  (ty -> Placement) ->
-  -- | Left branch
-  OpTree (GenLocated l ty) op ->
-  -- | Right branch
-  OpTree (GenLocated l ty) op ->
-  Placement
-opBranchPlacement f x y
-  -- If the beginning of the first argument and the second argument are on
-  -- the same line, and the second argument has a hanging form, use hanging
-  -- placement.
-  | isOneLineSpan (mkSrcSpan (srcSpanStart (opTreeLoc x)) (srcSpanStart (opTreeLoc y))),
-    OpNode (L _ n) <- y =
-      f n
-  | otherwise = Normal
-
-opBranchBraceStyle :: Placement -> R (R () -> R ())
-opBranchBraceStyle placement =
-  getLayout <&> \case
-    SingleLine -> useBraces
-    MultiLine -> case placement of
-      Hanging -> useBraces
-      Normal -> dontUseBraces
 
 -- | For use before record braces. Collapse to empty if not 'poRecordBraceSpace'.
 breakpointPreRecordBrace :: R ()
