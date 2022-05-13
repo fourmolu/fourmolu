@@ -115,10 +115,9 @@ Fourmolu aims to continue merging upstream changes in Ormolu. Whenever Ormolu ma
 1. Add Ormolu as an upstream remote: `git remote add ormolu git@github.com:tweag/ormolu`
 1. Check out a new branch: `git switch -c merge-ormolu`
 1. Pull Ormolu's git history: `git fetch ormolu --no-tags`
-1. Find the commit corresponding to the new Ormolu version and merge it: `git merge <commit>`
+1. Find the commit corresponding to the new Ormolu version and merge it: `git merge <commit> -m 'Merge ormolu-X.Y.Z'`
 1. (Recommended) Switch to diff3 conflicts: `git checkout --conflict=diff3`. This provides more context that might be helpful for resolving conflicts. See [docs](https://git-scm.com/book/en/v2/Git-Tools-Advanced-Merging#_checking_out_conflicts).
 1. Resolve conflicts + finish merge: `git merge --continue`
-    * Rewrite the default commit message to "Merge ormolu-X.Y.Z"
 1. Run tests to ensure everything works well: `stack test`
 
 ### Resolving conflicts
