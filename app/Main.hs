@@ -541,14 +541,14 @@ showDefaultValue =
 -- | Build the full config, by adding 'PrinterOpts' from a file, if found.
 mkConfig :: FilePath -> Opts -> IO (Config RegionIndices)
 mkConfig path Opts {..} = do
-  filePrinterOpts <-
+  mFourmoluConfig <-
     loadConfigFile path >>= \case
-      ConfigLoaded f po -> do
+      ConfigLoaded f cfg -> do
         unless optQuiet $
           hPutStrLn stderr $
             "Loaded config from: " <> f
-        printDebug $ show po
-        return $ Just po
+        printDebug $ show cfg
+        return $ Just cfg
       ConfigParseError f (_pos, err) -> do
         -- we ignore '_pos' due to the note on 'Data.YAML.Aeson.decode1'
         hPutStrLn stderr $
@@ -567,7 +567,7 @@ mkConfig path Opts {..} = do
     optConfig
       { cfgPrinterOpts =
           fillMissingPrinterOpts
-            (optPrinterOpts <> fromMaybe mempty filePrinterOpts)
+            (optPrinterOpts <> maybe mempty cfgFilePrinterOpts mFourmoluConfig)
             (cfgPrinterOpts optConfig)
       }
   where

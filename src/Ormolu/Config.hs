@@ -21,6 +21,7 @@ module Ormolu.Config
     defaultPrinterOpts,
     loadConfigFile,
     configFileName,
+    FourmoluConfig (..),
     ConfigFileLoadResult (..),
     fillMissingPrinterOpts,
     CommaStyle (..),
@@ -33,11 +34,13 @@ where
 
 import Data.Aeson
   ( FromJSON (..),
+    Value (Object),
     camelTo2,
     constructorTagModifier,
     defaultOptions,
     fieldLabelModifier,
     genericParseJSON,
+    withObject,
   )
 import qualified Data.ByteString.Lazy as BS
 import Data.Char (isLower)
@@ -267,6 +270,16 @@ instance FromJSON PrinterOptsPartial where
         { fieldLabelModifier = camelTo2 '-' . dropWhile isLower
         }
 
+data FourmoluConfig = FourmoluConfig
+  { cfgFilePrinterOpts :: PrinterOptsPartial
+  }
+  deriving (Eq, Show)
+
+instance FromJSON FourmoluConfig where
+  parseJSON = withObject "FourmoluConfig" $ \o -> do
+    cfgFilePrinterOpts <- parseJSON (Object o)
+    return FourmoluConfig {..}
+
 -- | Read options from a config file, if found.
 -- Looks recursively in parent folders, then in 'XdgConfig',
 -- for a file named /fourmolu.yaml/.
@@ -284,7 +297,7 @@ loadConfigFile path = do
 
 -- | The result of calling 'loadConfigFile'.
 data ConfigFileLoadResult
-  = ConfigLoaded FilePath PrinterOptsPartial
+  = ConfigLoaded FilePath FourmoluConfig
   | ConfigParseError FilePath (Pos, String)
   | ConfigNotFound [FilePath]
   deriving (Eq, Show)
