@@ -128,7 +128,6 @@ Fourmolu aims to continue merging upstream changes in Ormolu. Whenever Ormolu ma
     * `.buildkite/`
     * `CONTRIBUTING.md`
     * `DESIGN.md`
-    * `default.nix`
     * `format.sh`
     * `nix/`
     * `shell.nix`
@@ -139,6 +138,8 @@ Fourmolu aims to continue merging upstream changes in Ormolu. Whenever Ormolu ma
 
 * The state of the following paths should be the same as they are in Ormolu (i.e. if there's a conflict, use `git checkout --theirs`)
     * `expected-failures/`
+
+* If `default.nix` is changed, manually verify that all end-to-end tests are accounted for. For example, `./region-tests/` is one directory of tests, which is captured in the `fourmolu:region-tests` test suite, where every test in `default.nix` has been ported into the Haskell test suite.
 
 * Any Ormolu additions to `CHANGELOG.md` should be added under a `### Upstream changes:` header in the `Unreleased` section of `CHANGELOG.md`, with the Ormolu headers bumped to `####`. See the CHANGELOG format in the "Release a new version" section.
 

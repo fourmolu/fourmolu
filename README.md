@@ -145,7 +145,7 @@ and
 This allows us to disable formatting selectively for code between these
 markers or disable it for the entire file. To achieve the latter, just put
 `{- FOURMOLU_DISABLE -}` at the very top. Note that for Fourmolu to work the
-fragments where Ormolu is enabled must be parseable on their own. Because of
+fragments where Fourmolu is enabled must be parseable on their own. Because of
 that the magic comments cannot be placed arbitrarily, but rather must
 enclose independent top-level definitions.
 
@@ -156,11 +156,11 @@ and the two styles of magic comments can be mixed.
 
 Many cabal and stack projects use `default-extensions` to enable GHC
 language extensions in all source files. With the
-`--cabal-default-extensions` flag, Ormolu will take them into consideration
+`--cabal-default-extensions` flag, Fourmolu will take them into consideration
 during formatting.
 
 When you format input from stdin, you can pass `--stdin-input-file` which
-will give Ormolu the location of the Haskell source file that should be used
+will give Fourmolu the location of the Haskell source file that should be used
 as the starting point for searching for a suitable .cabal file.
 
 ### Exit codes
