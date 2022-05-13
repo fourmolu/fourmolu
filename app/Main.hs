@@ -291,9 +291,7 @@ cabalOptsParser =
   CabalOpts
     <$> (switch . mconcat)
       [ long "no-cabal",
-        help $
-          "Do not extract default-extensions and dependencies from .cabal files"
-            ++ ", do not look for .ormolu files"
+        help "Do not extract default-extensions and dependencies from .cabal files"
       ]
     <*> (optional . strOption . mconcat)
       [ long "stdin-input-file",
@@ -568,7 +566,11 @@ mkConfig path Opts {..} = do
       { cfgPrinterOpts =
           fillMissingPrinterOpts
             (optPrinterOpts <> maybe mempty cfgFilePrinterOpts mFourmoluConfig)
-            (cfgPrinterOpts optConfig)
+            (cfgPrinterOpts optConfig),
+        cfgFixityOverrides =
+          -- cfgFileFixities should go on the right so that command line
+          -- fixity overrides takes precedence.
+          cfgFixityOverrides optConfig <> maybe mempty cfgFileFixities mFourmoluConfig
       }
   where
     printDebug = when (cfgDebug optConfig) . hPutStrLn stderr

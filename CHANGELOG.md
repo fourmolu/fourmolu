@@ -2,6 +2,14 @@
 
 * Add `--quiet` flag to make the output quieter
 * Removed `--cabal-default-extensions` flag; the behavior is now enabled by default
+* Add `fixities` configuration to `fourmolu.yaml`
+  * See the notes in the Ormolu changelog below, except instead of providing fixity information in a `.ormolu` file, it should be in a `fixities` config option in `fourmolu.yaml`, e.g.
+
+  ```yaml
+  fixities:
+    - 'infixr 8 .='
+    - 'infixr 5 #'
+  ```
 
 #### Ormolu 0.5.0.0
 
@@ -19,11 +27,11 @@
     option (can be repeated many times).
   * The default heuristic algorithm will still try to guess the right
     fixities and precedence.
-  * Fixity overrides can be provided by the user in the familiar Haskell
+  * ~Fixity overrides can be provided by the user in the familiar Haskell
     notation (e.g. `infixr 9 .`, one declaration per line). They are loaded
     by default from the `.ormolu` file that is expected to be in the same
     directory as the `.cabal` file of a given source file. However, if
-    `--no-cabal` is supplied, the `.ormolu` file will not be looked for either.
+    `--no-cabal` is supplied, the `.ormolu` file will not be looked for either.~
     Fixity declarations can be also provided by using the `-f / --fixity`
     command line option, which see.
   * This resolves the following issues: [Issue

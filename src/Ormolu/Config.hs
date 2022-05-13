@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -41,6 +42,8 @@ import Data.Aeson
     fieldLabelModifier,
     genericParseJSON,
     withObject,
+    (.!=),
+    (.:?),
   )
 import qualified Data.ByteString.Lazy as BS
 import Data.Char (isLower)
@@ -53,6 +56,7 @@ import Data.YAML.Aeson (decode1)
 import GHC.Generics (Generic)
 import qualified GHC.Types.SrcLoc as GHC
 import Ormolu.Fixity (FixityMap)
+import Ormolu.Fixity.Parser (parseFixityDeclaration)
 import Ormolu.Terminal (ColorMode (..))
 import System.Directory
   ( XdgDirectory (XdgConfig),
@@ -61,6 +65,7 @@ import System.Directory
     makeAbsolute,
   )
 import System.FilePath (splitPath, (</>))
+import Text.Megaparsec (errorBundlePretty)
 
 -- | Type of sources that can be formatted by Ormolu.
 data SourceType
@@ -236,7 +241,7 @@ instance FromJSON HaddockPrintStyle where
   parseJSON =
     genericParseJSON
       defaultOptions
-        { constructorTagModifier = drop (length "haddock-") . camelTo2 '-'
+        { constructorTagModifier = drop (length ("haddock-" :: String)) . camelTo2 '-'
         }
 
 -- | Convert 'RegionIndices' into 'RegionDeltas'.
@@ -271,13 +276,19 @@ instance FromJSON PrinterOptsPartial where
         }
 
 data FourmoluConfig = FourmoluConfig
-  { cfgFilePrinterOpts :: PrinterOptsPartial
+  { cfgFilePrinterOpts :: PrinterOptsPartial,
+    cfgFileFixities :: FixityMap
   }
   deriving (Eq, Show)
 
 instance FromJSON FourmoluConfig where
   parseJSON = withObject "FourmoluConfig" $ \o -> do
     cfgFilePrinterOpts <- parseJSON (Object o)
+    rawFixities <- o .:? "fixities" .!= []
+    cfgFileFixities <-
+      case mapM parseFixityDeclaration rawFixities of
+        Right fixities -> return . Map.fromList . concat $ fixities
+        Left e -> fail $ errorBundlePretty e
     return FourmoluConfig {..}
 
 -- | Read options from a config file, if found.

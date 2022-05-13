@@ -51,6 +51,7 @@ diff-friendly-import-export: true # 'false' uses Ormolu-style lists
 respectful: true # don't be too opinionated about newlines etc.
 haddock-style: multi-line # '--' vs. '{-'
 newlines-between-decls: 1 # number of newlines between top-level declarations
+fixities: [] # fixity information, see the section about fixities below.
 ```
 
 A config to simulate the behaviour of Ormolu ([as far as currently possible](https://github.com/fourmolu/fourmolu/issues/38)) would be:
@@ -65,6 +66,7 @@ diff-friendly-import-export: false
 respectful: false
 haddock-style: single-line
 newlines-between-decls: 1
+fixities: []
 ```
 
 These options can also be set on the command line (which takes precedence over config files). Run `fourmolu -h` to see all options.
@@ -131,27 +133,24 @@ Fourmolu can be integrated with your editor via the [Haskell Language Server](ht
 
 ### Language extensions, dependencies, and fixities
 
-Ormolu automatically locates the Cabal file that corresponds to a given
+Fourmolu automatically locates the Cabal file that corresponds to a given
 source code file. When input comes from stdin, one can pass
-`--stdin-input-file` which will give Ormolu the location of the Haskell
+`--stdin-input-file` which will give Fourmolu the location of the Haskell
 source file that should be used as the starting point for searching for a
 suitable Cabal file. Cabal files are used to extract both default extensions
 and dependencies. Default extensions directly affect behavior of the GHC
 parser, while dependencies are used to figure out fixities of operators that
-appear in the source code. Fixities can also be overridden if `.ormolu` file
-is found next to the corresponding Cabal file, i.e. they should be siblings
-in the same directory.
+appear in the source code. Fixities can also be overridden with the `fixities` configuration option in `fourmolu.yaml`, e.g.
 
-Here is an example of `.ormolu` file:
-
-```haskell
-infixr 9  .
-infixr 5  ++
-infixl 4  <$
-infixl 1  >>, >>=
-infixr 1  =<<
-infixr 0  $, $!
-infixl 4 <*>, <*, *>, <**>
+```yaml
+fixities:
+  - infixr 9  .
+  - infixr 5  ++
+  - infixl 4  <$
+  - infixl 1  >>, >>=
+  - infixr 1  =<<
+  - infixr 0  $, $!
+  - infixl 4 <*>, <*, *>, <**>
 ```
 
 It uses exactly the same syntax as usual Haskell fixity declarations to make
@@ -164,7 +163,7 @@ command line:
 * Dependencies can be specified with the `-p` or `--package` flag.
 * Fixities can be specified with the `-f` or `--fixity` flag.
 
-Searching for both `.cabal` and `.ormolu` files can be disabled by passing
+Searching for `.cabal` files can be disabled by passing
 `--no-cabal`.
 
 ### Magic comments
