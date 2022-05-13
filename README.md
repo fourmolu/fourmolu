@@ -192,7 +192,7 @@ and the two styles of magic comments can be mixed.
 
 ### Regions
 
-One can ask Ormolu to format a region of input and leave the rest
+One can ask Fourmolu to format a region of input and leave the rest
 unformatted. This is accomplished by passing the `--start-line` and
 `--end-line` command line options. `--start-line` defaults to the beginning
 of the file, while `--end-line` defaults to the end.
