@@ -21,6 +21,7 @@ import GHC.Types.Fixity
 import GHC.Types.Name (occNameString)
 import GHC.Types.Name.Reader (RdrName, rdrNameOcc)
 import GHC.Types.SrcLoc
+import Ormolu.Config (poIndentation)
 import Ormolu.Printer.Combinators
 import Ormolu.Printer.Meat.Common (p_rdrName)
 import Ormolu.Printer.Meat.Declaration.Value
@@ -129,6 +130,7 @@ p_exprOpTree s t@(OpBranches exprs ops) = do
       -- trailing, then put them in a trailing position
       isTrailing = all couldBeTrailing $ zip exprs ops
   ub <- if isTrailing then return useBraces else opBranchBraceStyle placement
+  indent <- getPrinterOpt poIndentation
   let p_x = ub $ p_exprOpTree s firstExpr
       putOpsExprs prevExpr (opi : ops') (expr : exprs') = do
         let isLast = null exprs'
@@ -156,7 +158,17 @@ p_exprOpTree s t@(OpBranches exprs ops) = do
                 p_y
                 putOpsExprs expr ops' exprs'
           else do
-            placeHanging placement $ do
+            let withPlacement m =
+                  -- This case prevents an operator from being indented past the start of a `do` block
+                  -- constituting its left operand, thus altering the AST.
+                  -- This is only relevant when the `do` block is on one line, as otherwise we will
+                  -- insert a newline after `do` anyway.
+                  -- This isn't an issue in Ormolu because this problem doesn't come up with 2-space
+                  -- indents, only when the indentation goes past the "do" column.
+                  if indent > 2 && isDoBlock firstExpr && isOneLineSpan (opTreeLoc firstExpr)
+                    then breakpoint >> m
+                    else placeHanging placement m
+            withPlacement $ do
               p_op
               space
               p_y
