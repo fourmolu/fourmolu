@@ -1,7 +1,7 @@
 main =
   do stuff
-  `finally` do
-    recover
+    `finally` do
+      recover
 
 main = do stuff `finally` recover
 
