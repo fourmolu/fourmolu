@@ -152,19 +152,19 @@ linePragmaLines :: String -> IntSet
 linePragmaLines = linesFiltered ("{-# LINE" `L.isPrefixOf`)
 
 -- | If the given string is an enabling marker (Ormolu or Fourmolu style), then
--- return 'Just' the enabling marker. Otherwise return 'Nothing'.
+-- return 'Just' the enabling marker + rest of the string. Otherwise return 'Nothing'.
 enablingMagicComment :: String -> Maybe String
 enablingMagicComment s
-  | isMagicComment "ORMOLU_ENABLE" s = Just "{- ORMOLU_ENABLE -}"
-  | isMagicComment "FOURMOLU_ENABLE" s = Just "{- FOURMOLU_ENABLE -}"
+  | Just rest <- isMagicComment "ORMOLU_ENABLE" s = Just $ "{- ORMOLU_ENABLE -}" <> rest
+  | Just rest <- isMagicComment "FOURMOLU_ENABLE" s = Just $ "{- FOURMOLU_ENABLE -}" <> rest
   | otherwise = Nothing
 
 -- | If the given string is a disabling marker (Ormolu or Fourmolu style), then
--- return 'Just' the disabling marker. Otherwise return 'Nothing'.
+-- return 'Just' the disabling marker + rest of the string. Otherwise return 'Nothing'.
 disablingMagicComment :: String -> Maybe String
 disablingMagicComment s
-  | isMagicComment "ORMOLU_DISABLE" s = Just "{- ORMOLU_DISABLE -}"
-  | isMagicComment "FOURMOLU_DISABLE" s = Just "{- FOURMOLU_DISABLE -}"
+  | Just rest <- isMagicComment "ORMOLU_DISABLE" s = Just $ "{- ORMOLU_DISABLE -}" <> rest
+  | Just rest <- isMagicComment "FOURMOLU_DISABLE" s = Just $ "{- FOURMOLU_DISABLE -}" <> rest
   | otherwise = Nothing
 
 -- | Construct a function for whitespace-insensitive matching of string.
