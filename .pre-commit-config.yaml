@@ -3,7 +3,7 @@ repos:
     hooks:
       - id: fourmolu
         name: fourmolu
-        entry: scripts/run-fourmolu.sh --cabal-default-extensions --mode=inplace
+        entry: scripts/run-fourmolu.sh --mode=inplace
         language: system
         files: '\.(hs|hs-boot)$'
         exclude: |

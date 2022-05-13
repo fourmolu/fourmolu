@@ -1,6 +1,7 @@
 ## Unreleased
 
 * Add `--quiet` flag to make the output quieter
+* Removed `--cabal-default-extensions` flag; the behavior is now enabled by default
 
 #### Ormolu 0.5.0.0
 

@@ -16,7 +16,7 @@ Some things to keep in mind when making changes:
 After building from source (see `README.md`), you can run Fourmolu with
 
 ```bash
-scripts/run-fourmolu.sh --cabal-default-extensions --mode=inplace ...
+scripts/run-fourmolu.sh --mode=inplace ...
 ```
 
 This script automatically detects whether you built `fourmolu` with Stack or Cabal. If the auto-detection isn't working out, you can override it by setting `export BUILD_TYPE={stack,cabal}` in your environment.
