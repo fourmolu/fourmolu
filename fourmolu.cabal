@@ -175,7 +175,6 @@ test-suite region-tests
 
     default-language:   Haskell2010
     build-depends:
-        fourmolu,
         base >=4.14 && <5.0,
         directory >=1.3 && <1.4,
         hspec >=2.0 && <3.0,
