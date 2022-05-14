@@ -15,7 +15,7 @@ main = hspec $
           readProcess fourmoluExe $
             ["region-tests/src.hs", "--check-idempotence"] ++ testArgs
         expected <- readFile $ "region-tests/" ++ testExpectedFileName
-        expected `shouldBe` actual
+        actual `shouldBe` expected
 
 data Test = Test
   { testLabel :: String,
