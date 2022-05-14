@@ -1,6 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
 
-import Control.Monad (forM_)
+import Control.Monad (forM_, when)
 import System.Directory (findExecutable)
 import System.Exit (ExitCode (..))
 import System.Process (readProcessWithExitCode)
@@ -11,9 +11,9 @@ main = hspec $
   describe "region-tests" . beforeAll getExe $
     forM_ tests $ \Test {..} ->
       specify testLabel $ \fourmoluExe -> do
-        let args = ["region-tests/src.hs", "--check-idempotence"] ++ testArgs
-        (code, actual, _) <- readProcessWithExitCode fourmoluExe args ""
-        code `shouldBe` ExitSuccess
+        actual <-
+          readProcess fourmoluExe $
+            ["region-tests/src.hs", "--check-idempotence"] ++ testArgs
         expected <- readFile $ "region-tests/" ++ testExpectedFileName
         expected `shouldBe` actual
 
@@ -70,3 +70,15 @@ tests =
 -- | Find a `fourmolu` executable on PATH.
 getExe :: IO FilePath
 getExe = findExecutable "fourmolu" >>= maybe (fail "Could not find fourmolu executable") return
+
+readProcess :: FilePath -> [String] -> IO String
+readProcess cmd args = do
+  (code, stdout, stderr) <- readProcessWithExitCode cmd args ""
+  when (code /= ExitSuccess) $ do
+    putStrLn $ "Command failed: " ++ (unwords . map (\s -> "\"" ++ s ++ "\"")) (cmd : args)
+    putStrLn "========== stdout =========="
+    putStrLn stdout
+    putStrLn "========== stderr =========="
+    putStrLn stderr
+    fail "Command failed. See output for more details."
+  return stdout
