@@ -33,26 +33,14 @@ module Ormolu.Config
   )
 where
 
-import Data.Aeson
-  ( FromJSON (..),
-    Value (Object),
-    camelTo2,
-    constructorTagModifier,
-    defaultOptions,
-    fieldLabelModifier,
-    genericParseJSON,
-    withObject,
-    (.!=),
-    (.:?),
-  )
-import qualified Data.ByteString.Lazy as BS
+import Data.Aeson ((.!=), (.:?))
+import qualified Data.Aeson as Aeson
 import Data.Char (isLower)
 import Data.Functor.Identity (Identity (..))
 import qualified Data.Map.Strict as Map
 import Data.Set (Set)
 import qualified Data.Set as Set
-import Data.YAML (Pos)
-import Data.YAML.Aeson (decode1)
+import qualified Data.Yaml as Yaml
 import GHC.Generics (Generic)
 import qualified GHC.Types.SrcLoc as GHC
 import Ormolu.Fixity (FixityMap)
@@ -225,11 +213,11 @@ data CommaStyle
   | Trailing
   deriving (Eq, Ord, Show, Generic, Bounded, Enum)
 
-instance FromJSON CommaStyle where
+instance Aeson.FromJSON CommaStyle where
   parseJSON =
-    genericParseJSON
-      defaultOptions
-        { constructorTagModifier = camelTo2 '-'
+    Aeson.genericParseJSON
+      Aeson.defaultOptions
+        { Aeson.constructorTagModifier = Aeson.camelTo2 '-'
         }
 
 data HaddockPrintStyle
@@ -237,11 +225,11 @@ data HaddockPrintStyle
   | HaddockMultiLine
   deriving (Eq, Ord, Show, Generic, Bounded, Enum)
 
-instance FromJSON HaddockPrintStyle where
+instance Aeson.FromJSON HaddockPrintStyle where
   parseJSON =
-    genericParseJSON
-      defaultOptions
-        { constructorTagModifier = drop (length ("haddock-" :: String)) . camelTo2 '-'
+    Aeson.genericParseJSON
+      Aeson.defaultOptions
+        { Aeson.constructorTagModifier = drop (length ("haddock-" :: String)) . Aeson.camelTo2 '-'
         }
 
 -- | Convert 'RegionIndices' into 'RegionDeltas'.
@@ -268,11 +256,11 @@ newtype DynOption = DynOption
 dynOptionToLocatedStr :: DynOption -> GHC.Located String
 dynOptionToLocatedStr (DynOption o) = GHC.L GHC.noSrcSpan o
 
-instance FromJSON PrinterOptsPartial where
+instance Aeson.FromJSON PrinterOptsPartial where
   parseJSON =
-    genericParseJSON
-      defaultOptions
-        { fieldLabelModifier = camelTo2 '-' . dropWhile isLower
+    Aeson.genericParseJSON
+      Aeson.defaultOptions
+        { Aeson.fieldLabelModifier = Aeson.camelTo2 '-' . dropWhile isLower
         }
 
 data FourmoluConfig = FourmoluConfig
@@ -281,9 +269,9 @@ data FourmoluConfig = FourmoluConfig
   }
   deriving (Eq, Show)
 
-instance FromJSON FourmoluConfig where
-  parseJSON = withObject "FourmoluConfig" $ \o -> do
-    cfgFilePrinterOpts <- parseJSON (Object o)
+instance Aeson.FromJSON FourmoluConfig where
+  parseJSON = Aeson.withObject "FourmoluConfig" $ \o -> do
+    cfgFilePrinterOpts <- Aeson.parseJSON (Aeson.Object o)
     rawFixities <- o .:? "fixities" .!= []
     cfgFileFixities <-
       case mapM parseFixityDeclaration rawFixities of
@@ -303,15 +291,13 @@ loadConfigFile path = do
     Nothing -> return $ ConfigNotFound dirs
     Just file ->
       either (ConfigParseError file) (ConfigLoaded file)
-        . decode1
-        <$> BS.readFile file
+        <$> Yaml.decodeFileEither file
 
 -- | The result of calling 'loadConfigFile'.
 data ConfigFileLoadResult
   = ConfigLoaded FilePath FourmoluConfig
-  | ConfigParseError FilePath (Pos, String)
+  | ConfigParseError FilePath Yaml.ParseException
   | ConfigNotFound [FilePath]
-  deriving (Eq, Show)
 
 -- | Expected file name for YAML config.
 configFileName :: FilePath
