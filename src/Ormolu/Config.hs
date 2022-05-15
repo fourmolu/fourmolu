@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -21,6 +22,7 @@ module Ormolu.Config
     defaultPrinterOpts,
     loadConfigFile,
     configFileName,
+    FourmoluConfig (..),
     ConfigFileLoadResult (..),
     fillMissingPrinterOpts,
     CommaStyle (..),
@@ -33,19 +35,28 @@ where
 
 import Data.Aeson
   ( FromJSON (..),
+    Value (Object),
     camelTo2,
     constructorTagModifier,
     defaultOptions,
     fieldLabelModifier,
     genericParseJSON,
+    withObject,
+    (.!=),
+    (.:?),
   )
 import qualified Data.ByteString.Lazy as BS
 import Data.Char (isLower)
 import Data.Functor.Identity (Identity (..))
+import qualified Data.Map.Strict as Map
+import Data.Set (Set)
+import qualified Data.Set as Set
 import Data.YAML (Pos)
 import Data.YAML.Aeson (decode1)
 import GHC.Generics (Generic)
 import qualified GHC.Types.SrcLoc as GHC
+import Ormolu.Fixity (FixityMap)
+import Ormolu.Fixity.Parser (parseFixityDeclaration)
 import Ormolu.Terminal (ColorMode (..))
 import System.Directory
   ( XdgDirectory (XdgConfig),
@@ -54,6 +65,7 @@ import System.Directory
     makeAbsolute,
   )
 import System.FilePath (splitPath, (</>))
+import Text.Megaparsec (errorBundlePretty)
 
 -- | Type of sources that can be formatted by Ormolu.
 data SourceType
@@ -67,6 +79,10 @@ data SourceType
 data Config region = Config
   { -- | Dynamic options to pass to GHC parser
     cfgDynOptions :: ![DynOption],
+    -- | Fixity overrides
+    cfgFixityOverrides :: FixityMap,
+    -- | Known dependencies, if any
+    cfgDependencies :: !(Set String),
     -- | Do formatting faster but without automatic detection of defects
     cfgUnsafe :: !Bool,
     -- | Output information useful for debugging
@@ -107,6 +123,8 @@ defaultConfig :: Config RegionIndices
 defaultConfig =
   Config
     { cfgDynOptions = [],
+      cfgFixityOverrides = Map.empty,
+      cfgDependencies = Set.empty,
       cfgUnsafe = False,
       cfgDebug = False,
       cfgCheckIdempotence = False,
@@ -223,7 +241,7 @@ instance FromJSON HaddockPrintStyle where
   parseJSON =
     genericParseJSON
       defaultOptions
-        { constructorTagModifier = drop (length "haddock-") . camelTo2 '-'
+        { constructorTagModifier = drop (length ("haddock-" :: String)) . camelTo2 '-'
         }
 
 -- | Convert 'RegionIndices' into 'RegionDeltas'.
@@ -257,6 +275,22 @@ instance FromJSON PrinterOptsPartial where
         { fieldLabelModifier = camelTo2 '-' . dropWhile isLower
         }
 
+data FourmoluConfig = FourmoluConfig
+  { cfgFilePrinterOpts :: PrinterOptsPartial,
+    cfgFileFixities :: FixityMap
+  }
+  deriving (Eq, Show)
+
+instance FromJSON FourmoluConfig where
+  parseJSON = withObject "FourmoluConfig" $ \o -> do
+    cfgFilePrinterOpts <- parseJSON (Object o)
+    rawFixities <- o .:? "fixities" .!= []
+    cfgFileFixities <-
+      case mapM parseFixityDeclaration rawFixities of
+        Right fixities -> return . Map.fromList . concat $ fixities
+        Left e -> fail $ errorBundlePretty e
+    return FourmoluConfig {..}
+
 -- | Read options from a config file, if found.
 -- Looks recursively in parent folders, then in 'XdgConfig',
 -- for a file named /fourmolu.yaml/.
@@ -274,7 +308,7 @@ loadConfigFile path = do
 
 -- | The result of calling 'loadConfigFile'.
 data ConfigFileLoadResult
-  = ConfigLoaded FilePath PrinterOptsPartial
+  = ConfigLoaded FilePath FourmoluConfig
   | ConfigParseError FilePath (Pos, String)
   | ConfigNotFound [FilePath]
   deriving (Eq, Show)

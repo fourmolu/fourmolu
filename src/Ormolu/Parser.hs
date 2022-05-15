@@ -39,6 +39,7 @@ import GHC.Utils.Error (Severity (..), errMsgSeverity, errMsgSpan)
 import qualified GHC.Utils.Panic as GHC
 import Ormolu.Config
 import Ormolu.Exception
+import Ormolu.Fixity (LazyFixityMap)
 import Ormolu.Parser.CommentStream
 import Ormolu.Parser.Result
 import Ormolu.Processing.Common
@@ -50,6 +51,8 @@ parseModule ::
   MonadIO m =>
   -- | Ormolu configuration
   Config RegionDeltas ->
+  -- | Fixity map to include in the resulting 'ParseResult's
+  LazyFixityMap ->
   -- | File name (only for source location annotations)
   FilePath ->
   -- | Input for parser
@@ -58,7 +61,7 @@ parseModule ::
     ( [GHC.Warn],
       Either (SrcSpan, String) [SourceSnippet]
     )
-parseModule config@Config {..} path rawInput = liftIO $ do
+parseModule config@Config {..} fixityMap path rawInput = liftIO $ do
   -- It's important that 'setDefaultExts' is done before
   -- 'parsePragmasIntoDynFlags', because otherwise we might enable an
   -- extension that was explicitly disabled in the file.
@@ -80,20 +83,21 @@ parseModule config@Config {..} path rawInput = liftIO $ do
   snippets <- runExceptT . forM (preprocess cppEnabled cfgRegion rawInput) $ \case
     Right region ->
       fmap ParsedSnippet . ExceptT $
-        parseModuleSnippet (config $> region) dynFlags path rawInput
+        parseModuleSnippet (config $> region) fixityMap dynFlags path rawInput
     Left raw -> pure $ RawSnippet raw
   pure (warnings, snippets)
 
 parseModuleSnippet ::
   MonadIO m =>
   Config RegionDeltas ->
+  LazyFixityMap ->
   DynFlags ->
   FilePath ->
   String ->
   m (Either (SrcSpan, String) ParseResult)
-parseModuleSnippet Config {..} dynFlags path rawInput = liftIO $ do
+parseModuleSnippet Config {..} fixityMap dynFlags path rawInput = liftIO $ do
   let (input, indent) = removeIndentation . linesInRegion cfgRegion $ rawInput
-  let pStateErrors = \pstate ->
+  let pStateErrors pstate =
         let errs = fmap pprError . bagToList $ GHC.getErrorMessages pstate
             fixupErrSpan = incSpanLine (regionPrefixLength cfgRegion)
          in case L.sortOn (Down . SeverityOrd . errMsgSeverity) errs of
@@ -127,6 +131,8 @@ parseModuleSnippet Config {..} dynFlags path rawInput = liftIO $ do
                         prPragmas = pragmas,
                         prCommentStream = comments,
                         prExtensions = GHC.extensionFlags dynFlags,
+                        prFixityOverrides = cfgFixityOverrides,
+                        prFixityMap = fixityMap,
                         prIndent = indent
                       }
   return r

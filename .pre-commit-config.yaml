@@ -3,12 +3,13 @@ repos:
     hooks:
       - id: fourmolu
         name: fourmolu
-        entry: scripts/run-fourmolu.sh --cabal-default-extensions --mode=inplace
+        entry: scripts/run-fourmolu.sh --mode=inplace
         language: system
         files: '\.(hs|hs-boot)$'
         exclude: |
           (?x)^(
             region-tests/(?!Main.hs)
+            | fixity-tests/(?!Main.hs)
             | data/examples/
             | data/diff-tests/
             | data/parse-failures/

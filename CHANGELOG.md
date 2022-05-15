@@ -1,6 +1,72 @@
 ## Unreleased
 
 * Add `--quiet` flag to make the output quieter
+* Removed `--cabal-default-extensions` flag; the behavior is now enabled by default
+* Add `fixities` configuration to `fourmolu.yaml`
+  * See the notes in the Ormolu changelog below, except instead of providing fixity information in a `.ormolu` file, it should be in a `fixities` config option in `fourmolu.yaml`, e.g.
+
+  ```yaml
+  fixities:
+    - 'infixr 8 .='
+    - 'infixr 5 #'
+  ```
+
+#### Ormolu 0.5.0.0
+
+* Changed the way operator fixities and precedences are inferred.
+  * Ormolu now tries to locate `.cabal` files of source files by default and
+    in addition to default extensions it also infers the list of
+    dependencies.
+  * Ormolu comes equipped with extensive knowledge of all packages on
+    Hackage and operators that those packages define. Knowing the names of
+    the dependencies it can select the right fixity and precedence info from
+    its knowledge base.
+  * You can ask Ormolu not to look for `.cabal` files by using the
+    `--no-cabal` switch.
+  * Dependencies can be selected manually by using the `-p / --package`
+    option (can be repeated many times).
+  * The default heuristic algorithm will still try to guess the right
+    fixities and precedence.
+  * ~Fixity overrides can be provided by the user in the familiar Haskell
+    notation (e.g. `infixr 9 .`, one declaration per line). They are loaded
+    by default from the `.ormolu` file that is expected to be in the same
+    directory as the `.cabal` file of a given source file. However, if
+    `--no-cabal` is supplied, the `.ormolu` file will not be looked for either.~
+    Fixity declarations can be also provided by using the `-f / --fixity`
+    command line option, which see.
+  * This resolves the following issues: [Issue
+    826](https://github.com/tweag/ormolu/issues/826), [Issue
+    785](https://github.com/tweag/ormolu/issues/785), [Issue
+    690](https://github.com/tweag/ormolu/issues/690), [Issue
+    825](https://github.com/tweag/ormolu/issues/825).
+
+* Invalid haddock comments are formatted in a more consistent way. Leading
+  haddock triggers (`|`, `^`) in an invalid haddock comment block are now
+  escaped with a backslash `\`. [Issue
+  816](https://github.com/tweag/ormolu/issues/816).
+
+* Type synonyms and families are now formatted correctly when the equals sign
+  is preceded by a comment. [Issue 829](
+  https://github.com/tweag/ormolu/issues/829).
+
+* Bidirectional pattern synonyms are formatted nicer in certain cases.
+  [Issue 843](https://github.com/tweag/ormolu/issues/843).
+
+* Magic comments (like `{- ORMOLU_DISABLED -}`) now allow arbitrary
+  succeeding text. This fixes use cases like [Issue
+  856](https://github.com/tweag/ormolu/issues/856).
+
+* Remove discrepancies between unboxed types and terms. [Issue 856
+  ](https://github.com/tweag/ormolu/issues/856).
+  * Unboxed sum types are now formatted with a space before each `|`.
+  * Unboxed unit tuples on type and value levels are formatted as `(# #)`.
+
+* Errors caused by AST differences now print before/after diffs.
+  [Issue 877](https://github.com/tweag/ormolu/issues/877).
+
+* Improved formatting of data declarations in the case of single-constructor
+  record with a Haddock. [Issue
+  881](https://github.com/tweag/ormolu/issues/881).
 
 ## Fourmolu 0.6.0.0
 

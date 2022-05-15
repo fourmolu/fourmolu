@@ -5,12 +5,14 @@ module Ormolu.PrinterSpec (spec) where
 import Control.Exception
 import Control.Monad
 import Data.List (isSuffixOf)
+import qualified Data.Map as Map
 import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Ormolu
 import Ormolu.Config
+import Ormolu.Fixity
 import Ormolu.Utils.IO
 import Path
 import Path.IO
@@ -43,6 +45,14 @@ spec = do
   sequence_ $ checkExample <$> [(ormoluOpts, "ormolu", ""), (defaultPrinterOpts, "fourmolu", "-four")] <*> es
   sequence_ $ checkExample <$> [(fourmoluIEOpts, "fourmolu-ie", "-four-ie")] <*> ieEs
 
+-- | Fixities that are to be used with the test examples.
+testsuiteFixities :: FixityMap
+testsuiteFixities =
+  Map.fromList
+    [ (".=", FixityInfo (Just InfixR) 8 8),
+      ("#", FixityInfo (Just InfixR) 5 5)
+    ]
+
 -- | Check a single given example.
 checkExample :: (PrinterOptsTotal, String, String) -> Path Rel File -> Spec
 checkExample (po, label, suffix) srcPath' = it (fromRelFile srcPath' ++ " works (" ++ label ++ ")") . withNiceExceptions $ do
@@ -51,7 +61,8 @@ checkExample (po, label, suffix) srcPath' = it (fromRelFile srcPath' ++ " works 
       config =
         defaultConfig
           { cfgPrinterOpts = po,
-            cfgSourceType = detectSourceType inputPath
+            cfgSourceType = detectSourceType inputPath,
+            cfgFixityOverrides = testsuiteFixities
           }
   expectedOutputPath <- deriveOutput suffix srcPath
   -- 1. Given input snippet of source code parse it and pretty print it.

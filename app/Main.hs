@@ -1,7 +1,11 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -15,7 +19,9 @@ import Control.Monad
 import Data.Bool (bool)
 import Data.Functor.Identity (Identity (..))
 import Data.List (intercalate, sort)
+import qualified Data.Map as Map
 import Data.Maybe (fromMaybe, mapMaybe)
+import qualified Data.Set as Set
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import Data.Version (showVersion)
@@ -24,10 +30,15 @@ import Options.Applicative
 import Ormolu
 import Ormolu.Config
 import Ormolu.Diff.Text (diffText, printTextDiff)
+import Ormolu.Fixity (FixityInfo)
 import Ormolu.Parser (manualExts)
 import Ormolu.Terminal
 import Ormolu.Utils (showOutputable)
-import Ormolu.Utils.Extensions (getCabalExtensionDynOptions)
+import Ormolu.Utils.Cabal
+import Ormolu.Utils.Fixity
+  ( getFixityOverridesForSourceFile,
+    parseFixityDeclarationStr,
+  )
 import Ormolu.Utils.IO
 import Paths_fourmolu (version)
 import System.Directory (getCurrentDirectory)
@@ -46,7 +57,7 @@ main = do
     file : _ -> mkConfig file opts
   let formatOne' =
         formatOne
-          optCabalDefaultExtensions
+          optCabal
           optMode
           optSourceType
           cfg
@@ -73,8 +84,8 @@ main = do
 
 -- | Format a single input.
 formatOne ::
-  -- | Whether to respect default-extensions from .cabal files
-  CabalDefaultExtensionsOpts ->
+  -- | How to use .cabal files
+  CabalOpts ->
   -- | Mode of operation
   Mode ->
   -- | The 'SourceType' requested by the user
@@ -84,19 +95,20 @@ formatOne ::
   -- | File to format or stdin as 'Nothing'
   Maybe FilePath ->
   IO ExitCode
-formatOne CabalDefaultExtensionsOpts {..} mode reqSourceType rawConfig mpath =
+formatOne CabalOpts {..} mode reqSourceType rawConfig mpath =
   withPrettyOrmoluExceptions (cfgColorMode rawConfig) $ do
     case FP.normalise <$> mpath of
       -- input source = STDIN
       Nothing -> do
         resultConfig <-
-          patchConfig Nothing
-            <$> if optUseCabalDefaultExtensions
-              then case optStdinInputFile of
+          ( if optDoNotUseCabal
+              then pure defaultCabalInfo
+              else case optStdinInputFile of
                 Just stdinInputFile ->
-                  getCabalExtensionDynOptions stdinInputFile
+                  getCabalInfoForSourceFile stdinInputFile
                 Nothing -> throwIO OrmoluMissingStdinInputFile
-              else pure []
+            )
+            >>= patchConfig Nothing
         case mode of
           Stdout -> do
             ormoluStdin resultConfig >>= TIO.putStr
@@ -117,10 +129,11 @@ formatOne CabalDefaultExtensionsOpts {..} mode reqSourceType rawConfig mpath =
       -- input source = a file
       Just inputFile -> do
         resultConfig <-
-          patchConfig (Just (detectSourceType inputFile))
-            <$> if optUseCabalDefaultExtensions
-              then getCabalExtensionDynOptions inputFile
-              else pure []
+          ( if optDoNotUseCabal
+              then pure defaultCabalInfo
+              else getCabalInfoForSourceFile inputFile
+            )
+            >>= patchConfig (Just (detectSourceType inputFile))
         case mode of
           Stdout -> do
             ormoluFile resultConfig inputFile >>= TIO.putStr
@@ -140,14 +153,27 @@ formatOne CabalDefaultExtensionsOpts {..} mode reqSourceType rawConfig mpath =
               ormolu resultConfig inputFile (T.unpack originalInput)
             handleDiff originalInput formattedInput inputFile
   where
-    patchConfig mdetectedSourceType dynOpts =
-      rawConfig
-        { cfgDynOptions = cfgDynOptions rawConfig ++ dynOpts,
-          cfgSourceType =
-            fromMaybe
-              ModuleSource
-              (reqSourceType <|> mdetectedSourceType)
-        }
+    patchConfig mdetectedSourceType cabalInfo@CabalInfo {..} = do
+      let depsFromCabal =
+            -- It makes sense to take into account the operator info for the
+            -- package itself if we know it, as if it were its own
+            -- dependency.
+            case ciPackageName of
+              Nothing -> ciDependencies
+              Just p -> Set.insert p ciDependencies
+      fixityOverrides <- getFixityOverridesForSourceFile cabalInfo
+      return
+        rawConfig
+          { cfgDynOptions = cfgDynOptions rawConfig ++ ciDynOpts,
+            cfgFixityOverrides =
+              Map.unionWith (<>) (cfgFixityOverrides rawConfig) fixityOverrides,
+            cfgDependencies =
+              Set.union (cfgDependencies rawConfig) depsFromCabal,
+            cfgSourceType =
+              fromMaybe
+                ModuleSource
+                (reqSourceType <|> mdetectedSourceType)
+          }
     handleDiff originalInput formattedInput fileRepr =
       case diffText originalInput formattedInput fileRepr of
         Nothing -> return ExitSuccess
@@ -161,6 +187,7 @@ formatOne CabalDefaultExtensionsOpts {..} mode reqSourceType rawConfig mpath =
 ----------------------------------------------------------------------------
 -- Command line options parsing
 
+-- | All command line options.
 data Opts = Opts
   { -- | Mode of operation
     optMode :: !Mode,
@@ -168,8 +195,8 @@ data Opts = Opts
     optQuiet :: !Bool,
     -- | Ormolu 'Config'
     optConfig :: !(Config RegionIndices),
-    -- | Options for respecting default-extensions from .cabal files
-    optCabalDefaultExtensions :: CabalDefaultExtensionsOpts,
+    -- | Options related to info extracted from .cabal files
+    optCabal :: CabalOpts,
     -- | Source type option, where 'Nothing' means autodetection
     optSourceType :: !(Maybe SourceType),
     -- | Fourmolu-specific options
@@ -189,13 +216,12 @@ data Mode
     Check
   deriving (Eq, Show, Bounded, Enum)
 
--- | Configuration for how to account for default-extension
--- from .cabal files
-data CabalDefaultExtensionsOpts = CabalDefaultExtensionsOpts
-  { -- | Account for default-extensions from .cabal files
-    optUseCabalDefaultExtensions :: Bool,
-    -- | Optional path to a file which will be used to
-    -- find a .cabal file when using input from stdin
+-- | Configuration related to .cabal files.
+data CabalOpts = CabalOpts
+  { -- | DO NOT extract default-extensions and dependencies from .cabal files
+    optDoNotUseCabal :: Bool,
+    -- | Optional path to a file which will be used to find a .cabal file
+    -- when using input from stdin
     optStdinInputFile :: Maybe FilePath
   }
   deriving (Show)
@@ -252,7 +278,7 @@ optsParser =
         help "Make output quieter"
       ]
     <*> configParser
-    <*> cabalDefaultExtensionsParser
+    <*> cabalOptsParser
     <*> sourceTypeParser
     <*> printerOptsParser
     <*> (many . strArgument . mconcat)
@@ -260,13 +286,12 @@ optsParser =
         help "Haskell source files to format or stdin (the default)"
       ]
 
-cabalDefaultExtensionsParser :: Parser CabalDefaultExtensionsOpts
-cabalDefaultExtensionsParser =
-  CabalDefaultExtensionsOpts
+cabalOptsParser :: Parser CabalOpts
+cabalOptsParser =
+  CabalOpts
     <$> (switch . mconcat)
-      [ short 'e',
-        long "cabal-default-extensions",
-        help "Account for default-extensions from .cabal files"
+      [ long "no-cabal",
+        help "Do not extract default-extensions and dependencies from .cabal files"
       ]
     <*> (optional . strOption . mconcat)
       [ long "stdin-input-file",
@@ -281,6 +306,22 @@ configParser =
         short 'o',
         metavar "OPT",
         help "GHC options to enable (e.g. language extensions)"
+      ]
+    <*> ( fmap (Map.fromListWith (<>) . mconcat)
+            . many
+            . option parseFixityDeclaration
+            . mconcat
+        )
+      [ long "fixity",
+        short 'f',
+        metavar "FIXITY",
+        help "Fixity declaration to use (an override)"
+      ]
+    <*> (fmap Set.fromList . many . strOption . mconcat)
+      [ long "package",
+        short 'p',
+        metavar "PACKAGE",
+        help "Explicitly specified dependency (for operator fixity/precedence only)"
       ]
     <*> (switch . mconcat)
       [ long "unsafe",
@@ -498,13 +539,14 @@ showDefaultValue =
 -- | Build the full config, by adding 'PrinterOpts' from a file, if found.
 mkConfig :: FilePath -> Opts -> IO (Config RegionIndices)
 mkConfig path Opts {..} = do
-  filePrinterOpts <-
+  mFourmoluConfig <-
     loadConfigFile path >>= \case
-      ConfigLoaded f po -> do
+      ConfigLoaded f cfg -> do
         unless optQuiet $
-          hPutStrLn stderr $ "Loaded config from: " <> f
-        printDebug $ show po
-        return $ Just po
+          hPutStrLn stderr $
+            "Loaded config from: " <> f
+        printDebug $ show cfg
+        return $ Just cfg
       ConfigParseError f (_pos, err) -> do
         -- we ignore '_pos' due to the note on 'Data.YAML.Aeson.decode1'
         hPutStrLn stderr $
@@ -516,15 +558,19 @@ mkConfig path Opts {..} = do
       ConfigNotFound searchDirs -> do
         printDebug
           . unlines
-          $ ("No " ++ show configFileName ++ " found in any of:") :
-          map ("  " ++) searchDirs
+          $ ("No " ++ show configFileName ++ " found in any of:")
+            : map ("  " ++) searchDirs
         return Nothing
   return $
     optConfig
       { cfgPrinterOpts =
           fillMissingPrinterOpts
-            (optPrinterOpts <> fromMaybe mempty filePrinterOpts)
-            (cfgPrinterOpts optConfig)
+            (optPrinterOpts <> maybe mempty cfgFilePrinterOpts mFourmoluConfig)
+            (cfgPrinterOpts optConfig),
+        cfgFixityOverrides =
+          -- cfgFileFixities should go on the right so that command line
+          -- fixity overrides takes precedence.
+          cfgFixityOverrides optConfig <> maybe mempty cfgFileFixities mFourmoluConfig
       }
   where
     printDebug = when (cfgDebug optConfig) . hPutStrLn stderr
@@ -533,6 +579,10 @@ mkConfigFromCWD :: Opts -> IO (Config RegionIndices)
 mkConfigFromCWD opts = do
   cwd <- getCurrentDirectory
   mkConfig cwd opts
+
+-- | Parse a fixity declaration.
+parseFixityDeclaration :: ReadM [(String, FixityInfo)]
+parseFixityDeclaration = eitherReader parseFixityDeclarationStr
 
 -- | Parse the 'SourceType'. 'Nothing' means that autodetection based on
 -- file extension is requested.

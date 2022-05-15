@@ -41,4 +41,6 @@ printSnippets snippets printerOpts = T.concat . fmap printSnippet $ snippets
             printerOpts
             prSourceType
             prExtensions
+            prFixityOverrides
+            prFixityMap
       RawSnippet r -> r

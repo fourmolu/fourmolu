@@ -70,7 +70,7 @@ jobs:
       # build
       - run:
           name: Build
-          command: stack build --test --no-run-tests --flag fourmolu:dev
+          command: .circleci/stack_build.sh --test --no-run-tests
 
       # lint
       - when:
@@ -88,9 +88,7 @@ jobs:
       # test
       - run:
           name: Test
-          command:
-            # keep the dev flag here to avoid rebuilding from the build step
-            stack test --flag fourmolu:dev
+          command: .circleci/stack_build.sh --test
 
       # build haddock
       - when:

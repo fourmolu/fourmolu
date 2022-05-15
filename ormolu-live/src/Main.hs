@@ -1,10 +1,9 @@
-{-# LANGUAGE CPP #-}
-
 module Main (main) where
 
 import Control.Lens
 import Data.Bool (bool)
 import Data.Foldable (toList)
+import Data.Functor (void)
 import Data.Generics.Labels ()
 import Data.List (intersperse)
 import Data.Maybe (maybeToList)
@@ -21,6 +20,7 @@ import Miso
 import Miso.String (MisoString, fromMisoString, ms)
 import qualified Ormolu as O
 import qualified Ormolu.Config as O
+import Ormolu.Fixity
 import qualified Ormolu.Parser as O
 import qualified Ormolu.Parser.Result as O
 import qualified Ormolu.Utils as O
@@ -40,7 +40,8 @@ data Model = Model
   deriving stock (Show, Eq, Generic)
 
 data Action
-  = SetInput MisoString
+  = Setup
+  | SetInput MisoString
   | SetOutput Output
   | Format
   | UpdateConfig (OrmoluConfig -> OrmoluConfig)
@@ -49,7 +50,7 @@ data Action
 main :: IO ()
 main = JSaddleWarp.run 8080 "www" $ startApp App {..}
   where
-    initialAction = Format
+    initialAction = Setup
     model = Model {..}
       where
         input = ""
@@ -65,6 +66,10 @@ main = JSaddleWarp.run 8080 "www" $ startApp App {..}
 
 updateModel :: Action -> Transition Action Model ()
 updateModel = \case
+  Setup ->
+    -- Format something with an unusual operator in order to fill the
+    -- fixity map cache
+    runOrmolu "1++++++1" $ scheduleIO_ . void
   SetInput t -> do
     #input .= t
     format
@@ -72,12 +77,7 @@ updateModel = \case
     #output .= o
   Format -> do
     input <- fromMisoString <$> use #input
-    config <- use #config
-    scheduleIO do
-      output <-
-        tryAnyDeep (O.ormolu config "<input>" input)
-          <&> _Left %~ extractOrmoluException
-      pure $ SetOutput output
+    runOrmolu input $ scheduleIO . fmap SetOutput
   UpdateConfig f -> do
     #config %= f
     format
@@ -85,6 +85,11 @@ updateModel = \case
     #showParseResult .= b
   where
     format = scheduleIO $ pure Format
+    runOrmolu input schedule = do
+      config <- use #config
+      schedule $
+        tryAnyDeep (O.ormolu config "<input>" input)
+          <&> _Left %~ extractOrmoluException
 
 viewModel :: Model -> View Action
 viewModel model@Model {..} =
@@ -212,6 +217,7 @@ viewModel model@Model {..} =
             ]
           O.OrmoluCabalFileParsingFailed _ -> error "unreachable"
           O.OrmoluMissingStdinInputFile -> error "unreachable"
+          O.OrmoluFixityOverridesParseError _ -> error "unreachable"
       Left e -> e
 
     prettyAST t = case parseModule t of
@@ -226,7 +232,7 @@ viewModel model@Model {..} =
           unsafePerformIO
             . do mapped . _Left %~ extractOrmoluException
             . tryAny
-            . O.parseModule configWithDeltas "<input>"
+            . O.parseModule configWithDeltas defaultFixityMap "<input>"
         configWithDeltas = O.regionIndicesToDeltas (length (lines t)) <$> config
 
         printSnippet = \case
@@ -241,3 +247,8 @@ extractOrmoluException :: SomeException -> Either String O.OrmoluException
 extractOrmoluException = \case
   (fromException -> Just oe) -> Right oe
   e -> Left . displayException $ e
+
+-- | The default fixity map, using the default value for the popularity
+-- ratio threshold, and an empty list of dependencies.
+defaultFixityMap :: LazyFixityMap
+defaultFixityMap = buildFixityMap defaultStrategyThreshold mempty

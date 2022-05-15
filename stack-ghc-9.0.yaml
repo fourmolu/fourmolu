@@ -3,3 +3,7 @@ resolver: nightly-2022-03-03
 extra-deps:
   - Cabal-3.6.2.0
   - ghc-lib-parser-9.2.1.20211101
+
+flags:
+  fourmolu:
+    fixity-th: false

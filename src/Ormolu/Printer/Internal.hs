@@ -20,6 +20,8 @@ module Ormolu.Printer.Internal
     newline,
     declNewline,
     askSourceType,
+    askFixityOverrides,
+    askFixityMap,
     inci,
     inciBy,
     inciByFrac,
@@ -75,6 +77,7 @@ import GHC.LanguageExtensions.Type
 import GHC.Types.SrcLoc
 import GHC.Utils.Outputable (Outputable)
 import Ormolu.Config
+import Ormolu.Fixity (FixityMap, LazyFixityMap)
 import Ormolu.Parser.CommentStream
 import Ormolu.Printer.SpanStream
 import Ormolu.Utils (showOutputable)
@@ -103,7 +106,13 @@ data RC = RC
     -- | Enabled extensions
     rcExtensions :: EnumSet Extension,
     -- | Whether the source is a signature or a regular module
-    rcSourceType :: SourceType
+    rcSourceType :: SourceType,
+    -- | Fixity map overrides, kept separately because if we parametrized
+    -- 'Ormolu.Fixity.buildFixityMap' by fixity overrides it would break
+    -- memoization
+    rcFixityOverrides :: FixityMap,
+    -- | Fixity map for operators
+    rcFixityMap :: LazyFixityMap
   }
 
 -- | State context of 'R'.
@@ -172,9 +181,13 @@ runR ::
   SourceType ->
   -- | Enabled extensions
   EnumSet Extension ->
+  -- | Fixity overrides
+  FixityMap ->
+  -- | Fixity map
+  LazyFixityMap ->
   -- | Resulting rendition
   Text
-runR (R m) sstream cstream printerOpts sourceType extensions =
+runR (R m) sstream cstream printerOpts sourceType extensions fixityOverrides fixityMap =
   TL.toStrict . toLazyText . scBuilder $ execState (runReaderT m rc) sc
   where
     rc =
@@ -185,7 +198,9 @@ runR (R m) sstream cstream printerOpts sourceType extensions =
           rcCanUseBraces = False,
           rcPrinterOpts = printerOpts,
           rcExtensions = extensions,
-          rcSourceType = sourceType
+          rcSourceType = sourceType,
+          rcFixityOverrides = fixityOverrides,
+          rcFixityMap = fixityMap
         }
     sc =
       SC
@@ -275,7 +290,7 @@ spit stype text = do
   R $ do
     i <- asks rcIndent
     c <- gets scColumn
-    closestEnclosing <- listToMaybe <$> asks rcEnclosingSpans
+    closestEnclosing <- asks (listToMaybe . rcEnclosingSpans)
     let indentedTxt = spaces <> text
         spaces = T.replicate spacesN " "
         spacesN =
@@ -389,6 +404,14 @@ newlineRawN n = R . modify $ \sc ->
 -- | Return the source type.
 askSourceType :: R SourceType
 askSourceType = R (asks rcSourceType)
+
+-- | Retrieve fixity overrides map.
+askFixityOverrides :: R FixityMap
+askFixityOverrides = R (asks rcFixityOverrides)
+
+-- | Retrieve the lazy fixity map.
+askFixityMap :: R LazyFixityMap
+askFixityMap = R (asks rcFixityMap)
 
 -- | Like 'inci', but indents by exactly the given number of steps.
 inciBy :: Int -> R () -> R ()
