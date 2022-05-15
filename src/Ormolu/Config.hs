@@ -45,14 +45,12 @@ import Data.Aeson
     (.!=),
     (.:?),
   )
-import qualified Data.ByteString.Lazy as BS
 import Data.Char (isLower)
 import Data.Functor.Identity (Identity (..))
 import qualified Data.Map.Strict as Map
 import Data.Set (Set)
 import qualified Data.Set as Set
-import Data.YAML (Pos)
-import Data.YAML.Aeson (decode1)
+import qualified Data.Yaml as Yaml
 import GHC.Generics (Generic)
 import qualified GHC.Types.SrcLoc as GHC
 import Ormolu.Fixity (FixityMap)
@@ -303,15 +301,13 @@ loadConfigFile path = do
     Nothing -> return $ ConfigNotFound dirs
     Just file ->
       either (ConfigParseError file) (ConfigLoaded file)
-        . decode1
-        <$> BS.readFile file
+        <$> Yaml.decodeFileEither file
 
 -- | The result of calling 'loadConfigFile'.
 data ConfigFileLoadResult
   = ConfigLoaded FilePath FourmoluConfig
-  | ConfigParseError FilePath (Pos, String)
+  | ConfigParseError FilePath Yaml.ParseException
   | ConfigNotFound [FilePath]
-  deriving (Eq, Show)
 
 -- | Expected file name for YAML config.
 configFileName :: FilePath
