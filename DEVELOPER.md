@@ -123,7 +123,7 @@ Fourmolu aims to continue merging upstream changes in Ormolu. Whenever Ormolu ma
 ### Resolving conflicts
 
 * Conflicts at the following paths should be resolved by keeping the files DELETED (i.e. if there's a "deleted by us" conflict, use `git rm` to avoid adding the file to our repo):
-    * `.github/`
+    * `.github/workflows/binaries.yml`
     * `.buildkite/`
     * `CONTRIBUTING.md`
     * `DESIGN.md`
