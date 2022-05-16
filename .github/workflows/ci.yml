@@ -1,0 +1,141 @@
+name: CI
+on: push
+
+jobs:
+  build_and_test:
+    strategy:
+      matrix:
+        stack_yaml:
+          # technically redundant, since this should be a symlink,
+          # but just to be extra sure
+          - stack.yaml
+          - stack-ghc-8.10.yaml
+          - stack-ghc-9.0.yaml
+          - stack-ghc-9.2.yaml
+        os:
+          - ubuntu-latest
+          - macos-latest
+
+    name: 'build_and_test: ${{ matrix.os }} - ${{ matrix.stack_yaml }}'
+    runs-on: ${{ matrix.os }}
+    env:
+      STACK_YAML: ${{ matrix.stack_yaml }}
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v3
+        with:
+          path: ~/.stack
+          key: ${{ runner.os }}-build_and_test-${{ matrix.stack_yaml }}-${{ hashFiles(matrix.stack_yaml, 'fourmolu.cabal') }}
+
+      - name: Build + Test
+        run: |
+          ARGS=(
+              # use development mode, to enable -Werror
+              --flag fourmolu:dev
+          )
+          stack build --test "${ARGS[@]}"
+
+      - name: Check that Cabal file was generated
+        run: git diff --exit-code '*.cabal'
+
+  build_haddock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v3
+        with:
+          path: ~/.stack
+          key: ${{ runner.os }}-build_haddock-${{ hashFiles('stack.yaml', 'fourmolu.cabal') }}
+
+      - name: Build haddock
+        # just a sanity check, so no need to build third-party docs
+        run: stack haddock --fast --no-haddock-deps
+
+      - name: Bundle haddock docs
+        run: tar czf fourmolu-docs.tar.gz -C "$(find .stack-work/dist -regex '.*/doc/html/[^/]*')" .
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: fourmolu-docs
+          path: fourmolu-docs.tar.gz
+
+
+  build_prod:
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+
+    name: 'build_prod: ${{ matrix.os }}'
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v3
+        with:
+          path: ~/.stack
+          key: ${{ runner.os }}-build_prod-${{ hashFiles('stack.yaml', 'fourmolu.cabal') }}
+
+      - name: Build
+        run: |
+          ARGS=(
+              # turn on fixity-th, for production build
+              --flag fourmolu:fixity-th
+
+              # install binary to ./bin/
+              --copy-bins --local-bin-path ./bin/
+
+              # not using `dev` flag or testing; done in build_and_test job
+          )
+          stack build "${ARGS[@]}"
+
+      - name: Get build info
+        run: scripts/GetBuildInfo.hs
+        id: build-info
+
+      - name: Rename binary
+        run: cp bin/fourmolu bin/fourmolu-$version-$os-$arch
+        env:
+          version: ${{ steps.build-info.outputs.version }}
+          os: ${{ steps.build-info.outputs.os }}
+          arch: ${{ steps.build-info.outputs.arch }}
+
+      - name: Store binary
+        uses: actions/upload-artifact@v3
+        with:
+          name: fourmolu-binary-${{ matrix.os }}
+          path: bin/fourmolu-*
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v3
+        with:
+          path: ~/.stack
+          key: ${{ runner.os }}-lint-${{ hashFiles('stack.yaml', 'fourmolu.cabal') }}
+      - name: Build Fourmolu executable
+        run: stack build --fast :fourmolu
+      - name: Install pre-commit
+        run: pip install pre-commit
+      - name: Run pre-commit
+        run: pre-commit run --all-files --show-diff-on-failure
+
+  check_sdist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v3
+        with:
+          path: ~/.stack
+          key: ${{ runner.os }}-check_sdist-${{ hashFiles('stack.yaml') }}
+      - name: Create sdist bundle
+        run: |
+          stack sdist
+          cp "$(find .stack-work/ -name 'fourmolu-*.tar.gz')" .
+      - uses: actions/upload-artifact@v3
+        with:
+          name: fourmolu-sdist
+          path: fourmolu-*.tar.gz
