@@ -1,5 +1,14 @@
 name: CI
-on: push
+on:
+  push:
+  workflow_call:
+    outputs:
+      version:
+        value: ${{ jobs.build_prod.outputs.version }}
+      os:
+        value: ${{ jobs.build_prod.outputs.os }}
+      arch:
+        value: ${{ jobs.build_prod.outputs.arch }}
 
 jobs:
   build_and_test:
@@ -107,6 +116,11 @@ jobs:
         with:
           name: fourmolu-binary-${{ matrix.os }}
           path: bin/fourmolu-*
+
+    outputs:
+      version: ${{ steps.build-info.outputs.version }}
+      os: ${{ steps.build-info.outputs.os }}
+      arch: ${{ steps.build-info.outputs.arch }}
 
   lint:
     runs-on: ubuntu-latest

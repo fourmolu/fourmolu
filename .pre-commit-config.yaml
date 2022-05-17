@@ -15,6 +15,16 @@ repos:
             | data/parse-failures/
           )
 
+  - repo: https://github.com/necaris/pre-commit-pyright
+    rev: '1.1.53'
+    hooks:
+      - id: pyright
+
+  - repo: https://github.com/psf/black
+    rev: '22.3.0'
+    hooks:
+      - id: black
+
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.0.1
     hooks:
