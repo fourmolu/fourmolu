@@ -94,15 +94,13 @@ To release a new version, do the following workflow:
     1. Run `stack haddock` or `cabal haddock` and skim through documentation
 
 1. Create PR as usual and merge into `master`
-    1. In the `test_latest` CI job, check the output of the `stack sdist` step for any warnings.
+    1. In the `check_sdist` CI job, check the output of the `stack sdist` step for any warnings.
 
-1. Create a release on GitHub on the merge commit
-    * The tag version should be of the format vX.Y.Z
-    * The release title should be the same as the tag version
-    * The release body should contain everything in `CHANGELOG.md` in the section for this version
+1. Go to the GitHub actions page + click "Run workflow" on the `master` branch
 
 1. Upload the package to Hackage
-    1. Download the `fourmolu-*.tar.gz` file from CI artifacts
+    1. Download the `fourmolu-sdist` artifact from CI
+    1. `fourmolu-*.tar.gz` file from CI artifacts
     1. Upload tarball to Hackage
 
 1. If this is a new major version, update HLS to use it ([example](https://github.com/haskell/haskell-language-server/pull/2254)). It's rare that we'll be changing our API in a way that requires actual code changes.
