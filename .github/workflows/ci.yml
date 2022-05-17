@@ -1,5 +1,10 @@
 name: CI
-on: push
+on:
+  push:
+  workflow_call:
+    outputs:
+      version:
+        value: ${{ jobs.build_prod.outputs.version }}
 
 jobs:
   build_and_test:
@@ -108,16 +113,26 @@ jobs:
           name: fourmolu-binary-${{ matrix.os }}
           path: bin/fourmolu-*
 
+    outputs:
+      version: ${{ steps.build-info.outputs.version }}
+
   lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+
       - uses: actions/cache@v3
         with:
           path: ~/.stack
-          key: ${{ runner.os }}-lint-${{ hashFiles('stack.yaml', 'fourmolu.cabal') }}
+          key: ${{ runner.os }}-lint-stack-${{ hashFiles('stack.yaml', 'fourmolu.cabal') }}
       - name: Build Fourmolu executable
         run: stack build --fast :fourmolu
+
+      - uses: actions/cache@v3
+        with:
+          path: ~/.cache/pre-commit
+          key: ${{ runner.os }}-lint-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+
       - name: Install pre-commit
         run: pip install pre-commit
       - name: Run pre-commit
