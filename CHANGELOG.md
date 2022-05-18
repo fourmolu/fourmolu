@@ -1,4 +1,4 @@
-## Unreleased
+## Fourmolu 0.6.0.1
 
 * Add `--quiet` flag to make the output quieter
 * Removed `--cabal-default-extensions` flag; the behavior is now enabled by default

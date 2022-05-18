@@ -1,6 +1,6 @@
 name: CI
 on:
-  push:
+  # push:
   workflow_call:
     outputs:
       version:

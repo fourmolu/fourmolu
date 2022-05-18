@@ -1,5 +1,5 @@
 name: Release
-on: workflow_dispatch
+on: [push, workflow_dispatch]
 
 jobs:
   ci:
