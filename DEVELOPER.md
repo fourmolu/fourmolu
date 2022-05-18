@@ -96,7 +96,7 @@ To release a new version, do the following workflow:
 1. Create PR as usual and merge into `master`
     1. In the `check_sdist` CI job, check the output of the `stack sdist` step for any warnings.
 
-1. Go to the GitHub actions page + click "Run workflow" on the `master` branch
+1. Go to the GitHub Actions page, click on the "CI" workflow, and click "Run workflow" on the `master` branch
 
 1. Upload the package to Hackage
     1. Download the `fourmolu-sdist` artifact from CI
