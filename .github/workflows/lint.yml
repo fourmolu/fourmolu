@@ -1,0 +1,22 @@
+name: Lint
+on: workflow_call
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/cache@v3
+        with:
+          path: ~/.stack
+          key: ${{ matrix.os }}-stack-cache-${{ hashFiles(matrix.stack_yaml, 'fourmolu.cabal') }}
+
+      - name: Build Fourmolu executable
+        run: stack build --fast :fourmolu
+
+      - name: Install pre-commit
+        run: pip install pre-commit
+
+      - name: Run pre-commit
+        run: pre-commit run --all-files --show-diff-on-failure

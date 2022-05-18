@@ -1,0 +1,20 @@
+name: Check sdist
+on: workflow_call
+
+jobs:
+  check_sdist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v3
+        with:
+          path: ~/.stack
+          key: ${{ matrix.os }}-stack-cache
+      - name: Create sdist bundle
+        run: |
+          stack sdist
+          cp "$(find .stack-work/ -name 'fourmolu-*.tar.gz')" .
+      - uses: actions/upload-artifact@v3
+        with:
+          name: fourmolu-sdist
+          path: fourmolu-*.tar.gz

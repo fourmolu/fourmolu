@@ -1,0 +1,43 @@
+name: Release
+on: workflow_dispatch
+
+jobs:
+  build_and_test:
+    name: Release
+    uses: ./.github/workflows/build_and_test.yml
+
+  lint:
+    name: Release
+    uses: ./.github/workflows/lint.yml
+
+  check_sdist:
+    name: Release
+    uses: ./.github/workflows/sdist.yml
+
+  release:
+    runs-on: ubuntu-latest
+    # only run if everything succeeds
+    needs:
+      - build_and_test
+      - lint
+      - check_sdist
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v3
+        with:
+          path: ~/.stack
+          key: ${{ matrix.os }}-stack-cache-${{ hashFiles(matrix.stack_yaml) }}
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: fourmolu-binary-ubuntu-latest
+      - uses: actions/download-artifact@v3
+        with:
+          name: fourmolu-binary-macos-latest
+
+      - name: Make release
+        run: scripts/MakeRelease.hs
+        env:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          version: ${{ needs.build_prod.outputs.version }}
