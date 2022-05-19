@@ -96,12 +96,12 @@ To release a new version, do the following workflow:
 1. Create PR as usual and merge into `master`
     1. In the `check_sdist` CI job, check the output of the `stack sdist` step for any warnings.
 
+1. Ensure your Hackage token is set in Settings > Secrets > Actions as `HACKAGE_TOKEN_<github_username>` (replace any non alphanumeric characters in username with `_`).
+    * Generate a token from `https://hackage.haskell.org/user/<hackage_username>/manage`
+
 1. Go to the GitHub Actions page, click on the "Release" workflow, and click "Run workflow" on the `master` branch
 
-1. Upload the package to Hackage
-    1. Download the `fourmolu-sdist` artifact from the Release workflow
-    1. Extract `fourmolu-*.tar.gz` from the zip file
-    1. Upload tarball to Hackage
+1. Publish the candidate: https://hackage.haskell.org/package/fourmolu/candidates
 
 1. If this is a new major version, update HLS to use it ([example](https://github.com/haskell/haskell-language-server/pull/2254)). It's rare that we'll be changing our API in a way that requires actual code changes.
 

@@ -25,10 +25,25 @@ jobs:
         with:
           name: fourmolu-binary-macos-latest
           path: ./bin/
+      - uses: actions/download-artifact@v3
+        with:
+          name: fourmolu-sdist
+          path: ./sdist/
+
+      - name: Load Hackage token secret name
+        run: |
+          import re
+          username = "${{ github.actor }}"
+          secret_name = "HACKAGE_TOKEN_" + re.sub(r"\W+", "_", username).upper()
+          print(f"::set-output name=secret_name::{secret_name}")
+        shell: python
+        id: hackage_token_secret
 
       - name: Make release
         run: scripts/make-release.sh
         env:
           gh_token: ${{ secrets.GITHUB_TOKEN }}
+          hackage_token: ${{ secrets[steps.hackage_token_secret.outputs.secret_name] }}
           version: ${{ needs.ci.outputs.version }}
           bindir: ./bin/
+          sdistdir: ./sdist/

@@ -16,8 +16,10 @@ logging.basicConfig(level=logging.DEBUG)
 
 def main():
     gh_token = os.environ["gh_token"]
+    hackage_token = os.environ["hackage_token"]
     version = os.environ["version"]
     bindir = os.environ["bindir"]
+    sdistdir = os.environ["sdistdir"]
     repo = os.environ["GITHUB_REPOSITORY"]
     sha = os.environ["GITHUB_SHA"]
 
@@ -28,7 +30,8 @@ def main():
         Path(bindir) / f"fourmolu-{version}-linux-x86_64",
         Path(bindir) / f"fourmolu-{version}-osx-x86_64",
     ]
-    all_files = gh_release_files
+    sdist_archive = Path(sdistdir) / f"fourmolu-{version}.tar.gz"
+    all_files = gh_release_files + [sdist_archive]
     for file in all_files:
         if not file.exists():
             raise Exception(f"File does not exist: {file}")
@@ -51,7 +54,13 @@ def main():
         files=gh_release_files,
     )
 
-    # TODO: upload to hackage?
+    # uploading as candidate because uploads are irreversible, unlike
+    # GitHub releases, so just to be extra sure, we'll upload this as
+    # a candidate and manually confirm uploading the package on Hackage
+    upload_hackage_candidate(
+        token=hackage_token,
+        archive=sdist_archive,
+    )
 
     logger.info(f"Released fourmolu {version_name}!")
 
@@ -108,6 +117,20 @@ def create_github_release(
                 params={"name": file.name},
                 data=f,
             )
+
+
+def upload_hackage_candidate(
+    *,
+    token: str,
+    archive: Path,
+):
+    session = init_session()
+    with archive.open("rb") as f:
+        session.post(
+            "https://hackage.haskell.org/packages/candidates",
+            headers={"Authorization": f"X-ApiKey {token}"},
+            files={"package": f},
+        )
 
 
 def init_session() -> requests.Session:
