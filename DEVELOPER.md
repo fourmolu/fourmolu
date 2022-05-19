@@ -94,16 +94,14 @@ To release a new version, do the following workflow:
     1. Run `stack haddock` or `cabal haddock` and skim through documentation
 
 1. Create PR as usual and merge into `master`
-    1. In the `test_latest` CI job, check the output of the `stack sdist` step for any warnings.
+    1. In the `check_sdist` CI job, check the output of the `stack sdist` step for any warnings.
 
-1. Create a release on GitHub on the merge commit
-    * The tag version should be of the format vX.Y.Z
-    * The release title should be the same as the tag version
-    * The release body should contain everything in `CHANGELOG.md` in the section for this version
+1. Ensure your Hackage token is set in Settings > Secrets > Actions as `HACKAGE_TOKEN_<github_username>` (replace any non alphanumeric characters in username with `_`).
+    * Generate a token from `https://hackage.haskell.org/user/<hackage_username>/manage`
 
-1. Upload the package to Hackage
-    1. Download the `fourmolu-*.tar.gz` file from CI artifacts
-    1. Upload tarball to Hackage
+1. Go to the GitHub Actions page, click on the "Release" workflow, and click "Run workflow" on the `master` branch
+
+1. Publish the candidate: https://hackage.haskell.org/package/fourmolu/candidates
 
 1. If this is a new major version, update HLS to use it ([example](https://github.com/haskell/haskell-language-server/pull/2254)). It's rare that we'll be changing our API in a way that requires actual code changes.
 
@@ -123,7 +121,7 @@ Fourmolu aims to continue merging upstream changes in Ormolu. Whenever Ormolu ma
 ### Resolving conflicts
 
 * Conflicts at the following paths should be resolved by keeping the files DELETED (i.e. if there's a "deleted by us" conflict, use `git rm` to avoid adding the file to our repo):
-    * `.github/`
+    * `.github/workflows/binaries.yml`
     * `.buildkite/`
     * `CONTRIBUTING.md`
     * `DESIGN.md`
