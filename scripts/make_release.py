@@ -25,6 +25,12 @@ def main():
 
     version_name = f"v{version}"
 
+    # check inputs
+    if not hackage_token:
+        raise Exception(
+            "Hackage token is not provided (did you add a Secret of the form HACKAGE_TOKEN_<github username>?)"
+        )
+
     # ensure release files exist
     gh_release_files = [
         Path(bindir) / f"fourmolu-{version}-linux-x86_64",
