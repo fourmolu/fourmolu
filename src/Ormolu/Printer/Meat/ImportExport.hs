@@ -178,13 +178,12 @@ attachRelativePos' = \case
     markLast [x] = [(LastPos, x)]
     markLast (x : xs) = (MiddlePos, x) : markLast xs
 
--- Unlike the versions in 'Ormolu.Printer.Combinators', these do not depend on
--- whether 'leadingCommas' is set. This is useful here is we choose to keep
--- import and export lists independent of that setting.
-
 -- | Delimiting combination with 'comma'. To be used with 'sep'.
 commaDel' :: R ()
-commaDel' = comma >> breakpoint
+commaDel' =
+  getPrinterOpt poImportExportCommaStyle >>= \case
+    Leading -> breakpoint' >> comma >> space
+    Trailing -> comma >> breakpoint
 
 -- | Surround given entity by parentheses @(@ and @)@.
 parens' :: Bool -> R () -> R ()
