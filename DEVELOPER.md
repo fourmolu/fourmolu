@@ -151,14 +151,7 @@ Fourmolu aims to continue merging upstream changes in Ormolu. Whenever Ormolu ma
 * Remove any redundant Fourmolu output files
 
     ```bash
-    find data/examples -name '*-four-out.hs' -print0 | while IFS= read -r -d '' f; do
-        dir=$(dirname "$f")
-        name=$(basename "$f" '-four-out.hs')
-        src="${dir}/${name}.hs"
-        if [[ ! -f "$src" ]]; then
-            rm -v "$f"
-        fi
-    done
+    ./scripts/clean_redundant_examples.py
     ```
 
 ## HLint
