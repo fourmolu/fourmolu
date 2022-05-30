@@ -73,6 +73,7 @@ module Ormolu.Printer.Combinators
     -- ** Placement
     Placement (..),
     placeHanging,
+    commaDelImportExport,
   )
 where
 
@@ -315,10 +316,16 @@ comma = txt ","
 
 -- | Delimiting combination with 'comma'. To be used with 'sep'.
 commaDel :: R ()
-commaDel =
-  getPrinterOpt poCommaStyle >>= \case
-    Leading -> breakpoint' >> comma >> space
-    Trailing -> comma >> breakpoint
+commaDel = getPrinterOpt poCommaStyle >>= commaDel'
+
+-- | Delimiting combination with 'comma' for import-export lists.
+commaDelImportExport :: R ()
+commaDelImportExport = getPrinterOpt poImportExportCommaStyle >>= commaDel'
+
+commaDel' :: CommaStyle -> R ()
+commaDel' = \case
+  Leading -> breakpoint' >> comma >> space
+  Trailing -> comma >> breakpoint
 
 -- | Print @=@. Do not use @'txt' "="@.
 equals :: R ()
