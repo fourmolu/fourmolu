@@ -10,6 +10,7 @@
     - 'infixr 8 .='
     - 'infixr 5 #'
   ```
+* Fixed issue with `import-export-comma-style` for multiline import/export elements ([#187](https://github.com/fourmolu/fourmolu/pull/187))
 
 #### Ormolu 0.5.0.0
 
