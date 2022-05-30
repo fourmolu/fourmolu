@@ -157,3 +157,10 @@ jobs:
         with:
           name: fourmolu-sdist
           path: fourmolu-*.tar.gz
+
+  check_redundant_examples:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: scripts/clean_redundant_examples.py
+      - run: git diff --exit-code data/examples/
