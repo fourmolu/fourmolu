@@ -29,6 +29,20 @@ We highly recommend turning on pre-commit hooks to run checks every time you com
 
 This is optional, but is run in CI regardless.
 
+### Adding a new configuration option
+
+Considering configurability is the raison d'être of Fourmolu, you're probably making a change that involves adding a new configuration option. Ideally, you've already opened an issue asking for thoughts on the new configuration. Assuming you've already done all that, here's a checklist to follow to ensure you've touched all the right places:
+
+1. Add the configuration option to `PrinterOpts` in `Ormolu.Config`
+    * Follow all the compiler errors
+1. Make the required changes to change styling based on the configuration option
+1. Update the in-repo `fourmolu.yaml` with your configuration option set to most closely imitate Ormolu's default style
+1. Add a test case to `Ormolu.Config.PrinterOptsSpec`
+    * Add a corresponding `data/fourmolu/<label>/input.hs` file
+1. Run all tests with `ORMOLU_REGENERATE_EXAMPLES=1 stack test`
+    * This should not change any of the `*-out.hs` files, although it might change the `*-four-out.hs` files, if the setting in `defaultPrinterOpts` is different from the one in `fourmolu.yaml`
+1. Add your new option to the "Configuration" section in `README.md`
+
 ## Instant feedback with GHCID
 
 We often want to immediately see how changes to Fourmolu's source code affect outputs. Try adding something like this to `Ormolu.hs`:

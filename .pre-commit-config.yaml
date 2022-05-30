@@ -11,6 +11,7 @@ repos:
             region-tests/(?!Main.hs)
             | fixity-tests/(?!Main.hs)
             | data/examples/
+            | data/fourmolu/
             | data/diff-tests/
             | data/parse-failures/
           )

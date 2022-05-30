@@ -21,7 +21,3 @@ class Foo a where
 
     -- | Haddock followed by a blank line
     abc :: a
-
-    -- | A multiline
-    -- comment here
-    multiline :: a
