@@ -100,7 +100,7 @@ p_lie encLayout relativePos = \case
     inci $ do
       let names :: [R ()]
           names = located' p_ieWrappedName <$> xs
-      parens' False . sep commaDel' sitcc $
+      parens' False . sep commaDelImportExport sitcc $
         case w of
           NoIEWildcard -> names
           IEWildcard n ->
@@ -177,13 +177,6 @@ attachRelativePos' = \case
     markLast [] = []
     markLast [x] = [(LastPos, x)]
     markLast (x : xs) = (MiddlePos, x) : markLast xs
-
--- | Delimiting combination with 'comma'. To be used with 'sep'.
-commaDel' :: R ()
-commaDel' =
-  getPrinterOpt poImportExportCommaStyle >>= \case
-    Leading -> breakpoint' >> comma >> space
-    Trailing -> comma >> breakpoint
 
 -- | Surround given entity by parentheses @(@ and @)@.
 parens' :: Bool -> R () -> R ()
