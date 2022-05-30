@@ -61,6 +61,7 @@ module Ormolu.Printer.Combinators
     -- ** Literals
     comma,
     commaDel,
+    commaDelImportExport,
     equals,
 
     -- ** Stateful markers
@@ -73,7 +74,6 @@ module Ormolu.Printer.Combinators
     -- ** Placement
     Placement (..),
     placeHanging,
-    commaDelImportExport,
   )
 where
 
@@ -319,6 +319,7 @@ commaDel :: R ()
 commaDel = getPrinterOpt poCommaStyle >>= commaDel'
 
 -- | Delimiting combination with 'comma' for import-export lists.
+-- To be used with `sep`.
 commaDelImportExport :: R ()
 commaDelImportExport = getPrinterOpt poImportExportCommaStyle >>= commaDel'
 
