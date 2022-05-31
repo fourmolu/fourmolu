@@ -1,14 +1,10 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 
@@ -52,10 +48,12 @@ main :: IO ()
 main = do
   opts@Opts {..} <- execParser optsParserInfo
 
+  cwd <- getCurrentDirectory
   cfg <- case optInputFiles of
-    [] -> mkConfigFromCWD opts
-    ["-"] -> mkConfigFromCWD opts
+    [] -> mkConfig cwd opts
+    ["-"] -> mkConfig cwd opts
     file : _ -> mkConfig file opts
+
   let formatOne' =
         formatOne
           optCabal
@@ -82,6 +80,44 @@ main = do
                 then 100
                 else 102
   exitWith exitCode
+
+-- | Build the full config, by adding 'PrinterOpts' from a file, if found.
+mkConfig :: FilePath -> Opts -> IO (Config RegionIndices)
+mkConfig path Opts {..} = do
+  mFourmoluConfig <-
+    loadConfigFile path >>= \case
+      ConfigLoaded f cfg -> do
+        unless optQuiet $
+          hPutStrLn stderr $
+            "Loaded config from: " <> f
+        printDebug $ show cfg
+        return $ Just cfg
+      ConfigParseError f e -> do
+        hPutStrLn stderr $
+          unlines
+            [ "Failed to load " <> f <> ":",
+              Yaml.prettyPrintParseException e
+            ]
+        exitWith $ ExitFailure 400
+      ConfigNotFound searchDirs -> do
+        printDebug
+          . unlines
+          $ ("No " ++ show configFileName ++ " found in any of:")
+            : map ("  " ++) searchDirs
+        return Nothing
+  return $
+    optConfig
+      { cfgPrinterOpts =
+          fillMissingPrinterOpts
+            (maybe mempty cfgFilePrinterOpts mFourmoluConfig)
+            (cfgPrinterOpts optConfig),
+        cfgFixityOverrides =
+          -- cfgFileFixities should go on the right so that command line
+          -- fixity overrides takes precedence.
+          cfgFixityOverrides optConfig <> maybe mempty cfgFileFixities mFourmoluConfig
+      }
+  where
+    printDebug = when (cfgDebug optConfig) . hPutStrLn stderr
 
 -- | Format a single input.
 formatOne ::
@@ -200,8 +236,6 @@ data Opts = Opts
     optCabal :: CabalOpts,
     -- | Source type option, where 'Nothing' means autodetection
     optSourceType :: !(Maybe SourceType),
-    -- | Fourmolu-specific options
-    optPrinterOpts :: !PrinterOptsPartial,
     -- | Haskell source files to format or stdin (when the list is empty)
     optInputFiles :: ![FilePath]
   }
@@ -265,7 +299,7 @@ optsParser =
             [ short 'i',
               help "A shortcut for --mode inplace"
             ]
-            <|> (option parseBoundedEnum . mconcat)
+            <|> (option parseMode . mconcat)
               [ long "mode",
                 short 'm',
                 metavar "MODE",
@@ -281,7 +315,6 @@ optsParser =
     <*> configParser
     <*> cabalOptsParser
     <*> sourceTypeParser
-    <*> printerOptsParser
     <*> (many . strArgument . mconcat)
       [ metavar "FILE",
         help "Haskell source files to format or stdin (the default)"
@@ -343,7 +376,7 @@ configParser =
     -- autodection based on the input file extension (not available here)
     -- before storing the resolved value in the config struct.
     <*> pure ModuleSource
-    <*> (option parseBoundedEnum . mconcat)
+    <*> (option parseColorMode . mconcat)
       [ long "color",
         metavar "WHEN",
         value Auto,
@@ -361,88 +394,7 @@ configParser =
                 help "End line of the region to format (inclusive)"
               ]
         )
-    <*> pure defaultPrinterOpts
-
-printerOptsParser :: Parser PrinterOptsPartial
-printerOptsParser = do
-  poIndentation <-
-    (optional . option auto . mconcat)
-      [ long "indentation",
-        metavar "WIDTH",
-        help $
-          "Number of spaces per indentation step"
-            <> showDefaultValue poIndentation
-      ]
-  poCommaStyle <-
-    (optional . option parseBoundedEnum . mconcat)
-      [ long "comma-style",
-        metavar "STYLE",
-        help $
-          "How to place commas in multi-line lists, records etc: "
-            <> showAllValues @CommaStyle
-            <> showDefaultValue poCommaStyle
-      ]
-  poImportExportCommaStyle <-
-    (optional . option parseBoundedEnum . mconcat)
-      [ long "import-export-comma-style",
-        metavar "IESTYLE",
-        help $
-          "How to place commas in multi-line import and export lists: "
-            <> showAllValues @CommaStyle
-            <> showDefaultValue poImportExportCommaStyle
-      ]
-  poIndentWheres <-
-    (optional . option parseBoundedEnum . mconcat)
-      [ long "indent-wheres",
-        metavar "BOOL",
-        help $
-          "Whether to indent 'where' bindings past the preceding body"
-            <> " (rather than half-indenting the 'where' keyword)"
-            <> showDefaultValue poIndentWheres
-      ]
-  poRecordBraceSpace <-
-    (optional . option parseBoundedEnum . mconcat)
-      [ long "record-brace-space",
-        metavar "BOOL",
-        help $
-          "Whether to leave a space before an opening record brace"
-            <> showDefaultValue poRecordBraceSpace
-      ]
-  poDiffFriendlyImportExport <-
-    (optional . option parseBoundedEnum . mconcat)
-      [ long "diff-friendly-import-export",
-        metavar "BOOL",
-        help $
-          "Whether to make use of extra commas in import/export lists"
-            <> " (as opposed to Ormolu's style)"
-            <> showDefaultValue poDiffFriendlyImportExport
-      ]
-  poRespectful <-
-    (optional . option parseBoundedEnum . mconcat)
-      [ long "respectful",
-        metavar "BOOL",
-        help $
-          "Give the programmer more choice on where to insert blank lines"
-            <> showDefaultValue poRespectful
-      ]
-  poHaddockStyle <-
-    (optional . option parseBoundedEnum . mconcat)
-      [ long "haddock-style",
-        metavar "STYLE",
-        help $
-          "How to print Haddock comments: "
-            <> showAllValues @HaddockPrintStyle
-            <> showDefaultValue poHaddockStyle
-      ]
-  poNewlinesBetweenDecls <-
-    (optional . option auto . mconcat)
-      [ long "newlines-between-decls",
-        metavar "HEIGHT",
-        help $
-          "Number of spaces between top-level declarations"
-            <> showDefaultValue poNewlinesBetweenDecls
-      ]
-  pure PrinterOpts {..}
+    <*> printerOptsParser
 
 sourceTypeParser :: Parser (Maybe SourceType)
 sourceTypeParser =
@@ -454,135 +406,40 @@ sourceTypeParser =
       help "Set the type of source; TYPE can be 'module', 'sig', or 'auto' (the default)"
     ]
 
+printerOptsParser :: Parser PrinterOptsTotal
+printerOptsParser = overFieldsM mkOption printerOptsMeta
+  where
+    mkOption PrinterOptsFieldMeta {..} =
+      option (Identity <$> eitherReader parseText) . mconcat $
+        [ long metaName,
+          metavar metaPlaceholder,
+          help metaHelp,
+          showDefaultWith (showText . runIdentity),
+          value $ Identity metaDefault
+        ]
+
 ----------------------------------------------------------------------------
 -- Helpers
 
--- | A standard parser of CLI option arguments, applicable to arguments that
--- have a finite (preferably small) number of possible values. (Basically an
--- inverse of 'toCLIArgument'.)
-parseBoundedEnum ::
-  forall a.
-  (Enum a, Bounded a, ToCLIArgument a) =>
-  ReadM a
-parseBoundedEnum =
-  eitherReader
-    ( \s ->
-        case lookup s argumentToValue of
-          Just v -> Right v
-          Nothing ->
-            Left $
-              "unknown value: '"
-                <> s
-                <> "'\nValid values are: "
-                <> showAllValues @a
-                <> "."
-    )
-  where
-    argumentToValue = map (\x -> (toCLIArgument x, x)) [minBound ..]
-
--- | Values that appear as arguments of CLI options and thus have
--- a corresponding textual representation.
-class ToCLIArgument a where
-  -- | Convert a value to its representation as a CLI option argument.
-  toCLIArgument :: a -> String
-
-  -- | Convert a value to its representation as a CLI option argument wrapped
-  -- in apostrophes.
-  toCLIArgument' :: a -> String
-  toCLIArgument' x = "'" <> toCLIArgument x <> "'"
-
-instance ToCLIArgument Bool where
-  toCLIArgument True = "true"
-  toCLIArgument False = "false"
-
-instance ToCLIArgument CommaStyle where
-  toCLIArgument Leading = "leading"
-  toCLIArgument Trailing = "trailing"
-
-instance ToCLIArgument Int where
-  toCLIArgument = show
-
-instance ToCLIArgument HaddockPrintStyle where
-  toCLIArgument HaddockSingleLine = "single-line"
-  toCLIArgument HaddockMultiLine = "multi-line"
-
-instance ToCLIArgument Mode where
-  toCLIArgument Stdout = "stdout"
-  toCLIArgument InPlace = "inplace"
-  toCLIArgument Check = "check"
-
-instance ToCLIArgument ColorMode where
-  toCLIArgument Never = "never"
-  toCLIArgument Always = "always"
-  toCLIArgument Auto = "auto"
-
-showAllValues :: forall a. (Enum a, Bounded a, ToCLIArgument a) => String
-showAllValues = format (map toCLIArgument' [(minBound :: a) ..])
-  where
-    format [] = []
-    format [x] = x
-    format [x1, x2] = x1 <> " or " <> x2
-    format (x : xs) = x <> ", " <> format xs
-
--- | CLI representation of the default value of an option, formatted for
--- inclusion in the help text.
-showDefaultValue ::
-  ToCLIArgument a =>
-  (PrinterOptsTotal -> Identity a) ->
-  String
-showDefaultValue =
-  (" (default " <>)
-    . (<> ")")
-    . toCLIArgument'
-    . runIdentity
-    . ($ defaultPrinterOpts)
-
--- | Build the full config, by adding 'PrinterOpts' from a file, if found.
-mkConfig :: FilePath -> Opts -> IO (Config RegionIndices)
-mkConfig path Opts {..} = do
-  mFourmoluConfig <-
-    loadConfigFile path >>= \case
-      ConfigLoaded f cfg -> do
-        unless optQuiet $
-          hPutStrLn stderr $
-            "Loaded config from: " <> f
-        printDebug $ show cfg
-        return $ Just cfg
-      ConfigParseError f e -> do
-        hPutStrLn stderr $
-          unlines
-            [ "Failed to load " <> f <> ":",
-              Yaml.prettyPrintParseException e
-            ]
-        exitWith $ ExitFailure 400
-      ConfigNotFound searchDirs -> do
-        printDebug
-          . unlines
-          $ ("No " ++ show configFileName ++ " found in any of:")
-            : map ("  " ++) searchDirs
-        return Nothing
-  return $
-    optConfig
-      { cfgPrinterOpts =
-          fillMissingPrinterOpts
-            (optPrinterOpts <> maybe mempty cfgFilePrinterOpts mFourmoluConfig)
-            (cfgPrinterOpts optConfig),
-        cfgFixityOverrides =
-          -- cfgFileFixities should go on the right so that command line
-          -- fixity overrides takes precedence.
-          cfgFixityOverrides optConfig <> maybe mempty cfgFileFixities mFourmoluConfig
-      }
-  where
-    printDebug = when (cfgDebug optConfig) . hPutStrLn stderr
-
-mkConfigFromCWD :: Opts -> IO (Config RegionIndices)
-mkConfigFromCWD opts = do
-  cwd <- getCurrentDirectory
-  mkConfig cwd opts
+-- | Parse 'Mode'.
+parseMode :: ReadM Mode
+parseMode = eitherReader $ \case
+  "stdout" -> Right Stdout
+  "inplace" -> Right InPlace
+  "check" -> Right Check
+  s -> Left $ "unknown mode: " ++ s
 
 -- | Parse a fixity declaration.
 parseFixityDeclaration :: ReadM [(String, FixityInfo)]
 parseFixityDeclaration = eitherReader parseFixityDeclarationStr
+
+-- | Parse 'ColorMode'.
+parseColorMode :: ReadM ColorMode
+parseColorMode = eitherReader $ \case
+  "never" -> Right Never
+  "always" -> Right Always
+  "auto" -> Right Auto
+  s -> Left $ "unknown color mode: " ++ s
 
 -- | Parse the 'SourceType'. 'Nothing' means that autodetection based on
 -- file extension is requested.

@@ -426,7 +426,7 @@ inciBy step (R m) = R (local modRC m)
 -- | Like 'inci', but indents by the given fraction of a full step.
 inciByFrac :: Int -> R () -> R ()
 inciByFrac x m = do
-  indentStep <- R $ asks (runIdentity . poIndentation . rcPrinterOpts)
+  indentStep <- getPrinterOpt poIndentation
   let step = indentStep `quot` x
   inciBy step m
 

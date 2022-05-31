@@ -87,6 +87,9 @@ library
         Ormolu.Utils.Cabal
         Ormolu.Utils.Fixity
         Ormolu.Utils.IO
+    other-modules:
+        Ormolu.Config.TH
+        Ormolu.Config.Types
 
     hs-source-dirs:   src
     other-modules:    GHC.DynFlags
@@ -115,7 +118,7 @@ library
         -- fourmolu-only deps
         yaml >=0.11.6.0 && <1
 
-    mixins:           ghc-lib-parser hiding (Language.Haskell.TH.Syntax)
+    mixins:           ghc-lib-parser hiding (Language.Haskell.TH, Language.Haskell.TH.Syntax)
 
     if flag(fixity-th)
         cpp-options: -DFIXITY_TH

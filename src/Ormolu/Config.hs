@@ -1,12 +1,18 @@
+{-# LANGUAGE ApplicativeDo #-}
+{-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 -- | Configuration options used by the tool.
 module Ormolu.Config
@@ -16,33 +22,49 @@ module Ormolu.Config
     RegionDeltas (..),
     SourceType (..),
     defaultConfig,
+    regionIndicesToDeltas,
+    DynOption (..),
+    dynOptionToLocatedStr,
+
+    -- * Fourmolu configuration
     PrinterOpts (..),
     PrinterOptsPartial,
     PrinterOptsTotal,
     defaultPrinterOpts,
+    fillMissingPrinterOpts,
+    CommaStyle (..),
+    HaddockPrintStyle (..),
+
+    -- ** Loading Fourmolu configuration
     loadConfigFile,
     configFileName,
     FourmoluConfig (..),
     ConfigFileLoadResult (..),
-    fillMissingPrinterOpts,
-    CommaStyle (..),
-    HaddockPrintStyle (..),
-    regionIndicesToDeltas,
-    DynOption (..),
-    dynOptionToLocatedStr,
+
+    -- ** Utilities
+    PrinterOptsFieldMeta (..),
+    PrinterOptsFieldType (..),
+    printerOptsMeta,
+    overFields,
+    overFieldsM,
   )
 where
 
+import Control.Monad (forM)
 import Data.Aeson ((.!=), (.:?))
 import qualified Data.Aeson as Aeson
-import Data.Char (isLower)
+import qualified Data.Aeson.Types as Aeson
 import Data.Functor.Identity (Identity (..))
 import qualified Data.Map.Strict as Map
 import Data.Set (Set)
 import qualified Data.Set as Set
+import Data.String (fromString)
+import qualified Data.Text as Text
 import qualified Data.Yaml as Yaml
 import GHC.Generics (Generic)
 import qualified GHC.Types.SrcLoc as GHC
+import Ormolu.Config.TH
+import Ormolu.Config.Types
 import Ormolu.Fixity (FixityMap)
 import Ormolu.Fixity.Parser (parseFixityDeclaration)
 import Ormolu.Terminal (ColorMode (..))
@@ -54,6 +76,8 @@ import System.Directory
   )
 import System.FilePath (splitPath, (</>))
 import Text.Megaparsec (errorBundlePretty)
+import Text.Printf (printf)
+import Text.Read (readEither)
 
 -- | Type of sources that can be formatted by Ormolu.
 data SourceType
@@ -126,112 +150,6 @@ defaultConfig =
       cfgPrinterOpts = defaultPrinterOpts
     }
 
--- | Options controlling formatting output.
-data PrinterOpts f = PrinterOpts
-  { -- | Number of spaces to use for indentation
-    poIndentation :: f Int,
-    -- | Whether to place commas at start or end of lines
-    poCommaStyle :: f CommaStyle,
-    -- | Whether to place commas at start or end of import-export lines
-    poImportExportCommaStyle :: f CommaStyle,
-    -- | Whether to indent `where` blocks
-    poIndentWheres :: f Bool,
-    -- | Leave space before opening record brace
-    poRecordBraceSpace :: f Bool,
-    -- | Trailing commas with parentheses on separate lines
-    poDiffFriendlyImportExport :: f Bool,
-    -- | Be less opinionated about spaces/newlines etc.
-    poRespectful :: f Bool,
-    -- | How to print doc comments
-    poHaddockStyle :: f HaddockPrintStyle,
-    -- | Number of newlines between top-level decls
-    poNewlinesBetweenDecls :: f Int
-  }
-  deriving (Generic)
-
--- | A version of 'PrinterOpts' where any field can be empty.
--- This corresponds to the information in a config file or in CLI options.
-type PrinterOptsPartial = PrinterOpts Maybe
-
-deriving instance Eq PrinterOptsPartial
-
-deriving instance Show PrinterOptsPartial
-
-instance Semigroup PrinterOptsPartial where
-  (<>) = fillMissingPrinterOpts
-
-instance Monoid PrinterOptsPartial where
-  mempty = PrinterOpts Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
-
--- | A version of 'PrinterOpts' without empty fields.
-type PrinterOptsTotal = PrinterOpts Identity
-
-deriving instance Eq PrinterOptsTotal
-
-deriving instance Show PrinterOptsTotal
-
-defaultPrinterOpts :: PrinterOptsTotal
-defaultPrinterOpts =
-  PrinterOpts
-    { poIndentation = pure 4,
-      poCommaStyle = pure Leading,
-      poImportExportCommaStyle = pure Trailing,
-      poIndentWheres = pure False,
-      poRecordBraceSpace = pure False,
-      poDiffFriendlyImportExport = pure True,
-      poRespectful = pure True,
-      poHaddockStyle = pure HaddockMultiLine,
-      poNewlinesBetweenDecls = pure 1
-    }
-
--- | Fill the field values that are 'Nothing' in the first argument
--- with the values of the corresponding fields of the second argument.
-fillMissingPrinterOpts ::
-  forall f.
-  Applicative f =>
-  PrinterOptsPartial ->
-  PrinterOpts f ->
-  PrinterOpts f
-fillMissingPrinterOpts p1 p2 =
-  PrinterOpts
-    { poIndentation = fillField poIndentation,
-      poCommaStyle = fillField poCommaStyle,
-      poImportExportCommaStyle = fillField poImportExportCommaStyle,
-      poIndentWheres = fillField poIndentWheres,
-      poRecordBraceSpace = fillField poRecordBraceSpace,
-      poDiffFriendlyImportExport = fillField poDiffFriendlyImportExport,
-      poRespectful = fillField poRespectful,
-      poHaddockStyle = fillField poHaddockStyle,
-      poNewlinesBetweenDecls = fillField poNewlinesBetweenDecls
-    }
-  where
-    fillField :: (forall g. PrinterOpts g -> g a) -> f a
-    fillField f = maybe (f p2) pure $ f p1
-
-data CommaStyle
-  = Leading
-  | Trailing
-  deriving (Eq, Ord, Show, Generic, Bounded, Enum)
-
-instance Aeson.FromJSON CommaStyle where
-  parseJSON =
-    Aeson.genericParseJSON
-      Aeson.defaultOptions
-        { Aeson.constructorTagModifier = Aeson.camelTo2 '-'
-        }
-
-data HaddockPrintStyle
-  = HaddockSingleLine
-  | HaddockMultiLine
-  deriving (Eq, Ord, Show, Generic, Bounded, Enum)
-
-instance Aeson.FromJSON HaddockPrintStyle where
-  parseJSON =
-    Aeson.genericParseJSON
-      Aeson.defaultOptions
-        { Aeson.constructorTagModifier = drop (length ("haddock-" :: String)) . Aeson.camelTo2 '-'
-        }
-
 -- | Convert 'RegionIndices' into 'RegionDeltas'.
 regionIndicesToDeltas ::
   -- | Total number of lines in the input
@@ -256,12 +174,245 @@ newtype DynOption = DynOption
 dynOptionToLocatedStr :: DynOption -> GHC.Located String
 dynOptionToLocatedStr (DynOption o) = GHC.L GHC.noSrcSpan o
 
+----------------------------------------------------------------------------
+-- Fourmolu configuration
+
+-- | A version of 'PrinterOpts' where any field can be empty.
+-- This corresponds to the information in a config file or in CLI options.
+type PrinterOptsPartial = PrinterOpts Maybe
+
+deriving instance Eq PrinterOptsPartial
+
+deriving instance Show PrinterOptsPartial
+
+instance Semigroup PrinterOptsPartial where
+  (<>) = fillMissingPrinterOpts
+
+instance Monoid PrinterOptsPartial where
+  mempty = $(allNothing 'PrinterOpts)
+
 instance Aeson.FromJSON PrinterOptsPartial where
   parseJSON =
-    Aeson.genericParseJSON
-      Aeson.defaultOptions
-        { Aeson.fieldLabelModifier = Aeson.camelTo2 '-' . dropWhile isLower
-        }
+    Aeson.withObject "PrinterOpts" $ \o ->
+      overFieldsM (parseField o) printerOptsMeta
+    where
+      parseField :: Aeson.Object -> PrinterOptsFieldMeta a -> Aeson.Parser (Maybe a)
+      parseField o PrinterOptsFieldMeta {metaName} = do
+        let key = fromString metaName
+        mValue <- o Aeson..:? key
+        forM mValue $ \value ->
+          parseJSON value Aeson.<?> Aeson.Key key
+
+-- | A version of 'PrinterOpts' without empty fields.
+type PrinterOptsTotal = PrinterOpts Identity
+
+deriving instance Eq PrinterOptsTotal
+
+deriving instance Show PrinterOptsTotal
+
+overFields :: (forall a. f a -> g a) -> PrinterOpts f -> PrinterOpts g
+overFields f = runIdentity . overFieldsM (Identity . f)
+
+overFieldsM :: Applicative m => (forall a. f a -> m (g a)) -> PrinterOpts f -> m (PrinterOpts g)
+overFieldsM f $(unpackFieldsWithSuffix 'PrinterOpts "0") = do
+  poIndentation <- f poIndentation0
+  poCommaStyle <- f poCommaStyle0
+  poImportExportCommaStyle <- f poImportExportCommaStyle0
+  poIndentWheres <- f poIndentWheres0
+  poRecordBraceSpace <- f poRecordBraceSpace0
+  poDiffFriendlyImportExport <- f poDiffFriendlyImportExport0
+  poRespectful <- f poRespectful0
+  poHaddockStyle <- f poHaddockStyle0
+  poNewlinesBetweenDecls <- f poNewlinesBetweenDecls0
+  return PrinterOpts {..}
+
+defaultPrinterOpts :: PrinterOptsTotal
+defaultPrinterOpts = overFields (Identity . metaDefault) printerOptsMeta
+
+-- | Fill the field values that are 'Nothing' in the first argument
+-- with the values of the corresponding fields of the second argument.
+fillMissingPrinterOpts ::
+  forall f.
+  Applicative f =>
+  PrinterOptsPartial ->
+  PrinterOpts f ->
+  PrinterOpts f
+fillMissingPrinterOpts p1 p2 = overFields fillField printerOptsMeta
+  where
+    fillField :: PrinterOptsFieldMeta a -> f a
+    fillField meta = maybe (metaGetField meta p2) pure (metaGetField meta p1)
+
+-- | Source of truth for how PrinterOpts is parsed from configuration sources.
+data PrinterOptsFieldMeta a where
+  PrinterOptsFieldMeta ::
+    PrinterOptsFieldType a =>
+    { metaName :: String,
+      -- In future versions of GHC, this could be replaced with a
+      -- `metaProxyField = Proxy @"poIndentation"` field using `HasField`
+      -- https://gitlab.haskell.org/ghc/ghc/-/issues/20989
+      metaGetField :: forall f. PrinterOpts f -> f a,
+      metaPlaceholder :: String,
+      metaHelp :: String,
+      metaDefault :: a
+    } ->
+    PrinterOptsFieldMeta a
+
+printerOptsMeta :: PrinterOpts PrinterOptsFieldMeta
+printerOptsMeta =
+  PrinterOpts
+    { poIndentation =
+        PrinterOptsFieldMeta
+          { metaName = "indentation",
+            metaGetField = poIndentation,
+            metaPlaceholder = "WIDTH",
+            metaHelp = "Number of spaces per indentation step",
+            metaDefault = 4
+          },
+      poCommaStyle =
+        PrinterOptsFieldMeta
+          { metaName = "comma-style",
+            metaGetField = poCommaStyle,
+            metaPlaceholder = "STYLE",
+            metaHelp =
+              printf
+                "How to place commas in multi-line lists, records, etc. (choices: %s)"
+                (showAllValues commaStyleMap),
+            metaDefault = Leading
+          },
+      poImportExportCommaStyle =
+        PrinterOptsFieldMeta
+          { metaName = "import-export-comma-style",
+            metaGetField = poImportExportCommaStyle,
+            metaPlaceholder = "STYLE",
+            metaHelp =
+              printf
+                "How to place commas in multi-line import and export lists (choices: %s)"
+                (showAllValues commaStyleMap),
+            metaDefault = Trailing
+          },
+      poIndentWheres =
+        PrinterOptsFieldMeta
+          { metaName = "indent-wheres",
+            metaGetField = poIndentWheres,
+            metaPlaceholder = "BOOL",
+            metaHelp =
+              unwords
+                [ "Whether to indent 'where' bindings past the preceding body",
+                  "(rather than half-indenting the 'where' keyword)"
+                ],
+            metaDefault = False
+          },
+      poRecordBraceSpace =
+        PrinterOptsFieldMeta
+          { metaName = "record-brace-space",
+            metaGetField = poRecordBraceSpace,
+            metaPlaceholder = "BOOL",
+            metaHelp = "Whether to leave a space before an opening record brace",
+            metaDefault = False
+          },
+      poDiffFriendlyImportExport =
+        PrinterOptsFieldMeta
+          { metaName = "diff-friendly-import-export",
+            metaGetField = poDiffFriendlyImportExport,
+            metaPlaceholder = "BOOL",
+            metaHelp =
+              unwords
+                [ "Whether to make use of extra commas in import/export lists",
+                  "(as opposed to Ormolu's style)"
+                ],
+            metaDefault = True
+          },
+      poRespectful =
+        PrinterOptsFieldMeta
+          { metaName = "respectful",
+            metaGetField = poRespectful,
+            metaPlaceholder = "BOOL",
+            metaHelp = "Give the programmer more choice on where to insert blank lines",
+            metaDefault = True
+          },
+      poHaddockStyle =
+        PrinterOptsFieldMeta
+          { metaName = "haddock-style",
+            metaGetField = poHaddockStyle,
+            metaPlaceholder = "STYLE",
+            metaHelp =
+              printf
+                "How to print Haddock comments (choices: %s)"
+                (showAllValues haddockPrintStyleMap),
+            metaDefault = HaddockMultiLine
+          },
+      poNewlinesBetweenDecls =
+        PrinterOptsFieldMeta
+          { metaName = "newlines-between-decls",
+            metaGetField = poNewlinesBetweenDecls,
+            metaPlaceholder = "HEIGHT",
+            metaHelp = "Number of spaces between top-level declarations",
+            metaDefault = 1
+          }
+    }
+
+class PrinterOptsFieldType a where
+  parseJSON :: Aeson.Value -> Aeson.Parser a
+  default parseJSON :: Aeson.FromJSON a => Aeson.Value -> Aeson.Parser a
+  parseJSON = Aeson.parseJSON
+
+  parseText :: String -> Either String a
+  default parseText :: Read a => String -> Either String a
+  parseText = readEither
+
+  showText :: a -> String
+  default showText :: Show a => a -> String
+  showText = show
+
+instance PrinterOptsFieldType Int
+
+instance PrinterOptsFieldType Bool where
+  parseText = \case
+    "false" -> Right False
+    "true" -> Right True
+    unknown ->
+      Left . unlines $
+        [ "unknown value: " <> show unknown,
+          "Valid values are: \"false\" or \"true\""
+        ]
+
+commaStyleMap :: BijectiveMap CommaStyle
+commaStyleMap =
+  $( mkBijectiveMap
+      [ ('Leading, "leading"),
+        ('Trailing, "trailing")
+      ]
+   )
+
+haddockPrintStyleMap :: BijectiveMap HaddockPrintStyle
+haddockPrintStyleMap =
+  $( mkBijectiveMap
+      [ ('HaddockSingleLine, "single-line"),
+        ('HaddockMultiLine, "multi-line")
+      ]
+   )
+
+instance PrinterOptsFieldType CommaStyle where
+  parseJSON = parseJSONWith commaStyleMap "CommaStyle"
+  parseText = parseTextWith commaStyleMap
+  showText = show . showTextWith commaStyleMap
+
+instance PrinterOptsFieldType HaddockPrintStyle where
+  parseJSON = parseJSONWith haddockPrintStyleMap "CommaStyle"
+  parseText = parseTextWith haddockPrintStyleMap
+  showText = show . showTextWith haddockPrintStyleMap
+
+----------------------------------------------------------------------------
+-- BijectiveMap helpers
+
+parseJSONWith :: BijectiveMap a -> String -> Aeson.Value -> Aeson.Parser a
+parseJSONWith mapping name =
+  Aeson.withText name (fromEither . parseTextWith mapping . Text.unpack)
+  where
+    fromEither = either Aeson.parseFail pure
+
+----------------------------------------------------------------------------
+-- Loading Fourmolu configuration
 
 data FourmoluConfig = FourmoluConfig
   { cfgFilePrinterOpts :: PrinterOptsPartial,
