@@ -18,3 +18,4 @@ jobs:
             Reviewer: Please verify the following things have been done, if applicable.
             - [ ] `CHANGELOG.md` has been updated
             - [ ] Configuration docs in `README.md` have been updated
+            - [ ] `fourmolu.yaml` updated to stay in sync with config in `README.md`
