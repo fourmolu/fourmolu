@@ -398,7 +398,7 @@ instance PrinterOptsFieldType CommaStyle where
   showText = show . showTextWith commaStyleMap
 
 instance PrinterOptsFieldType HaddockPrintStyle where
-  parseJSON = parseJSONWith haddockPrintStyleMap "CommaStyle"
+  parseJSON = parseJSONWith haddockPrintStyleMap "HaddockPrintStyle"
   parseText = parseTextWith haddockPrintStyleMap
   showText = show . showTextWith haddockPrintStyleMap
 
