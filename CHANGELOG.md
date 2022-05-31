@@ -1,3 +1,8 @@
+## Fourmolu 0.7.0.1
+
+* Fix bad copy/paste where parsing errors for `haddock-style` would mention `CommaStyle`
+* Include relevant test files in sdist bundle
+
 ## Fourmolu 0.7.0.0
 
 * Add `--quiet` flag to make the output quieter
