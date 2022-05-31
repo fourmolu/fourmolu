@@ -11,6 +11,7 @@
     - 'infixr 5 #'
   ```
 * Fixed issue with `import-export-comma-style` for multiline import/export elements ([#187](https://github.com/fourmolu/fourmolu/pull/187))
+* Multiline haddock comments with consecutive empty newlines will no longer report an "AST differs" error ([#172](https://github.com/fourmolu/fourmolu/issues/172))
 
 #### Ormolu 0.5.0.0
 

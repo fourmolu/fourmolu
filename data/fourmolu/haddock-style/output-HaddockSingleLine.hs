@@ -16,3 +16,12 @@ multi1 :: Int
 --This is a multiline
 --function haddock
 multi2 :: Int
+
+-- | This is a haddock
+--
+-- with two consecutive newlines
+--
+--
+-- https://github.com/fourmolu/fourmolu/issues/172
+foo :: Int
+foo = 42

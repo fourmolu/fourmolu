@@ -16,6 +16,7 @@ module Ormolu.Printer.Meat.Common
 where
 
 import Control.Monad
+import Data.Foldable (traverse_)
 import Data.List (intersperse)
 import qualified Data.Text as T
 import GHC.Hs.Doc
@@ -147,38 +148,49 @@ p_hsDocString hstyle needsNewline (L l str) = do
   goesAfterComment <- maybe False isCommentSpan <$> getSpanMark
   -- Make sure the Haddock is separated by a newline from other comments.
   when goesAfterComment newline
+
+  mSrcSpan <- getSrcSpan l
+
+  printStyle <- getPrinterOpt poHaddockStyle
+  let useSingleLineComments =
+        or
+          [ printStyle == HaddockSingleLine,
+            length docLines <= 1,
+            -- Use multiple single-line comments when the whole comment is indented
+            maybe False ((> 1) . srcSpanStartCol) mSrcSpan
+          ]
+
   let txt' x = unless (T.null x) (txt x)
-      docLines = splitDocString str
-      body s = do
-        txt $ case hstyle of
-          Pipe -> " |"
-          Caret -> " ^"
-          Asterisk n -> " " <> T.replicate n "*"
-          Named name -> " $" <> T.pack name
-        sequence_ $ intersperse (newline >> s) $ map txt' docLines
-  single <-
-    getPrinterOpt poHaddockStyle >>= \case
-      HaddockSingleLine -> pure True
-      -- Use multiple single-line comments when the whole comment is indented
-      HaddockMultiLine -> maybe False ((> 1) . srcSpanStartCol) <$> getSrcSpan l
-  if single
+      body s = sequence_ $ intersperse s $ map txt' docLines
+
+  if useSingleLineComments
     then do
-      txt "--"
-      body $ txt "--"
-    else
-      if length docLines <= 1
-        then do
-          txt "--"
-          body $ pure ()
-        else do
-          txt "{-"
-          body $ pure ()
-          newline
-          txt "-}"
+      txt $ "-- " <> haddockDelim
+      body $ newline >> txt "--"
+    else do
+      txt $ "{- " <> haddockDelim
+      -- 'newline' doesn't allow multiple blank newlines, which changes the comment
+      -- if the user writes a comment with multiple newlines. So we have to do this
+      -- to force the printer to output a newline. The HaddockSingleLine branch
+      -- doesn't have this problem because each newline has at least "--".
+      --
+      -- 'newline' also takes indentation into account, but since multiline comments
+      -- are never used in an indented context (see useSingleLineComments), this is
+      -- safe
+      body $ txt "\n"
+      newline
+      txt "-}"
 
   when needsNewline newline
-  getSrcSpan l >>= mapM_ (setSpanMark . HaddockSpan hstyle)
+  traverse_ (setSpanMark . HaddockSpan hstyle) mSrcSpan
   where
+    docLines = splitDocString str
+    haddockDelim =
+      case hstyle of
+        Pipe -> "|"
+        Caret -> "^"
+        Asterisk n -> T.replicate n "*"
+        Named name -> "$" <> T.pack name
     getSrcSpan = \case
       -- It's often the case that the comment itself doesn't have a span
       -- attached to it and instead its location can be obtained from
