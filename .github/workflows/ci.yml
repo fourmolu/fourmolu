@@ -150,9 +150,7 @@ jobs:
           path: ~/.stack
           key: ${{ runner.os }}-check_sdist-${{ hashFiles('stack.yaml') }}
       - name: Create sdist bundle
-        run: |
-          stack sdist
-          cp "$(find .stack-work/ -name 'fourmolu-*.tar.gz')" .
+        run: stack sdist --test-tarball --tar-dir .
       - uses: actions/upload-artifact@v3
         with:
           name: fourmolu-sdist

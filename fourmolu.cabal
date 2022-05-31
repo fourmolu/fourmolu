@@ -18,6 +18,10 @@ extra-source-files:
     data/**/*.hs
     data/**/*.txt
     extract-hackage-info/hackage-info.json
+    -- needed for integration tests
+    fixity-tests/*.hs
+    region-tests/*.hs
+    fourmolu.yaml
 
 extra-doc-files:
     CHANGELOG.md
