@@ -12,6 +12,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+        with:
+          ref: main
+
       - uses: actions/cache@v3
         with:
           path: ~/.stack
