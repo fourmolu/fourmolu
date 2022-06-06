@@ -23,6 +23,8 @@ import Ormolu.Printer.Meat.Declaration.Warning
 import Ormolu.Printer.Meat.ImportExport
 import Ormolu.Printer.Meat.Pragma
 
+{- HLINT ignore "Use camelCase" -}
+
 -- | Render a module-like entity (either a regular module or a backpack
 -- signature).
 p_hsModule ::
@@ -55,7 +57,7 @@ p_hsModule mstackHeader pragmas HsModule {..} = do
         breakIfNotDiffFriendly
 
         -- This works around an awkward idempotency bug with deprecation messages.
-        diffFriendly <- getPrinterOpt poDiffFriendlyImportExport
+        diffFriendly <- isDiffFriendly <$> getPrinterOpt poImportExportStyle
         when (diffFriendly && not (null hsmodDeprecMessage)) newline
 
         case hsmodExports of

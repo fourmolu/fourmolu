@@ -11,12 +11,13 @@ module Ormolu.Printer.Meat.ImportExport
 where
 
 import Control.Monad
+import Data.Maybe
 import qualified Data.Text as T
 import GHC.Hs
 import GHC.LanguageExtensions.Type
 import GHC.Types.SrcLoc
 import GHC.Unit.Types
-import Ormolu.Config (CommaStyle (..), PrinterOpts (poImportExportCommaStyle), poDiffFriendlyImportExport)
+import Ormolu.Config
 import Ormolu.Printer.Combinators
 import Ormolu.Printer.Meat.Common
 import Ormolu.Utils (RelativePos (..), attachRelativePos)
@@ -132,7 +133,7 @@ p_lie encLayout relativePos = \case
             LastPos -> void m
             FirstAfterDocPos -> m >> comma
         MultiLine -> do
-          commaStyle <- getPrinterOpt poImportExportCommaStyle
+          commaStyle <- getCommaStyle
           case commaStyle of
             Leading ->
               case relativePos of
@@ -142,7 +143,7 @@ p_lie encLayout relativePos = \case
                 _ -> comma >> space >> m
             Trailing -> m >> comma
     indentDoc m = do
-      commaStyle <- getPrinterOpt poImportExportCommaStyle
+      commaStyle <- getCommaStyle
       case commaStyle of
         Trailing -> m
         Leading ->
@@ -181,7 +182,7 @@ attachRelativePos' = \case
 -- | Surround given entity by parentheses @(@ and @)@.
 parens' :: Bool -> R () -> R ()
 parens' topLevelImport m =
-  getPrinterOpt poDiffFriendlyImportExport >>= \case
+  getDiffFriendly >>= \case
     True -> do
       txt "("
       breakpoint'
@@ -195,7 +196,7 @@ parens' topLevelImport m =
     body = vlayout singleLine multiLine
     singleLine = m
     multiLine = do
-      commaStyle <- getPrinterOpt poImportExportCommaStyle
+      commaStyle <- getCommaStyle
       case commaStyle of
         -- On leading commas, list elements are inline with the enclosing parentheses
         Leading -> do
@@ -209,8 +210,17 @@ parens' topLevelImport m =
           newline
     trailingParen = if topLevelImport then txt " )" else txt ")"
 
+getCommaStyle :: R CommaStyle
+getCommaStyle = do
+  style <- getPrinterOpt poImportExportStyle
+  pure $ fromMaybe Trailing $ importExportCommaStyle style
+
+getDiffFriendly :: R Bool
+getDiffFriendly =
+  isDiffFriendly <$> getPrinterOpt poImportExportStyle
+
 breakIfNotDiffFriendly :: R ()
 breakIfNotDiffFriendly =
-  getPrinterOpt poDiffFriendlyImportExport >>= \case
-    True -> space
-    False -> breakpoint
+  getPrinterOpt poImportExportStyle >>= \case
+    ImportExportDiffFriendly -> space
+    _ -> breakpoint

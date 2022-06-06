@@ -321,7 +321,11 @@ commaDel = getPrinterOpt poCommaStyle >>= commaDel'
 -- | Delimiting combination with 'comma' for import-export lists.
 -- To be used with `sep`.
 commaDelImportExport :: R ()
-commaDelImportExport = getPrinterOpt poImportExportCommaStyle >>= commaDel'
+commaDelImportExport =
+  getPrinterOpt poImportExportStyle >>= \case
+    ImportExportLeading -> commaDel' Leading
+    ImportExportTrailing -> commaDel' Trailing
+    ImportExportDiffFriendly -> commaDel' Trailing
 
 commaDel' :: CommaStyle -> R ()
 commaDel' = \case
