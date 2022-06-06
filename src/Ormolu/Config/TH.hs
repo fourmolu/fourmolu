@@ -15,7 +15,8 @@ module Ormolu.Config.TH
   )
 where
 
-import Control.Monad (forM, (>=>))
+import Control.Monad (forM, when, (>=>))
+import Data.Containers.ListUtils (nubOrd)
 import Data.List (intercalate, nub)
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax (lift)
@@ -69,6 +70,7 @@ showAllValues = uncommas . map show . getAllOptions
 --   * all Names in given list refer to a constructor of type `a`
 --   * all Names in given list refer to a 0-arity constructor
 --   * all constructors in type `a` are accounted for.
+--   * each constructor in type `a` must be provided only once.
 mkBijectiveMap :: [(Name, String)] -> Q Exp
 mkBijectiveMap mapping = do
   let (conNames, allOptions) = unzip mapping
@@ -103,6 +105,10 @@ mkBijectiveMap mapping = do
   case filter (`notElem` conNames) (concatMap getConstructorNames allConsInType) of
     [] -> return ()
     missing -> fail $ "Missing constructors: " ++ show missing
+
+  -- check for duplicate constructors
+  when (nubOrd conNames /= conNames) $
+    fail "mkBijectiveMap requires each constructor to be provided only once"
 
   unknown <- newName "unknown"
   let parser =
