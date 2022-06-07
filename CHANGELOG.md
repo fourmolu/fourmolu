@@ -1,3 +1,5 @@
+## Unreleased
+
 ## Fourmolu 0.7.0.1
 
 * Fix bad copy/paste where parsing errors for `haddock-style` would mention `CommaStyle`
