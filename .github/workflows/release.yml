@@ -15,11 +15,6 @@ jobs:
         with:
           ref: main
 
-      - uses: actions/cache@v3
-        with:
-          path: ~/.stack
-          key: ${{ runner.os }}-release-cache-${{ hashFiles('make-release.sh') }}
-
       - uses: actions/download-artifact@v3
         with:
           name: fourmolu-binary-ubuntu-latest
