@@ -74,16 +74,11 @@ spec =
         },
       TestGroup
         { label = "import-export",
-          testCases = (,) <$> allOptions <*> allOptions,
-          updateConfig = \(commaStyle, diffFriendly) opts ->
-            opts
-              { poImportExportCommaStyle = pure commaStyle,
-                poDiffFriendlyImportExport = pure diffFriendly
-              },
-          showTestCase = \(commaStyle, diffFriendly) ->
-            show commaStyle ++ if diffFriendly then " + diff friendly" else "",
-          testCaseSuffix = \(commaStyle, diffFriendly) ->
-            suffixWith [show commaStyle, if diffFriendly then "diff_friendly" else ""]
+          testCases = allOptions,
+          updateConfig = \commaStyle opts ->
+            opts {poImportExportStyle = pure commaStyle},
+          showTestCase = show,
+          testCaseSuffix = suffix1
         },
       TestGroup
         { label = "record-brace-space",

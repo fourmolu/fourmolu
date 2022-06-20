@@ -16,12 +16,10 @@ import GHC.Hs
 import GHC.LanguageExtensions.Type
 import GHC.Types.SrcLoc
 import GHC.Unit.Types
-import Ormolu.Config (CommaStyle (..), PrinterOpts (poImportExportCommaStyle), poDiffFriendlyImportExport)
+import Ormolu.Config
 import Ormolu.Printer.Combinators
 import Ormolu.Printer.Meat.Common
 import Ormolu.Utils (RelativePos (..), attachRelativePos)
-
-{- HLINT ignore "Use camelCase" -}
 
 p_hsmodExports :: [LIE GhcPs] -> R ()
 p_hsmodExports [] = do
@@ -132,7 +130,7 @@ p_lie encLayout relativePos = \case
             LastPos -> void m
             FirstAfterDocPos -> m >> comma
         MultiLine -> do
-          commaStyle <- getPrinterOpt poImportExportCommaStyle
+          commaStyle <- getCommaStyle
           case commaStyle of
             Leading ->
               case relativePos of
@@ -142,7 +140,7 @@ p_lie encLayout relativePos = \case
                 _ -> comma >> space >> m
             Trailing -> m >> comma
     indentDoc m = do
-      commaStyle <- getPrinterOpt poImportExportCommaStyle
+      commaStyle <- getCommaStyle
       case commaStyle of
         Trailing -> m
         Leading ->
@@ -181,13 +179,13 @@ attachRelativePos' = \case
 -- | Surround given entity by parentheses @(@ and @)@.
 parens' :: Bool -> R () -> R ()
 parens' topLevelImport m =
-  getPrinterOpt poDiffFriendlyImportExport >>= \case
-    True -> do
+  getPrinterOpt poImportExportStyle >>= \case
+    ImportExportDiffFriendly -> do
       txt "("
       breakpoint'
       sitcc body
       vlayout (txt ")") (inciByFrac (-1) trailingParen)
-    False -> sitcc $ do
+    _ -> sitcc $ do
       txt "("
       body
       txt ")"
@@ -195,7 +193,7 @@ parens' topLevelImport m =
     body = vlayout singleLine multiLine
     singleLine = m
     multiLine = do
-      commaStyle <- getPrinterOpt poImportExportCommaStyle
+      commaStyle <- getCommaStyle
       case commaStyle of
         -- On leading commas, list elements are inline with the enclosing parentheses
         Leading -> do
@@ -209,8 +207,15 @@ parens' topLevelImport m =
           newline
     trailingParen = if topLevelImport then txt " )" else txt ")"
 
+getCommaStyle :: R CommaStyle
+getCommaStyle =
+  getPrinterOpt poImportExportStyle >>= \case
+    ImportExportLeading -> pure Leading
+    ImportExportTrailing -> pure Trailing
+    ImportExportDiffFriendly -> pure Trailing
+
 breakIfNotDiffFriendly :: R ()
 breakIfNotDiffFriendly =
-  getPrinterOpt poDiffFriendlyImportExport >>= \case
-    True -> space
-    False -> breakpoint
+  getPrinterOpt poImportExportStyle >>= \case
+    ImportExportDiffFriendly -> space
+    _ -> breakpoint

@@ -45,10 +45,9 @@ We share all bar one of Ormolu's goals:
 |----------------------|---------------|-------------|
 | `indentation`        | any integer   | Number of spaces to use as indentation |
 | `comma-style`        | `leading`, `trailing` | Where to put the comma in lists, tuples, etc. |
-| `import-export-comma-style` | `leading`, `trailing` | Where to put the comma in import/export lists |
+| `import-export-style` | `leading`, `trailing`, `diff-friendly` | How to format multiline import/export lists (`diff-friendly` lists have trailing commas but keep the open-parentheses on the same line as the `import` line) |
 | `indent-wheres`      | `true`, `false` | `false` means save space by only half-indenting the `where` keyword |
 | `record-brace-space` | `true`, `false` | `rec {x = 1}` vs `rec{x = 1}` |
-| `diff-friendly-import-export` | `true`, `false` | Make multiline import/export lists as diff-friendly as possible (keeping the open-parentheses on the same line as the `import` line or not) |
 | `respectful`         | `true`, `false` | Whether to respect user-specified newlines, e.g. in import groupings |
 | `haddock-style`      | `multi-line`, `single-line` | Whether multiline haddocks should use `{-` or `--` |
 | `newlines-between-decls` | any integer | number of newlines between top-level declarations |
@@ -65,10 +64,9 @@ A complete configuration file, corresponding to Fourmolu's default options, look
 ```yaml
 indentation: 4
 comma-style: leading
-import-export-comma-style: leading
+import-export-style: diff-friendly
 indent-wheres: false
 record-brace-space: false
-diff-friendly-import-export: true
 respectful: true
 haddock-style: multi-line
 newlines-between-decls: 1
@@ -80,10 +78,9 @@ The configuration that most closely matches Ormolu's styling is:
 ```yaml
 indentation: 2
 comma-style: trailing
-import-export-comma-style: trailing
+import-export-style: trailing
 indent-wheres: true
 record-brace-space: true
-diff-friendly-import-export: false
 respectful: false
 haddock-style: single-line
 newlines-between-decls: 1

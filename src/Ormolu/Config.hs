@@ -34,6 +34,7 @@ module Ormolu.Config
     fillMissingPrinterOpts,
     CommaStyle (..),
     HaddockPrintStyle (..),
+    ImportExportStyle (..),
 
     -- ** Loading Fourmolu configuration
     loadConfigFile,
@@ -217,10 +218,9 @@ overFieldsM :: Applicative m => (forall a. f a -> m (g a)) -> PrinterOpts f -> m
 overFieldsM f $(unpackFieldsWithSuffix 'PrinterOpts "0") = do
   poIndentation <- f poIndentation0
   poCommaStyle <- f poCommaStyle0
-  poImportExportCommaStyle <- f poImportExportCommaStyle0
+  poImportExportStyle <- f poImportExportStyle0
   poIndentWheres <- f poIndentWheres0
   poRecordBraceSpace <- f poRecordBraceSpace0
-  poDiffFriendlyImportExport <- f poDiffFriendlyImportExport0
   poRespectful <- f poRespectful0
   poHaddockStyle <- f poHaddockStyle0
   poNewlinesBetweenDecls <- f poNewlinesBetweenDecls0
@@ -279,16 +279,13 @@ printerOptsMeta =
                 (showAllValues commaStyleMap),
             metaDefault = Leading
           },
-      poImportExportCommaStyle =
+      poImportExportStyle =
         PrinterOptsFieldMeta
-          { metaName = "import-export-comma-style",
-            metaGetField = poImportExportCommaStyle,
+          { metaName = "import-export-style",
+            metaGetField = poImportExportStyle,
             metaPlaceholder = "STYLE",
-            metaHelp =
-              printf
-                "How to place commas in multi-line import and export lists (choices: %s)"
-                (showAllValues commaStyleMap),
-            metaDefault = Trailing
+            metaHelp = "Styling of import/export lists",
+            metaDefault = ImportExportDiffFriendly
           },
       poIndentWheres =
         PrinterOptsFieldMeta
@@ -309,18 +306,6 @@ printerOptsMeta =
             metaPlaceholder = "BOOL",
             metaHelp = "Whether to leave a space before an opening record brace",
             metaDefault = False
-          },
-      poDiffFriendlyImportExport =
-        PrinterOptsFieldMeta
-          { metaName = "diff-friendly-import-export",
-            metaGetField = poDiffFriendlyImportExport,
-            metaPlaceholder = "BOOL",
-            metaHelp =
-              unwords
-                [ "Whether to make use of extra commas in import/export lists",
-                  "(as opposed to Ormolu's style)"
-                ],
-            metaDefault = True
           },
       poRespectful =
         PrinterOptsFieldMeta
@@ -392,6 +377,15 @@ haddockPrintStyleMap =
       ]
    )
 
+importExportStyleMap :: BijectiveMap ImportExportStyle
+importExportStyleMap =
+  $( mkBijectiveMap
+      [ ('ImportExportLeading, "leading"),
+        ('ImportExportTrailing, "trailing"),
+        ('ImportExportDiffFriendly, "diff-friendly")
+      ]
+   )
+
 instance PrinterOptsFieldType CommaStyle where
   parseJSON = parseJSONWith commaStyleMap "CommaStyle"
   parseText = parseTextWith commaStyleMap
@@ -401,6 +395,11 @@ instance PrinterOptsFieldType HaddockPrintStyle where
   parseJSON = parseJSONWith haddockPrintStyleMap "HaddockPrintStyle"
   parseText = parseTextWith haddockPrintStyleMap
   showText = show . showTextWith haddockPrintStyleMap
+
+instance PrinterOptsFieldType ImportExportStyle where
+  parseJSON = parseJSONWith importExportStyleMap "ImportExportStyle"
+  parseText = parseTextWith importExportStyleMap
+  showText = show . showTextWith importExportStyleMap
 
 ----------------------------------------------------------------------------
 -- BijectiveMap helpers

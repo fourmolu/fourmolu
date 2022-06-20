@@ -1,11 +1,11 @@
 {-# LANGUAGE DeriveGeneric #-}
 
--- | This module only defines PrinterOpts, needed to be separate because of
--- Template Haskell staging restrictions.
+-- | This module defines PrinterOpts and related types
 module Ormolu.Config.Types
   ( PrinterOpts (..),
     CommaStyle (..),
     HaddockPrintStyle (..),
+    ImportExportStyle (..),
   )
 where
 
@@ -17,14 +17,12 @@ data PrinterOpts f = PrinterOpts
     poIndentation :: f Int,
     -- | Whether to place commas at start or end of lines
     poCommaStyle :: f CommaStyle,
-    -- | Whether to place commas at start or end of import-export lines
-    poImportExportCommaStyle :: f CommaStyle,
+    -- | Styling of import/export lists
+    poImportExportStyle :: f ImportExportStyle,
     -- | Whether to indent `where` blocks
     poIndentWheres :: f Bool,
     -- | Leave space before opening record brace
     poRecordBraceSpace :: f Bool,
-    -- | Trailing commas with parentheses on separate lines
-    poDiffFriendlyImportExport :: f Bool,
     -- | Be less opinionated about spaces/newlines etc.
     poRespectful :: f Bool,
     -- | How to print doc comments
@@ -42,4 +40,10 @@ data CommaStyle
 data HaddockPrintStyle
   = HaddockSingleLine
   | HaddockMultiLine
+  deriving (Eq, Show, Enum, Bounded)
+
+data ImportExportStyle
+  = ImportExportLeading
+  | ImportExportTrailing
+  | ImportExportDiffFriendly
   deriving (Eq, Show, Enum, Bounded)

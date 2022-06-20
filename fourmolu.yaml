@@ -1,10 +1,9 @@
 # Options should imitate Ormolu's style
 indentation: 2
 comma-style: trailing
-import-export-comma-style: trailing
+import-export-style: trailing
 indent-wheres: true
 record-brace-space: true
-diff-friendly-import-export: false
 respectful: false
 haddock-style: single-line
 newlines-between-decls: 1
