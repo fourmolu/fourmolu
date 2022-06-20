@@ -42,6 +42,7 @@ Considering configurability is the raison d'être of Fourmolu, you're probably m
 1. Run all tests with `ORMOLU_REGENERATE_EXAMPLES=1 stack test`
     * This should not change any of the `*-out.hs` files, although it might change the `*-four-out.hs` files, if the setting in `defaultPrinterOpts` is different from the one in `fourmolu.yaml`
 1. Add your new option to the "Configuration" section in `README.md`
+    * Both in the table and in the example `fourmolu.yaml` file
 1. Update `CHANGELOG.md`
 
 ## Instant feedback with GHCID
