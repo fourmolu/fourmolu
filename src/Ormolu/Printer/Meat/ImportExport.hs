@@ -179,18 +179,17 @@ attachRelativePos' = \case
 -- | Surround given entity by parentheses @(@ and @)@.
 parens' :: Bool -> R () -> R ()
 parens' topLevelImport m =
-  getDiffFriendly >>= \case
-    True -> do
+  getPrinterOpt poImportExportStyle >>= \case
+    ImportExportDiffFriendly -> do
       txt "("
       breakpoint'
       sitcc body
       vlayout (txt ")") (inciByFrac (-1) trailingParen)
-    False -> sitcc $ do
+    _ -> sitcc $ do
       txt "("
       body
       txt ")"
   where
-    getDiffFriendly = isDiffFriendly <$> getPrinterOpt poImportExportStyle
     body = vlayout singleLine multiLine
     singleLine = m
     multiLine = do

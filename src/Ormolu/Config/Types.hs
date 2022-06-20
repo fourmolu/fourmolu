@@ -6,7 +6,6 @@ module Ormolu.Config.Types
     CommaStyle (..),
     HaddockPrintStyle (..),
     ImportExportStyle (..),
-    isDiffFriendly,
   )
 where
 
@@ -48,8 +47,3 @@ data ImportExportStyle
   | ImportExportTrailing
   | ImportExportDiffFriendly
   deriving (Eq, Show, Enum, Bounded)
-
--- poImportExportStyle helpers.
-
-isDiffFriendly :: ImportExportStyle -> Bool
-isDiffFriendly = (==) ImportExportDiffFriendly

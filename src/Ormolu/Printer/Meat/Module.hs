@@ -55,7 +55,7 @@ p_hsModule mstackHeader pragmas HsModule {..} = do
         breakIfNotDiffFriendly
 
         -- This works around an awkward idempotency bug with deprecation messages.
-        diffFriendly <- isDiffFriendly <$> getPrinterOpt poImportExportStyle
+        diffFriendly <- (==) ImportExportDiffFriendly <$> getPrinterOpt poImportExportStyle
         when (diffFriendly && not (null hsmodDeprecMessage)) newline
 
         case hsmodExports of

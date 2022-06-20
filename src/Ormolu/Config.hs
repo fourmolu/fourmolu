@@ -35,7 +35,6 @@ module Ormolu.Config
     CommaStyle (..),
     HaddockPrintStyle (..),
     ImportExportStyle (..),
-    isDiffFriendly,
 
     -- ** Loading Fourmolu configuration
     loadConfigFile,

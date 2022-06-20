@@ -64,10 +64,9 @@ A complete configuration file, corresponding to Fourmolu's default options, look
 ```yaml
 indentation: 4
 comma-style: leading
-import-export-comma-style: leading
+import-export-style: diff-friendly
 indent-wheres: false
 record-brace-space: false
-diff-friendly-import-export: true
 respectful: true
 haddock-style: multi-line
 newlines-between-decls: 1
@@ -79,10 +78,9 @@ The configuration that most closely matches Ormolu's styling is:
 ```yaml
 indentation: 2
 comma-style: trailing
-import-export-comma-style: trailing
+import-export-style: trailing
 indent-wheres: true
 record-brace-space: true
-diff-friendly-import-export: false
 respectful: false
 haddock-style: single-line
 newlines-between-decls: 1
