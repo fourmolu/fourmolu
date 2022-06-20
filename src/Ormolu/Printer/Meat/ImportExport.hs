@@ -11,7 +11,6 @@ module Ormolu.Printer.Meat.ImportExport
 where
 
 import Control.Monad
-import Data.Maybe
 import qualified Data.Text as T
 import GHC.Hs
 import GHC.LanguageExtensions.Type
@@ -21,8 +20,6 @@ import Ormolu.Config
 import Ormolu.Printer.Combinators
 import Ormolu.Printer.Meat.Common
 import Ormolu.Utils (RelativePos (..), attachRelativePos)
-
-{- HLINT ignore "Use camelCase" -}
 
 p_hsmodExports :: [LIE GhcPs] -> R ()
 p_hsmodExports [] = do
@@ -193,6 +190,7 @@ parens' topLevelImport m =
       body
       txt ")"
   where
+    getDiffFriendly = isDiffFriendly <$> getPrinterOpt poImportExportStyle
     body = vlayout singleLine multiLine
     singleLine = m
     multiLine = do
@@ -211,13 +209,11 @@ parens' topLevelImport m =
     trailingParen = if topLevelImport then txt " )" else txt ")"
 
 getCommaStyle :: R CommaStyle
-getCommaStyle = do
-  style <- getPrinterOpt poImportExportStyle
-  pure $ fromMaybe Trailing $ importExportCommaStyle style
-
-getDiffFriendly :: R Bool
-getDiffFriendly =
-  isDiffFriendly <$> getPrinterOpt poImportExportStyle
+getCommaStyle =
+  getPrinterOpt poImportExportStyle >>= \case
+    ImportExportLeading -> pure Leading
+    ImportExportTrailing -> pure Trailing
+    ImportExportDiffFriendly -> pure Trailing
 
 breakIfNotDiffFriendly :: R ()
 breakIfNotDiffFriendly =

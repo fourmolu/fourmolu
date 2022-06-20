@@ -1,5 +1,4 @@
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE LambdaCase #-}
 
 -- | This module defines PrinterOpts and related types
 module Ormolu.Config.Types
@@ -7,9 +6,7 @@ module Ormolu.Config.Types
     CommaStyle (..),
     HaddockPrintStyle (..),
     ImportExportStyle (..),
-    DiffFriendly (..),
     isDiffFriendly,
-    importExportCommaStyle,
   )
 where
 
@@ -54,13 +51,5 @@ data ImportExportStyle
 
 -- poImportExportStyle helpers.
 
-data DiffFriendly = DiffFriendly
-
 isDiffFriendly :: ImportExportStyle -> Bool
 isDiffFriendly = (==) ImportExportDiffFriendly
-
-importExportCommaStyle :: ImportExportStyle -> Maybe CommaStyle
-importExportCommaStyle = \case
-  ImportExportLeading -> Just Leading
-  ImportExportTrailing -> Just Trailing
-  ImportExportDiffFriendly -> Nothing

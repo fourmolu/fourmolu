@@ -23,8 +23,6 @@ import Ormolu.Printer.Meat.Declaration.Warning
 import Ormolu.Printer.Meat.ImportExport
 import Ormolu.Printer.Meat.Pragma
 
-{- HLINT ignore "Use camelCase" -}
-
 -- | Render a module-like entity (either a regular module or a backpack
 -- signature).
 p_hsModule ::
