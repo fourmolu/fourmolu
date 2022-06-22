@@ -45,7 +45,7 @@ We share all bar one of Ormolu's goals:
 |----------------------|---------------|-------------|
 | `indentation`        | any integer   | Number of spaces to use as indentation |
 | `comma-style`        | `leading`, `trailing` | Where to put the comma in lists, tuples, etc. |
-| `import-export-style` | `leading`, `trailing`, `diff-friendly` | How to format multiline import/export lists (`diff-friendly` lists have trailing commas but keep the open-parentheses on the same line as the `import` line) |
+| `import-export-comma-style` | `leading`, `trailing`, `diff-friendly` | How to format multiline import/export lists (`diff-friendly` lists have trailing commas but keep the open-parentheses on the same line as the `import` line) |
 | `indent-wheres`      | `true`, `false` | `false` means save space by only half-indenting the `where` keyword |
 | `record-brace-space` | `true`, `false` | `rec {x = 1}` vs `rec{x = 1}` |
 | `respectful`         | `true`, `false` | Whether to respect user-specified newlines, e.g. in import groupings |
