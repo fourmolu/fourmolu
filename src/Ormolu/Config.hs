@@ -346,7 +346,7 @@ printerOptsMeta =
             metaGetField = poLeadingArrows,
             metaPlaceholder = "BOOL",
             metaHelp = "Whether to put arrows before or after types in type signatures",
-            metaDefault = True
+            metaDefault = False
           }
     }
 

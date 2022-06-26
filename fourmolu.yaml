@@ -8,3 +8,4 @@ respectful: false
 haddock-style: single-line
 newlines-between-decls: 1
 fixities: []
+leading-arrows: false
