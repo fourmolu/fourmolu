@@ -141,7 +141,8 @@ p_specSig name ts InlinePragma {..} = pragmaBraces $ do
   p_rdrName name
   trailingArrowType (pure ())
   inci $ do
-    leadingArrowType breakpoint
+    leadingArrowType (pure ())
+    breakpoint
     sep commaDel (located' p_hsSigType) ts
 
 p_inlineSpec :: InlineSpec -> R ()
