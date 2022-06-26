@@ -40,8 +40,6 @@ import {-# SOURCE #-} Ormolu.Printer.Meat.Declaration.Value (p_hsSplice, p_strin
 import Ormolu.Printer.Operators
 import Ormolu.Utils
 
-{-# ANN module ("Hlint: ignore Use camelCase" :: String) #-}
-
 -- What precedes this type on the same line.
 -- Only used for leading arrows
 data After

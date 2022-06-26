@@ -17,8 +17,6 @@ import Ormolu.Printer.Meat.Declaration.Signature
 import Ormolu.Printer.Meat.Declaration.Value
 import Ormolu.Printer.Meat.Type
 
-{-# ANN module ("Hlint: ignore Use camelCase" :: String) #-}
-
 p_ruleDecls :: RuleDecls GhcPs -> R ()
 p_ruleDecls (HsRules _ _ xs) =
   pragma "RULES" $ sep breakpoint (sitcc . located' p_ruleDecl) xs
