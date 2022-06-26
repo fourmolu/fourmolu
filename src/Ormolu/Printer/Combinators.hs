@@ -383,7 +383,7 @@ trailingArrowType x = do
     x
 
 -- | Ouput @x >> txt "::" >> space@ when we are printing with leading arrows
-leadingArrowType :: R () ->  R ()
+leadingArrowType :: R () -> R ()
 leadingArrowType x = do
   isLeadingArrow <- getPrinterOpt poLeadingArrows
   when isLeadingArrow $ do

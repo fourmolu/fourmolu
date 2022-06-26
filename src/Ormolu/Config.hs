@@ -166,7 +166,6 @@ regionIndicesToDeltas total RegionIndices {..} =
       regionSuffixLength = maybe 0 (total -) regionEndLine
     }
 
-
 -- | A wrapper for dynamic options.
 newtype DynOption = DynOption
   { unDynOption :: String

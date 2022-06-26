@@ -5,21 +5,22 @@
 {-# LANGUAGE TypeFamilies #-}
 
 -- | Rendering of types.
-module Ormolu.Printer.Meat.Type (
-  p_hsType,
-  p_hsTypePostDoc,
-  hasDocStrings,
-  p_hsContext,
-  p_hsTyVarBndr,
-  ForAllVisibility (..),
-  p_forallBndrs,
-  p_conDeclFields,
-  p_lhsTypeArg,
-  p_hsSigType,
-  tyVarsToTyPats,
-  hsOuterTyVarBndrsToHsType,
-  lhsTypeToSigType,
-) where
+module Ormolu.Printer.Meat.Type
+  ( p_hsType,
+    p_hsTypePostDoc,
+    hasDocStrings,
+    p_hsContext,
+    p_hsTyVarBndr,
+    ForAllVisibility (..),
+    p_forallBndrs,
+    p_conDeclFields,
+    p_lhsTypeArg,
+    p_hsSigType,
+    tyVarsToTyPats,
+    hsOuterTyVarBndrsToHsType,
+    lhsTypeToSigType,
+  )
+where
 
 import Control.Monad
 import Data.Bool (bool)
