@@ -113,6 +113,14 @@ spec =
             show newlines ++ if respectful then " (respectful)" else "",
           testCaseSuffix = \(newlines, respectful) ->
             suffixWith [show newlines, if respectful then "respectful" else ""]
+        },
+      TestGroup
+        { label = "leading-arrows",
+          testCases = allOptions,
+          updateConfig = \leadingArrows opts ->
+            opts {poLeadingArrows = pure leadingArrows},
+          showTestCase = show,
+          testCaseSuffix = suffix1
         }
     ]
   where
