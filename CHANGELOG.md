@@ -1,6 +1,7 @@
 ## Unreleased
 
 * Consolidate `import-export-comma-style` and `diff-friendly-import-export` into a new option `import-export-style` ([#201](https://github.com/fourmolu/fourmolu/pull/207))
+* Accept folders as input ([#213](https://github.com/fourmolu/fourmolu/issues/213))
 
 ## Fourmolu 0.7.0.1
 
