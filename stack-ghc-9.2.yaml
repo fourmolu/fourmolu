@@ -1,11 +1,5 @@
-resolver: nightly-2022-03-03
-compiler: ghc-9.2.1
-
-extra-deps:
-  - base-compat-0.12.1
-  - base-compat-batteries-0.12.1
-  - Cabal-3.6.2.0
-  - ghc-lib-parser-9.2.1.20211101
+resolver: nightly-2022-07-29
+compiler: ghc-9.2.4
 
 flags:
   fourmolu:
