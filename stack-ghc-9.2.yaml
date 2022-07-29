@@ -1,4 +1,5 @@
 resolver: nightly-2022-07-29
+compiler: ghc-9.2.4
 
 flags:
   fourmolu:
