@@ -168,7 +168,7 @@ getExtensionAndDepsMap cabalFile GenericPackageDescription {..} =
 
     extractFromBuildInfo extraModules BuildInfo {..} = (,(exts, deps)) $ do
       m <- extraModules ++ (ModuleName.toFilePath <$> otherModules)
-      (takeDirectory cabalFile </>) <$> prependSrcDirs (dropExtensions m)
+      (takeDirectory cabalFile </>) . normalise <$> prependSrcDirs (dropExtensions m)
       where
         prependSrcDirs f
           | null hsSourceDirs = [f]

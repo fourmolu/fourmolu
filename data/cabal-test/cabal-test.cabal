@@ -1,0 +1,9 @@
+cabal-version:      2.4
+name:               cabal-test
+version:            0.0.1.0
+build-type:         Simple
+
+library
+    exposed-modules: Test
+    hs-source-dirs:  .
+    build-depends:   acme-missiles

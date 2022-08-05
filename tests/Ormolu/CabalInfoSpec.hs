@@ -42,3 +42,6 @@ spec = do
     it "extracts correct dependencies from fourmolu.cabal (tests/Ormolu/PrinterSpec.hs)" $ do
       CabalInfo {..} <- parseCabalInfo "fourmolu.cabal" "tests/Ormolu/PrinterSpec.hs"
       ciDependencies `shouldBe` Set.fromList ["Diff", "QuickCheck", "base", "containers", "directory", "filepath", "ghc-lib-parser", "hspec", "hspec-megaparsec", "megaparsec", "fourmolu", "path", "path-io", "pretty", "temporary", "text"]
+    it "extracts info even when source dir is ." $ do
+      CabalInfo {..} <- parseCabalInfo "data/cabal-test/cabal-test.cabal" "data/cabal-test/Test.hs" 
+      ciDependencies `shouldBe` Set.fromList ["acme-missiles"]
