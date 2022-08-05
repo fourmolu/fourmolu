@@ -133,6 +133,11 @@ Or find all files in a project with `git ls-files`:
 $ fourmolu --mode inplace $(git ls-files '*.hs')
 ```
 
+Or directly specify a directory (will recursively process all *.hs files)
+```console
+$ fourmolu -i src
+```
+
 To check if files are are already formatted (useful on CI):
 
 ```console

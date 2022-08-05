@@ -14,7 +14,7 @@ import Control.Exception (throwIO)
 import Control.Monad
 import Data.Bool (bool)
 import Data.Functor.Identity (Identity (..))
-import Data.List (intercalate, sort)
+import Data.List (intercalate, isSuffixOf, sort)
 import qualified Data.Map as Map
 import Data.Maybe (fromMaybe, mapMaybe)
 import qualified Data.Set as Set
@@ -38,7 +38,7 @@ import Ormolu.Utils.Fixity
   )
 import Ormolu.Utils.IO
 import Paths_fourmolu (version)
-import System.Directory (getCurrentDirectory)
+import System.Directory (doesDirectoryExist, getCurrentDirectory, listDirectory)
 import System.Exit (ExitCode (..), exitWith)
 import qualified System.FilePath as FP
 import System.IO (hPutStrLn, stderr)
@@ -61,24 +61,40 @@ main = do
           optSourceType
           cfg
 
+      getHaskellFiles input = do
+        isDir <- doesDirectoryExist input
+        if isDir
+          then filter (".hs" `isSuffixOf`) <$> listDirectoryRecursive input
+          else return [input] -- plain file
+      listDirectoryRecursive fp = fmap concat . mapM (go . (fp FP.</>)) =<< listDirectory fp
+        where
+          go child = do
+            isDir <- doesDirectoryExist child
+            if isDir
+              then listDirectoryRecursive child
+              else pure [child]
+
+      selectFailure = \case
+        ExitSuccess -> Nothing
+        ExitFailure n -> Just n
+
+      formatInputs inputs = do
+        files <- Set.toAscList . Set.fromList . concat <$> mapM getHaskellFiles inputs
+        errorCodes <- mapMaybe selectFailure <$> mapM (formatOne' . Just) files
+        return $
+          if null errorCodes
+            then ExitSuccess
+            else
+              ExitFailure $
+                if all (== 100) errorCodes
+                  then 100
+                  else 102
+
   exitCode <- case optInputFiles of
     [] -> formatOne' Nothing
     ["-"] -> formatOne' Nothing
-    [x] -> formatOne' (Just x)
-    xs -> do
-      let selectFailure = \case
-            ExitSuccess -> Nothing
-            ExitFailure n -> Just n
-      errorCodes <-
-        mapMaybe selectFailure <$> mapM (formatOne' . Just) (sort xs)
-      return $
-        if null errorCodes
-          then ExitSuccess
-          else
-            ExitFailure $
-              if all (== 100) errorCodes
-                then 100
-                else 102
+    xs -> formatInputs xs
+
   exitWith exitCode
 
 -- | Build the full config, by adding 'PrinterOpts' from a file, if found.
