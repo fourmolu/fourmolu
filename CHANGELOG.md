@@ -2,6 +2,27 @@
 
 * Consolidate `import-export-comma-style` and `diff-friendly-import-export` into a new option `import-export-style` ([#201](https://github.com/fourmolu/fourmolu/pull/207))
 
+### Upstream changes:
+
+#### Ormolu 0.5.0.1
+
+* Fixed a bug in the diff printing functionality. [Issue
+  886](https://github.com/tweag/ormolu/issues/886).
+
+* Indent closing bracket for list comprehensions in `do` blocks.
+  [Issue 893](https://github.com/tweag/ormolu/issues/893).
+
+* Fix `hs-source-dirs: .` resulting in failing to find a `.cabal` file for a
+  Haskell source file. [Issue 909](https://github.com/tweag/ormolu/issues/909).
+
+* Comments in closed type family declarations are now indented correctly.
+  [Issue 913](https://github.com/tweag/ormolu/issues/913).
+
+* Cache `.cabal` file parsing and processing when given multiple input files in
+  the same project. This results in dramatic speedups on projects which have
+  both huge `.cabal` files and a large number of individual modules. [Issue
+  897](https://github.com/tweag/ormolu/issues/897).
+
 ## Fourmolu 0.7.0.1
 
 * Fix bad copy/paste where parsing errors for `haddock-style` would mention `CommaStyle`
