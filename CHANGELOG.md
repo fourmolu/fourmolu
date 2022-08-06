@@ -1,3 +1,7 @@
+## Unreleased
+
+* Add `emptyConfig`
+
 ## Fourmolu 0.8.0.0
 
 * Consolidate `import-export-comma-style` and `diff-friendly-import-export` into a new option `import-export-style` ([#201](https://github.com/fourmolu/fourmolu/pull/207))
