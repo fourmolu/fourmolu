@@ -22,7 +22,9 @@ jobs:
           - stack.yaml
         os:
           - ubuntu-latest
-          - macos-latest
+        include:
+          - stack_yaml: stack.yaml
+            os: macos-latest
 
     name: 'build_and_test: ${{ matrix.os }} - ${{ matrix.stack_yaml }}'
     runs-on: ${{ matrix.os }}
