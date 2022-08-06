@@ -40,6 +40,7 @@ module Ormolu.Config
     loadConfigFile,
     configFileName,
     FourmoluConfig (..),
+    emptyConfig,
     ConfigFileLoadResult (..),
 
     -- ** Utilities
@@ -428,6 +429,13 @@ instance Aeson.FromJSON FourmoluConfig where
         Right fixities -> return . Map.fromList . concat $ fixities
         Left e -> fail $ errorBundlePretty e
     return FourmoluConfig {..}
+
+emptyConfig :: FourmoluConfig
+emptyConfig =
+  FourmoluConfig
+    { cfgFilePrinterOpts = mempty,
+      cfgFileFixities = mempty
+    }
 
 -- | Read options from a config file, if found.
 -- Looks recursively in parent folders, then in 'XdgConfig',
