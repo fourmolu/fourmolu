@@ -14,15 +14,17 @@ jobs:
     strategy:
       matrix:
         stack_yaml:
-          # technically redundant, since this should be a symlink,
-          # but just to be extra sure
-          - stack.yaml
           - stack-ghc-8.10.yaml
           - stack-ghc-9.0.yaml
           - stack-ghc-9.2.yaml
+          # technically redundant, since this should be a symlink,
+          # but just to be extra sure
+          - stack.yaml
         os:
           - ubuntu-latest
-          - macos-latest
+        include:
+          - stack_yaml: stack.yaml
+            os: macos-latest
 
     name: 'build_and_test: ${{ matrix.os }} - ${{ matrix.stack_yaml }}'
     runs-on: ${{ matrix.os }}
