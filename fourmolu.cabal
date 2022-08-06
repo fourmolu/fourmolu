@@ -17,6 +17,7 @@ build-type:         Simple
 extra-source-files:
     data/**/*.hs
     data/**/*.txt
+    data/**/*.cabal
     extract-hackage-info/hackage-info.json
     -- needed for integration tests
     fixity-tests/*.hs
