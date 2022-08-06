@@ -14,12 +14,12 @@ jobs:
     strategy:
       matrix:
         stack_yaml:
-          # technically redundant, since this should be a symlink,
-          # but just to be extra sure
-          - stack.yaml
           - stack-ghc-8.10.yaml
           - stack-ghc-9.0.yaml
           - stack-ghc-9.2.yaml
+          # technically redundant, since this should be a symlink,
+          # but just to be extra sure
+          - stack.yaml
         os:
           - ubuntu-latest
           - macos-latest
