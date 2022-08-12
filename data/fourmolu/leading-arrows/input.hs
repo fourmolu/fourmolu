@@ -72,3 +72,10 @@ functionName ::
   ) ->
   (c -> d) ->
   (a, b, c, d)
+
+data Record = Record
+  { recFun :: Int ->
+              Int ->
+              Bool
+  , recOther :: Bool
+  }
