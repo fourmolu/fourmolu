@@ -16,7 +16,7 @@ jobs:
             Please make sure you have followed our contributing guidelines in `DEVELOPER.md`. We will review it as soon as possible!
 
             Reviewer: Please verify the following things have been done, if applicable.
-            - [ ] `CHANGELOG.md` has been updated
+            - [ ] A file has been added to `changelog.d/`
             - [ ] "Configuration > Available options" section in `README.md` has been updated
             - [ ] "Configuration > Specifying configuration" section in `README.md` has been updated
             - [ ] `fourmolu.yaml` updated to stay in sync with config in `README.md`

@@ -8,8 +8,7 @@ Some things to keep in mind when making changes:
     * Avoid refactoring where possible, don't reformat untouched code
     * Since we continuously merge in changes from Ormolu, reducing the number of potential conflicts goes a long way towards maintainability of this project.
     * This includes behavior changes that drastically change how `fourmolu` formats Fourmolu's source code itself
-* Add a comment to `CHANGELOG.md` when adding features, fixing bugs, or otherwise changing behaviors that users can see.
-    * If there isn't already an `Unreleased` section, add one
+* Add a file to `changelog.d/` when applicable (see `changelog.d/README.md`)
 
 ### Running `fourmolu`
 
@@ -43,7 +42,7 @@ Considering configurability is the raison d'être of Fourmolu, you're probably m
     * This should not change any of the `*-out.hs` files, although it might change the `*-four-out.hs` files, if the setting in `defaultPrinterOpts` is different from the one in `fourmolu.yaml`
 1. Add your new option to the "Configuration" section in `README.md`
     * Both in the table and in the example `fourmolu.yaml` file
-1. Update `CHANGELOG.md`
+1. Add a file to `changelog.d/` (see `changelog.d/README.md`)
 
 ## Instant feedback with GHCID
 
@@ -84,26 +83,7 @@ To release a new version, do the following workflow:
     1. Bump version in `fourmolu.cabal`
         * All version bumps should follow [PvP](https://pvp.haskell.org/)
 
-    1. Curate `CHANGELOG.md`, renaming the `Unreleased` section to `Fourmolu X.Y.Z`
-
-       It should roughly follow this format:
-
-       ```md
-       ## Fourmolu 1.2.3.0
-
-       * Fourmolu-specific change 1
-       * Fourmolu-specific change 2
-
-       ### Upstream changes:
-
-       #### Ormolu 2.3.4.0
-
-       * Ormolu change 1
-
-       #### Ormolu 2.3.3.0
-
-       * Other change
-       ```
+    1. Curate `CHANGELOG.md` (see `changelog.d/README.md`)
 
 1. Create PR as usual and merge into `main`
     1. In the `check_sdist` CI job, check the output of the `stack sdist` step for any warnings.
@@ -150,7 +130,7 @@ Fourmolu aims to continue merging upstream changes in Ormolu. Whenever Ormolu ma
 
 * If `default.nix` is changed, manually verify that all end-to-end tests are accounted for. For example, `./region-tests/` is one directory of tests, which is captured in the `fourmolu:region-tests` test suite, where every test in `default.nix` has been ported into the Haskell test suite.
 
-* Any Ormolu additions to `CHANGELOG.md` should be added under a `### Upstream changes:` header in the `Unreleased` section of `CHANGELOG.md`, with the Ormolu headers bumped to `####`. See the CHANGELOG format in the "Release a new version" section.
+* Any Ormolu additions to `CHANGELOG.md` should NOT be kept, but instead be added to a new file in `changelog.d/` (e.g. named `ormolu-X.Y.Z`). See `changelog.d/README.md` for more details.
 
 * Be careful when editing `fourmolu.cabal` to only change shared things (e.g. `tested-with`) and not Fourmolu things (e.g. `name` or `version`).
 
