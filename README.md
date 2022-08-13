@@ -53,7 +53,7 @@ We share all bar one of Ormolu's goals:
 | `newlines-between-decls` | any integer | number of newlines between top-level declarations |
 | `fixities`           | A list of strings for defining fixities; see the "Language extensions, dependencies, and fixities" section below |
 
-For examples of each of these options, see the [test files](https://github.com/fourmolu/fourmolu/tree/master/data/fourmolu/).
+For examples of each of these options, see the [test files](https://github.com/fourmolu/fourmolu/tree/main/data/fourmolu/).
 
 ### Specifying configuration
 
