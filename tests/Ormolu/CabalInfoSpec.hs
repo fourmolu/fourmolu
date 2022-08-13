@@ -41,7 +41,7 @@ spec = do
       ciDependencies `shouldBe` Set.fromList ["Cabal", "Diff", "MemoTrie", "aeson", "ansi-terminal", "array", "base", "bytestring", "containers", "directory", "dlist", "exceptions", "file-embed", "filepath", "ghc-lib-parser", "megaparsec", "mtl", "syb", "template-haskell", "text", "th-lift-instances", "yaml"]
     it "extracts correct dependencies from fourmolu.cabal (tests/Ormolu/PrinterSpec.hs)" $ do
       CabalInfo {..} <- parseCabalInfo "fourmolu.cabal" "tests/Ormolu/PrinterSpec.hs"
-      ciDependencies `shouldBe` Set.fromList ["Diff", "QuickCheck", "base", "containers", "directory", "filepath", "ghc-lib-parser", "hspec", "hspec-megaparsec", "megaparsec", "fourmolu", "path", "path-io", "pretty", "temporary", "text"]
+      ciDependencies `shouldBe` Set.fromList ["Diff", "QuickCheck", "base", "containers", "directory", "filepath", "ghc-lib-parser", "hspec", "hspec-megaparsec", "megaparsec", "fourmolu", "path", "path-io", "pretty", "process", "temporary", "text"]
 
     it "handles `hs-source-dirs: .`" $ do
       CabalInfo {..} <- parseTestCabalInfo "Foo.hs"

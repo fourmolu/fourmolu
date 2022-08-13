@@ -13,7 +13,6 @@ module Main (main) where
 import Control.Exception (throwIO)
 import Control.Monad
 import Data.Bool (bool)
-import Data.Functor.Identity (Identity (..))
 import Data.List (intercalate, isSuffixOf, sort)
 import qualified Data.Map as Map
 import Data.Maybe (fromMaybe, mapMaybe)
@@ -99,7 +98,7 @@ main = do
 
 -- | Build the full config, by adding 'PrinterOpts' from a file, if found.
 mkConfig :: FilePath -> Opts -> IO (Config RegionIndices)
-mkConfig path Opts {..} = do
+mkConfig path Opts {optQuiet, optConfig, optPrinterOpts = cliPrinterOpts} = do
   mFourmoluConfig <-
     loadConfigFile path >>= \case
       ConfigLoaded f cfg -> do
@@ -121,16 +120,17 @@ mkConfig path Opts {..} = do
           $ ("No " ++ show configFileName ++ " found in any of:")
             : map ("  " ++) searchDirs
         return Nothing
+  let resolve f = maybe mempty f mFourmoluConfig
   return $
     optConfig
       { cfgPrinterOpts =
-          fillMissingPrinterOpts
-            (maybe mempty cfgFilePrinterOpts mFourmoluConfig)
-            (cfgPrinterOpts optConfig),
+          fillMissingPrinterOpts cliPrinterOpts
+            . fillMissingPrinterOpts (resolve cfgFilePrinterOpts)
+            $ defaultPrinterOpts,
         cfgFixityOverrides =
           -- cfgFileFixities should go on the right so that command line
           -- fixity overrides takes precedence.
-          cfgFixityOverrides optConfig <> maybe mempty cfgFileFixities mFourmoluConfig
+          cfgFixityOverrides optConfig <> resolve cfgFileFixities
       }
   where
     printDebug = when (cfgDebug optConfig) . hPutStrLn stderr
@@ -248,6 +248,8 @@ data Opts = Opts
     optQuiet :: !Bool,
     -- | Ormolu 'Config'
     optConfig :: !(Config RegionIndices),
+    -- | Fourmolu 'PrinterOpts',
+    optPrinterOpts :: PrinterOptsPartial,
     -- | Options related to info extracted from .cabal files
     optCabal :: CabalOpts,
     -- | Source type option, where 'Nothing' means autodetection
@@ -329,6 +331,7 @@ optsParser =
         help "Make output quieter"
       ]
     <*> configParser
+    <*> printerOptsParser
     <*> cabalOptsParser
     <*> sourceTypeParser
     <*> (many . strArgument . mconcat)
@@ -410,7 +413,7 @@ configParser =
                 help "End line of the region to format (inclusive)"
               ]
         )
-    <*> printerOptsParser
+    <*> pure defaultPrinterOpts -- unused; overwritten in mkConfig
 
 sourceTypeParser :: Parser (Maybe SourceType)
 sourceTypeParser =
@@ -422,16 +425,20 @@ sourceTypeParser =
       help "Set the type of source; TYPE can be 'module', 'sig', or 'auto' (the default)"
     ]
 
-printerOptsParser :: Parser PrinterOptsTotal
+printerOptsParser :: Parser PrinterOptsPartial
 printerOptsParser = overFieldsM mkOption printerOptsMeta
   where
+    mkOption :: PrinterOptsFieldMeta a -> Parser (Maybe a)
     mkOption PrinterOptsFieldMeta {..} =
-      option (Identity <$> eitherReader parseText) . mconcat $
+      option (Just <$> eitherReader parseText) . mconcat $
         [ long metaName,
           metavar metaPlaceholder,
           help metaHelp,
-          showDefaultWith (showText . runIdentity),
-          value $ Identity metaDefault
+          -- the CLI flag itself should default to Nothing, but we'll show
+          -- the default of the option as-if it weren't set in the config
+          -- file in the help text.
+          showDefaultWith (\_ -> showText metaDefault),
+          value Nothing
         ]
 
 ----------------------------------------------------------------------------
