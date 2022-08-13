@@ -1,6 +1,7 @@
 ## Unreleased
 
 * Add `emptyConfig` ([#221](https://github.com/fourmolu/fourmolu/pull/221))
+* Fixed CLI options not overriding config file options, broken in 0.7.0.0 ([#225](https://github.com/fourmolu/fourmolu/pull/225))
 
 ## Fourmolu 0.8.0.0
 
