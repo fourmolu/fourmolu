@@ -105,10 +105,6 @@ To release a new version, do the following workflow:
        * Other change
        ```
 
-    1. Add comments to new features indicating when it was added (e.g. `@since v2.0.0`)
-
-    1. Run `stack haddock` or `cabal haddock` and skim through documentation
-
 1. Create PR as usual and merge into `main`
     1. In the `check_sdist` CI job, check the output of the `stack sdist` step for any warnings.
 
