@@ -1,6 +1,6 @@
 ## Unreleased
 
-* Add `emptyConfig`
+* Add `emptyConfig` ([#221](https://github.com/fourmolu/fourmolu/pull/221))
 
 ## Fourmolu 0.8.0.0
 
