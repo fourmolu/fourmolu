@@ -1,15 +1,14 @@
 {-# LANGUAGE RecordWildCards #-}
 
-import Control.Monad (forM_, when)
-import System.Directory (copyFile, findExecutable)
-import System.Exit (ExitCode (..))
+import Control.Monad (forM_)
+import IntegrationUtils (getFourmoluExe, readProcess)
+import System.Directory (copyFile)
 import System.IO.Temp (withSystemTempDirectory)
-import System.Process (readProcessWithExitCode)
 import Test.Hspec
 
 main :: IO ()
 main = hspec $
-  describe "fixity-tests" . beforeAll getExe $
+  describe "fixity-tests" . beforeAll getFourmoluExe $
     forM_ tests $ \Test {..} ->
       specify testLabel $ \fourmoluExe ->
         withSystemTempDirectory "fixity-test-dir" $ \tmpdir -> do
@@ -93,19 +92,3 @@ tests =
         testExpectedFileName = "test-1-with-fixity-info-expected.hs"
       }
   ]
-
--- | Find a `fourmolu` executable on PATH.
-getExe :: IO FilePath
-getExe = findExecutable "fourmolu" >>= maybe (fail "Could not find fourmolu executable") return
-
-readProcess :: FilePath -> [String] -> IO String
-readProcess cmd args = do
-  (code, stdout, stderr) <- readProcessWithExitCode cmd args ""
-  when (code /= ExitSuccess) $ do
-    putStrLn $ "Command failed: " ++ (unwords . map (\s -> "\"" ++ s ++ "\"")) (cmd : args)
-    putStrLn "========== stdout =========="
-    putStrLn stdout
-    putStrLn "========== stderr =========="
-    putStrLn stderr
-    fail "Command failed. See output for more details."
-  return stdout

@@ -168,6 +168,14 @@ executable fourmolu
     else
         ghc-options: -O2 -Wall -rtsopts
 
+common integration-test-utils
+    build-tool-depends: fourmolu:fourmolu
+    hs-source-dirs: tests/utils/
+    other-modules: IntegrationUtils
+    build-depends:
+        directory >=1.3 && <1.4,
+        process >=1.6 && <2.0
+
 test-suite tests
     type:               exitcode-stdio-1.0
     main-is:            Spec.hs
@@ -216,16 +224,14 @@ test-suite tests
         ghc-options: -O2 -Wall
 
 test-suite region-tests
+    import: integration-test-utils
     type:               exitcode-stdio-1.0
     main-is:            Main.hs
     hs-source-dirs:     region-tests
     default-language:   Haskell2010
-    build-tool-depends: fourmolu:fourmolu
     build-depends:
         base >=4.14 && <5.0,
-        directory >=1.3 && <1.4,
-        hspec >=2.0 && <3.0,
-        process >=1.6 && <2.0
+        hspec >=2.0 && <3.0
 
     if flag(dev)
         ghc-options: -Wall -Werror
@@ -233,16 +239,14 @@ test-suite region-tests
         ghc-options: -O2 -Wall
 
 test-suite fixity-tests
+    import: integration-test-utils
     type:               exitcode-stdio-1.0
     main-is:            Main.hs
     hs-source-dirs:     fixity-tests
     default-language:   Haskell2010
-    build-tool-depends: fourmolu:fourmolu
     build-depends:
         base >=4.14 && <5.0,
-        directory >=1.3 && <1.4,
         hspec >=2.0 && <3.0,
-        process >=1.6 && <2.0,
         temporary >=1.3 && <1.4
 
     if flag(dev)
