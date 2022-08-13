@@ -168,7 +168,13 @@ p_hsDocString hstyle needsNewline (L l str) = do
       txt $ "-- " <> haddockDelim
       body $ newline >> txt "--"
     else do
-      txt $ "{- " <> haddockDelim
+      txt . T.concat $
+        [ "{-",
+          case (hstyle, printStyle) of
+            (Pipe, HaddockMultiLineCompact) -> ""
+            _ -> " ",
+          haddockDelim
+        ]
       -- 'newline' doesn't allow multiple blank newlines, which changes the comment
       -- if the user writes a comment with multiple newlines. So we have to do this
       -- to force the printer to output a newline. The HaddockSingleLine branch

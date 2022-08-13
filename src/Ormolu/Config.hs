@@ -377,7 +377,8 @@ haddockPrintStyleMap :: BijectiveMap HaddockPrintStyle
 haddockPrintStyleMap =
   $( mkBijectiveMap
       [ ('HaddockSingleLine, "single-line"),
-        ('HaddockMultiLine, "multi-line")
+        ('HaddockMultiLine, "multi-line"),
+        ('HaddockMultiLineCompact, "multi-line-compact")
       ]
    )
 

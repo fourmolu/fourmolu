@@ -49,7 +49,7 @@ We share all bar one of Ormolu's goals:
 | `indent-wheres`      | `true`, `false` | `false` means save space by only half-indenting the `where` keyword |
 | `record-brace-space` | `true`, `false` | `rec {x = 1}` vs `rec{x = 1}` |
 | `respectful`         | `true`, `false` | Whether to respect user-specified newlines, e.g. in import groupings |
-| `haddock-style`      | `multi-line`, `single-line` | Whether multiline haddocks should use `{-` or `--` |
+| `haddock-style`      | `single-line`, `multi-line`, `multi-line-compact` | Whether multiline haddocks should use `{-` or `--` |
 | `newlines-between-decls` | any integer | number of newlines between top-level declarations |
 | `fixities`           | A list of strings for defining fixities; see the "Language extensions, dependencies, and fixities" section below |
 

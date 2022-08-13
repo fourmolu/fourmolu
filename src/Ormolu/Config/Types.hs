@@ -40,6 +40,7 @@ data CommaStyle
 data HaddockPrintStyle
   = HaddockSingleLine
   | HaddockMultiLine
+  | HaddockMultiLineCompact
   deriving (Eq, Show, Enum, Bounded)
 
 data ImportExportStyle
