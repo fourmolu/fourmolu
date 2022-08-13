@@ -57,6 +57,7 @@ Defaults are in bold.
 | `in-style`               | `left-align`, **`right-align`**                       | How to align the `in` keyword with respect to `let`
 | `respectful`             | **`true`**, `false`                                   | Be less aggressive in reformatting input, e.g. keep empty lines in import list
 | `fixities`               | list of strings (**`[]`**)                           | See the "Language extensions, dependencies, and fixities" section below
+| `unicode`                | `always`, `detect`, `never`                           | Output Unicode syntax. With `detect` we output Unicode syntax exactly when the extension is seen to be enabled.
 
 For examples of each of these options, see the [test files](https://github.com/fourmolu/fourmolu/tree/main/data/fourmolu/).
 
@@ -79,6 +80,7 @@ let-style: auto
 in-style: right-align
 respectful: true
 fixities: []
+unicode: never
 ```
 
 The configuration that most closely matches Ormolu's styling is:
@@ -96,6 +98,7 @@ let-style: inline
 in-style: right-align
 respectful: false
 fixities: []
+unicode: never
 ```
 
 Command-line options override options in a configuration file. Run `fourmolu --help` to see all options.
