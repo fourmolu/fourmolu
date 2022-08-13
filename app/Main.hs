@@ -99,7 +99,7 @@ main = do
 
 -- | Build the full config, by adding 'PrinterOpts' from a file, if found.
 mkConfig :: FilePath -> Opts -> IO (Config RegionIndices)
-mkConfig path Opts {..} = do
+mkConfig path Opts {optQuiet, optConfig} = do
   mFourmoluConfig <-
     loadConfigFile path >>= \case
       ConfigLoaded f cfg -> do
@@ -121,16 +121,17 @@ mkConfig path Opts {..} = do
           $ ("No " ++ show configFileName ++ " found in any of:")
             : map ("  " ++) searchDirs
         return Nothing
+  let resolve f = maybe mempty f mFourmoluConfig
   return $
     optConfig
       { cfgPrinterOpts =
           fillMissingPrinterOpts
-            (maybe mempty cfgFilePrinterOpts mFourmoluConfig)
+            (resolve cfgFilePrinterOpts)
             (cfgPrinterOpts optConfig),
         cfgFixityOverrides =
           -- cfgFileFixities should go on the right so that command line
           -- fixity overrides takes precedence.
-          cfgFixityOverrides optConfig <> maybe mempty cfgFileFixities mFourmoluConfig
+          cfgFixityOverrides optConfig <> resolve cfgFileFixities
       }
   where
     printDebug = when (cfgDebug optConfig) . hPutStrLn stderr
