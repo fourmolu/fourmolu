@@ -155,6 +155,13 @@ singleTests =
           updateConfig = \respectful opts -> opts {poRespectful = pure respectful},
           showTestCase = show,
           testCaseSuffix = suffix1
+        },
+      TestGroup
+        { label = "unicode-syntax",
+          testCases = allOptions,
+          updateConfig = \unicodePreference options -> options {poUnicode = pure unicodePreference},
+          showTestCase = show,
+          testCaseSuffix = suffix1
         }
     ]
 
