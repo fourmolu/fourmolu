@@ -177,6 +177,7 @@ common integration-test-utils
         process >=1.6 && <2.0
 
 test-suite tests
+    import: integration-test-utils
     type:               exitcode-stdio-1.0
     main-is:            Spec.hs
     build-tool-depends: hspec-discover:hspec-discover >=2.0 && <3.0
@@ -211,6 +212,7 @@ test-suite tests
 
     -- specific to fourmolu tests
     other-modules:
+        Ormolu.Config.OptionsSpec
         Ormolu.Config.PrinterOptsSpec
     build-depends:
         Diff >=0.3 && <0.5,
