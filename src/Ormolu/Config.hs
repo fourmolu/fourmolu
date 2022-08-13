@@ -285,7 +285,10 @@ printerOptsMeta =
           { metaName = "import-export-style",
             metaGetField = poImportExportStyle,
             metaPlaceholder = "STYLE",
-            metaHelp = "Styling of import/export lists",
+            metaHelp =
+              printf
+                "Styling of import/export lists (choices: %s)"
+                (showAllValues importExportStyleMap),
             metaDefault = ImportExportDiffFriendly
           },
       poIndentWheres =

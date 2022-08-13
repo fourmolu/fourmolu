@@ -17,7 +17,7 @@ where
 
 import Control.Monad (forM, when, (>=>))
 import Data.Containers.ListUtils (nubOrd)
-import Data.List (intercalate, nub)
+import Data.List (nub)
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax (lift)
 import Text.Printf (printf)
@@ -182,4 +182,4 @@ uncommas [s0, s1] = s0 <> " or " <> s1
 uncommas ss =
   let pre = init ss
       end = last ss
-   in intercalate ", " pre <> "or " <> end
+   in concatMap (<> ", ") pre <> "or " <> end
