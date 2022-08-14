@@ -7,6 +7,8 @@ module Ormolu.Config.Types
     FunctionArrowsStyle (..),
     HaddockPrintStyle (..),
     ImportExportStyle (..),
+    LetStyle (..),
+    InStyle (..),
   )
 where
 
@@ -30,6 +32,10 @@ data PrinterOpts f = PrinterOpts
     poNewlinesBetweenDecls :: f Int,
     -- | How to print doc comments
     poHaddockStyle :: f HaddockPrintStyle,
+    -- | Styling of let blocks
+    poLetStyle :: f LetStyle,
+    -- | How to align in keyword
+    poInStyle :: f InStyle,
     -- | Be less opinionated about spaces/newlines etc.
     poRespectful :: f Bool
   }
@@ -55,4 +61,16 @@ data ImportExportStyle
   = ImportExportLeading
   | ImportExportTrailing
   | ImportExportDiffFriendly
+  deriving (Eq, Show, Enum, Bounded)
+
+data LetStyle
+  = LetAuto
+  | LetInline
+  | LetNewline
+  | LetMixed
+  deriving (Eq, Show, Enum, Bounded)
+
+data InStyle
+  = InLeftAlign
+  | InRightAlign
   deriving (Eq, Show, Enum, Bounded)

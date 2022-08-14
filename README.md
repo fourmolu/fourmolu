@@ -51,6 +51,8 @@ We share all bar one of Ormolu's goals:
 | `record-brace-space`     | `true`, `false` | `rec {x = 1}` vs `rec{x = 1}` |
 | `newlines-between-decls` | any integer     | number of newlines between top-level declarations |
 | `haddock-style`          | `single-line`, `multi-line`, `multi-line-compact` | Whether multiline haddocks should use `-- \|`, `{- \|`, or `{-\|` (single-line haddocks will always use `--` for now) |
+| `let-style`              | `auto`, `inline`, `newline`, `mixed` | How to style `let` blocks, with `auto` using `newline` if the user explicitly puts a newline after `let` and `inline` otherwise, and `mixed` using `inline` if `let` has exactly one binding and `newline` otherwise. |
+| `in-style`               | `left-align`, `right-align` | How to align the `in` keyword with respect to the `let` keyword |
 | `respectful`             | `true`, `false` | Whether to respect user-specified newlines, e.g. in import groupings |
 | `fixities`               | A list of strings | See the "Language extensions, dependencies, and fixities" section below |
 
@@ -71,6 +73,8 @@ indent-wheres: false
 record-brace-space: false
 newlines-between-decls: 1
 haddock-style: multi-line
+let-style: auto
+in-style: right-align
 respectful: true
 fixities: []
 ```
@@ -86,6 +90,8 @@ indent-wheres: true
 record-brace-space: true
 newlines-between-decls: 1
 haddock-style: single-line
+let-style: inline
+in-style: right-align
 respectful: false
 fixities: []
 ```

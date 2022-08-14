@@ -35,6 +35,8 @@ module Ormolu.Config
     CommaStyle (..),
     HaddockPrintStyle (..),
     ImportExportStyle (..),
+    LetStyle (..),
+    InStyle (..),
 
     -- ** Loading Fourmolu configuration
     loadConfigFile,
@@ -225,6 +227,8 @@ overFieldsM f $(unpackFieldsWithSuffix 'PrinterOpts "0") = do
   poRecordBraceSpace <- f poRecordBraceSpace0
   poNewlinesBetweenDecls <- f poNewlinesBetweenDecls0
   poHaddockStyle <- f poHaddockStyle0
+  poLetStyle <- f poLetStyle0
+  poInStyle <- f poInStyle0
   poRespectful <- f poRespectful0
   return PrinterOpts {..}
 
@@ -339,6 +343,25 @@ printerOptsMeta =
                 (showAllValues haddockPrintStyleMap),
             metaDefault = HaddockMultiLine
           },
+      poLetStyle =
+        PrinterOptsFieldMeta
+          { metaName = "let-style",
+            metaGetField = poLetStyle,
+            metaPlaceholder = "STYLE",
+            metaHelp =
+              printf
+                "Styling of let blocks (choices: %s)"
+                (showAllValues letStyleMap),
+            metaDefault = LetAuto
+          },
+      poInStyle =
+        PrinterOptsFieldMeta
+          { metaName = "in-style",
+            metaGetField = poInStyle,
+            metaPlaceholder = "STYLE",
+            metaHelp = "How to align the 'in' keyword with respect to the 'let' keyword",
+            metaDefault = InRightAlign
+          },
       poRespectful =
         PrinterOptsFieldMeta
           { metaName = "respectful",
@@ -408,6 +431,24 @@ importExportStyleMap =
       ]
    )
 
+letStyleMap :: BijectiveMap LetStyle
+letStyleMap =
+  $( mkBijectiveMap
+      [ ('LetAuto, "auto"),
+        ('LetInline, "inline"),
+        ('LetNewline, "newline"),
+        ('LetMixed, "mixed")
+      ]
+   )
+
+inStyleMap :: BijectiveMap InStyle
+inStyleMap =
+  $( mkBijectiveMap
+      [ ('InLeftAlign, "left-align"),
+        ('InRightAlign, "right-align")
+      ]
+   )
+
 instance PrinterOptsFieldType CommaStyle where
   parseJSON = parseJSONWith commaStyleMap "CommaStyle"
   parseText = parseTextWith commaStyleMap
@@ -427,6 +468,16 @@ instance PrinterOptsFieldType ImportExportStyle where
   parseJSON = parseJSONWith importExportStyleMap "ImportExportStyle"
   parseText = parseTextWith importExportStyleMap
   showText = show . showTextWith importExportStyleMap
+
+instance PrinterOptsFieldType LetStyle where
+  parseJSON = parseJSONWith letStyleMap "LetStyle"
+  parseText = parseTextWith letStyleMap
+  showText = show . showTextWith letStyleMap
+
+instance PrinterOptsFieldType InStyle where
+  parseJSON = parseJSONWith inStyleMap "InStyle"
+  parseText = parseTextWith inStyleMap
+  showText = show . showTextWith inStyleMap
 
 ----------------------------------------------------------------------------
 -- BijectiveMap helpers
