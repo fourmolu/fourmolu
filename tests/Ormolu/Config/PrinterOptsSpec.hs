@@ -45,6 +45,7 @@ import System.IO.Temp (withSystemTempFile)
 import System.IO.Unsafe (unsafePerformIO)
 import Test.Hspec
 import qualified Text.PrettyPrint as Doc
+import Text.Printf (printf)
 
 data TestGroup = forall a.
   TestGroup
@@ -94,6 +95,20 @@ spec =
             opts {poImportExportStyle = pure commaStyle},
           showTestCase = show,
           testCaseSuffix = suffix1
+        },
+      TestGroup
+        { label = "let-style",
+          testCases = (,,) <$> allOptions <*> allOptions <*> [2, 4],
+          updateConfig = \(letStyle, inStyle, indent) opts ->
+            opts
+              { poIndentation = pure indent,
+                poLetStyle = pure letStyle,
+                poInStyle = pure inStyle
+              },
+          showTestCase = \(letStyle, inStyle, indent) ->
+            printf "%s + %s (indent=%d)" (show letStyle) (show inStyle) indent,
+          testCaseSuffix = \(letStyle, inStyle, indent) ->
+            suffixWith [show letStyle, show inStyle, "indent=" ++ show indent]
         },
       TestGroup
         { label = "record-brace-space",
