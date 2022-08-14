@@ -1,4 +1,5 @@
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
 
@@ -149,16 +150,14 @@ runTestGroup TestGroup {..} =
 
         input <- readFileUtf8 inputPath
         actual <- runOrmolu inputPath input
-        mExpected <- getFileContents outputFile
-        case (shouldRegenerateOutput, mExpected) of
-          (False, Nothing) ->
+        getFileContents outputFile >>= \case
+          _ | shouldRegenerateOutput -> writeFileUtf8 outputPath actual
+          Nothing ->
             expectationFailure "Output does not exist. Try running with ORMOLU_REGENERATE_EXAMPLES=1"
-          (False, Just expected) ->
+          Just expected ->
             when (actual /= expected) $
               expectationFailure . T.unpack $
                 getDiff ("actual", actual) ("expected", expected)
-          (True, _) ->
-            writeFileUtf8 outputPath actual
   where
     testDir = toRelDir $ "data/fourmolu/" ++ label
     toRelDir name =
