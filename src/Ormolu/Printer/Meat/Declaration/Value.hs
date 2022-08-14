@@ -1010,7 +1010,7 @@ p_let' localBinds mBody =
   sitcc $ do
     txt "let"
     space
-    maybeUseBraces $ sitcc (p_hsLocalBinds localBinds)
+    sitcc (p_hsLocalBinds localBinds)
     case mBody of
       Just body -> do
         vlayout space (newline >> txt " ")
@@ -1018,8 +1018,6 @@ p_let' localBinds mBody =
         space
         sitcc body
       Nothing -> pure ()
-  where
-    maybeUseBraces = if isJust mBody then dontUseBraces else id
 
 p_pat :: Pat GhcPs -> R ()
 p_pat = \case
