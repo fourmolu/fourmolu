@@ -374,22 +374,20 @@ placeHanging placement m =
 ----------------------------------------------------------------------------
 -- Arrow style
 
--- | Output @space >> txt "::" >> x@ when we are printing with trailing arrows
-trailingArrowType :: R () -> R ()
-trailingArrowType x = do
+-- | Output @space >> txt "::"@ when we are printing with trailing arrows
+trailingArrowType :: R ()
+trailingArrowType =
   getPrinterOpt poFunctionArrows >>= \case
     TrailingArrows -> do
       space
       txt "::"
-      x
     LeadingArrows -> pure ()
 
--- | Output @x >> txt "::" >> space@ when we are printing with leading arrows
-leadingArrowType :: R () -> R ()
-leadingArrowType x = do
+-- | Output @txt "::" >> space@ when we are printing with leading arrows
+leadingArrowType :: R ()
+leadingArrowType =
   getPrinterOpt poFunctionArrows >>= \case
     LeadingArrows -> do
-      x
       txt "::"
       space
     TrailingArrows -> pure ()
