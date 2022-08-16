@@ -32,6 +32,7 @@ import GHC.Types.SourceText
 import GHC.Types.SrcLoc
 import GHC.Types.Var
 import Ormolu.Config
+import Ormolu.Config.Types (FunctionArrowsStyle (..))
 import Ormolu.Printer.Combinators
 import Ormolu.Printer.Internal (enterLayout)
 import Ormolu.Printer.Meat.Common
@@ -61,9 +62,9 @@ p_after multilineArgs = \case
 -- | like p_after but only when we're rendering leading arrows
 p_leadingAfter :: Bool -> After -> R ()
 p_leadingAfter multiline a = do
-  getPrinterOpt poLeadingArrows >>= \case
-    False -> pure ()
-    True -> p_after multiline a
+  getPrinterOpt poFunctionArrows >>= \case
+    TrailingArrows -> pure ()
+    LeadingArrows -> p_after multiline a
 
 p_hsType :: HsType GhcPs -> R ()
 p_hsType = p_hsTypeAfter' AfterNothing
@@ -71,7 +72,10 @@ p_hsType = p_hsTypeAfter' AfterNothing
 -- | Like 'p_hsType' but indent properly following a forall
 p_hsTypeAfter' :: After -> HsType GhcPs -> R ()
 p_hsTypeAfter' after t = do
-  s <- bool PipeStyle CaretStyle <$> getPrinterOpt poLeadingArrows
+  s <-
+    getPrinterOpt poFunctionArrows >>= \case
+      TrailingArrows -> pure PipeStyle
+      LeadingArrows -> pure CaretStyle
   layout <- getLayout
   p_hsType' after (hasDocStrings t || layout == MultiLine) s t
 
@@ -91,18 +95,18 @@ p_hsType' after multilineArgs docStyle =
         HsForAllInvis _ bndrs -> p_forallBndrs' ForAllInvis p_hsTyVarBndr bndrs
         HsForAllVis _ bndrs -> p_forallBndrs' ForAllVis p_hsTyVarBndr bndrs
       a' <-
-        getPrinterOpt poLeadingArrows >>= \case
-          True | multilineArgs -> pure a
+        getPrinterOpt poFunctionArrows >>= \case
+          LeadingArrows | multilineArgs -> pure a
           _ -> p_after False a $> AfterNothing
       interArgBreak
       p_hsTypeR a' (unLoc t)
     HsQualTy _ qs' t -> do
-      getPrinterOpt poLeadingArrows >>= \case
-        True -> do
+      getPrinterOpt poFunctionArrows >>= \case
+        LeadingArrows -> do
           bool id inci3 (after == AfterForall) $ for_ qs' $ \qs -> do
             located qs p_hsContext
             interArgBreak
-        False -> do
+        TrailingArrows -> do
           for_ qs' $ \qs -> do
             located qs p_hsContext
             space
@@ -146,11 +150,11 @@ p_hsType' after multilineArgs docStyle =
         txt "@"
         located kd p_hsType
     HsFunTy _ arrow x y@(L _ y') -> do
-      getPrinterOpt poLeadingArrows >>= \case
-        True -> do
+      getPrinterOpt poFunctionArrows >>= \case
+        LeadingArrows -> do
           bool id inci3 (after == AfterForall) (located x p_hsType)
           interArgBreak
-        False -> do
+        TrailingArrows -> do
           located x p_hsType
           space
           case arrow of
@@ -332,13 +336,13 @@ p_conDeclField ConDeclField {..} = do
       commaDel
       (located' (p_rdrName . rdrNameFieldOcc))
       cd_fld_names
-  getPrinterOpt poLeadingArrows >>= \case
-    True -> sitcc . inci $ do
+  getPrinterOpt poFunctionArrows >>= \case
+    LeadingArrows -> sitcc . inci $ do
       space
       txt "::"
       space
       p_hsType (unLoc cd_fld_type)
-    False -> do
+    TrailingArrows -> do
       space
       txt "::"
       breakpoint

@@ -52,7 +52,7 @@ We share all bar one of Ormolu's goals:
 | `haddock-style`      | `single-line`, `multi-line`, `multi-line-compact` | Whether multiline haddocks should use `-- |`, `{- |`, or `{-|` (single-line haddocks will always use `--` for now) |
 | `newlines-between-decls` | any integer | number of newlines between top-level declarations |
 | `fixities`           | A list of strings for defining fixities; see the "Language extensions, dependencies, and fixities" section below |
-| `leading-arrows`           | `true`, `false`| How to format arrows in type signatures |
+| `function-arrows`    | `trailing`, `leading`| How to format arrows in type signatures |
 
 For examples of each of these options, see the [test files](https://github.com/fourmolu/fourmolu/tree/main/data/fourmolu/).
 
@@ -72,7 +72,7 @@ respectful: true
 haddock-style: multi-line
 newlines-between-decls: 1
 fixities: []
-fixities: false
+function-arrows: trailing
 ```
 
 The configuration that most closely matches Ormolu's styling is:
@@ -87,7 +87,7 @@ respectful: false
 haddock-style: single-line
 newlines-between-decls: 1
 fixities: []
-fixities: false
+function-arrows: trailing
 ```
 
 Command-line options override options in a configuration file. Run `fourmolu --help` to see all options.

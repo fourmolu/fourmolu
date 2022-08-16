@@ -6,6 +6,7 @@ module Ormolu.Config.Types
     CommaStyle (..),
     HaddockPrintStyle (..),
     ImportExportStyle (..),
+    FunctionArrowsStyle (..),
   )
 where
 
@@ -29,8 +30,8 @@ data PrinterOpts f = PrinterOpts
     poHaddockStyle :: f HaddockPrintStyle,
     -- | Number of newlines between top-level decls
     poNewlinesBetweenDecls :: f Int,
-    -- | Enable leading arrows in type signatures
-    poLeadingArrows :: f Bool
+    -- | How to style arrows in type signatures
+    poFunctionArrows :: f FunctionArrowsStyle
   }
   deriving (Generic)
 
@@ -49,4 +50,9 @@ data ImportExportStyle
   = ImportExportLeading
   | ImportExportTrailing
   | ImportExportDiffFriendly
+  deriving (Eq, Show, Enum, Bounded)
+
+data FunctionArrowsStyle
+  = TrailingArrows
+  | LeadingArrows
   deriving (Eq, Show, Enum, Bounded)

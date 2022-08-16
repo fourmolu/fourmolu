@@ -115,10 +115,10 @@ spec =
             suffixWith [show newlines, if respectful then "respectful" else ""]
         },
       TestGroup
-        { label = "leading-arrows",
+        { label = "function-arrows",
           testCases = allOptions,
-          updateConfig = \leadingArrows opts ->
-            opts {poLeadingArrows = pure leadingArrows},
+          updateConfig = \functionArrows opts ->
+            opts {poFunctionArrows = pure functionArrows},
           showTestCase = show,
           testCaseSuffix = suffix1
         }

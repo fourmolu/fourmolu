@@ -87,6 +87,7 @@ import Data.List (intersperse)
 import Data.Text (Text)
 import GHC.Types.SrcLoc
 import Ormolu.Config
+import Ormolu.Config.Types (FunctionArrowsStyle (..))
 import Ormolu.Printer.Comments
 import Ormolu.Printer.Internal
 import Ormolu.Utils (HasSrcSpan (..))
@@ -373,20 +374,22 @@ placeHanging placement m =
 ----------------------------------------------------------------------------
 -- Arrow style
 
--- | Ouput @space >> txt "::" >> x@ when we are printing with trailing arrows
+-- | Output @space >> txt "::" >> x@ when we are printing with trailing arrows
 trailingArrowType :: R () -> R ()
 trailingArrowType x = do
-  isTrailingArrow <- not <$> getPrinterOpt poLeadingArrows
-  when isTrailingArrow $ do
-    space
-    txt "::"
-    x
+  getPrinterOpt poFunctionArrows >>= \case
+    TrailingArrows -> do
+      space
+      txt "::"
+      x
+    LeadingArrows -> pure ()
 
--- | Ouput @x >> txt "::" >> space@ when we are printing with leading arrows
+-- | Output @x >> txt "::" >> space@ when we are printing with leading arrows
 leadingArrowType :: R () -> R ()
 leadingArrowType x = do
-  isLeadingArrow <- getPrinterOpt poLeadingArrows
-  when isLeadingArrow $ do
-    x
-    txt "::"
-    space
+  getPrinterOpt poFunctionArrows >>= \case
+    LeadingArrows -> do
+      x
+      txt "::"
+      space
+    TrailingArrows -> pure ()
