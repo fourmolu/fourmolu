@@ -35,7 +35,9 @@ data Foo a where
         Foo 'Int
     -- | But 'Bar' is also not too bad.
     Bar ::
+        -- | An Int
         Int ->
+        -- | And a Maybe Text
         Maybe Text ->
         Foo 'Bool
     -- | So is 'Baz'.
