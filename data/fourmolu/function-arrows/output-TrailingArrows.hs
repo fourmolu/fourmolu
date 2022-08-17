@@ -78,6 +78,8 @@ functionName ::
 
 data Record = Record
     { recFun ::
+        forall a.
+        (C1, C2) =>
         Int ->
         Int ->
         Bool

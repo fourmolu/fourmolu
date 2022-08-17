@@ -76,7 +76,7 @@ functionName ::
   (a, b, c, d)
 
 data Record = Record
-  { recFun :: Int ->
+  { recFun :: forall a. (C1, C2) => Int ->
               Int ->
               Bool
   , recOther :: Bool

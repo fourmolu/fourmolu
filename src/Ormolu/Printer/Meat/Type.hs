@@ -328,8 +328,8 @@ p_conDeclField ConDeclField {..} = do
       (located' (p_rdrName . rdrNameFieldOcc))
       cd_fld_names
   getPrinterOpt poFunctionArrows >>= \case
-    LeadingArrows -> sitcc . inci $ do
-      space
+    LeadingArrows -> inci $ do
+      breakpoint
       txt "::"
       space
       p_hsType (unLoc cd_fld_type)
