@@ -29,7 +29,7 @@ module Ormolu.Printer.Combinators
     askSourceType,
     askFixityOverrides,
     askFixityMap,
-    inci3,
+    inciByExact,
     located,
     located',
     switchLayout,

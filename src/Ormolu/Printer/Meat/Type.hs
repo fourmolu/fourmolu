@@ -103,7 +103,7 @@ p_hsType' after multilineArgs docStyle =
     HsQualTy _ qs' t -> do
       getPrinterOpt poFunctionArrows >>= \case
         LeadingArrows -> do
-          bool id inci3 (after == AfterForall) $ for_ qs' $ \qs -> do
+          bool id (inciByExact 3) (after == AfterForall) $ for_ qs' $ \qs -> do
             located qs p_hsContext
             interArgBreak
         TrailingArrows -> do
@@ -152,7 +152,7 @@ p_hsType' after multilineArgs docStyle =
     HsFunTy _ arrow x y@(L _ y') -> do
       getPrinterOpt poFunctionArrows >>= \case
         LeadingArrows -> do
-          bool id inci3 (after == AfterForall) (located x p_hsType)
+          bool id (inciByExact 3) (after == AfterForall) (located x p_hsType)
           interArgBreak
         TrailingArrows -> do
           located x p_hsType

@@ -26,7 +26,7 @@ module Ormolu.Printer.Internal
     inciBy,
     inciByFrac,
     inciHalf,
-    inci3,
+    inciByExact,
     sitcc,
     sitccIfTrailing,
     Layout (..),
@@ -444,13 +444,13 @@ inci = inciByFrac 1
 inciHalf :: R () -> R ()
 inciHalf = inciByFrac 2
 
--- | Increase indentation by 3.
-inci3 :: R () -> R ()
-inci3 (R m) = R (local modRC m)
+-- | Like 'inci', but indents by exactly the given number of spaces.
+inciByExact :: Int -> R () -> R ()
+inciByExact spaces (R m) = R (local modRC m)
   where
     modRC rc =
       rc
-        { rcIndent = rcIndent rc + 3
+        { rcIndent = rcIndent rc + spaces
         }
 
 -- | Set indentation level for the inner computation equal to current
