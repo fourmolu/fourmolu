@@ -59,6 +59,9 @@ module Ormolu.Printer.Internal
 
     -- * Extensions
     isExtensionEnabled,
+    PrevTypeCtx (..),
+    getPrevTypeCtx,
+    withPrevTypeCtx,
   )
 where
 
@@ -136,7 +139,9 @@ data SC = SC
     -- | Whether to output a space before the next output
     scRequestedDelimiter :: !RequestedDelimiter,
     -- | An auxiliary marker for keeping track of last output element
-    scSpanMark :: !(Maybe SpanMark)
+    scSpanMark :: !(Maybe SpanMark),
+    -- | What (if any) precedes the current type on the same line
+    scPrevTypeCtx :: PrevTypeCtx
   }
 
 -- | Make sure next output is delimited by one of the following.
@@ -213,7 +218,8 @@ runR (R m) sstream cstream printerOpts sourceType extensions fixityOverrides fix
           scCommentStream = cstream,
           scPendingComments = [],
           scRequestedDelimiter = VeryBeginning,
-          scSpanMark = Nothing
+          scSpanMark = Nothing,
+          scPrevTypeCtx = TypeCtxStart
         }
 
 ----------------------------------------------------------------------------
@@ -648,3 +654,24 @@ canUseBraces = R (asks rcCanUseBraces)
 
 isExtensionEnabled :: Extension -> R Bool
 isExtensionEnabled ext = R . asks $ EnumSet.member ext . rcExtensions
+
+----------------------------------------------------------------------------
+-- Previous type context
+
+-- | What (if anything) precedes the current type on the same line
+-- Only used for the `function-arrows` setting
+data PrevTypeCtx
+  = TypeCtxStart
+  | TypeCtxForall
+  | TypeCtxContext
+  | TypeCtxArgument
+  deriving (Eq, Show)
+
+getPrevTypeCtx :: R PrevTypeCtx
+getPrevTypeCtx = R (gets scPrevTypeCtx)
+
+withPrevTypeCtx :: PrevTypeCtx -> R () -> R ()
+withPrevTypeCtx prevTypeCtx m = do
+  R $ modify (\sc -> sc {scPrevTypeCtx = prevTypeCtx})
+  m
+  R $ modify (\sc -> sc {scPrevTypeCtx = TypeCtxStart})
