@@ -226,7 +226,7 @@ p_standaloneKindSig (StandaloneKindSig _ name sigTy) = do
   inci $ do
     space
     p_rdrName name
-    trailingArrowType -- TODO, the space in tAT wasn't here before
+    trailingArrowType
     breakpoint
     leadingArrowType
     located sigTy p_hsSigType
