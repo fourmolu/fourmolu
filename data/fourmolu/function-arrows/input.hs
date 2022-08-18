@@ -46,9 +46,11 @@ data Foo a where
     Foo 'String
   (:~>) :: Foo a -> Foo a -> Foo a
 
+-- Single line type signature is preserved
 instance Eq Int where
   (==) :: Int -> Int -> Bool
   (==) _ _ = False
+singleLineFun :: forall a. (C1, C2) => Int -> Bool
 
 instance Ord Int where
   compare ::
