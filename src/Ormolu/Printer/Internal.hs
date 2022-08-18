@@ -61,7 +61,7 @@ module Ormolu.Printer.Internal
     isExtensionEnabled,
     PrevTypeCtx (..),
     getPrevTypeCtx,
-    withPrevTypeCtx,
+    setPrevTypeCtx,
   )
 where
 
@@ -670,8 +670,6 @@ data PrevTypeCtx
 getPrevTypeCtx :: R PrevTypeCtx
 getPrevTypeCtx = R (gets scPrevTypeCtx)
 
-withPrevTypeCtx :: PrevTypeCtx -> R () -> R ()
-withPrevTypeCtx prevTypeCtx m = do
+setPrevTypeCtx :: PrevTypeCtx -> R ()
+setPrevTypeCtx prevTypeCtx =
   R $ modify (\sc -> sc {scPrevTypeCtx = prevTypeCtx})
-  m
-  R $ modify (\sc -> sc {scPrevTypeCtx = TypeCtxStart})
