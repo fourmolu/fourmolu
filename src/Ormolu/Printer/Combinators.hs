@@ -29,6 +29,7 @@ module Ormolu.Printer.Combinators
     askSourceType,
     askFixityOverrides,
     askFixityMap,
+    inciByExact,
     located,
     located',
     switchLayout,
@@ -74,6 +75,10 @@ module Ormolu.Printer.Combinators
     -- ** Placement
     Placement (..),
     placeHanging,
+
+    -- ** Helpers for leading/trailing arrows
+    leadingArrowType,
+    trailingArrowType,
   )
 where
 
@@ -82,6 +87,7 @@ import Data.List (intersperse)
 import Data.Text (Text)
 import GHC.Types.SrcLoc
 import Ormolu.Config
+import Ormolu.Config.Types (FunctionArrowsStyle (..))
 import Ormolu.Printer.Comments
 import Ormolu.Printer.Internal
 import Ormolu.Utils (HasSrcSpan (..))
@@ -364,3 +370,24 @@ placeHanging placement m =
     Normal -> do
       breakpoint
       inci m
+
+----------------------------------------------------------------------------
+-- Arrow style
+
+-- | Output @space >> txt "::"@ when we are printing with trailing arrows
+trailingArrowType :: R ()
+trailingArrowType =
+  getPrinterOpt poFunctionArrows >>= \case
+    TrailingArrows -> do
+      space
+      txt "::"
+    LeadingArrows -> pure ()
+
+-- | Output @txt "::" >> space@ when we are printing with leading arrows
+leadingArrowType :: R ()
+leadingArrowType =
+  getPrinterOpt poFunctionArrows >>= \case
+    LeadingArrows -> do
+      txt "::"
+      space
+    TrailingArrows -> pure ()

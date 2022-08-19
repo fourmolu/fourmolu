@@ -23,6 +23,7 @@ module Ormolu.Printer.Meat.Type
 where
 
 import Control.Monad
+import Data.Bool (bool)
 import Data.Foldable (for_)
 import GHC.Hs
 import GHC.Types.Basic hiding (isPromoted)
@@ -30,15 +31,34 @@ import GHC.Types.SourceText
 import GHC.Types.SrcLoc
 import GHC.Types.Var
 import Ormolu.Config
+import Ormolu.Config.Types (FunctionArrowsStyle (..))
 import Ormolu.Printer.Combinators
+import Ormolu.Printer.Internal (PrevTypeCtx (..), enterLayout, getPrevTypeCtx, setPrevTypeCtx)
 import Ormolu.Printer.Meat.Common
 import {-# SOURCE #-} Ormolu.Printer.Meat.Declaration.OpTree (p_tyOpTree, tyOpTree)
 import {-# SOURCE #-} Ormolu.Printer.Meat.Declaration.Value (p_hsSplice, p_stringLit)
 import Ormolu.Printer.Operators
 import Ormolu.Utils
 
+-- | Render an "PrevTypeCtx" infix
+p_after :: Bool -> R ()
+p_after multilineArgs =
+  getPrevTypeCtx >>= \case
+    TypeCtxStart -> pure ()
+    TypeCtxForall | multilineArgs -> txt " ." >> space
+    TypeCtxForall -> txt "." >> space
+    TypeCtxContext -> txt "=>" >> space
+    TypeCtxArgument -> txt "->" >> space
+
+-- | Like 'p_hsType' but indent properly following a forall
 p_hsType :: HsType GhcPs -> R ()
-p_hsType t = p_hsType' (hasDocStrings t) PipeStyle t
+p_hsType t = do
+  s <-
+    getPrinterOpt poFunctionArrows >>= \case
+      TrailingArrows -> pure PipeStyle
+      LeadingArrows -> pure CaretStyle
+  layout <- getLayout
+  p_hsType' (hasDocStrings t || layout == MultiLine) s t
 
 p_hsTypePostDoc :: HsType GhcPs -> R ()
 p_hsTypePostDoc t = p_hsType' (hasDocStrings t) CaretStyle t
@@ -52,16 +72,27 @@ p_hsType' :: Bool -> TypeDocStyle -> HsType GhcPs -> R ()
 p_hsType' multilineArgs docStyle = \case
   HsForAllTy _ tele t -> do
     case tele of
-      HsForAllInvis _ bndrs -> p_forallBndrs ForAllInvis p_hsTyVarBndr bndrs
-      HsForAllVis _ bndrs -> p_forallBndrs ForAllVis p_hsTyVarBndr bndrs
+      HsForAllInvis _ bndrs -> p_forallBndrs' ForAllInvis p_hsTyVarBndr bndrs
+      HsForAllVis _ bndrs -> p_forallBndrs' ForAllVis p_hsTyVarBndr bndrs
+    getPrinterOpt poFunctionArrows >>= \case
+      LeadingArrows | multilineArgs -> pure ()
+      _ -> p_after False >> setPrevTypeCtx TypeCtxStart
     interArgBreak
     p_hsTypeR (unLoc t)
   HsQualTy _ qs' t -> do
-    for_ qs' $ \qs -> do
-      located qs p_hsContext
-      space
-      txt "=>"
-      interArgBreak
+    getPrinterOpt poFunctionArrows >>= \case
+      LeadingArrows -> do
+        after <- getPrevTypeCtx
+        bool id (inciByExact 3) (after == TypeCtxForall) $ for_ qs' $ \qs -> do
+          located qs p_hsContext
+          interArgBreak
+      TrailingArrows -> do
+        for_ qs' $ \qs -> do
+          located qs p_hsContext
+          space
+          txt "=>"
+          interArgBreak
+    setPrevTypeCtx TypeCtxContext
     case unLoc t of
       HsQualTy {} -> p_hsTypeR (unLoc t)
       HsFunTy {} -> p_hsTypeR (unLoc t)
@@ -100,19 +131,30 @@ p_hsType' multilineArgs docStyle = \case
       txt "@"
       located kd p_hsType
   HsFunTy _ arrow x y@(L _ y') -> do
-    located x p_hsType
-    space
-    case arrow of
-      HsUnrestrictedArrow _ -> txt "->"
-      HsLinearArrow _ _ -> txt "%1 ->"
-      HsExplicitMult _ _ mult -> do
-        txt "%"
-        p_hsTypeR (unLoc mult)
+    getPrinterOpt poFunctionArrows >>= \case
+      LeadingArrows -> do
+        after <- getPrevTypeCtx
+        bool id (inciByExact 3) (after == TypeCtxForall) (located x p_hsType)
+        interArgBreak
+      TrailingArrows -> do
+        located x p_hsType
         space
-        txt "->"
-    interArgBreak
+        case arrow of
+          HsUnrestrictedArrow _ -> txt "->"
+          HsLinearArrow _ _ -> txt "%1 ->"
+          HsExplicitMult _ _ mult -> do
+            txt "%"
+            setPrevTypeCtx TypeCtxContext
+            p_hsTypeR (unLoc mult)
+            space
+            txt "->"
+        interArgBreak
+    setPrevTypeCtx TypeCtxArgument
     case y' of
-      HsFunTy {} -> p_hsTypeR y'
+      HsFunTy {} -> do
+        layout <- getLayout
+        -- Render the comments properly, but keep the existing layout
+        located y (enterLayout layout . p_hsTypeR)
       _ -> located y p_hsTypeR
   HsListTy _ t ->
     located t (brackets N . p_hsType)
@@ -135,16 +177,16 @@ p_hsType' multilineArgs docStyle = \case
     parens N $ sitcc $ located t p_hsType
   HsIParamTy _ n t -> sitcc $ do
     located n atom
-    space
-    txt "::"
+    trailingArrowType
     breakpoint
+    leadingArrowType
     inci (located t p_hsType)
   HsStarTy _ _ -> txt "*"
   HsKindSig _ t k -> sitcc $ do
     located t p_hsType
-    space
-    txt "::"
+    trailingArrowType
     breakpoint
+    leadingArrowType
     inci (located k p_hsType)
   HsSpliceTy _ splice -> p_hsSplice splice
   HsDocTy _ t str ->
@@ -203,7 +245,11 @@ p_hsType' multilineArgs docStyle = \case
       if multilineArgs
         then newline
         else breakpoint
-    p_hsTypeR = p_hsType' multilineArgs docStyle
+    p_hsTypeR m = do
+      getPrinterOpt poFunctionArrows >>= \case
+        TrailingArrows -> pure ()
+        LeadingArrows -> p_after multilineArgs
+      p_hsType' multilineArgs docStyle m
 
 -- | Return 'True' if at least one argument in 'HsType' has a doc string
 -- attached to it.
@@ -238,26 +284,31 @@ p_hsTyVarBndr = \case
     (if isInferred flag then braces N else id) $ p_rdrName x
   KindedTyVar _ flag l k -> (if isInferred flag then braces else parens) N . sitcc $ do
     located l atom
-    space
-    txt "::"
+    trailingArrowType
     breakpoint
+    leadingArrowType
     inci (located k p_hsType)
 
 data ForAllVisibility = ForAllInvis | ForAllVis
 
 -- | Render several @forall@-ed variables.
 p_forallBndrs :: ForAllVisibility -> (a -> R ()) -> [LocatedA a] -> R ()
-p_forallBndrs ForAllInvis _ [] = txt "forall."
-p_forallBndrs ForAllVis _ [] = txt "forall ->"
-p_forallBndrs vis p tyvars =
+p_forallBndrs vis p tyvars = do
+  p_forallBndrs' vis p tyvars
+  p_after False
+
+p_forallBndrs' :: ForAllVisibility -> (a -> R ()) -> [LocatedA a] -> R ()
+p_forallBndrs' ForAllInvis _ [] = txt "forall" >> setPrevTypeCtx TypeCtxForall
+p_forallBndrs' ForAllVis _ [] = txt "forall" >> space >> setPrevTypeCtx TypeCtxArgument
+p_forallBndrs' vis p tyvars = do
   switchLayout (getLocA <$> tyvars) $ do
     txt "forall"
     breakpoint
     inci $ do
       sitcc $ sep breakpoint (sitcc . located' p) tyvars
-      case vis of
-        ForAllInvis -> txt "."
-        ForAllVis -> space >> txt "->"
+  case vis of
+    ForAllInvis -> setPrevTypeCtx TypeCtxForall
+    ForAllVis -> space >> setPrevTypeCtx TypeCtxArgument
 
 p_conDeclFields :: [LConDeclField GhcPs] -> R ()
 p_conDeclFields xs =
@@ -273,10 +324,17 @@ p_conDeclField ConDeclField {..} = do
       commaDel
       (located' (p_rdrName . rdrNameFieldOcc))
       cd_fld_names
-  space
-  txt "::"
-  breakpoint
-  sitcc . inci $ p_hsType (unLoc cd_fld_type)
+  getPrinterOpt poFunctionArrows >>= \case
+    LeadingArrows -> inci $ do
+      breakpoint
+      txt "::"
+      space
+      p_hsType (unLoc cd_fld_type)
+    TrailingArrows -> do
+      space
+      txt "::"
+      breakpoint
+      sitcc . inci $ p_hsType (unLoc cd_fld_type)
   when (commaStyle == Leading) $
     mapM_ (inciByFrac (-1) . (newline >>) . p_hsDocString Caret False) cd_fld_doc
 

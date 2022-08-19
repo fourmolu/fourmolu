@@ -225,6 +225,7 @@ overFieldsM f $(unpackFieldsWithSuffix 'PrinterOpts "0") = do
   poRespectful <- f poRespectful0
   poHaddockStyle <- f poHaddockStyle0
   poNewlinesBetweenDecls <- f poNewlinesBetweenDecls0
+  poFunctionArrows <- f poFunctionArrows0
   return PrinterOpts {..}
 
 defaultPrinterOpts :: PrinterOptsTotal
@@ -337,6 +338,14 @@ printerOptsMeta =
             metaPlaceholder = "HEIGHT",
             metaHelp = "Number of spaces between top-level declarations",
             metaDefault = 1
+          },
+      poFunctionArrows =
+        PrinterOptsFieldMeta
+          { metaName = "function-arrows",
+            metaGetField = poFunctionArrows,
+            metaPlaceholder = "STYLE",
+            metaHelp = "Styling of arrows in type signatures",
+            metaDefault = TrailingArrows
           }
     }
 
@@ -391,6 +400,14 @@ importExportStyleMap =
       ]
    )
 
+functionArrowsStyleMap :: BijectiveMap FunctionArrowsStyle
+functionArrowsStyleMap =
+  $( mkBijectiveMap
+      [ ('TrailingArrows, "trailing"),
+        ('LeadingArrows, "leading")
+      ]
+   )
+
 instance PrinterOptsFieldType CommaStyle where
   parseJSON = parseJSONWith commaStyleMap "CommaStyle"
   parseText = parseTextWith commaStyleMap
@@ -405,6 +422,11 @@ instance PrinterOptsFieldType ImportExportStyle where
   parseJSON = parseJSONWith importExportStyleMap "ImportExportStyle"
   parseText = parseTextWith importExportStyleMap
   showText = show . showTextWith importExportStyleMap
+
+instance PrinterOptsFieldType FunctionArrowsStyle where
+  parseJSON = parseJSONWith functionArrowsStyleMap "FunctionArrowStyle"
+  parseText = parseTextWith functionArrowsStyleMap
+  showText = show . showTextWith functionArrowsStyleMap
 
 ----------------------------------------------------------------------------
 -- BijectiveMap helpers

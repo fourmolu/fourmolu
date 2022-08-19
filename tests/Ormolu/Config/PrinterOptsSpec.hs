@@ -113,6 +113,14 @@ spec =
             show newlines ++ if respectful then " (respectful)" else "",
           testCaseSuffix = \(newlines, respectful) ->
             suffixWith [show newlines, if respectful then "respectful" else ""]
+        },
+      TestGroup
+        { label = "function-arrows",
+          testCases = allOptions,
+          updateConfig = \functionArrows opts ->
+            opts {poFunctionArrows = pure functionArrows},
+          showTestCase = show,
+          testCaseSuffix = suffix1
         }
     ]
   where

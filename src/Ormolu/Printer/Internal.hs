@@ -26,6 +26,7 @@ module Ormolu.Printer.Internal
     inciBy,
     inciByFrac,
     inciHalf,
+    inciByExact,
     sitcc,
     sitccIfTrailing,
     Layout (..),
@@ -58,6 +59,9 @@ module Ormolu.Printer.Internal
 
     -- * Extensions
     isExtensionEnabled,
+    PrevTypeCtx (..),
+    getPrevTypeCtx,
+    setPrevTypeCtx,
   )
 where
 
@@ -135,7 +139,9 @@ data SC = SC
     -- | Whether to output a space before the next output
     scRequestedDelimiter :: !RequestedDelimiter,
     -- | An auxiliary marker for keeping track of last output element
-    scSpanMark :: !(Maybe SpanMark)
+    scSpanMark :: !(Maybe SpanMark),
+    -- | What (if any) precedes the current type on the same line
+    scPrevTypeCtx :: PrevTypeCtx
   }
 
 -- | Make sure next output is delimited by one of the following.
@@ -212,7 +218,8 @@ runR (R m) sstream cstream printerOpts sourceType extensions fixityOverrides fix
           scCommentStream = cstream,
           scPendingComments = [],
           scRequestedDelimiter = VeryBeginning,
-          scSpanMark = Nothing
+          scSpanMark = Nothing,
+          scPrevTypeCtx = TypeCtxStart
         }
 
 ----------------------------------------------------------------------------
@@ -443,6 +450,15 @@ inci = inciByFrac 1
 inciHalf :: R () -> R ()
 inciHalf = inciByFrac 2
 
+-- | Like 'inci', but indents by exactly the given number of spaces.
+inciByExact :: Int -> R () -> R ()
+inciByExact spaces (R m) = R (local modRC m)
+  where
+    modRC rc =
+      rc
+        { rcIndent = rcIndent rc + spaces
+        }
+
 -- | Set indentation level for the inner computation equal to current
 -- column. This makes sure that the entire inner block is uniformly
 -- \"shifted\" to the right.
@@ -638,3 +654,22 @@ canUseBraces = R (asks rcCanUseBraces)
 
 isExtensionEnabled :: Extension -> R Bool
 isExtensionEnabled ext = R . asks $ EnumSet.member ext . rcExtensions
+
+----------------------------------------------------------------------------
+-- Previous type context
+
+-- | What (if anything) precedes the current type on the same line
+-- Only used for the `function-arrows` setting
+data PrevTypeCtx
+  = TypeCtxStart
+  | TypeCtxForall
+  | TypeCtxContext
+  | TypeCtxArgument
+  deriving (Eq, Show)
+
+getPrevTypeCtx :: R PrevTypeCtx
+getPrevTypeCtx = R (gets scPrevTypeCtx)
+
+setPrevTypeCtx :: PrevTypeCtx -> R ()
+setPrevTypeCtx prevTypeCtx =
+  R $ modify (\sc -> sc {scPrevTypeCtx = prevTypeCtx})
