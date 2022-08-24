@@ -66,6 +66,14 @@ spec =
             suffixWith [show indent, if indentWheres then "indent_wheres" else ""]
         },
       TestGroup
+        { label = "function-arrows",
+          testCases = allOptions,
+          updateConfig = \functionArrows opts ->
+            opts {poFunctionArrows = pure functionArrows},
+          showTestCase = show,
+          testCaseSuffix = suffix1
+        },
+      TestGroup
         { label = "comma-style",
           testCases = allOptions,
           updateConfig = \commaStyle opts -> opts {poCommaStyle = pure commaStyle},
@@ -88,20 +96,6 @@ spec =
           testCaseSuffix = suffix1
         },
       TestGroup
-        { label = "respectful",
-          testCases = allOptions,
-          updateConfig = \respectful opts -> opts {poRespectful = pure respectful},
-          showTestCase = show,
-          testCaseSuffix = suffix1
-        },
-      TestGroup
-        { label = "haddock-style",
-          testCases = allOptions,
-          updateConfig = \haddockStyle opts -> opts {poHaddockStyle = pure haddockStyle},
-          showTestCase = show,
-          testCaseSuffix = suffix1
-        },
-      TestGroup
         { label = "newlines-between-decls",
           testCases = (,) <$> [0, 1, 2] <*> allOptions,
           updateConfig = \(newlines, respectful) opts ->
@@ -115,10 +109,16 @@ spec =
             suffixWith [show newlines, if respectful then "respectful" else ""]
         },
       TestGroup
-        { label = "function-arrows",
+        { label = "haddock-style",
           testCases = allOptions,
-          updateConfig = \functionArrows opts ->
-            opts {poFunctionArrows = pure functionArrows},
+          updateConfig = \haddockStyle opts -> opts {poHaddockStyle = pure haddockStyle},
+          showTestCase = show,
+          testCaseSuffix = suffix1
+        },
+      TestGroup
+        { label = "respectful",
+          testCases = allOptions,
+          updateConfig = \respectful opts -> opts {poRespectful = pure respectful},
           showTestCase = show,
           testCaseSuffix = suffix1
         }

@@ -44,15 +44,15 @@ We share all bar one of Ormolu's goals:
 | Configuration option     | Valid options   | Description |
 |--------------------------|-----------------|-------------|
 | `indentation`            | any integer     | Number of spaces to use as indentation |
+| `function-arrows`        | `trailing`, `leading`| How to format arrows in type signatures |
 | `comma-style`            | `leading`, `trailing` | Where to put the comma in lists, tuples, etc. |
 | `import-export-style`    | `leading`, `trailing`, `diff-friendly` | How to format multiline import/export lists (`diff-friendly` lists have trailing commas but keep the open-parentheses on the same line as the `import` line) |
 | `indent-wheres`          | `true`, `false` | `false` means save space by only half-indenting the `where` keyword |
 | `record-brace-space`     | `true`, `false` | `rec {x = 1}` vs `rec{x = 1}` |
-| `respectful`             | `true`, `false` | Whether to respect user-specified newlines, e.g. in import groupings |
-| `haddock-style`          | `single-line`, `multi-line`, `multi-line-compact` | Whether multiline haddocks should use `-- \|`, `{- \|`, or `{-\|` (single-line haddocks will always use `--` for now) |
 | `newlines-between-decls` | any integer     | number of newlines between top-level declarations |
+| `haddock-style`          | `single-line`, `multi-line`, `multi-line-compact` | Whether multiline haddocks should use `-- \|`, `{- \|`, or `{-\|` (single-line haddocks will always use `--` for now) |
+| `respectful`             | `true`, `false` | Whether to respect user-specified newlines, e.g. in import groupings |
 | `fixities`               | A list of strings | See the "Language extensions, dependencies, and fixities" section below |
-| `function-arrows`        | `trailing`, `leading`| How to format arrows in type signatures |
 
 For examples of each of these options, see the [test files](https://github.com/fourmolu/fourmolu/tree/main/data/fourmolu/).
 
@@ -64,30 +64,30 @@ A complete configuration file, corresponding to Fourmolu's default options, look
 
 ```yaml
 indentation: 4
+function-arrows: trailing
 comma-style: leading
 import-export-style: diff-friendly
 indent-wheres: false
 record-brace-space: false
-respectful: true
-haddock-style: multi-line
 newlines-between-decls: 1
+haddock-style: multi-line
+respectful: true
 fixities: []
-function-arrows: trailing
 ```
 
 The configuration that most closely matches Ormolu's styling is:
 
 ```yaml
 indentation: 2
+function-arrows: trailing
 comma-style: trailing
 import-export-style: trailing
 indent-wheres: true
 record-brace-space: true
-respectful: false
-haddock-style: single-line
 newlines-between-decls: 1
+haddock-style: single-line
+respectful: false
 fixities: []
-function-arrows: trailing
 ```
 
 Command-line options override options in a configuration file. Run `fourmolu --help` to see all options.
