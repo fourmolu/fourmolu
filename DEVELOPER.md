@@ -105,6 +105,7 @@ To release a new version, do the following workflow:
     1. Curate option order
         * Re-order the "Available options" table in the `README` with the options sorted by popularity/importance (using your best judgement, without too much churn every release)
         * Ensure the options are in the same order in the `fourmolu.yaml` file and `README` examples
+        * Ensure the options are in the same order in `Ormolu.Config.Types`, `overFieldsM`, and `printerOptsMeta`
         * Ensure the `PrinterOptsSpec.hs` tests are also in the same order as the options
 
 1. Create PR as usual and merge into `main`

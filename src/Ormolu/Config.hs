@@ -218,14 +218,14 @@ overFields f = runIdentity . overFieldsM (Identity . f)
 overFieldsM :: Applicative m => (forall a. f a -> m (g a)) -> PrinterOpts f -> m (PrinterOpts g)
 overFieldsM f $(unpackFieldsWithSuffix 'PrinterOpts "0") = do
   poIndentation <- f poIndentation0
+  poFunctionArrows <- f poFunctionArrows0
   poCommaStyle <- f poCommaStyle0
   poImportExportStyle <- f poImportExportStyle0
   poIndentWheres <- f poIndentWheres0
   poRecordBraceSpace <- f poRecordBraceSpace0
-  poRespectful <- f poRespectful0
-  poHaddockStyle <- f poHaddockStyle0
   poNewlinesBetweenDecls <- f poNewlinesBetweenDecls0
-  poFunctionArrows <- f poFunctionArrows0
+  poHaddockStyle <- f poHaddockStyle0
+  poRespectful <- f poRespectful0
   return PrinterOpts {..}
 
 defaultPrinterOpts :: PrinterOptsTotal
@@ -270,6 +270,14 @@ printerOptsMeta =
             metaHelp = "Number of spaces per indentation step",
             metaDefault = 4
           },
+      poFunctionArrows =
+        PrinterOptsFieldMeta
+          { metaName = "function-arrows",
+            metaGetField = poFunctionArrows,
+            metaPlaceholder = "STYLE",
+            metaHelp = "Styling of arrows in type signatures",
+            metaDefault = TrailingArrows
+          },
       poCommaStyle =
         PrinterOptsFieldMeta
           { metaName = "comma-style",
@@ -312,13 +320,13 @@ printerOptsMeta =
             metaHelp = "Whether to leave a space before an opening record brace",
             metaDefault = False
           },
-      poRespectful =
+      poNewlinesBetweenDecls =
         PrinterOptsFieldMeta
-          { metaName = "respectful",
-            metaGetField = poRespectful,
-            metaPlaceholder = "BOOL",
-            metaHelp = "Give the programmer more choice on where to insert blank lines",
-            metaDefault = True
+          { metaName = "newlines-between-decls",
+            metaGetField = poNewlinesBetweenDecls,
+            metaPlaceholder = "HEIGHT",
+            metaHelp = "Number of spaces between top-level declarations",
+            metaDefault = 1
           },
       poHaddockStyle =
         PrinterOptsFieldMeta
@@ -331,21 +339,13 @@ printerOptsMeta =
                 (showAllValues haddockPrintStyleMap),
             metaDefault = HaddockMultiLine
           },
-      poNewlinesBetweenDecls =
+      poRespectful =
         PrinterOptsFieldMeta
-          { metaName = "newlines-between-decls",
-            metaGetField = poNewlinesBetweenDecls,
-            metaPlaceholder = "HEIGHT",
-            metaHelp = "Number of spaces between top-level declarations",
-            metaDefault = 1
-          },
-      poFunctionArrows =
-        PrinterOptsFieldMeta
-          { metaName = "function-arrows",
-            metaGetField = poFunctionArrows,
-            metaPlaceholder = "STYLE",
-            metaHelp = "Styling of arrows in type signatures",
-            metaDefault = TrailingArrows
+          { metaName = "respectful",
+            metaGetField = poRespectful,
+            metaPlaceholder = "BOOL",
+            metaHelp = "Give the programmer more choice on where to insert blank lines",
+            metaDefault = True
           }
     }
 
@@ -382,6 +382,14 @@ commaStyleMap =
       ]
    )
 
+functionArrowsStyleMap :: BijectiveMap FunctionArrowsStyle
+functionArrowsStyleMap =
+  $( mkBijectiveMap
+      [ ('TrailingArrows, "trailing"),
+        ('LeadingArrows, "leading")
+      ]
+   )
+
 haddockPrintStyleMap :: BijectiveMap HaddockPrintStyle
 haddockPrintStyleMap =
   $( mkBijectiveMap
@@ -400,18 +408,15 @@ importExportStyleMap =
       ]
    )
 
-functionArrowsStyleMap :: BijectiveMap FunctionArrowsStyle
-functionArrowsStyleMap =
-  $( mkBijectiveMap
-      [ ('TrailingArrows, "trailing"),
-        ('LeadingArrows, "leading")
-      ]
-   )
-
 instance PrinterOptsFieldType CommaStyle where
   parseJSON = parseJSONWith commaStyleMap "CommaStyle"
   parseText = parseTextWith commaStyleMap
   showText = show . showTextWith commaStyleMap
+
+instance PrinterOptsFieldType FunctionArrowsStyle where
+  parseJSON = parseJSONWith functionArrowsStyleMap "FunctionArrowStyle"
+  parseText = parseTextWith functionArrowsStyleMap
+  showText = show . showTextWith functionArrowsStyleMap
 
 instance PrinterOptsFieldType HaddockPrintStyle where
   parseJSON = parseJSONWith haddockPrintStyleMap "HaddockPrintStyle"
@@ -422,11 +427,6 @@ instance PrinterOptsFieldType ImportExportStyle where
   parseJSON = parseJSONWith importExportStyleMap "ImportExportStyle"
   parseText = parseTextWith importExportStyleMap
   showText = show . showTextWith importExportStyleMap
-
-instance PrinterOptsFieldType FunctionArrowsStyle where
-  parseJSON = parseJSONWith functionArrowsStyleMap "FunctionArrowStyle"
-  parseText = parseTextWith functionArrowsStyleMap
-  showText = show . showTextWith functionArrowsStyleMap
 
 ----------------------------------------------------------------------------
 -- BijectiveMap helpers

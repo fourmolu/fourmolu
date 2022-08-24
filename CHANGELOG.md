@@ -1,3 +1,8 @@
+## Fourmolu 0.8.2.0
+
+* Add `multi-line-compact` option to `haddock-style` that will output `{-|` for multiline haddocks instead of `{- |` ([#130](https://github.com/fourmolu/fourmolu/pull/130))
+* Add `function-arrows` configuration option to style arrow placement in type signatures ([#209](https://github.com/fourmolu/fourmolu/pull/209))
+
 ## Fourmolu 0.8.1.0
 
 * Add `emptyConfig` ([#221](https://github.com/fourmolu/fourmolu/pull/221))
