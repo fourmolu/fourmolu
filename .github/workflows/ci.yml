@@ -10,7 +10,7 @@ on:
         value: ${{ jobs.build_prod.outputs.version }}
 
 jobs:
-  build_and_test:
+  stack_test:
     strategy:
       matrix:
         stack_yaml:
@@ -26,7 +26,7 @@ jobs:
           - stack_yaml: stack.yaml
             os: macos-latest
 
-    name: 'build_and_test: ${{ matrix.os }} - ${{ matrix.stack_yaml }}'
+    name: 'stack_test: ${{ matrix.os }} - ${{ matrix.stack_yaml }}'
     runs-on: ${{ matrix.os }}
     env:
       STACK_YAML: ${{ matrix.stack_yaml }}
@@ -36,7 +36,7 @@ jobs:
       - uses: actions/cache@v3
         with:
           path: ~/.stack
-          key: ${{ runner.os }}-build_and_test-${{ matrix.stack_yaml }}-${{ hashFiles(matrix.stack_yaml, 'fourmolu.cabal') }}
+          key: ${{ runner.os }}-stack_test-${{ matrix.stack_yaml }}-${{ hashFiles(matrix.stack_yaml, 'fourmolu.cabal') }}
 
       - name: Build + Test
         run: |
@@ -120,7 +120,7 @@ jobs:
               # install binary to ./bin/
               --copy-bins --local-bin-path ./bin/
 
-              # not using `dev` flag or testing; done in build_and_test job
+              # not using `dev` flag or testing; done in stack_test job
           )
           stack build "${ARGS[@]}"
 
