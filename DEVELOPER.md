@@ -10,6 +10,18 @@ Some things to keep in mind when making changes:
     * This includes behavior changes that drastically change how `fourmolu` formats Fourmolu's source code itself
 * Add a file to `changelog.d/` when applicable (see `changelog.d/README.md`)
 
+### Running tests
+
+The Fourmolu test suite contains the following types of tests:
+
+1. Tests inherited from Ormolu
+1. Unit tests specific for Fourmolu
+1. Integration tests
+
+All of these tests can be run with `cabal test` or `stack test`.
+
+To regenerate the printer test outputs (`data/examples/**/*-four-out.hs`), set `ORMOLU_REGENERATE_EXAMPLES=1` in the environment before running `test`. Generally, this should not change any of the `*-out.hs` files, but it might change the `*-four-out.hs` files, if the setting in `defaultPrinterOpts` is different from the one in `fourmolu.yaml`
+
 ### Running `fourmolu`
 
 After building from source (see `README.md`), you can run Fourmolu with
@@ -32,16 +44,21 @@ This is optional, but is run in CI regardless.
 
 Considering configurability is the raison d'être of Fourmolu, you're probably making a change that involves adding a new configuration option. Ideally, you've already opened an issue asking for thoughts on the new configuration. Assuming you've already done all that, here's a checklist to follow to ensure you've touched all the right places:
 
-1. Add the configuration option to `PrinterOpts` in `Ormolu.Config`
+1. Add the configuration option to `PrinterOpts` in `Ormolu.Config.Types`
     * Follow all the compiler errors
+
 1. Make the required changes to change styling based on the configuration option
+
 1. Update the in-repo `fourmolu.yaml` with your configuration option set to most closely imitate Ormolu's default style
+
 1. Add a test case to `Ormolu.Config.PrinterOptsSpec`
     * Add a corresponding `data/fourmolu/<label>/input.hs` file
-1. Run all tests with `ORMOLU_REGENERATE_EXAMPLES=1 stack test`
-    * This should not change any of the `*-out.hs` files, although it might change the `*-four-out.hs` files, if the setting in `defaultPrinterOpts` is different from the one in `fourmolu.yaml`
+
+1. Regenerate test outputs (see the "Running tests" section above)
+
 1. Add your new option to the "Configuration" section in `README.md`
-    * Both in the table and in the example `fourmolu.yaml` file
+    * Both in the table and in the example `fourmolu.yaml` files
+
 1. Add a file to `changelog.d/` (see `changelog.d/README.md`)
 
 ## Instant feedback with GHCID
@@ -84,6 +101,11 @@ To release a new version, do the following workflow:
         * All version bumps should follow [PvP](https://pvp.haskell.org/)
 
     1. Curate `CHANGELOG.md` (see `changelog.d/README.md`)
+
+    1. Curate option order
+        * Re-order the "Available options" table in the `README` with the options sorted by popularity/importance (using your best judgement, without too much churn every release)
+        * Ensure the options are in the same order in the `fourmolu.yaml` file and `README` examples
+        * Ensure the `PrinterOptsSpec.hs` tests are also in the same order as the options
 
 1. Create PR as usual and merge into `main`
     1. In the `check_sdist` CI job, check the output of the `stack sdist` step for any warnings.
@@ -136,12 +158,8 @@ Fourmolu aims to continue merging upstream changes in Ormolu. Whenever Ormolu ma
 
 ### Update tests
 
-* Regenerate test files
-
-    1. Run tests with `ORMOLU_REGENERATE_EXAMPLES=1` set in the environment and commit any new `*-four-out.hs` files
-
+* Regenerate test files (see the "Running tests" section above)
 * Remove any redundant Fourmolu output files
-
     ```bash
     ./scripts/clean_redundant_examples.py
     ```
