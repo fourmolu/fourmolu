@@ -49,6 +49,29 @@ jobs:
       - name: Check that Cabal file was generated
         run: git diff --exit-code '*.cabal'
 
+  cabal_test:
+    strategy:
+      matrix:
+        ghc_version:
+          - '8.10'
+          - '9.0'
+          - '9.2'
+
+    name: 'cabal_test: ghc-${{ matrix.ghc_version }}'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: haskell/actions/setup@v2
+        with:
+          ghc-version: ${{ matrix.ghc_version }}
+      - uses: actions/cache@v3
+        with:
+          path: ~/.cabal
+          key: ${{ runner.os }}-cabal-cache-${{ matrix.ghc_version }}-${{ hashFiles('fourmolu.cabal') }}
+      - run: cabal update
+      - run: cabal install --overwrite-policy=always alex happy
+      - run: cabal test
+
   build_haddock:
     runs-on: ubuntu-latest
     steps:
