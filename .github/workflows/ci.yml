@@ -10,7 +10,7 @@ on:
         value: ${{ jobs.build_prod.outputs.version }}
 
 jobs:
-  build_and_test:
+  stack_test:
     strategy:
       matrix:
         stack_yaml:
@@ -20,14 +20,9 @@ jobs:
           # technically redundant, since this should be a symlink,
           # but just to be extra sure
           - stack.yaml
-        os:
-          - ubuntu-latest
-        include:
-          - stack_yaml: stack.yaml
-            os: macos-latest
 
-    name: 'build_and_test: ${{ matrix.os }} - ${{ matrix.stack_yaml }}'
-    runs-on: ${{ matrix.os }}
+    name: 'stack_test: ${{ matrix.stack_yaml }}'
+    runs-on: ubuntu-latest
     env:
       STACK_YAML: ${{ matrix.stack_yaml }}
 
@@ -36,18 +31,53 @@ jobs:
       - uses: actions/cache@v3
         with:
           path: ~/.stack
-          key: ${{ runner.os }}-build_and_test-${{ matrix.stack_yaml }}-${{ hashFiles(matrix.stack_yaml, 'fourmolu.cabal') }}
+          key: ${{ runner.os }}-stack_test-${{ matrix.stack_yaml }}-${{ hashFiles(matrix.stack_yaml, 'fourmolu.cabal') }}
 
-      - name: Build + Test
-        run: |
-          ARGS=(
-              # use development mode, to enable -Werror
-              --flag fourmolu:dev
-          )
-          stack build --test "${ARGS[@]}"
+      # use development mode, to enable -Werror
+      - run: stack test --flag fourmolu:dev
 
       - name: Check that Cabal file was generated
         run: git diff --exit-code '*.cabal'
+
+  cabal_test:
+    strategy:
+      matrix:
+        ghc_version:
+          - '8.10'
+          - '9.0'
+          - '9.2'
+
+    name: 'cabal_test: ghc-${{ matrix.ghc_version }}'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: haskell/actions/setup@v2
+        with:
+          ghc-version: ${{ matrix.ghc_version }}
+      - uses: actions/cache@v3
+        with:
+          path: ~/.cabal
+          key: ${{ runner.os }}-cabal-cache-${{ matrix.ghc_version }}-${{ hashFiles('fourmolu.cabal') }}
+      - run: cabal update
+      - run: cabal install --overwrite-policy=always alex happy
+      - run: cabal test
+
+  os_test:
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+
+    name: 'os_test: ${{ matrix.os }}'
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v3
+        with:
+          path: ~/.stack
+          key: ${{ runner.os }}-os_test-${{ hashFiles('stack.yaml', 'fourmolu.cabal') }}
+      - run: stack test --fast
 
   build_haddock:
     runs-on: ubuntu-latest
@@ -97,7 +127,7 @@ jobs:
               # install binary to ./bin/
               --copy-bins --local-bin-path ./bin/
 
-              # not using `dev` flag or testing; done in build_and_test job
+              # not using `dev` flag or testing; done in `stack_test` + `os_test`
           )
           stack build "${ARGS[@]}"
 
