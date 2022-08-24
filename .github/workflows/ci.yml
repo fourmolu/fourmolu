@@ -20,14 +20,9 @@ jobs:
           # technically redundant, since this should be a symlink,
           # but just to be extra sure
           - stack.yaml
-        os:
-          - ubuntu-latest
-        include:
-          - stack_yaml: stack.yaml
-            os: macos-latest
 
-    name: 'stack_test: ${{ matrix.os }} - ${{ matrix.stack_yaml }}'
-    runs-on: ${{ matrix.os }}
+    name: 'stack_test: ${{ matrix.stack_yaml }}'
+    runs-on: ubuntu-latest
     env:
       STACK_YAML: ${{ matrix.stack_yaml }}
 
@@ -71,6 +66,23 @@ jobs:
       - run: cabal update
       - run: cabal install --overwrite-policy=always alex happy
       - run: cabal test
+
+  os_test:
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+
+    name: 'os_test: ${{ matrix.os }}'
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v3
+        with:
+          path: ~/.stack
+          key: ${{ runner.os }}-os_test-${{ hashFiles('stack.yaml', 'fourmolu.cabal') }}
+      - run: stack test --fast
 
   build_haddock:
     runs-on: ubuntu-latest
@@ -120,7 +132,7 @@ jobs:
               # install binary to ./bin/
               --copy-bins --local-bin-path ./bin/
 
-              # not using `dev` flag or testing; done in stack_test job
+              # not using `dev` flag or testing; done in `stack_test` + `os_test`
           )
           stack build "${ARGS[@]}"
 
