@@ -31,10 +31,12 @@ foo
                             , w
                             ) -> \u ->
                             -- Procs can have lambdas
-                            let v =
+                            let
+                                v =
                                     u -- Actually never used
                                         ^ 2
-                             in ( returnA
+                             in
+                                ( returnA
                                     -<
                                         -- Just do the calculation
                                         (x + y * z)

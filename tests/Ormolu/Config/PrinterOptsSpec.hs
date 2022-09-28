@@ -1,4 +1,5 @@
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
 
@@ -9,11 +10,13 @@
 -- testing.
 module Ormolu.Config.PrinterOptsSpec (spec) where
 
+import Control.Exception (catch)
 import Control.Monad (forM_, when)
 import Data.Algorithm.DiffContext (getContextDiff, prettyContextDiff)
 import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
+import GHC.Stack (withFrozenCallStack)
 import Ormolu
   ( Config (..),
     PrinterOpts (..),
@@ -23,6 +26,8 @@ import Ormolu
     detectSourceType,
     ormolu,
   )
+import Ormolu.Exception (OrmoluException, printOrmoluException)
+import Ormolu.Terminal (ColorMode (..), runTerm)
 import Ormolu.Utils.IO (readFileUtf8, writeFileUtf8)
 import Path
   ( File,
@@ -35,9 +40,12 @@ import Path
   )
 import Path.IO (doesFileExist)
 import System.Environment (lookupEnv)
+import System.IO (hClose)
+import System.IO.Temp (withSystemTempFile)
 import System.IO.Unsafe (unsafePerformIO)
 import Test.Hspec
 import qualified Text.PrettyPrint as Doc
+import Text.Printf (printf)
 
 data TestGroup = forall a.
   TestGroup
@@ -87,6 +95,20 @@ spec =
             opts {poImportExportStyle = pure commaStyle},
           showTestCase = show,
           testCaseSuffix = suffix1
+        },
+      TestGroup
+        { label = "let-style",
+          testCases = (,,) <$> allOptions <*> allOptions <*> [2, 4],
+          updateConfig = \(letStyle, inStyle, indent) opts ->
+            opts
+              { poIndentation = pure indent,
+                poLetStyle = pure letStyle,
+                poInStyle = pure inStyle
+              },
+          showTestCase = \(letStyle, inStyle, indent) ->
+            printf "%s + %s (indent=%d)" (show letStyle) (show inStyle) indent,
+          testCaseSuffix = \(letStyle, inStyle, indent) ->
+            suffixWith [show letStyle, show inStyle, "indent=" ++ show indent]
         },
       TestGroup
         { label = "record-brace-space",
@@ -145,20 +167,20 @@ runTestGroup TestGroup {..} =
                   cfgSourceType = detectSourceType inputPath,
                   cfgCheckIdempotence = True
                 }
-            runOrmolu path = ormolu config path . T.unpack
 
         input <- readFileUtf8 inputPath
-        actual <- runOrmolu inputPath input
-        mExpected <- getFileContents outputFile
-        case (shouldRegenerateOutput, mExpected) of
-          (False, Nothing) ->
+        actual <-
+          ormolu config inputPath (T.unpack input) `catch` \e -> do
+            msg <- renderOrmoluException e
+            expectationFailure' $ unlines ["Got ormolu exception:", "", msg]
+        getFileContents outputFile >>= \case
+          _ | shouldRegenerateOutput -> writeFileUtf8 outputPath actual
+          Nothing ->
             expectationFailure "Output does not exist. Try running with ORMOLU_REGENERATE_EXAMPLES=1"
-          (False, Just expected) ->
+          Just expected ->
             when (actual /= expected) $
               expectationFailure . T.unpack $
                 getDiff ("actual", actual) ("expected", expected)
-          (True, _) ->
-            writeFileUtf8 outputPath actual
   where
     testDir = toRelDir $ "data/fourmolu/" ++ label
     toRelDir name =
@@ -184,6 +206,19 @@ getDiff (s1Name, s1) (s2Name, s2) =
   T.pack . Doc.render $
     prettyContextDiff (Doc.text s1Name) (Doc.text s2Name) (Doc.text . T.unpack) $
       getContextDiff 2 (T.lines s1) (T.lines s2)
+
+renderOrmoluException :: OrmoluException -> IO String
+renderOrmoluException e =
+  withSystemTempFile "PrinterOptsSpec" $ \fp handle -> do
+    runTerm (printOrmoluException e) Never handle
+    hClose handle
+    readFile fp
+
+expectationFailure' :: HasCallStack => String -> IO a
+expectationFailure' msg = do
+  withFrozenCallStack $ expectationFailure msg
+  -- satisfy type-checker, since hspec's expectationFailure is IO ()
+  error "unreachable"
 
 shouldRegenerateOutput :: Bool
 shouldRegenerateOutput =

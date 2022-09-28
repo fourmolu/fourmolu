@@ -3,10 +3,12 @@
 foo f = proc a -> let b = a in f -< b
 
 bar f g = proc a ->
-    let h =
+    let
+        h =
             f
                 . g a
         j =
             g
                 . h
-     in id -< (h, j)
+     in
+        id -< (h, j)
