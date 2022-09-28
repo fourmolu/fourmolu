@@ -45,13 +45,13 @@ Defaults are in bold.
 
 | Configuration option     | Valid options                                         | Description
 |--------------------------|-------------------------------------------------------|-------------
-| `indentation`            | any non-negative integer (**4**)                      | How many spaces to use as an indent
+| `indentation`            | any non-negative integer (**`4`**)                      | How many spaces to use as an indent
 | `function-arrows`        | **`trailing`**, `leading`                             | Where to place arrows in type signatures
 | `comma-style`            | **`leading`**, `trailing`                             | Where to place commas in lists, tuples, etc.
 | `import-export-style`    | `leading`, `trailing`, **`diff-friendly`**            | How to format multiline import/export lists (`diff-friendly` lists have trailing commas but keep the opening parenthesis on the same line as `import`)
 | `indent-wheres`          | `true`, **`false`**                                   | Use an extra level of indentation _vs_ only half-indent the `where` keyword
 | `record-brace-space`     | `true`, **`false`**                                   | `rec {x = 1}` _vs_ `rec{x = 1}`
-| `newlines-between-decls` | any integer (**1**)                                   | Number of newlines between top-level declarations
+| `newlines-between-decls` | any integer (**`1`**)                                   | Number of newlines between top-level declarations
 | `haddock-style`          | `single-line`, **`multi-line`**, `multi-line-compact` | Use `-- \|`, `{- \|`, or `{-\|` for multiline haddocks (single-line haddocks always use `--`)
 | `let-style`              | `inline`, `newline`, **`auto`**, `mixed`              | How to style `let` blocks (`auto` uses `newline` if there's a newline in the input and `inline` otherwise, and `mixed` uses `inline` only when the `let` has exactly one binding)
 | `in-style`               | `left-align`, **`right-align`**                       | How to align the `in` keyword with respect to `let`
