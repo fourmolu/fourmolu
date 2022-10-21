@@ -1,5 +1,11 @@
-resolver: nightly-2022-07-29
+resolver: nightly-2022-10-18
 compiler: ghc-9.2.4
+
+extra-deps:
+  - Cabal-3.8.1.0
+  - Cabal-syntax-3.8.1.0
+  - ghc-lib-parser-9.4.2.20220822
+  - process-1.6.15.0
 
 flags:
   fourmolu:

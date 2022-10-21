@@ -10,6 +10,7 @@ module Ormolu.Printer.Meat.Common
     p_rdrName,
     p_qualName,
     p_infixDefHelper,
+    p_hsDoc,
     p_hsDocString,
     p_sourceText,
   )
@@ -20,6 +21,7 @@ import Data.Foldable (traverse_)
 import Data.List (intersperse)
 import qualified Data.Text as T
 import GHC.Hs.Doc
+import GHC.Hs.Extension (GhcPs)
 import GHC.Hs.ImpExp
 import GHC.Parser.Annotation
 import GHC.Types.Name.Occurrence (OccName (..))
@@ -130,6 +132,18 @@ p_infixDefHelper isInfix indentArgs name args =
       unless (null ps) $ do
         breakpoint
         inciIf indentArgs $ sitcc (sep breakpoint sitcc args)
+
+-- | Print a Haddock.
+p_hsDoc ::
+  -- | Haddock style
+  HaddockStyle ->
+  -- | Finish the doc string with a newline
+  Bool ->
+  -- | The 'LHsDoc' to render
+  LHsDoc GhcPs ->
+  R ()
+p_hsDoc hstyle needsNewline =
+  p_hsDocString hstyle needsNewline . fmap hsDocString
 
 -- | Print a Haddock.
 p_hsDocString ::

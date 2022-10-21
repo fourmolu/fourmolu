@@ -4,7 +4,7 @@
 import Data.Char (toLower)
 import Data.List (intercalate)
 import Distribution.Package (packageVersion)
-import Distribution.PackageDescription.Parsec (readGenericPackageDescription)
+import Distribution.Simple.PackageDescription (readGenericPackageDescription)
 import Distribution.System (buildArch, buildOS)
 import qualified Distribution.Verbosity as Verbosity
 import Distribution.Version (versionNumbers)

@@ -14,7 +14,6 @@ jobs:
     strategy:
       matrix:
         stack_yaml:
-          - stack-ghc-8.10.yaml
           - stack-ghc-9.0.yaml
           - stack-ghc-9.2.yaml
           # technically redundant, since this should be a symlink,
@@ -43,7 +42,6 @@ jobs:
     strategy:
       matrix:
         ghc_version:
-          - '8.10'
           - '9.0'
           - '9.2'
 
@@ -136,7 +134,7 @@ jobs:
         id: build-info
 
       - name: Rename binary
-        run: cp bin/fourmolu bin/fourmolu-$version-$os-$arch
+        run: cp bin/fourmolu "bin/fourmolu-$version-$os-$arch"
         env:
           version: ${{ steps.build-info.outputs.version }}
           os: ${{ steps.build-info.outputs.os }}

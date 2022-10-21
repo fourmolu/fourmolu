@@ -14,6 +14,7 @@ import Control.Monad
 import qualified Data.Text as T
 import GHC.Hs
 import GHC.LanguageExtensions.Type
+import GHC.Types.PkgQual
 import GHC.Types.SrcLoc
 import GHC.Unit.Types
 import Ormolu.Config
@@ -48,8 +49,8 @@ p_hsmodImport ImportDecl {..} = do
     (txt "qualified")
   space
   case ideclPkgQual of
-    Nothing -> return ()
-    Just slit -> atom slit
+    NoRawPkgQual -> return ()
+    RawPkgQual slit -> atom slit
   space
   inci $ do
     located ideclName atom
@@ -113,10 +114,10 @@ p_lie encLayout relativePos = \case
       MiddlePos -> newline
       LastPos -> newline
       FirstAfterDocPos -> newline
-    indentDoc $ p_hsDocString (Asterisk n) False (noLoc str)
+    indentDoc $ p_hsDoc (Asterisk n) False str
   IEDoc NoExtField str ->
     indentDoc $
-      p_hsDocString Pipe False (noLoc str)
+      p_hsDoc Pipe False str
   IEDocNamed NoExtField str -> indentDoc $ txt $ "-- $" <> T.pack str
   where
     -- Add a comma to a import-export list element

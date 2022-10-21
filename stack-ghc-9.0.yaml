@@ -1,8 +1,9 @@
 resolver: lts-19.16
 
 extra-deps:
-  - Cabal-3.6.2.0
-  - ghc-lib-parser-9.2.1.20211101
+  - Cabal-3.8.1.0
+  - Cabal-syntax-3.8.1.0
+  - ghc-lib-parser-9.4.2.20220822
 
 flags:
   fourmolu:

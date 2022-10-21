@@ -24,7 +24,6 @@ where
 
 import Control.Monad
 import Data.Bool (bool)
-import Data.Foldable (for_)
 import GHC.Hs
 import GHC.Types.Basic hiding (isPromoted)
 import GHC.Types.SourceText
@@ -79,19 +78,18 @@ p_hsType' multilineArgs docStyle = \case
       _ -> p_after False >> setPrevTypeCtx TypeCtxStart
     interArgBreak
     p_hsTypeR (unLoc t)
-  HsQualTy _ qs' t -> do
+  HsQualTy _ qs t -> do
     getPrinterOpt poFunctionArrows >>= \case
       LeadingArrows -> do
         after <- getPrevTypeCtx
-        bool id (inciByExact 3) (after == TypeCtxForall) $ for_ qs' $ \qs -> do
+        bool id (inciByExact 3) (after == TypeCtxForall) $ do
           located qs p_hsContext
           interArgBreak
       TrailingArrows -> do
-        for_ qs' $ \qs -> do
-          located qs p_hsContext
-          space
-          txt "=>"
-          interArgBreak
+        located qs p_hsContext
+        space
+        txt "=>"
+        interArgBreak
     setPrevTypeCtx TypeCtxContext
     case unLoc t of
       HsQualTy {} -> p_hsTypeR (unLoc t)
@@ -141,8 +139,8 @@ p_hsType' multilineArgs docStyle = \case
         space
         case arrow of
           HsUnrestrictedArrow _ -> txt "->"
-          HsLinearArrow _ _ -> txt "%1 ->"
-          HsExplicitMult _ _ mult -> do
+          HsLinearArrow _ -> txt "%1 ->"
+          HsExplicitMult _ mult _ -> do
             txt "%"
             setPrevTypeCtx TypeCtxContext
             p_hsTypeR (unLoc mult)
@@ -167,7 +165,7 @@ p_hsType' multilineArgs docStyle = \case
   HsSumTy _ xs ->
     parensHash N $
       sep (space >> txt "|" >> breakpoint) (sitcc . located' p_hsType) xs
-  HsOpTy _ x op y -> do
+  HsOpTy _ _ x op y -> do
     fixityOverrides <- askFixityOverrides
     fixityMap <- askFixityMap
     let opTree = OpBranches [tyOpTree x, tyOpTree y] [op]
@@ -192,12 +190,12 @@ p_hsType' multilineArgs docStyle = \case
   HsDocTy _ t str ->
     case docStyle of
       PipeStyle -> do
-        p_hsDocString Pipe True str
+        p_hsDoc Pipe True str
         located t p_hsType
       CaretStyle -> do
         located t p_hsType
         newline
-        p_hsDocString Caret False str
+        p_hsDoc Caret False str
   HsBangTy _ (HsSrcBang _ u s) t -> do
     case u of
       SrcUnpack -> txt "{-# UNPACK #-}" >> space
@@ -292,16 +290,16 @@ p_hsTyVarBndr = \case
 data ForAllVisibility = ForAllInvis | ForAllVis
 
 -- | Render several @forall@-ed variables.
-p_forallBndrs :: ForAllVisibility -> (a -> R ()) -> [LocatedA a] -> R ()
+p_forallBndrs :: HasSrcSpan l => ForAllVisibility -> (a -> R ()) -> [GenLocated l a] -> R ()
 p_forallBndrs vis p tyvars = do
   p_forallBndrs' vis p tyvars
   p_after False
 
-p_forallBndrs' :: ForAllVisibility -> (a -> R ()) -> [LocatedA a] -> R ()
+p_forallBndrs' :: HasSrcSpan l => ForAllVisibility -> (a -> R ()) -> [GenLocated l a] -> R ()
 p_forallBndrs' ForAllInvis _ [] = txt "forall" >> setPrevTypeCtx TypeCtxForall
 p_forallBndrs' ForAllVis _ [] = txt "forall" >> space >> setPrevTypeCtx TypeCtxArgument
 p_forallBndrs' vis p tyvars = do
-  switchLayout (getLocA <$> tyvars) $ do
+  switchLayout (getLoc' <$> tyvars) $ do
     txt "forall"
     breakpoint
     inci $ do
@@ -318,11 +316,11 @@ p_conDeclField :: ConDeclField GhcPs -> R ()
 p_conDeclField ConDeclField {..} = do
   commaStyle <- getPrinterOpt poCommaStyle
   when (commaStyle == Trailing) $
-    mapM_ (p_hsDocString Pipe True) cd_fld_doc
+    mapM_ (p_hsDoc Pipe True) cd_fld_doc
   sitcc $
     sep
       commaDel
-      (located' (p_rdrName . rdrNameFieldOcc))
+      (located' (p_rdrName . foLabel))
       cd_fld_names
   getPrinterOpt poFunctionArrows >>= \case
     LeadingArrows -> inci $ do
@@ -336,7 +334,7 @@ p_conDeclField ConDeclField {..} = do
       breakpoint
       sitcc . inci $ p_hsType (unLoc cd_fld_type)
   when (commaStyle == Leading) $
-    mapM_ (inciByFrac (-1) . (newline >>) . p_hsDocString Caret False) cd_fld_doc
+    mapM_ (inciByFrac (-1) . (newline >>) . p_hsDoc Caret False) cd_fld_doc
 
 p_lhsTypeArg :: LHsTypeArg GhcPs -> R ()
 p_lhsTypeArg = \case
