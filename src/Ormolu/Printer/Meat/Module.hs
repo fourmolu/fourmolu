@@ -11,6 +11,7 @@ where
 import Control.Monad
 import GHC.Hs hiding (comment)
 import GHC.Types.SrcLoc
+import GHC.Unit.Module.Name
 import Ormolu.Config
 import Ormolu.Imports (normalizeImports)
 import Ormolu.Parser.CommentStream
@@ -33,7 +34,7 @@ p_hsModule ::
   -- | AST to print
   HsModule ->
   R ()
-p_hsModule mstackHeader pragmas HsModule {..} = do
+p_hsModule mstackHeader pragmas hsmod@HsModule {..} = do
   let deprecSpan = maybe [] (pure . getLocA) hsmodDeprecMessage
       exportSpans = maybe [] (pure . getLocA) hsmodExports
   switchLayout (deprecSpan <> exportSpans) $ do
@@ -43,29 +44,7 @@ p_hsModule mstackHeader pragmas HsModule {..} = do
     newline
     p_pragmas pragmas
     newline
-    case hsmodName of
-      Nothing -> return ()
-      Just hsmodName' -> do
-        located hsmodName' $ \name -> do
-          forM_ hsmodHaddockModHeader (p_hsDocString Pipe True)
-          p_hsmodName name
-        forM_ hsmodDeprecMessage $ \w -> do
-          breakpoint
-          located' p_moduleWarning w
-        breakIfNotDiffFriendly
-
-        -- This works around an awkward idempotency bug with deprecation messages.
-        diffFriendly <- (==) ImportExportDiffFriendly <$> getPrinterOpt poImportExportStyle
-        when (diffFriendly && not (null hsmodDeprecMessage)) newline
-
-        case hsmodExports of
-          Nothing -> return ()
-          Just l -> do
-            located l $ \exports -> do
-              inci (p_hsmodExports exports)
-            breakIfNotDiffFriendly
-        txt "where"
-        newline
+    mapM_ (p_hsModuleHeader hsmod) hsmodName
     newline
     preserveGroups <- getPrinterOpt poRespectful
     forM_ (normalizeImports preserveGroups hsmodImports) $ \importGroup -> do
@@ -77,3 +56,26 @@ p_hsModule mstackHeader pragmas HsModule {..} = do
       (if preserveSpacing then p_hsDeclsRespectGrouping else p_hsDecls) Free hsmodDecls
       newline
       spitRemainingComments
+
+p_hsModuleHeader :: HsModule -> LocatedA ModuleName -> R ()
+p_hsModuleHeader HsModule {..} moduleName = do
+  located moduleName $ \name -> do
+    forM_ hsmodHaddockModHeader (p_hsDocString Pipe True)
+    p_hsmodName name
+  forM_ hsmodDeprecMessage $ \w -> do
+    breakpoint
+    located' p_moduleWarning w
+  breakIfNotDiffFriendly
+
+  -- This works around an awkward idempotency bug with deprecation messages.
+  diffFriendly <- (==) ImportExportDiffFriendly <$> getPrinterOpt poImportExportStyle
+  when (diffFriendly && not (null hsmodDeprecMessage)) newline
+
+  case hsmodExports of
+    Nothing -> return ()
+    Just l -> do
+      located l $ \exports -> do
+        inci (p_hsmodExports exports)
+      breakIfNotDiffFriendly
+  txt "where"
+  newline
