@@ -6,7 +6,6 @@
 module Ormolu.Printer.Meat.ImportExport
   ( p_hsmodExports,
     p_hsmodImport,
-    breakIfNotDiffFriendly,
   )
 where
 

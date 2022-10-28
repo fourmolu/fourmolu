@@ -62,20 +62,27 @@ p_hsModuleHeader HsModule {..} moduleName = do
   located moduleName $ \name -> do
     forM_ hsmodHaddockModHeader (p_hsDocString Pipe True)
     p_hsmodName name
+
   forM_ hsmodDeprecMessage $ \w -> do
     breakpoint
     located' p_moduleWarning w
-  breakIfNotDiffFriendly
 
-  -- This works around an awkward idempotency bug with deprecation messages.
-  diffFriendly <- (==) ImportExportDiffFriendly <$> getPrinterOpt poImportExportStyle
-  when (diffFriendly && not (null hsmodDeprecMessage)) newline
+  isDiffFriendly <- (== ImportExportDiffFriendly) <$> getPrinterOpt poImportExportStyle
+  let breakpointBeforeExportList =
+        case (hsmodDeprecMessage, hsmodExports) of
+          _ | not isDiffFriendly -> breakpoint
+          (Nothing, _) -> space
+          (Just _, Just exports) | (not . isOneLineSpan) (getLocA exports) -> space
+          _ -> breakpoint
+      breakpointBeforeWhere = breakpointBeforeExportList
 
   case hsmodExports of
     Nothing -> return ()
     Just l -> do
+      breakpointBeforeExportList
       located l $ \exports -> do
         inci (p_hsmodExports exports)
-      breakIfNotDiffFriendly
+
+  breakpointBeforeWhere
   txt "where"
   newline
