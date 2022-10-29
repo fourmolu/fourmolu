@@ -32,6 +32,7 @@ import Ormolu.Utils.IO (readFileUtf8, writeFileUtf8)
 import Path
   ( File,
     Path,
+    Rel,
     fromRelFile,
     parseRelDir,
     parseRelFile,
@@ -145,12 +146,6 @@ spec =
           testCaseSuffix = suffix1
         }
     ]
-  where
-    allOptions :: (Enum a, Bounded a) => [a]
-    allOptions = [minBound .. maxBound]
-
-    suffixWith xs = concatMap ('-' :) . filter (not . null) $ xs
-    suffix1 a1 = suffixWith [show a1]
 
 runTestGroup :: TestGroup -> Spec
 runTestGroup TestGroup {..} =
@@ -160,27 +155,11 @@ runTestGroup TestGroup {..} =
         let inputFile = testDir </> toRelFile "input.hs"
             inputPath = fromRelFile inputFile
             outputFile = testDir </> toRelFile ("output" ++ testCaseSuffix testCase ++ ".hs")
-            outputPath = fromRelFile outputFile
-            config =
-              defaultConfig
-                { cfgPrinterOpts = updateConfig testCase defaultPrinterOpts,
-                  cfgSourceType = detectSourceType inputPath,
-                  cfgCheckIdempotence = True
-                }
+            opts = updateConfig testCase defaultPrinterOpts
 
         input <- readFileUtf8 inputPath
-        actual <-
-          ormolu config inputPath (T.unpack input) `catch` \e -> do
-            msg <- renderOrmoluException e
-            expectationFailure' $ unlines ["Got ormolu exception:", "", msg]
-        getFileContents outputFile >>= \case
-          _ | shouldRegenerateOutput -> writeFileUtf8 outputPath actual
-          Nothing ->
-            expectationFailure "Output does not exist. Try running with ORMOLU_REGENERATE_EXAMPLES=1"
-          Just expected ->
-            when (actual /= expected) $
-              expectationFailure . T.unpack $
-                getDiff ("actual", actual) ("expected", expected)
+        actual <- runOrmolu opts inputPath input
+        checkResult outputFile actual
   where
     testDir = toRelDir $ "data/fourmolu/" ++ label
     toRelDir name =
@@ -192,7 +171,41 @@ runTestGroup TestGroup {..} =
         Just path -> path
         Nothing -> error $ "Not a valid file name: " ++ show name
 
+runOrmolu :: PrinterOptsTotal -> FilePath -> Text -> IO Text
+runOrmolu opts inputPath input =
+  ormolu config inputPath (T.unpack input) `catch` \e -> do
+    msg <- renderOrmoluException e
+    expectationFailure' $ unlines ["Got ormolu exception:", "", msg]
+  where
+    config =
+      defaultConfig
+        { cfgPrinterOpts = opts,
+          cfgSourceType = detectSourceType inputPath,
+          cfgCheckIdempotence = True
+        }
+
+checkResult :: Path Rel File -> Text -> Expectation
+checkResult outputFile actual
+  | shouldRegenerateOutput = writeFileUtf8 (fromRelFile outputFile) actual
+  | otherwise =
+      getFileContents outputFile >>= \case
+        Nothing ->
+          expectationFailure "Output does not exist. Try running with ORMOLU_REGENERATE_EXAMPLES=1"
+        Just expected ->
+          when (actual /= expected) $
+            expectationFailure . T.unpack $
+              getDiff ("actual", actual) ("expected", expected)
+
 {--- Helpers ---}
+
+allOptions :: (Enum a, Bounded a) => [a]
+allOptions = [minBound .. maxBound]
+
+suffixWith :: [String] -> String
+suffixWith xs = concatMap ('-' :) . filter (not . null) $ xs
+
+suffix1 :: Show a => a -> String
+suffix1 a1 = suffixWith [show a1]
 
 getFileContents :: Path b File -> IO (Maybe Text)
 getFileContents path = do
