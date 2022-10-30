@@ -12,7 +12,8 @@ module Foo (
         class1,
         class2
     ),
-) where
+)
+where
 
 import qualified MegaModule as M (
     Either,

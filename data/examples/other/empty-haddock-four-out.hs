@@ -1,6 +1,7 @@
 module Test (
     test,
-) where
+)
+where
 
 test ::
     test
