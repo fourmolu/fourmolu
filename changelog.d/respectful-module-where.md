@@ -1,0 +1,1 @@
+When `--respectful` is enabled, the `where` keyword in the `module` header will be on the same line as or the line after the export list, depending on what the user initially put. ([#167](https://github.com/fourmolu/fourmolu/issues/167))

@@ -12,6 +12,7 @@ import Control.Monad
 import GHC.Hs hiding (comment)
 import GHC.Types.SrcLoc
 import GHC.Unit.Module.Name
+import GHC.Utils.Outputable (ppr, showSDocUnsafe)
 import Ormolu.Config
 import Ormolu.Imports (normalizeImports)
 import Ormolu.Parser.CommentStream
@@ -67,6 +68,7 @@ p_hsModuleHeader HsModule {..} moduleName = do
     breakpoint
     located' p_moduleWarning w
 
+  isRespectful <- getPrinterOpt poRespectful
   isDiffFriendly <- (== ImportExportDiffFriendly) <$> getPrinterOpt poImportExportStyle
   let breakpointBeforeExportList =
         case (hsmodDeprecMessage, hsmodExports) of
@@ -74,7 +76,11 @@ p_hsModuleHeader HsModule {..} moduleName = do
           (Nothing, _) -> space
           (Just _, Just exports) | (not . isOneLineSpan) (getLocA exports) -> space
           _ -> breakpoint
-      breakpointBeforeWhere = breakpointBeforeExportList
+      breakpointBeforeWhere
+        | not isRespectful = breakpointBeforeExportList
+        | isOnSameLine moduleKeyword whereKeyword = space
+        | Just closeParen <- exportClosePSpan, isOnSameLine closeParen whereKeyword = space
+        | otherwise = newline
 
   case hsmodExports of
     Nothing -> return ()
@@ -86,3 +92,14 @@ p_hsModuleHeader HsModule {..} moduleName = do
   breakpointBeforeWhere
   txt "where"
   newline
+  where
+    (moduleKeyword, whereKeyword) =
+      case am_main (anns hsmodAnn) of
+        -- [AnnModule, AnnWhere] or [AnnSignature, AnnWhere]
+        [AddEpAnn _ moduleLoc, AddEpAnn AnnWhere whereLoc] ->
+          (epaLocationRealSrcSpan moduleLoc, epaLocationRealSrcSpan whereLoc)
+        anns -> error $ "Module had unexpected annotations: " ++ showSDocUnsafe (ppr anns)
+    exportClosePSpan = do
+      AddEpAnn AnnCloseP loc <- al_close . anns . ann . getLoc =<< hsmodExports
+      Just $ epaLocationRealSrcSpan loc
+    isOnSameLine token1 token2 = srcSpanEndLine token1 == srcSpanStartLine token2
