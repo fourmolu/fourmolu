@@ -135,13 +135,13 @@ $ fourmolu -i Module.hs
 Use `find` to format a tree recursively:
 
 ```console
-$ fourmolu -i $(find . -name '*.hs')
+$ find . -name '*.hs' -exec fourmolu -i {} +
 ```
 
 Or find all files in a project with `git ls-files`:
 
 ```console
-$ fourmolu --mode inplace $(git ls-files '*.hs')
+$ git ls-files -z '*.hs' | xargs -0 fourmolu --mode inplace
 ```
 
 Or directly specify a directory (will recursively process all *.hs files)
@@ -152,7 +152,7 @@ $ fourmolu -i src
 To check if files are are already formatted (useful on CI):
 
 ```console
-$ fourmolu --mode check $(find . -name '*.hs')
+$ find . -name '*.hs' -exec fourmolu --mode check {} +
 ```
 
 #### :zap: Beware git's `core.autocrlf` on Windows :zap:
