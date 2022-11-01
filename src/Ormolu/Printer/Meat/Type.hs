@@ -32,21 +32,12 @@ import GHC.Types.Var
 import Ormolu.Config
 import Ormolu.Config.Types (FunctionArrowsStyle (..))
 import Ormolu.Printer.Combinators
-import Ormolu.Printer.Internal (PrevTypeCtx (..), enterLayout, getPrevTypeCtx, setPrevTypeCtx)
+import Ormolu.Printer.Internal (enterLayout)
 import Ormolu.Printer.Meat.Common
 import {-# SOURCE #-} Ormolu.Printer.Meat.Declaration.OpTree (p_tyOpTree, tyOpTree)
 import {-# SOURCE #-} Ormolu.Printer.Meat.Declaration.Value (p_hsSplice, p_stringLit)
 import Ormolu.Printer.Operators
 import Ormolu.Utils
-
--- | Render an "PrevTypeCtx" infix
-p_after :: Bool -> R ()
-p_after multilineArgs =
-  getPrevTypeCtx >>= \case
-    TypeCtxStart -> pure ()
-    TypeCtxForall -> when multilineArgs (txt " ") >> txt "." >> space
-    TypeCtxContext -> txt "=>" >> space
-    TypeCtxArgument -> txt "->" >> space
 
 p_hsType :: HsType GhcPs -> R ()
 p_hsType t = do
@@ -68,12 +59,13 @@ data TypeDocStyle
 p_hsType' :: Bool -> TypeDocStyle -> HsType GhcPs -> R ()
 p_hsType' multilineArgs docStyle = \case
   HsForAllTy _ tele t -> do
-    case tele of
-      HsForAllInvis _ bndrs -> p_forallBndrs' ForAllInvis p_hsTyVarBndr bndrs
-      HsForAllVis _ bndrs -> p_forallBndrs' ForAllVis p_hsTyVarBndr bndrs
+    vis <-
+      case tele of
+        HsForAllInvis _ bndrs -> p_forallBndrsStart p_hsTyVarBndr bndrs >> pure ForAllInvis
+        HsForAllVis _ bndrs -> p_forallBndrsStart p_hsTyVarBndr bndrs >> pure ForAllVis
     getPrinterOpt poFunctionArrows >>= \case
-      LeadingArrows | multilineArgs -> interArgBreak >> p_after True
-      _ -> p_after False >> interArgBreak
+      LeadingArrows | multilineArgs -> interArgBreak >> txt " " >> p_forallBndrsEnd vis
+      _ -> p_forallBndrsEnd vis >> interArgBreak
     p_hsTypeR (unLoc t)
   HsQualTy _ qs' t -> do
     for_ qs' $ \qs -> do
@@ -265,21 +257,21 @@ data ForAllVisibility = ForAllInvis | ForAllVis
 -- | Render several @forall@-ed variables.
 p_forallBndrs :: ForAllVisibility -> (a -> R ()) -> [LocatedA a] -> R ()
 p_forallBndrs vis p tyvars = do
-  p_forallBndrs' vis p tyvars
-  p_after False
+  p_forallBndrsStart p tyvars
+  p_forallBndrsEnd vis
 
-p_forallBndrs' :: ForAllVisibility -> (a -> R ()) -> [LocatedA a] -> R ()
-p_forallBndrs' ForAllInvis _ [] = txt "forall" >> setPrevTypeCtx TypeCtxForall
-p_forallBndrs' ForAllVis _ [] = txt "forall" >> space >> setPrevTypeCtx TypeCtxArgument
-p_forallBndrs' vis p tyvars = do
+p_forallBndrsStart :: (a -> R ()) -> [LocatedA a] -> R ()
+p_forallBndrsStart _ [] = txt "forall"
+p_forallBndrsStart p tyvars = do
   switchLayout (getLocA <$> tyvars) $ do
     txt "forall"
     breakpoint
     inci $ do
       sitcc $ sep breakpoint (sitcc . located' p) tyvars
-  case vis of
-    ForAllInvis -> setPrevTypeCtx TypeCtxForall
-    ForAllVis -> space >> setPrevTypeCtx TypeCtxArgument
+
+p_forallBndrsEnd :: ForAllVisibility -> R ()
+p_forallBndrsEnd ForAllInvis = txt "." >> space
+p_forallBndrsEnd ForAllVis = space >> txt "->"
 
 p_conDeclFields :: [LConDeclField GhcPs] -> R ()
 p_conDeclFields xs =
