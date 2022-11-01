@@ -76,6 +76,9 @@ p_hsType' multilineArgs docStyle = \case
       LeadingArrows | multilineArgs -> pure ()
       _ -> p_after False >> setPrevTypeCtx TypeCtxStart
     interArgBreak
+    getPrinterOpt poFunctionArrows >>= \case
+      TrailingArrows -> pure ()
+      LeadingArrows -> p_after multilineArgs
     p_hsTypeR (unLoc t)
   HsQualTy _ qs' t -> do
     getPrinterOpt poFunctionArrows >>= \case
@@ -91,6 +94,9 @@ p_hsType' multilineArgs docStyle = \case
           txt "=>"
           interArgBreak
     setPrevTypeCtx TypeCtxContext
+    getPrinterOpt poFunctionArrows >>= \case
+      TrailingArrows -> pure ()
+      LeadingArrows -> p_after multilineArgs
     case unLoc t of
       HsQualTy {} -> p_hsTypeR (unLoc t)
       HsFunTy {} -> p_hsTypeR (unLoc t)
@@ -134,6 +140,9 @@ p_hsType' multilineArgs docStyle = \case
             HsLinearArrow _ _ -> txt "%1 ->"
             HsExplicitMult _ _ mult -> do
               txt "%"
+              getPrinterOpt poFunctionArrows >>= \case
+                TrailingArrows -> pure ()
+                LeadingArrows -> p_after multilineArgs
               p_hsTypeR (unLoc mult)
               space
               txt "->"
@@ -150,6 +159,9 @@ p_hsType' multilineArgs docStyle = \case
         p_arrow
         interArgBreak
     setPrevTypeCtx TypeCtxStart
+    getPrinterOpt poFunctionArrows >>= \case
+      TrailingArrows -> pure ()
+      LeadingArrows -> p_after multilineArgs
     case y' of
       HsFunTy {} -> do
         layout <- getLayout
@@ -241,11 +253,7 @@ p_hsType' multilineArgs docStyle = \case
       if multilineArgs
         then newline
         else breakpoint
-    p_hsTypeR m = do
-      getPrinterOpt poFunctionArrows >>= \case
-        TrailingArrows -> pure ()
-        LeadingArrows -> p_after multilineArgs
-      p_hsType' multilineArgs docStyle m
+    p_hsTypeR m = p_hsType' multilineArgs docStyle m
 
 -- | Return 'True' if at least one argument in 'HsType' has a doc string
 -- attached to it.
