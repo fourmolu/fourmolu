@@ -208,9 +208,9 @@ p_completeSig cs' mty =
     pragma "COMPLETE" . inci $ do
       sep commaDel p_rdrName cs
       forM_ mty $ \ty -> do
-        trailingArrowType
+        space
+        txt "::"
         breakpoint
-        leadingArrowType
         inci (p_rdrName ty)
 
 p_sccSig :: LocatedN RdrName -> Maybe (Located StringLiteral) -> R ()
