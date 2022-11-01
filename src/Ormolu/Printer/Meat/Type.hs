@@ -45,8 +45,7 @@ p_after :: Bool -> R ()
 p_after multilineArgs =
   getPrevTypeCtx >>= \case
     TypeCtxStart -> pure ()
-    TypeCtxForall | multilineArgs -> txt " ." >> space
-    TypeCtxForall -> txt "." >> space
+    TypeCtxForall -> when multilineArgs (txt " ") >> txt "." >> space
     TypeCtxContext -> txt "=>" >> space
     TypeCtxArgument -> txt "->" >> space
 
