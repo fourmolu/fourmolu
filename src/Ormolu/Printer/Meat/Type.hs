@@ -50,7 +50,6 @@ p_after multilineArgs =
     TypeCtxContext -> txt "=>" >> space
     TypeCtxArgument -> txt "->" >> space
 
--- | Like 'p_hsType' but indent properly following a forall
 p_hsType :: HsType GhcPs -> R ()
 p_hsType t = do
   s <-
