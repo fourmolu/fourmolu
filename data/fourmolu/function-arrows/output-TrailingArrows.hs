@@ -98,5 +98,6 @@ foo ::
     Int %1 ->
     Bool
 foo ::
+    forall x.
     Int %Many ->
     Bool

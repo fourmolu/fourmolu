@@ -140,9 +140,6 @@ p_hsType' multilineArgs docStyle = \case
             HsLinearArrow _ _ -> txt "%1 ->"
             HsExplicitMult _ _ mult -> do
               txt "%"
-              getPrinterOpt poFunctionArrows >>= \case
-                TrailingArrows -> pure ()
-                LeadingArrows -> p_after multilineArgs
               p_hsTypeR (unLoc mult)
               space
               txt "->"
