@@ -76,18 +76,11 @@ p_hsType' multilineArgs docStyle = \case
       _ -> p_after False >> interArgBreak
     p_hsTypeR (unLoc t)
   HsQualTy _ qs' t -> do
-    getPrinterOpt poFunctionArrows >>= \case
-      LeadingArrows -> do
-        for_ qs' $ \qs -> do
-          located qs p_hsContext
-          interArgBreak
-        txt "=>" >> space
-      TrailingArrows -> do
-        for_ qs' $ \qs -> do
-          located qs p_hsContext
-          space
-          txt "=>"
-          interArgBreak
+    for_ qs' $ \qs -> do
+      located qs p_hsContext
+      getPrinterOpt poFunctionArrows >>= \case
+        LeadingArrows -> interArgBreak >> txt "=>" >> space
+        TrailingArrows -> space >> txt "=>" >> interArgBreak
     case unLoc t of
       HsQualTy {} -> p_hsTypeR (unLoc t)
       HsFunTy {} -> p_hsTypeR (unLoc t)
@@ -134,17 +127,10 @@ p_hsType' multilineArgs docStyle = \case
               p_hsTypeR (unLoc mult)
               space
               txt "->"
+    located x p_hsType
     getPrinterOpt poFunctionArrows >>= \case
-      LeadingArrows -> do
-        located x p_hsType
-        interArgBreak
-        p_arrow
-        space
-      TrailingArrows -> do
-        located x p_hsType
-        space
-        p_arrow
-        interArgBreak
+      LeadingArrows -> interArgBreak >> p_arrow >> space
+      TrailingArrows -> space >> p_arrow >> interArgBreak
     case y' of
       HsFunTy {} -> do
         layout <- getLayout
