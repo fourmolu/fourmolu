@@ -46,7 +46,7 @@ Defaults are in bold.
 | Configuration option     | Valid options                                         | Description
 |--------------------------|-------------------------------------------------------|-------------
 | `indentation`            | any non-negative integer (**`4`**)                    | How many spaces to use as an indent
-| `function-arrows`        | **`trailing`**, `leading`                             | Where to place arrows in type signatures
+| `function-arrows`        | **`trailing`**, `leading`, `leading-args`             | Where to place arrows in type signatures
 | `comma-style`            | **`leading`**, `trailing`                             | Where to place commas in lists, tuples, etc.
 | `import-export-style`    | `leading`, `trailing`, **`diff-friendly`**            | How to format multiline import/export lists (`diff-friendly` lists have trailing commas but keep the opening parenthesis on the same line as `import`)
 | `indent-wheres`          | `true`, **`false`**                                   | Use an extra level of indentation _vs_ only half-indent the `where` keyword

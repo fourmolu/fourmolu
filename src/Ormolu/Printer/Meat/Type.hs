@@ -45,6 +45,7 @@ p_hsType t = do
     getPrinterOpt poFunctionArrows >>= \case
       TrailingArrows -> pure PipeStyle
       LeadingArrows -> pure CaretStyle
+      LeadingArgsArrows -> pure CaretStyle
   layout <- getLayout
   p_hsType' (hasDocStrings t || layout == MultiLine) s t
 
@@ -72,6 +73,7 @@ p_hsType' multilineArgs docStyle = \case
     getPrinterOpt poFunctionArrows >>= \case
       LeadingArrows -> interArgBreak >> token'darrow >> space
       TrailingArrows -> space >> token'darrow >> interArgBreak
+      LeadingArgsArrows -> space >> token'darrow >> interArgBreak
     case unLoc t of
       HsQualTy {} -> p_hsTypeR (unLoc t)
       HsFunTy {} -> p_hsTypeR (unLoc t)
@@ -122,6 +124,7 @@ p_hsType' multilineArgs docStyle = \case
     getPrinterOpt poFunctionArrows >>= \case
       LeadingArrows -> interArgBreak >> located y (\y' -> p_arrow >> space >> p_hsTypeR y')
       TrailingArrows -> space >> p_arrow >> interArgBreak >> located y p_hsTypeR
+      LeadingArgsArrows -> interArgBreak >> located y (\y' -> p_arrow >> space >> p_hsTypeR y')
   HsListTy _ t ->
     located t (brackets N . p_hsType)
   HsTupleTy _ tsort xs ->
@@ -249,6 +252,11 @@ startTypeAnnotation' breakTrailing breakLeading lItem renderItem =
         token'dcolon
         space
         renderItem item
+    LeadingArgsArrows -> do
+      space
+      token'dcolon
+      breakTrailing
+      located lItem renderItem
 
 -- | Return 'True' if at least one argument in 'HsType' has a doc string
 -- attached to it.
@@ -332,6 +340,11 @@ p_conDeclField ConDeclField {..} = do
       space
       p_hsType (unLoc cd_fld_type)
     TrailingArrows -> do
+      space
+      token'dcolon
+      breakpoint
+      sitcc . inci $ p_hsType (unLoc cd_fld_type)
+    LeadingArgsArrows -> do
       space
       token'dcolon
       breakpoint
