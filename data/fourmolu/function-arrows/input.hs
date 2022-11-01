@@ -83,3 +83,10 @@ data Record = Record
               Bool
   , recOther :: Bool
   }
+
+{-# SPECIALIZE foo :: Text -> Text #-}
+{-# SPECIALIZE
+      foo ::
+        Text ->
+        Text
+  #-}
