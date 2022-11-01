@@ -76,9 +76,8 @@ module Ormolu.Printer.Combinators
     Placement (..),
     placeHanging,
 
-    -- ** Helpers for leading/trailing arrows
-    leadingArrowType,
-    trailingArrowType,
+    -- ** Helpers for function-arrows configuration
+    startTypeAnnotation,
   )
 where
 
@@ -374,20 +373,10 @@ placeHanging placement m =
 ----------------------------------------------------------------------------
 -- Arrow style
 
--- | Output @space >> txt "::"@ when we are printing with trailing arrows
-trailingArrowType :: R ()
-trailingArrowType =
+-- | Add the "::" marker that starts a type annotation, running the given
+-- action either before or after the marker, depending on poFunctionArrows.
+startTypeAnnotation :: R () -> R ()
+startTypeAnnotation m =
   getPrinterOpt poFunctionArrows >>= \case
-    TrailingArrows -> do
-      space
-      txt "::"
-    LeadingArrows -> pure ()
-
--- | Output @txt "::" >> space@ when we are printing with leading arrows
-leadingArrowType :: R ()
-leadingArrowType =
-  getPrinterOpt poFunctionArrows >>= \case
-    LeadingArrows -> do
-      txt "::"
-      space
-    TrailingArrows -> pure ()
+    TrailingArrows -> space >> txt "::" >> m
+    LeadingArrows -> m >> txt "::" >> space

@@ -820,9 +820,7 @@ p_hsExpr' s = \case
     p_fieldLabels (NE.toList proj_flds)
   ExprWithTySig _ x HsWC {hswc_body} -> sitcc $ do
     located x p_hsExpr
-    trailingArrowType
-    breakpoint
-    leadingArrowType
+    startTypeAnnotation breakpoint
     inci $ located hswc_body p_hsSigType
   ArithSeq _ _ x ->
     case x of

@@ -178,16 +178,12 @@ p_hsType' multilineArgs docStyle = \case
     parens N $ sitcc $ located t p_hsType
   HsIParamTy _ n t -> sitcc $ do
     located n atom
-    trailingArrowType
-    breakpoint
-    leadingArrowType
+    startTypeAnnotation breakpoint
     inci (located t p_hsType)
   HsStarTy _ _ -> txt "*"
   HsKindSig _ t k -> sitcc $ do
     located t p_hsType
-    trailingArrowType
-    breakpoint
-    leadingArrowType
+    startTypeAnnotation breakpoint
     inci (located k p_hsType)
   HsSpliceTy _ splice -> p_hsSplice splice
   HsDocTy _ t str ->
@@ -285,9 +281,7 @@ p_hsTyVarBndr = \case
     (if isInferred flag then braces N else id) $ p_rdrName x
   KindedTyVar _ flag l k -> (if isInferred flag then braces else parens) N . sitcc $ do
     located l atom
-    trailingArrowType
-    breakpoint
-    leadingArrowType
+    startTypeAnnotation breakpoint
     inci (located k p_hsType)
 
 data ForAllVisibility = ForAllInvis | ForAllVis
