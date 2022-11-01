@@ -73,12 +73,8 @@ p_hsType' multilineArgs docStyle = \case
       HsForAllInvis _ bndrs -> p_forallBndrs' ForAllInvis p_hsTyVarBndr bndrs
       HsForAllVis _ bndrs -> p_forallBndrs' ForAllVis p_hsTyVarBndr bndrs
     getPrinterOpt poFunctionArrows >>= \case
-      LeadingArrows | multilineArgs -> pure ()
-      _ -> p_after False
-    interArgBreak
-    getPrinterOpt poFunctionArrows >>= \case
-      LeadingArrows | multilineArgs -> p_after True
-      _ -> pure ()
+      LeadingArrows | multilineArgs -> interArgBreak >> p_after True
+      _ -> p_after False >> interArgBreak
     p_hsTypeR (unLoc t)
   HsQualTy _ qs' t -> do
     getPrinterOpt poFunctionArrows >>= \case
@@ -87,15 +83,13 @@ p_hsType' multilineArgs docStyle = \case
         bool id (inciByExact 3) (after == TypeCtxForall) $ for_ qs' $ \qs -> do
           located qs p_hsContext
           interArgBreak
+        txt "=>" >> space
       TrailingArrows -> do
         for_ qs' $ \qs -> do
           located qs p_hsContext
           space
           txt "=>"
           interArgBreak
-    getPrinterOpt poFunctionArrows >>= \case
-      TrailingArrows -> pure ()
-      LeadingArrows -> txt "=>" >> space
     case unLoc t of
       HsQualTy {} -> p_hsTypeR (unLoc t)
       HsFunTy {} -> p_hsTypeR (unLoc t)
