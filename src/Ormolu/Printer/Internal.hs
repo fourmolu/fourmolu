@@ -26,7 +26,6 @@ module Ormolu.Printer.Internal
     inciBy,
     inciByFrac,
     inciHalf,
-    inciByExact,
     sitcc,
     sitccIfTrailing,
     Layout (..),
@@ -449,15 +448,6 @@ inci = inciByFrac 1
 -- than 'indentStep'.
 inciHalf :: R () -> R ()
 inciHalf = inciByFrac 2
-
--- | Like 'inci', but indents by exactly the given number of spaces.
-inciByExact :: Int -> R () -> R ()
-inciByExact spaces (R m) = R (local modRC m)
-  where
-    modRC rc =
-      rc
-        { rcIndent = rcIndent rc + spaces
-        }
 
 -- | Set indentation level for the inner computation equal to current
 -- column. This makes sure that the entire inner block is uniformly

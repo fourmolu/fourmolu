@@ -23,7 +23,6 @@ module Ormolu.Printer.Meat.Type
 where
 
 import Control.Monad
-import Data.Bool (bool)
 import Data.Foldable (for_)
 import GHC.Hs
 import GHC.Types.Basic hiding (isPromoted)
@@ -79,8 +78,7 @@ p_hsType' multilineArgs docStyle = \case
   HsQualTy _ qs' t -> do
     getPrinterOpt poFunctionArrows >>= \case
       LeadingArrows -> do
-        after <- getPrevTypeCtx
-        bool id (inciByExact 3) (after == TypeCtxForall) $ for_ qs' $ \qs -> do
+        for_ qs' $ \qs -> do
           located qs p_hsContext
           interArgBreak
         txt "=>" >> space
@@ -138,8 +136,7 @@ p_hsType' multilineArgs docStyle = \case
               txt "->"
     getPrinterOpt poFunctionArrows >>= \case
       LeadingArrows -> do
-        after <- getPrevTypeCtx
-        bool id (inciByExact 3) (after == TypeCtxForall) (located x p_hsType)
+        located x p_hsType
         interArgBreak
         p_arrow
         space
