@@ -74,11 +74,11 @@ p_hsType' multilineArgs docStyle = \case
       HsForAllVis _ bndrs -> p_forallBndrs' ForAllVis p_hsTyVarBndr bndrs
     getPrinterOpt poFunctionArrows >>= \case
       LeadingArrows | multilineArgs -> pure ()
-      _ -> p_after False >> setPrevTypeCtx TypeCtxStart
+      _ -> p_after False
     interArgBreak
     getPrinterOpt poFunctionArrows >>= \case
-      TrailingArrows -> pure ()
-      LeadingArrows -> p_after multilineArgs
+      LeadingArrows | multilineArgs -> p_after True
+      _ -> pure ()
     p_hsTypeR (unLoc t)
   HsQualTy _ qs' t -> do
     getPrinterOpt poFunctionArrows >>= \case
@@ -93,10 +93,9 @@ p_hsType' multilineArgs docStyle = \case
           space
           txt "=>"
           interArgBreak
-    setPrevTypeCtx TypeCtxContext
     getPrinterOpt poFunctionArrows >>= \case
       TrailingArrows -> pure ()
-      LeadingArrows -> p_after multilineArgs
+      LeadingArrows -> txt "=>" >> space
     case unLoc t of
       HsQualTy {} -> p_hsTypeR (unLoc t)
       HsFunTy {} -> p_hsTypeR (unLoc t)
@@ -155,10 +154,6 @@ p_hsType' multilineArgs docStyle = \case
         space
         p_arrow
         interArgBreak
-    setPrevTypeCtx TypeCtxStart
-    getPrinterOpt poFunctionArrows >>= \case
-      TrailingArrows -> pure ()
-      LeadingArrows -> p_after multilineArgs
     case y' of
       HsFunTy {} -> do
         layout <- getLayout
