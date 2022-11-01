@@ -130,25 +130,28 @@ p_hsType' multilineArgs docStyle = \case
       txt "@"
       located kd p_hsType
   HsFunTy _ arrow x y@(L _ y') -> do
+    let p_arrow =
+          case arrow of
+            HsUnrestrictedArrow _ -> txt "->"
+            HsLinearArrow _ _ -> txt "%1 ->"
+            HsExplicitMult _ _ mult -> do
+              txt "%"
+              p_hsTypeR (unLoc mult)
+              space
+              txt "->"
     getPrinterOpt poFunctionArrows >>= \case
       LeadingArrows -> do
         after <- getPrevTypeCtx
         bool id (inciByExact 3) (after == TypeCtxForall) (located x p_hsType)
         interArgBreak
+        p_arrow
+        space
       TrailingArrows -> do
         located x p_hsType
         space
-        case arrow of
-          HsUnrestrictedArrow _ -> txt "->"
-          HsLinearArrow _ _ -> txt "%1 ->"
-          HsExplicitMult _ _ mult -> do
-            txt "%"
-            setPrevTypeCtx TypeCtxContext
-            p_hsTypeR (unLoc mult)
-            space
-            txt "->"
+        p_arrow
         interArgBreak
-    setPrevTypeCtx TypeCtxArgument
+    setPrevTypeCtx TypeCtxStart
     case y' of
       HsFunTy {} -> do
         layout <- getLayout

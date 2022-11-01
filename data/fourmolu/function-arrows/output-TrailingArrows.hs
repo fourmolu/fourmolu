@@ -1,4 +1,5 @@
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE LinearTypes #-}
 
 module Main where
 
@@ -93,3 +94,9 @@ data Record = Record
     Text ->
     Text
     #-}
+foo ::
+    Int %1 ->
+    Bool
+foo ::
+    Int %Many ->
+    Bool
