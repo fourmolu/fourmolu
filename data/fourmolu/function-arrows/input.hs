@@ -86,13 +86,6 @@ data Record = Record
   , recOther :: Bool
   }
 
-{-# SPECIALIZE foo :: Text -> Text #-}
-{-# SPECIALIZE
-      foo ::
-        Text ->
-        Text
-  #-}
-
 foo ::
   Int %1 ->
   Bool

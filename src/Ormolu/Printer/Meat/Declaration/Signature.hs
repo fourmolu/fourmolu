@@ -136,9 +136,10 @@ p_specSig name ts InlinePragma {..} = pragmaBraces $ do
   p_activation inl_act
   space
   p_rdrName name
-  inci $ do
-    startTypeAnnotation breakpoint
-    sep commaDel (located' p_hsSigType) ts
+  space
+  txt "::"
+  breakpoint
+  inci $ sep commaDel (located' p_hsSigType) ts
 
 p_inlineSpec :: InlineSpec -> R ()
 p_inlineSpec = \case
