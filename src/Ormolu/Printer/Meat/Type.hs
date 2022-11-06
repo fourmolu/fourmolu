@@ -8,6 +8,8 @@
 module Ormolu.Printer.Meat.Type
   ( p_hsType,
     p_hsTypePostDoc,
+    startTypeAnnotation,
+    startTypeAnnotationDecl,
     hasDocStrings,
     p_hsContext,
     p_hsTyVarBndr,
@@ -32,7 +34,6 @@ import GHC.Types.Var
 import Ormolu.Config
 import Ormolu.Config.Types (FunctionArrowsStyle (..))
 import Ormolu.Printer.Combinators
-import Ormolu.Printer.Internal (enterLayout)
 import Ormolu.Printer.Meat.Common
 import {-# SOURCE #-} Ormolu.Printer.Meat.Declaration.OpTree (p_tyOpTree, tyOpTree)
 import {-# SOURCE #-} Ormolu.Printer.Meat.Declaration.Value (p_hsSplice, p_stringLit)
@@ -109,7 +110,7 @@ p_hsType' multilineArgs docStyle = \case
     inci $ do
       txt "@"
       located kd p_hsType
-  HsFunTy _ arrow x y@(L _ y') -> do
+  HsFunTy _ arrow x y -> do
     let p_arrow =
           case arrow of
             HsUnrestrictedArrow _ -> txt "->"
@@ -121,14 +122,8 @@ p_hsType' multilineArgs docStyle = \case
               txt "->"
     located x p_hsType
     getPrinterOpt poFunctionArrows >>= \case
-      LeadingArrows -> interArgBreak >> p_arrow >> space
-      TrailingArrows -> space >> p_arrow >> interArgBreak
-    case y' of
-      HsFunTy {} -> do
-        layout <- getLayout
-        -- Render the comments properly, but keep the existing layout
-        located y (enterLayout layout . p_hsTypeR)
-      _ -> located y p_hsTypeR
+      LeadingArrows -> interArgBreak >> located y (\y' -> p_arrow >> space >> p_hsTypeR y')
+      TrailingArrows -> space >> p_arrow >> interArgBreak >> located y p_hsTypeR
   HsListTy _ t ->
     located t (brackets N . p_hsType)
   HsTupleTy _ tsort xs ->
@@ -150,13 +145,11 @@ p_hsType' multilineArgs docStyle = \case
     parens N $ sitcc $ located t p_hsType
   HsIParamTy _ n t -> sitcc $ do
     located n atom
-    startTypeAnnotation breakpoint
-    inci (located t p_hsType)
+    inci $ startTypeAnnotation t p_hsType
   HsStarTy _ _ -> txt "*"
   HsKindSig _ t k -> sitcc $ do
     located t p_hsType
-    startTypeAnnotation breakpoint
-    inci (located k p_hsType)
+    inci $ startTypeAnnotation k p_hsType
   HsSpliceTy _ splice -> p_hsSplice splice
   HsDocTy _ t str ->
     case docStyle of
@@ -216,6 +209,49 @@ p_hsType' multilineArgs docStyle = \case
         else breakpoint
     p_hsTypeR m = p_hsType' multilineArgs docStyle m
 
+startTypeAnnotation ::
+  HasSrcSpan l =>
+  GenLocated l a ->
+  (a -> R ()) ->
+  R ()
+startTypeAnnotation = startTypeAnnotation' breakpoint breakpoint
+
+startTypeAnnotationDecl ::
+  HasSrcSpan l =>
+  GenLocated l a ->
+  (a -> HsType GhcPs) ->
+  (a -> R ()) ->
+  R ()
+startTypeAnnotationDecl lItem getType =
+  startTypeAnnotation'
+    ( if hasDocStrings $ getType $ unLoc lItem
+        then newline
+        else breakpoint
+    )
+    breakpoint
+    lItem
+
+startTypeAnnotation' ::
+  HasSrcSpan l =>
+  R () ->
+  R () ->
+  GenLocated l a ->
+  (a -> R ()) ->
+  R ()
+startTypeAnnotation' breakTrailing breakLeading lItem renderItem =
+  getPrinterOpt poFunctionArrows >>= \case
+    TrailingArrows -> do
+      space
+      txt "::"
+      breakTrailing
+      located lItem renderItem
+    LeadingArrows -> do
+      breakLeading
+      located lItem $ \item -> do
+        txt "::"
+        space
+        renderItem item
+
 -- | Return 'True' if at least one argument in 'HsType' has a doc string
 -- attached to it.
 hasDocStrings :: HsType GhcPs -> Bool
@@ -249,8 +285,7 @@ p_hsTyVarBndr = \case
     (if isInferred flag then braces N else id) $ p_rdrName x
   KindedTyVar _ flag l k -> (if isInferred flag then braces else parens) N . sitcc $ do
     located l atom
-    startTypeAnnotation breakpoint
-    inci (located k p_hsType)
+    inci $ startTypeAnnotation k p_hsType
 
 data ForAllVisibility = ForAllInvis | ForAllVis
 

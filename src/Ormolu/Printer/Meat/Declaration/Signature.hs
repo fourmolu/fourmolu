@@ -59,12 +59,8 @@ p_typeSig indentTail (n : ns) sigType = do
 p_typeAscription ::
   LHsSigType GhcPs ->
   R ()
-p_typeAscription sigType = inci $ do
-  startTypeAnnotation $
-    if hasDocStrings (unLoc . sig_body . unLoc $ sigType)
-      then newline
-      else breakpoint
-  located sigType p_hsSigType
+p_typeAscription lsigType =
+  inci $ startTypeAnnotationDecl lsigType (unLoc . sig_body) p_hsSigType
 
 p_patSynSig ::
   [LocatedN RdrName] ->
@@ -224,5 +220,4 @@ p_standaloneKindSig (StandaloneKindSig _ name sigTy) = do
   inci $ do
     space
     p_rdrName name
-    startTypeAnnotation breakpoint
-    located sigTy p_hsSigType
+    startTypeAnnotation sigTy p_hsSigType

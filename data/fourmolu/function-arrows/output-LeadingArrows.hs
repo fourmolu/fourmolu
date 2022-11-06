@@ -78,6 +78,37 @@ functionName
        )
     -> (c -> d)
     -> (a, b, c, d)
+functionWithInterleavedCommentsTrailing
+    -- arg
+    :: Int
+    -- result
+    -> Bool
+functionWithInterleavedCommentsLeading
+    -- arg
+    :: Int
+    -- result
+    -> Bool
+
+multilineExprSig = do
+    bar
+        ( x
+            :: Int
+            -> Bool
+        )
+    bar
+        ( x
+            -- arg
+            :: Int
+            -- result
+            -> Bool
+        )
+    bar
+        ( x
+            -- arg
+            :: Int
+            -- result
+            -> Bool
+        )
 
 data Record = Record
     { recFun

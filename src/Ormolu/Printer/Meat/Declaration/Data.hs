@@ -126,12 +126,6 @@ p_conDecl singleConstRec = \case
             commaDel
             sep commaDel p_rdrName cs
       inci $ do
-        startTypeAnnotation $ do
-          let interArgBreak =
-                if hasDocStrings (unLoc con_res_ty)
-                  then newline
-                  else breakpoint
-          interArgBreak
         let conTy = case con_g_args of
               PrefixConGADT xs ->
                 let go (HsScaled a b) t = addCLocAA t b (HsFunTy EpAnnNotUsed a b t)
@@ -151,7 +145,7 @@ p_conDecl singleConstRec = \case
             quantifiedTy =
               addCLocAA con_bndrs qualTy $
                 hsOuterTyVarBndrsToHsType (unLoc con_bndrs) qualTy
-        located quantifiedTy p_hsType
+        startTypeAnnotationDecl quantifiedTy id p_hsType
   ConDeclH98 {..} -> do
     mapM_ (p_hsDocString Pipe True) con_doc
     let conDeclWithContextSpn =

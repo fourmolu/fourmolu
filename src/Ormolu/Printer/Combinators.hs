@@ -74,9 +74,6 @@ module Ormolu.Printer.Combinators
     -- ** Placement
     Placement (..),
     placeHanging,
-
-    -- ** Helpers for function-arrows configuration
-    startTypeAnnotation,
   )
 where
 
@@ -85,7 +82,6 @@ import Data.List (intersperse)
 import Data.Text (Text)
 import GHC.Types.SrcLoc
 import Ormolu.Config
-import Ormolu.Config.Types (FunctionArrowsStyle (..))
 import Ormolu.Printer.Comments
 import Ormolu.Printer.Internal
 import Ormolu.Utils (HasSrcSpan (..))
@@ -368,14 +364,3 @@ placeHanging placement m =
     Normal -> do
       breakpoint
       inci m
-
-----------------------------------------------------------------------------
--- Arrow style
-
--- | Add the "::" marker that starts a type annotation, running the given
--- action either before or after the marker, depending on poFunctionArrows.
-startTypeAnnotation :: R () -> R ()
-startTypeAnnotation m =
-  getPrinterOpt poFunctionArrows >>= \case
-    TrailingArrows -> space >> txt "::" >> m
-    LeadingArrows -> m >> txt "::" >> space
