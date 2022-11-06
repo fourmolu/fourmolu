@@ -151,7 +151,7 @@ p_conDecl singleConstRec = \case
             quantifiedTy =
               addCLocAA con_bndrs qualTy $
                 hsOuterTyVarBndrsToHsType (unLoc con_bndrs) qualTy
-        p_hsType (unLoc quantifiedTy)
+        located quantifiedTy p_hsType
   ConDeclH98 {..} -> do
     mapM_ (p_hsDocString Pipe True) con_doc
     let conDeclWithContextSpn =
