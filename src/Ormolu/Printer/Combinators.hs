@@ -38,6 +38,7 @@ module Ormolu.Printer.Combinators
     breakpoint,
     breakpoint',
     getPrinterOpt,
+    whenUnicodeOtherwise,
 
     -- ** Formatting lists
     sep,
@@ -80,8 +81,10 @@ where
 import Control.Monad
 import Data.List (intersperse)
 import Data.Text (Text)
+import GHC.LanguageExtensions.Type
 import GHC.Types.SrcLoc
 import Ormolu.Config
+import Ormolu.Config.Types
 import Ormolu.Printer.Comments
 import Ormolu.Printer.Internal
 import Ormolu.Utils (HasSrcSpan (..))
@@ -164,6 +167,17 @@ breakpoint = vlayout space newline
 -- > breakpoint' = vlayout (return ()) newline
 breakpoint' :: R ()
 breakpoint' = vlayout (return ()) newline
+
+-- | Write the one text or the other depending on whether Unicode is enabled.
+whenUnicodeOtherwise :: Text -> Text -> R ()
+unicodeText `whenUnicodeOtherwise` asciiText = do
+  unicodePrinterOption <- getPrinterOpt poUnicode
+  unicodeExtensionIsEnabled <- isExtensionEnabled UnicodeSyntax
+  txt $ case unicodePrinterOption of
+    UnicodeDetect | unicodeExtensionIsEnabled -> unicodeText
+    UnicodeDetect | otherwise -> asciiText
+    UnicodeAlways -> unicodeText
+    UnicodeNever -> asciiText
 
 ----------------------------------------------------------------------------
 -- Formatting lists
