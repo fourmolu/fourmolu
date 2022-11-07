@@ -11,3 +11,4 @@ let-style: inline
 in-style: right-align
 respectful: false
 fixities: []
+unicode: never
