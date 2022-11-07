@@ -9,6 +9,7 @@ module Ormolu.Config.Types
     ImportExportStyle (..),
     LetStyle (..),
     InStyle (..),
+    Unicode (..),
   )
 where
 
@@ -37,7 +38,9 @@ data PrinterOpts f = PrinterOpts
     -- | How to align in keyword
     poInStyle :: f InStyle,
     -- | Be less opinionated about spaces/newlines etc.
-    poRespectful :: f Bool
+    poRespectful :: f Bool,
+    -- | Output Unicode syntax
+    poUnicode :: f Unicode
   }
   deriving (Generic)
 
@@ -73,4 +76,10 @@ data LetStyle
 data InStyle
   = InLeftAlign
   | InRightAlign
+  deriving (Eq, Show, Enum, Bounded)
+
+data Unicode
+  = UnicodeDetect
+  | UnicodeAlways
+  | UnicodeNever
   deriving (Eq, Show, Enum, Bounded)
