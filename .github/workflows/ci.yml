@@ -135,16 +135,26 @@ jobs:
           )
           stack build "${ARGS[@]}"
 
-      - name: Get build info
-        run: scripts/GetBuildInfo.hs
-        id: build-info
+      - uses: brandonchinn178/haskell-actions/parse-cabal-file@parse-cabal-file
+        id: cabal_file
+        with:
+          cabal_file: fourmolu.cabal
 
       - name: Rename binary
-        run: cp bin/fourmolu bin/fourmolu-$version-$os-$arch
+        run: |
+          set -x
+          case ${{ runner.os }} in
+            (Linux) os=linux ;;
+            (macOS) os=osx ;;
+            (*) echo 'Unknown OS' >&1; exit 1 ;;
+          esac
+          case ${{ runner.arch }} in
+            (X64) arch=x86_64 ;;
+            (*) echo 'Unknown architecture' >&1; exit 1 ;;
+          esac
+          cp bin/fourmolu bin/fourmolu-$version-$os-$arch
         env:
-          version: ${{ steps.build-info.outputs.version }}
-          os: ${{ steps.build-info.outputs.os }}
-          arch: ${{ steps.build-info.outputs.arch }}
+          version: ${{ steps.cabal_file.outputs.version }}
 
       - name: Store binary
         uses: actions/upload-artifact@v3
@@ -153,7 +163,7 @@ jobs:
           path: bin/fourmolu-*
 
     outputs:
-      version: ${{ steps.build-info.outputs.version }}
+      version: ${{ steps.cabal_file.outputs.version }}
 
   lint:
     runs-on: ubuntu-latest
