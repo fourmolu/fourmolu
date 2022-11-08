@@ -7,4 +7,5 @@ module Test
     foo,
     bar,
     baz,
-) where
+)
+where

@@ -13,6 +13,8 @@ module Ormolu.Config.PrinterOptsSpec (spec) where
 import Control.Exception (catch)
 import Control.Monad (forM_, when)
 import Data.Algorithm.DiffContext (getContextDiff, prettyContextDiff)
+import Data.Char (isSpace)
+import qualified Data.List.NonEmpty as NE
 import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -32,6 +34,7 @@ import Ormolu.Utils.IO (readFileUtf8, writeFileUtf8)
 import Path
   ( File,
     Path,
+    Rel,
     fromRelFile,
     parseRelDir,
     parseRelFile,
@@ -58,8 +61,17 @@ data TestGroup = forall a.
 
 spec :: Spec
 spec =
+  sequence_
+    [ singleTests,
+      multiTests
+    ]
+
+-- Tests where each test group is a directory with an `input.hs` file and multiple `output-*.hs`
+-- files that could be regenerated with ORMOLU_REGENERATE_EXAMPLES.
+singleTests :: Spec
+singleTests =
   mapM_
-    runTestGroup
+    (runTestGroup False)
     [ TestGroup
         { label = "indentation",
           testCases = (,) <$> [2, 3, 4] <*> allOptions,
@@ -145,42 +157,45 @@ spec =
           testCaseSuffix = suffix1
         }
     ]
-  where
-    allOptions :: (Enum a, Bounded a) => [a]
-    allOptions = [minBound .. maxBound]
 
-    suffixWith xs = concatMap ('-' :) . filter (not . null) $ xs
-    suffix1 a1 = suffixWith [show a1]
+-- Same as 'singleTests', except with input taken from 'input-multi.hs', where sections
+-- delimited by `{- // -}` will be formatted as separate Haskell files. Useful for testing
+-- combinations of module headers, which is normally only allowed once.
+multiTests :: Spec
+multiTests =
+  mapM_
+    (runTestGroup True)
+    [ TestGroup
+        { label = "respectful-module-where",
+          testCases = (,) <$> allOptions <*> allOptions,
+          updateConfig = \(respectful, importExportStyle) opts ->
+            opts
+              { poRespectful = pure respectful,
+                poImportExportStyle = pure importExportStyle
+              },
+          showTestCase = \(respectful, importExportStyle) ->
+            (if respectful then "respectful" else "not respectful") ++ " + " ++ show importExportStyle,
+          testCaseSuffix = \(respectful, importExportStyle) ->
+            suffixWith ["respectful=" ++ show respectful, show importExportStyle]
+        }
+    ]
 
-runTestGroup :: TestGroup -> Spec
-runTestGroup TestGroup {..} =
+runTestGroup :: Bool -> TestGroup -> Spec
+runTestGroup isMulti TestGroup {..} =
   describe label $
     forM_ testCases $ \testCase ->
       it ("generates the correct output for: " ++ showTestCase testCase) $ do
-        let inputFile = testDir </> toRelFile "input.hs"
+        let inputFile = testDir </> toRelFile (if isMulti then "input-multi.hs" else "input.hs")
             inputPath = fromRelFile inputFile
             outputFile = testDir </> toRelFile ("output" ++ testCaseSuffix testCase ++ ".hs")
-            outputPath = fromRelFile outputFile
-            config =
-              defaultConfig
-                { cfgPrinterOpts = updateConfig testCase defaultPrinterOpts,
-                  cfgSourceType = detectSourceType inputPath,
-                  cfgCheckIdempotence = True
-                }
+            opts = updateConfig testCase defaultPrinterOpts
 
         input <- readFileUtf8 inputPath
         actual <-
-          ormolu config inputPath (T.unpack input) `catch` \e -> do
-            msg <- renderOrmoluException e
-            expectationFailure' $ unlines ["Got ormolu exception:", "", msg]
-        getFileContents outputFile >>= \case
-          _ | shouldRegenerateOutput -> writeFileUtf8 outputPath actual
-          Nothing ->
-            expectationFailure "Output does not exist. Try running with ORMOLU_REGENERATE_EXAMPLES=1"
-          Just expected ->
-            when (actual /= expected) $
-              expectationFailure . T.unpack $
-                getDiff ("actual", actual) ("expected", expected)
+          if isMulti
+            then overSectionsM (T.pack "{- // -}") (runOrmolu opts inputPath) input
+            else runOrmolu opts inputPath input
+        checkResult outputFile actual
   where
     testDir = toRelDir $ "data/fourmolu/" ++ label
     toRelDir name =
@@ -192,7 +207,47 @@ runTestGroup TestGroup {..} =
         Just path -> path
         Nothing -> error $ "Not a valid file name: " ++ show name
 
+runOrmolu :: PrinterOptsTotal -> FilePath -> Text -> IO Text
+runOrmolu opts inputPath input =
+  ormolu config inputPath (T.unpack input) `catch` \e -> do
+    msg <- renderOrmoluException e
+    expectationFailure' $ unlines ["Got ormolu exception:", "", msg]
+  where
+    config =
+      defaultConfig
+        { cfgPrinterOpts = opts,
+          cfgSourceType = detectSourceType inputPath,
+          cfgCheckIdempotence = True
+        }
+
+checkResult :: Path Rel File -> Text -> Expectation
+checkResult outputFile actual
+  | shouldRegenerateOutput = writeFileUtf8 (fromRelFile outputFile) actual
+  | otherwise =
+      getFileContents outputFile >>= \case
+        Nothing ->
+          expectationFailure "Output does not exist. Try running with ORMOLU_REGENERATE_EXAMPLES=1"
+        Just expected ->
+          when (actual /= expected) $
+            expectationFailure . T.unpack $
+              getDiff ("actual", actual) ("expected", expected)
+
 {--- Helpers ---}
+
+allOptions :: (Enum a, Bounded a) => [a]
+allOptions = [minBound .. maxBound]
+
+suffixWith :: [String] -> String
+suffixWith xs = concatMap ('-' :) . filter (not . null) $ xs
+
+suffix1 :: Show a => a -> String
+suffix1 a1 = suffixWith [show a1]
+
+overSectionsM :: Monad m => Text -> (Text -> m Text) -> Text -> m Text
+overSectionsM delim f =
+  fmap T.concat
+    . mapM (\(s, isDelim) -> if isDelim then pure s else f s)
+    . splitOnDelim delim
 
 getFileContents :: Path b File -> IO (Maybe Text)
 getFileContents path = do
@@ -225,3 +280,41 @@ shouldRegenerateOutput =
   -- Use same env var as PrinterSpec.hs, to make it easy to regenerate everything at once
   unsafePerformIO $ isJust <$> lookupEnv "ORMOLU_REGENERATE_EXAMPLES"
 {-# NOINLINE shouldRegenerateOutput #-}
+
+{--- Utilities ---}
+
+-- | Group delimiter (including surrounding whitespace) and non-delimiter lines
+-- and annotate lines with a Bool indicating if the group is a delimiter group
+-- or not.
+splitOnDelim :: Text -> Text -> [(Text, Bool)]
+splitOnDelim delim =
+  map (\(lineGroup, delimType) -> (T.unlines lineGroup, isDelim delimType))
+    . collapseSpaces NonDelim
+    . collapseSpaces Delim
+    . groupWith toLineType
+    . T.lines
+  where
+    toLineType line
+      | T.all isSpace line = Space
+      | line == delim = Delim
+      | otherwise = NonDelim
+
+    collapseSpaces delimType = \case
+      (xs, Space) : (ys, ysType) : rest | ysType == delimType -> collapseSpaces delimType $ (xs ++ ys, delimType) : rest
+      (xs, xsType) : (ys, Space) : rest | xsType == delimType -> collapseSpaces delimType $ (xs ++ ys, delimType) : rest
+      x : rest -> x : collapseSpaces delimType rest
+      [] -> []
+
+    isDelim = \case
+      Delim -> True
+      NonDelim -> False
+      Space -> error "isDelim called on Space, but all Spaces should've been eliminated at this point"
+
+    -- Like 'NE.groupWith', except annotates group with comparator
+    groupWith :: Eq b => (a -> b) -> [a] -> [([a], b)]
+    groupWith f =
+      let liftComparator xs = (map fst $ NE.toList xs, snd $ NE.head xs)
+       in map liftComparator . NE.groupWith snd . map (\a -> (a, f a))
+
+data LineType = Space | Delim | NonDelim
+  deriving (Eq)

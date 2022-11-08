@@ -5,7 +5,8 @@ module Magic (
     -- ** Another level
     foo,
     bar,
-) where
+)
+where
 
 {- $explanation
 

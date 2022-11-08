@@ -16,6 +16,7 @@ module My.Module (
     -- the second line
     bar3,
     module Foo.Bar.Baz,
-) where
+)
+where
 
 -- Wow
