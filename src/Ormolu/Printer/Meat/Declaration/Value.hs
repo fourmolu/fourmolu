@@ -273,7 +273,7 @@ p_match' placer render style isInfix strictness m_pats GRHSs {..} = do
         Function _ -> space >> inci equals
         PatternBind -> space >> inci equals
         s | isCase s && hasGuards -> return ()
-        _ -> space >> txt "->"
+        _ -> space >> rarrow
     switchLayout [patGrhssSpan] $
       placeHanging placement p_body
     inci p_where
@@ -301,7 +301,7 @@ p_grhs' parentPlacement placer render style (GRHS _ guards body) =
       space
       inci $ case style of
         EqualSign -> equals
-        RightArrow -> txt "->"
+        RightArrow -> rarrow
       -- If we have a sequence of guards and it is placed in the normal way,
       -- then we indent one level more for readability. Otherwise (all
       -- guards are on the same line) we do not need to indent, as it would
@@ -333,10 +333,10 @@ p_hsCmd' s = \case
     breakpoint
     inci $ do
       case (arrType, rightToLeft) of
-        (HsFirstOrderApp, True) -> txt "-<"
-        (HsHigherOrderApp, True) -> txt "-<<"
-        (HsFirstOrderApp, False) -> txt ">-"
-        (HsHigherOrderApp, False) -> txt ">>-"
+        (HsFirstOrderApp, True) -> larrowtail
+        (HsHigherOrderApp, True) -> llarrowtail
+        (HsFirstOrderApp, False) -> rarrowtail
+        (HsHigherOrderApp, False) -> rrarrowtail
       placeHanging (exprPlacement (unLoc input)) $
         located r p_hsExpr
   HsCmdArrForm _ form Prefix _ cmds -> banana s $ do
@@ -422,7 +422,7 @@ p_stmt' placer render = \case
   BindStmt _ p f@(getLocA -> l) -> do
     located p p_pat
     space
-    txt "<-"
+    larrow
     let loc = getLocA p
         placement
           | isOneLineSpan (mkSrcSpan (srcSpanEnd loc) (srcSpanStart l)) = placer (unLoc f)
@@ -853,7 +853,7 @@ p_hsExpr' s = \case
       breakpoint
       inci (p_pat x)
       breakpoint
-    txt "->"
+    rarrow
     placeHanging (cmdTopPlacement (unLoc e)) $
       located e (p_hsCmdTop N)
   HsStatic _ e -> do
@@ -878,7 +878,7 @@ p_patSynBind PSB {..} = do
         case psb_dir of
           Unidirectional ->
             switchLayout pattern_def_spans $ do
-              txt "<-"
+              larrow
               breakpoint
               located psb_def p_pat
           ImplicitBidirectional ->
@@ -888,7 +888,7 @@ p_patSynBind PSB {..} = do
               located psb_def p_pat
           ExplicitBidirectional mgroup -> do
             switchLayout pattern_def_spans $ do
-              txt "<-"
+              larrow
               breakpoint
               located psb_def p_pat
             breakpoint
@@ -1144,7 +1144,7 @@ p_pat = \case
   ViewPat _ expr pat -> sitcc $ do
     located expr p_hsExpr
     space
-    txt "->"
+    rarrow
     breakpoint
     inci (located pat p_pat)
   SplicePat _ splice -> p_hsSplice splice
@@ -1201,7 +1201,7 @@ p_hsSplice = \case
     -- QuasiQuoters often rely on precise custom strings. We cannot do any
     -- formatting here without potentially breaking someone's code.
     atom str
-    txt "|]"
+    closeQuote
   HsSpliced {} -> notImplemented "HsSpliced"
 
 p_hsSpliceTH ::
@@ -1251,7 +1251,7 @@ p_hsBracket epAnn = \case
       inci $ do
         dontUseBraces body
         breakpoint'
-        txt "|]"
+        closeQuote
     -- With StarIsType, type and declaration brackets might end with a *,
     -- so we have to insert a space in the end to prevent the (mis)parsing
     -- of an (*|) operator.

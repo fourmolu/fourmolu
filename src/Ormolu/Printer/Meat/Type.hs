@@ -72,8 +72,8 @@ p_hsType' multilineArgs docStyle = \case
     for_ qs' $ \qs -> do
       located qs p_hsContext
       getPrinterOpt poFunctionArrows >>= \case
-        LeadingArrows -> interArgBreak >> txt "=>" >> space
-        TrailingArrows -> space >> txt "=>" >> interArgBreak
+        LeadingArrows -> interArgBreak >> darrow >> space
+        TrailingArrows -> space >> darrow >> interArgBreak
     case unLoc t of
       HsQualTy {} -> p_hsTypeR (unLoc t)
       HsFunTy {} -> p_hsTypeR (unLoc t)
@@ -113,13 +113,13 @@ p_hsType' multilineArgs docStyle = \case
   HsFunTy _ arrow x y -> do
     let p_arrow =
           case arrow of
-            HsUnrestrictedArrow _ -> txt "->"
-            HsLinearArrow _ _ -> txt "%1 ->"
+            HsUnrestrictedArrow _ -> rarrow
+            HsLinearArrow _ _ -> lolly
             HsExplicitMult _ _ mult -> do
               txt "%"
               p_hsTypeR (unLoc mult)
               space
-              txt "->"
+              rarrow
     located x p_hsType
     getPrinterOpt poFunctionArrows >>= \case
       LeadingArrows -> interArgBreak >> located y (\y' -> p_arrow >> space >> p_hsTypeR y')
@@ -146,7 +146,7 @@ p_hsType' multilineArgs docStyle = \case
   HsIParamTy _ n t -> sitcc $ do
     located n atom
     inci $ startTypeAnnotation t p_hsType
-  HsStarTy _ _ -> txt "*"
+  HsStarTy _ _ -> star
   HsKindSig _ t k -> sitcc $ do
     located t p_hsType
     inci $ startTypeAnnotation k p_hsType
@@ -242,13 +242,13 @@ startTypeAnnotation' breakTrailing breakLeading lItem renderItem =
   getPrinterOpt poFunctionArrows >>= \case
     TrailingArrows -> do
       space
-      txt "::"
+      dcolon
       breakTrailing
       located lItem renderItem
     LeadingArrows -> do
       breakLeading
       located lItem $ \item -> do
-        txt "::"
+        dcolon
         space
         renderItem item
 
@@ -296,17 +296,17 @@ p_forallBndrs vis p tyvars = do
   p_forallBndrsEnd vis
 
 p_forallBndrsStart :: (a -> R ()) -> [LocatedA a] -> R ()
-p_forallBndrsStart _ [] = txt "forall"
+p_forallBndrsStart _ [] = forall
 p_forallBndrsStart p tyvars = do
   switchLayout (getLocA <$> tyvars) $ do
-    txt "forall"
+    forall
     breakpoint
     inci $ do
       sitcc $ sep breakpoint (sitcc . located' p) tyvars
 
 p_forallBndrsEnd :: ForAllVisibility -> R ()
 p_forallBndrsEnd ForAllInvis = txt "." >> space
-p_forallBndrsEnd ForAllVis = space >> txt "->"
+p_forallBndrsEnd ForAllVis = space >> rarrow
 
 p_conDeclFields :: [LConDeclField GhcPs] -> R ()
 p_conDeclFields xs =
@@ -325,12 +325,12 @@ p_conDeclField ConDeclField {..} = do
   getPrinterOpt poFunctionArrows >>= \case
     LeadingArrows -> inci $ do
       breakpoint
-      txt "::"
+      dcolon
       space
       p_hsType (unLoc cd_fld_type)
     TrailingArrows -> do
       space
-      txt "::"
+      dcolon
       breakpoint
       sitcc . inci $ p_hsType (unLoc cd_fld_type)
   when (commaStyle == Leading) $

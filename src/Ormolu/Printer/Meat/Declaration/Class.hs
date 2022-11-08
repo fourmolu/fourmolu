@@ -78,7 +78,7 @@ p_classContext :: LHsContext GhcPs -> R ()
 p_classContext ctx = unless (null (unLoc ctx)) $ do
   located ctx p_hsContext
   space
-  txt "=>"
+  darrow
   breakpoint
 
 p_classFundeps :: [LHsFunDep GhcPs] -> R ()
@@ -97,7 +97,7 @@ p_funDep :: FunDep GhcPs -> R ()
 p_funDep (FunDep _ before after) = do
   sep space p_rdrName before
   space
-  txt "->"
+  rarrow
   space
   sep space p_rdrName after
 
