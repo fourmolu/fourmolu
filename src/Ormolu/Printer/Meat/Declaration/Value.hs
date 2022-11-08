@@ -1201,7 +1201,7 @@ p_hsSplice = \case
     -- QuasiQuoters often rely on precise custom strings. We cannot do any
     -- formatting here without potentially breaking someone's code.
     atom str
-    closeQuote
+    txt "|]"
   HsSpliced {} -> notImplemented "HsSpliced"
 
 p_hsSpliceTH ::
@@ -1251,7 +1251,7 @@ p_hsBracket epAnn = \case
       inci $ do
         dontUseBraces body
         breakpoint'
-        closeQuote
+        txt "|]"
     -- With StarIsType, type and declaration brackets might end with a *,
     -- so we have to insert a space in the end to prevent the (mis)parsing
     -- of an (*|) operator.
