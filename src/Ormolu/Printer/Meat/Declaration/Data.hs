@@ -66,7 +66,7 @@ p_dataDecl style name tpats fixity HsDataDefn {..} = do
           (p_lhsTypeArg <$> tpats)
       forM_ dd_kindSig $ \k -> do
         space
-        txt "::"
+        dcolon
         breakpoint
         inci $ located k p_hsType
   let gadt = isJust dd_kindSig || any (isGadt . unLoc) dd_cons
@@ -193,7 +193,7 @@ p_lhsContext = \case
   ctx -> do
     located ctx p_hsContext
     space
-    txt "=>"
+    darrow
     breakpoint
 
 isGadt :: ConDecl GhcPs -> Bool

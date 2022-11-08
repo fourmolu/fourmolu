@@ -230,6 +230,7 @@ overFieldsM f $(unpackFieldsWithSuffix 'PrinterOpts "0") = do
   poLetStyle <- f poLetStyle0
   poInStyle <- f poInStyle0
   poRespectful <- f poRespectful0
+  poUnicode <- f poUnicode0
   return PrinterOpts {..}
 
 defaultPrinterOpts :: PrinterOptsTotal
@@ -369,6 +370,14 @@ printerOptsMeta =
             metaPlaceholder = "BOOL",
             metaHelp = "Give the programmer more choice on where to insert blank lines",
             metaDefault = True
+          },
+      poUnicode =
+        PrinterOptsFieldMeta
+          { metaName = "unicode",
+            metaGetField = poUnicode,
+            metaPlaceholder = "UNICODE",
+            metaHelp = printf "Output Unicode syntax (choices: %s)" (showAllValues unicodePreferenceMap),
+            metaDefault = UnicodeNever
           }
     }
 
@@ -449,6 +458,15 @@ inStyleMap =
       ]
    )
 
+unicodePreferenceMap :: BijectiveMap Unicode
+unicodePreferenceMap =
+  $( mkBijectiveMap
+      [ ('UnicodeDetect, "detect"),
+        ('UnicodeAlways, "always"),
+        ('UnicodeNever, "never")
+      ]
+   )
+
 instance PrinterOptsFieldType CommaStyle where
   parseJSON = parseJSONWith commaStyleMap "CommaStyle"
   parseText = parseTextWith commaStyleMap
@@ -478,6 +496,11 @@ instance PrinterOptsFieldType InStyle where
   parseJSON = parseJSONWith inStyleMap "InStyle"
   parseText = parseTextWith inStyleMap
   showText = show . showTextWith inStyleMap
+
+instance PrinterOptsFieldType Unicode where
+  parseJSON = parseJSONWith unicodePreferenceMap "UnicodePreference"
+  parseText = parseTextWith unicodePreferenceMap
+  showText = show . showTextWith unicodePreferenceMap
 
 ----------------------------------------------------------------------------
 -- BijectiveMap helpers

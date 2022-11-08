@@ -38,6 +38,7 @@ module Ormolu.Printer.Combinators
     breakpoint,
     breakpoint',
     getPrinterOpt,
+    whenUnicodeOtherwise,
 
     -- ** Formatting lists
     sep,
@@ -63,6 +64,21 @@ module Ormolu.Printer.Combinators
     commaDel,
     commaDelImportExport,
     equals,
+    llarrowtail,
+    rrarrowtail,
+    darrow,
+    dcolon,
+    larrow,
+    larrowtail,
+    rarrow,
+    rarrowtail,
+    star,
+    forall,
+    oparenbar,
+    cparenbar,
+    openExpQuote,
+    closeQuote,
+    lolly,
 
     -- ** Stateful markers
     SpanMark (..),
@@ -80,8 +96,10 @@ where
 import Control.Monad
 import Data.List (intersperse)
 import Data.Text (Text)
+import GHC.LanguageExtensions.Type
 import GHC.Types.SrcLoc
 import Ormolu.Config
+import Ormolu.Config.Types
 import Ormolu.Printer.Comments
 import Ormolu.Printer.Internal
 import Ormolu.Utils (HasSrcSpan (..))
@@ -164,6 +182,17 @@ breakpoint = vlayout space newline
 -- > breakpoint' = vlayout (return ()) newline
 breakpoint' :: R ()
 breakpoint' = vlayout (return ()) newline
+
+-- | Write the one text or the other depending on whether Unicode is enabled.
+whenUnicodeOtherwise :: Text -> Text -> R ()
+unicodeText `whenUnicodeOtherwise` asciiText = do
+  unicodePrinterOption <- getPrinterOpt poUnicode
+  unicodeExtensionIsEnabled <- isExtensionEnabled UnicodeSyntax
+  txt $ case unicodePrinterOption of
+    UnicodeDetect | unicodeExtensionIsEnabled -> unicodeText
+    UnicodeDetect | otherwise -> asciiText
+    UnicodeAlways -> unicodeText
+    UnicodeNever -> asciiText
 
 ----------------------------------------------------------------------------
 -- Formatting lists
@@ -335,6 +364,71 @@ commaDel' = \case
 -- | Print @=@. Do not use @'txt' "="@.
 equals :: R ()
 equals = interferingTxt "="
+
+-- The names of the following literals are from GHC's
+-- @compiler/GHC/Parser/Lexer.x@.
+
+llarrowtail,
+  rrarrowtail,
+  darrow,
+  dcolon,
+  larrow,
+  larrowtail,
+  rarrow,
+  rarrowtail,
+  star,
+  forall,
+  oparenbar,
+  cparenbar,
+  openExpQuote,
+  closeQuote,
+  lolly ::
+    R ()
+
+-- | Print @⤛@ or @-<<@ as appropriate.
+llarrowtail = "⤛" `whenUnicodeOtherwise` "-<<"
+
+-- | Print @⤜@ or @>>-@ as appropriate.
+rrarrowtail = "⤜" `whenUnicodeOtherwise` ">>-"
+
+-- | Print @⇒@ or @=>@ as appropriate.
+darrow = "⇒" `whenUnicodeOtherwise` "=>"
+
+-- | Print @∷@ or @::@ as appropriate.
+dcolon = "∷" `whenUnicodeOtherwise` "::"
+
+-- | Print @←@ or @<-@ as appropriate.
+larrow = "←" `whenUnicodeOtherwise` "<-"
+
+-- | Print @⤙@ or @-<@ as appropriate.
+larrowtail = "⤙" `whenUnicodeOtherwise` "-<"
+
+-- | Print @→@ or @->@ as appropriate.
+rarrow = "→" `whenUnicodeOtherwise` "->"
+
+-- | Print @⤚@ or @>-@ as appropriate.
+rarrowtail = "⤚" `whenUnicodeOtherwise` ">-"
+
+-- | Print @★@ or @*@ as appropriate.
+star = "★" `whenUnicodeOtherwise` "*"
+
+-- | Print @∀@ or @forall@ as appropriate.
+forall = "∀" `whenUnicodeOtherwise` "forall"
+
+-- | Print @⦇@ or @(|@ as appropriate.
+oparenbar = "⦇" `whenUnicodeOtherwise` "(|"
+
+-- | Print @⦈@ or @|)@ as appropriate.
+cparenbar = "⦈" `whenUnicodeOtherwise` "|)"
+
+-- | Print @⟦@ or @[|@ as appropriate.
+openExpQuote = "⟦" `whenUnicodeOtherwise` "[|"
+
+-- | Print @⟧@ or @|]@ as appropriate.
+closeQuote = "⟧" `whenUnicodeOtherwise` "|]"
+
+-- | Print @⊸@ or @%1 ->@ as appropriate.
+lolly = "⊸" `whenUnicodeOtherwise` "%1 ->"
 
 ----------------------------------------------------------------------------
 -- Placement
