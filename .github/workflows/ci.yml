@@ -27,7 +27,7 @@ jobs:
       STACK_YAML: ${{ matrix.stack_yaml }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions/cache@v3
         with:
           path: ~/.stack
@@ -50,7 +50,7 @@ jobs:
     name: 'cabal_test: ghc-${{ matrix.ghc_version }}'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: haskell/actions/setup@v2
         with:
           ghc-version: ${{ matrix.ghc_version }}
@@ -76,7 +76,7 @@ jobs:
     name: 'os_test: ${{ matrix.os }}'
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions/cache@v3
         with:
           path: ~/.stack
@@ -86,7 +86,7 @@ jobs:
   build_haddock:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions/cache@v3
         with:
           path: ~/.stack
@@ -116,7 +116,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions/cache@v3
         with:
           path: ~/.stack
@@ -158,7 +158,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - uses: actions/cache@v3
         with:
@@ -180,7 +180,7 @@ jobs:
   check_sdist:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions/cache@v3
         with:
           path: ~/.stack
@@ -195,6 +195,6 @@ jobs:
   check_redundant_examples:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - run: scripts/clean_redundant_examples.py
       - run: git diff --exit-code data/examples/
