@@ -1,4 +1,5 @@
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE LinearTypes #-}
 
 module Main where
 
@@ -77,6 +78,37 @@ functionName
        )
     -> (c -> d)
     -> (a, b, c, d)
+functionWithInterleavedCommentsTrailing
+    -- arg
+    :: Int
+    -- result
+    -> Bool
+functionWithInterleavedCommentsLeading
+    -- arg
+    :: Int
+    -- result
+    -> Bool
+
+multilineExprSig = do
+    bar
+        ( x
+            :: Int
+            -> Bool
+        )
+    bar
+        ( x
+            -- arg
+            :: Int
+            -- result
+            -> Bool
+        )
+    bar
+        ( x
+            -- arg
+            :: Int
+            -- result
+            -> Bool
+        )
 
 data Record = Record
     { recFun
@@ -87,3 +119,11 @@ data Record = Record
         -> Bool
     , recOther :: Bool
     }
+
+foo
+    :: Int
+    %1 -> Bool
+foo
+    :: forall x
+     . Int
+    %Many -> Bool
