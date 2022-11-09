@@ -16,21 +16,6 @@ repos:
             | data/parse-failures/
           )
 
-  - repo: https://github.com/psf/black
-    rev: '22.3.0'
-    hooks:
-      - id: black
-
-  - repo: local
-    hooks:
-      - id: pyright
-        name: pyright
-        entry: pyright
-        language: node
-        pass_filenames: false
-        types: [python]
-        additional_dependencies: ['pyright@1.1.247']
-
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.0.1
     hooks:

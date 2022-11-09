@@ -50,11 +50,13 @@ jobs:
           archive: sdist/fourmolu-*.tar.gz
           token: ${{ secrets[steps.hackage_token_secret.outputs.name] }}
 
-      - name: Make release
-        run: scripts/make-release.sh
-        env:
-          gh_token: ${{ secrets.GITHUB_TOKEN }}
-          version: ${{ env.VERSION }}
-          bodyFile: /tmp/changelog-body
-          bindir: ./bin/
-          sdistdir: ./sdist/
+      - uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ env.VERSION }}
+          body_path: /tmp/changelog-body
+          draft: true
+          target_commitish: ${{ github.sha }}
+          files: |
+            bin/fourmolu-${{ env.VERSION }}-linux-x86_64
+            bin/fourmolu-${{ env.VERSION }}-osx-x86_64
+          fail_on_unmatched_files: true
