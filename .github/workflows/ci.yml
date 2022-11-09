@@ -54,11 +54,15 @@ jobs:
       - uses: haskell/actions/setup@v2
         with:
           ghc-version: ${{ matrix.ghc_version }}
+      - run: cabal update
+      - run: cabal freeze
+      - run: echo "CURR_MONTH=$(date +%B)" | tee -a "$GITHUB_ENV"
       - uses: actions/cache@v3
         with:
-          path: ~/.cabal
-          key: ${{ runner.os }}-cabal-cache-${{ matrix.ghc_version }}-${{ hashFiles('fourmolu.cabal') }}
-      - run: cabal update
+          path: ~/.cabal/store
+          key: ${{ runner.os }}-cabal-cache-${{ env.CURR_MONTH }}-${{ matrix.ghc_version }}-${{ hashFiles('cabal.project.freeze') }}
+          restore-keys: |
+               ${{ runner.os }}-cabal-cache-${{ env.CURR_MONTH }}-${{ matrix.ghc_version }}-
       - run: cabal install --overwrite-policy=always alex happy
       - run: cabal test
 
