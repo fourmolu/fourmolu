@@ -37,6 +37,14 @@ jobs:
           USERNAME="$(echo "${GITHUB_ACTOR}" | tr '[:lower:]' '[:upper:]' | tr '-' '_')"
           echo "name=HACKAGE_TOKEN_${USERNAME}" >> "${GITHUB_OUTPUT}"
 
+      - name: Get CHANGELOG section
+        run: |
+          if [[ "$(head -n 1 CHANGELOG.md)" != "## Fourmolu ${VERSION}" ]]; then
+            echo "CHANGELOG doesn't look updated" >&2
+            exit 1
+          fi
+          sed '1 d; /^## Fourmolu/,$ d' CHANGELOG.md > /tmp/changelog-body
+
       - uses: brandonchinn178/haskell-actions/hackage-upload@hackage-upload
         with:
           archive: sdist/fourmolu-*.tar.gz
@@ -47,5 +55,6 @@ jobs:
         env:
           gh_token: ${{ secrets.GITHUB_TOKEN }}
           version: ${{ env.VERSION }}
+          bodyFile: /tmp/changelog-body
           bindir: ./bin/
           sdistdir: ./sdist/

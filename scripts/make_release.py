@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import itertools
 import json
 import logging
 import os
@@ -17,6 +16,7 @@ logging.basicConfig(level=logging.DEBUG)
 def main():
     gh_token = os.environ["gh_token"]
     version = os.environ["version"]
+    body_file = os.environ["bodyFile"]
     bindir = os.environ["bindir"]
     sdistdir = os.environ["sdistdir"]
     repo = os.environ["GITHUB_REPOSITORY"]
@@ -38,34 +38,18 @@ def main():
     file_paths = [file.as_posix() for file in all_files]
     logger.info(f"Creating release {version_name} with files: {file_paths}")
 
-    # check + parse CHANGELOG
-    changelog = Path("CHANGELOG.md").read_text()
-    if not changelog.startswith(f"## Fourmolu {version}"):
-        raise Exception("CHANGELOG doesn't look updated")
-    version_changes = get_version_changes(changelog)
+    body = Path(body_file).read_text()
 
     create_github_release(
         repo=repo,
         token=gh_token,
         sha=sha,
         version_name=version_name,
-        version_changes=version_changes,
+        body=body,
         files=gh_release_files,
     )
 
     logger.info(f"Released fourmolu {version_name}!")
-
-
-def get_version_changes(changelog: str) -> str:
-    lines = changelog.split("\n")
-
-    # skip initial '## Fourmolu X.Y.Z' line
-    lines = lines[1:]
-
-    # take lines until the next '## Fourmolu X.Y.Z' line
-    lines = itertools.takewhile(lambda line: not line.startswith("## Fourmolu "), lines)
-
-    return "\n".join(lines)
 
 
 def create_github_release(
@@ -74,7 +58,7 @@ def create_github_release(
     token: str,
     sha: str,
     version_name: str,
-    version_changes: str,
+    body: str,
     files: list[Path],
 ):
     session = init_session()
@@ -86,7 +70,7 @@ def create_github_release(
         "tag_name": version_name,
         "target_commitish": sha,
         "name": version_name,
-        "body": version_changes,
+        "body": body,
     }
     logger.debug(f"Creating release with: {json.dumps(payload)}")
 
