@@ -10,6 +10,9 @@ jobs:
     needs:
       - ci
 
+    env:
+      VERSION: ${{ needs.ci.outputs.version }}
+
     steps:
       - uses: actions/checkout@v3
         with:
@@ -42,6 +45,6 @@ jobs:
         env:
           gh_token: ${{ secrets.GITHUB_TOKEN }}
           hackage_token: ${{ secrets[steps.hackage_token_secret.outputs.secret_name] }}
-          version: ${{ needs.ci.outputs.version }}
+          version: ${{ env.VERSION }}
           bindir: ./bin/
           sdistdir: ./sdist/
