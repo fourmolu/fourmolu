@@ -32,19 +32,20 @@ jobs:
           path: ./sdist/
 
       - name: Load Hackage token secret name
-        run: |
-          import re
-          username = "${{ github.actor }}"
-          secret_name = "HACKAGE_TOKEN_" + re.sub(r"\W+", "_", username).upper()
-          print(f"::set-output name=secret_name::{secret_name}")
-        shell: python
         id: hackage_token_secret
+        run: |
+          USERNAME="$(echo "${GITHUB_ACTOR}" | tr '[:lower:]' '[:upper:]' | tr '-' '_')"
+          echo "name=HACKAGE_TOKEN_${USERNAME}" >> "${GITHUB_OUTPUT}"
+
+      - uses: brandonchinn178/haskell-actions/hackage-upload@hackage-upload
+        with:
+          archive: sdist/fourmolu-*.tar.gz
+          token: ${{ secrets[steps.hackage_token_secret.outputs.name] }}
 
       - name: Make release
         run: scripts/make-release.sh
         env:
           gh_token: ${{ secrets.GITHUB_TOKEN }}
-          hackage_token: ${{ secrets[steps.hackage_token_secret.outputs.secret_name] }}
           version: ${{ env.VERSION }}
           bindir: ./bin/
           sdistdir: ./sdist/

@@ -16,7 +16,6 @@ logging.basicConfig(level=logging.DEBUG)
 
 def main():
     gh_token = os.environ["gh_token"]
-    hackage_token = os.environ["hackage_token"]
     version = os.environ["version"]
     bindir = os.environ["bindir"]
     sdistdir = os.environ["sdistdir"]
@@ -24,12 +23,6 @@ def main():
     sha = os.environ["GITHUB_SHA"]
 
     version_name = f"v{version}"
-
-    # check inputs
-    if not hackage_token:
-        raise Exception(
-            "Hackage token is not provided (did you add a Secret of the form HACKAGE_TOKEN_<github username>?)"
-        )
 
     # ensure release files exist
     gh_release_files = [
@@ -58,14 +51,6 @@ def main():
         version_name=version_name,
         version_changes=version_changes,
         files=gh_release_files,
-    )
-
-    # uploading as candidate because uploads are irreversible, unlike
-    # GitHub releases, so just to be extra sure, we'll upload this as
-    # a candidate and manually confirm uploading the package on Hackage
-    upload_hackage_candidate(
-        token=hackage_token,
-        archive=sdist_archive,
     )
 
     logger.info(f"Released fourmolu {version_name}!")
@@ -123,20 +108,6 @@ def create_github_release(
                 params={"name": file.name},
                 data=f,
             )
-
-
-def upload_hackage_candidate(
-    *,
-    token: str,
-    archive: Path,
-):
-    session = init_session()
-    with archive.open("rb") as f:
-        session.post(
-            "https://hackage.haskell.org/packages/candidates",
-            headers={"Authorization": f"X-ApiKey {token}"},
-            files={"package": f},
-        )
 
 
 def init_session() -> requests.Session:
