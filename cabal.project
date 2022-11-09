@@ -1,1 +1,2 @@
 packages: .
+constraints: fourmolu -fixity-th
