@@ -118,6 +118,8 @@ To release a new version, do the following workflow:
 
 1. Publish the candidate: https://hackage.haskell.org/package/fourmolu/candidates
 
+1. Publish the GitHub release: https://github.com/fourmolu/fourmolu/releases
+
 1. If this is a new major version, update HLS to use it ([example](https://github.com/haskell/haskell-language-server/pull/2254)). It's rare that we'll be changing our API in a way that requires actual code changes.
 
 ## Merging upstream
