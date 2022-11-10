@@ -9,6 +9,6 @@ newlines-between-decls: 1
 haddock-style: single-line
 let-style: inline
 in-style: right-align
+unicode: never
 respectful: false
 fixities: []
-unicode: never

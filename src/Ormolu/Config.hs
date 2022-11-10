@@ -229,8 +229,8 @@ overFieldsM f $(unpackFieldsWithSuffix 'PrinterOpts "0") = do
   poHaddockStyle <- f poHaddockStyle0
   poLetStyle <- f poLetStyle0
   poInStyle <- f poInStyle0
-  poRespectful <- f poRespectful0
   poUnicode <- f poUnicode0
+  poRespectful <- f poRespectful0
   return PrinterOpts {..}
 
 defaultPrinterOpts :: PrinterOptsTotal
@@ -363,14 +363,6 @@ printerOptsMeta =
             metaHelp = "How to align the 'in' keyword with respect to the 'let' keyword",
             metaDefault = InRightAlign
           },
-      poRespectful =
-        PrinterOptsFieldMeta
-          { metaName = "respectful",
-            metaGetField = poRespectful,
-            metaPlaceholder = "BOOL",
-            metaHelp = "Give the programmer more choice on where to insert blank lines",
-            metaDefault = True
-          },
       poUnicode =
         PrinterOptsFieldMeta
           { metaName = "unicode",
@@ -378,6 +370,14 @@ printerOptsMeta =
             metaPlaceholder = "UNICODE",
             metaHelp = printf "Output Unicode syntax (choices: %s)" (showAllValues unicodePreferenceMap),
             metaDefault = UnicodeNever
+          },
+      poRespectful =
+        PrinterOptsFieldMeta
+          { metaName = "respectful",
+            metaGetField = poRespectful,
+            metaPlaceholder = "BOOL",
+            metaHelp = "Give the programmer more choice on where to insert blank lines",
+            metaDefault = True
           }
     }
 
