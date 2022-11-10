@@ -37,10 +37,10 @@ data PrinterOpts f = PrinterOpts
     poLetStyle :: f LetStyle,
     -- | How to align in keyword
     poInStyle :: f InStyle,
-    -- | Be less opinionated about spaces/newlines etc.
-    poRespectful :: f Bool,
     -- | Output Unicode syntax
-    poUnicode :: f Unicode
+    poUnicode :: f Unicode,
+    -- | Be less opinionated about spaces/newlines etc.
+    poRespectful :: f Bool
   }
   deriving (Generic)
 

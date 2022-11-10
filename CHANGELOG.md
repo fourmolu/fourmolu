@@ -1,3 +1,17 @@
+## Fourmolu 0.9.0.0
+
+New configuration options:
+
+* Add `let-style` and `in-style` configuration options ([#229](https://github.com/fourmolu/fourmolu/pull/229)). The default is set to `let-style: auto` and `in-style: right-align`, which should not reformat already formatted files, but allows users to format with `newline` without additional configuration.
+* Add `unicode` configuration ([#206](https://github.com/fourmolu/fourmolu/pull/206))
+
+Bug fixes:
+
+* Fix some edge cases with function arrows ([#247](https://github.com/fourmolu/fourmolu/pull/247))
+* Fix formatting of module header + export lists when `WARNING` or `DEPRECATED` pragma is present ([#244](https://github.com/fourmolu/fourmolu/pull/244))
+* Fixed a bug where an extra space was inserted before promoted types (e.g. `foo @'True`) ([#211](https://github.com/fourmolu/fourmolu/pull/211))
+* When `--respectful` is enabled, a `where` keyword on the line after the export list will not be moved up to the end of the previous line. ([#167](https://github.com/fourmolu/fourmolu/issues/167))
+
 ## Fourmolu 0.8.2.0
 
 * Add `multi-line-compact` option to `haddock-style` that will output `{-|` for multiline haddocks instead of `{- |` ([#130](https://github.com/fourmolu/fourmolu/pull/130))

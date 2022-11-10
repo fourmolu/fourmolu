@@ -109,20 +109,6 @@ singleTests =
           testCaseSuffix = suffix1
         },
       TestGroup
-        { label = "let-style",
-          testCases = (,,) <$> allOptions <*> allOptions <*> [2, 4],
-          updateConfig = \(letStyle, inStyle, indent) opts ->
-            opts
-              { poIndentation = pure indent,
-                poLetStyle = pure letStyle,
-                poInStyle = pure inStyle
-              },
-          showTestCase = \(letStyle, inStyle, indent) ->
-            printf "%s + %s (indent=%d)" (show letStyle) (show inStyle) indent,
-          testCaseSuffix = \(letStyle, inStyle, indent) ->
-            suffixWith [show letStyle, show inStyle, "indent=" ++ show indent]
-        },
-      TestGroup
         { label = "record-brace-space",
           testCases = allOptions,
           updateConfig = \recordBraceSpace opts -> opts {poRecordBraceSpace = pure recordBraceSpace},
@@ -150,16 +136,30 @@ singleTests =
           testCaseSuffix = suffix1
         },
       TestGroup
-        { label = "respectful",
-          testCases = allOptions,
-          updateConfig = \respectful opts -> opts {poRespectful = pure respectful},
-          showTestCase = show,
-          testCaseSuffix = suffix1
+        { label = "let-style",
+          testCases = (,,) <$> allOptions <*> allOptions <*> [2, 4],
+          updateConfig = \(letStyle, inStyle, indent) opts ->
+            opts
+              { poIndentation = pure indent,
+                poLetStyle = pure letStyle,
+                poInStyle = pure inStyle
+              },
+          showTestCase = \(letStyle, inStyle, indent) ->
+            printf "%s + %s (indent=%d)" (show letStyle) (show inStyle) indent,
+          testCaseSuffix = \(letStyle, inStyle, indent) ->
+            suffixWith [show letStyle, show inStyle, "indent=" ++ show indent]
         },
       TestGroup
         { label = "unicode-syntax",
           testCases = allOptions,
           updateConfig = \unicodePreference options -> options {poUnicode = pure unicodePreference},
+          showTestCase = show,
+          testCaseSuffix = suffix1
+        },
+      TestGroup
+        { label = "respectful",
+          testCases = allOptions,
+          updateConfig = \respectful opts -> opts {poRespectful = pure respectful},
           showTestCase = show,
           testCaseSuffix = suffix1
         }
