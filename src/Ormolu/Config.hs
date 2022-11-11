@@ -34,6 +34,7 @@ module Ormolu.Config
     fillMissingPrinterOpts,
     CommaStyle (..),
     HaddockPrintStyle (..),
+    HaddockPrintStyleModule (..),
     ImportExportStyle (..),
     LetStyle (..),
     InStyle (..),
@@ -227,6 +228,7 @@ overFieldsM f $(unpackFieldsWithSuffix 'PrinterOpts "0") = do
   poRecordBraceSpace <- f poRecordBraceSpace0
   poNewlinesBetweenDecls <- f poNewlinesBetweenDecls0
   poHaddockStyle <- f poHaddockStyle0
+  poHaddockStyleModule <- f poHaddockStyleModule0
   poLetStyle <- f poLetStyle0
   poInStyle <- f poInStyle0
   poUnicode <- f poUnicode0
@@ -343,6 +345,14 @@ printerOptsMeta =
                 "How to print Haddock comments (choices: %s)"
                 (showAllValues haddockPrintStyleMap),
             metaDefault = HaddockMultiLine
+          },
+      poHaddockStyleModule =
+        PrinterOptsFieldMeta
+          { metaName = "haddock-style-module",
+            metaGetField = poHaddockStyleModule,
+            metaPlaceholder = "STYLE",
+            metaHelp = "How to print module docstring",
+            metaDefault = PrintStyleInherit
           },
       poLetStyle =
         PrinterOptsFieldMeta
@@ -481,6 +491,18 @@ instance PrinterOptsFieldType HaddockPrintStyle where
   parseJSON = parseJSONWith haddockPrintStyleMap "HaddockPrintStyle"
   parseText = parseTextWith haddockPrintStyleMap
   showText = show . showTextWith haddockPrintStyleMap
+
+instance PrinterOptsFieldType HaddockPrintStyleModule where
+  parseJSON = \case
+    Aeson.Null -> pure PrintStyleInherit
+    Aeson.String "" -> pure PrintStyleInherit
+    v -> PrintStyleOverride <$> parseJSON v
+  parseText = \case
+    "" -> pure PrintStyleInherit
+    s -> PrintStyleOverride <$> parseText s
+  showText = \case
+    PrintStyleInherit -> "same as 'haddock-style'"
+    PrintStyleOverride x -> showText x
 
 instance PrinterOptsFieldType ImportExportStyle where
   parseJSON = parseJSONWith importExportStyleMap "ImportExportStyle"

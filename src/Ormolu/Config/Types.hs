@@ -6,6 +6,7 @@ module Ormolu.Config.Types
     CommaStyle (..),
     FunctionArrowsStyle (..),
     HaddockPrintStyle (..),
+    HaddockPrintStyleModule (..),
     ImportExportStyle (..),
     LetStyle (..),
     InStyle (..),
@@ -33,6 +34,8 @@ data PrinterOpts f = PrinterOpts
     poNewlinesBetweenDecls :: f Int,
     -- | How to print doc comments
     poHaddockStyle :: f HaddockPrintStyle,
+    -- | How to print the module docstring (defaults to poHaddockStyle)
+    poHaddockStyleModule :: f HaddockPrintStyleModule,
     -- | Styling of let blocks
     poLetStyle :: f LetStyle,
     -- | How to align in keyword
@@ -59,6 +62,11 @@ data HaddockPrintStyle
   | HaddockMultiLine
   | HaddockMultiLineCompact
   deriving (Eq, Show, Enum, Bounded)
+
+data HaddockPrintStyleModule
+  = PrintStyleInherit
+  | PrintStyleOverride HaddockPrintStyle
+  deriving (Eq, Show)
 
 data ImportExportStyle
   = ImportExportLeading

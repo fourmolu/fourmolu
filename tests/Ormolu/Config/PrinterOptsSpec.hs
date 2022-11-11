@@ -28,6 +28,7 @@ import Ormolu
     detectSourceType,
     ormolu,
   )
+import Ormolu.Config (HaddockPrintStyleModule (..))
 import Ormolu.Exception (OrmoluException, printOrmoluException)
 import Ormolu.Terminal (ColorMode (..), runTerm)
 import Ormolu.Utils.IO (readFileUtf8, writeFileUtf8)
@@ -130,10 +131,24 @@ singleTests =
         },
       TestGroup
         { label = "haddock-style",
-          testCases = allOptions,
-          updateConfig = \haddockStyle opts -> opts {poHaddockStyle = pure haddockStyle},
-          showTestCase = show,
-          testCaseSuffix = suffix1
+          testCases = (,) <$> allOptions <*> (PrintStyleInherit : map PrintStyleOverride allOptions),
+          updateConfig = \(haddockStyle, haddockStyleModule) opts ->
+            opts
+              { poHaddockStyle = pure haddockStyle,
+                poHaddockStyleModule = pure haddockStyleModule
+              },
+          showTestCase = \(haddockStyle, haddockStyleModule) ->
+            show haddockStyle
+              ++ case haddockStyleModule of
+                PrintStyleInherit -> ""
+                PrintStyleOverride style -> " + module=" ++ show style,
+          testCaseSuffix = \(haddockStyle, haddockStyleModule) ->
+            suffixWith
+              [ show haddockStyle,
+                case haddockStyleModule of
+                  PrintStyleInherit -> ""
+                  PrintStyleOverride style -> "module=" ++ show style
+              ]
         },
       TestGroup
         { label = "let-style",
