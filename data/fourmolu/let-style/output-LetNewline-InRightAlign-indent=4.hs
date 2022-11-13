@@ -81,10 +81,7 @@ test_do = do
      in
         print (d ++ e)
 
-    let
-        f = 1
-     in
-        print f
+    let f = 1 in print f
 
 {-- list comprehension --}
 
