@@ -26,6 +26,11 @@ let_single_sig =
       a = 1
    in a + 2
 
+let_single_comment =
+  let -- a comment
+      a = 1
+   in a + 2
+
 let_multi =
   let a = 1
       b = 2
@@ -57,6 +62,9 @@ test_do = do
   let d = "hello"
       e = "world"
    in print (d ++ e)
+
+  let f = 1
+   in print f
 
 {-- list comprehension --}
 
