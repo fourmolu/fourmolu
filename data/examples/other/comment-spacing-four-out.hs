@@ -1,7 +1,7 @@
--- |Something.
+-- | Something.
 foo ::
-    -- |Foo.
+    -- | Foo.
     Int ->
-    -- |Bar.
+    -- | Bar.
     IO ()
 foo _ = pure () -- comment

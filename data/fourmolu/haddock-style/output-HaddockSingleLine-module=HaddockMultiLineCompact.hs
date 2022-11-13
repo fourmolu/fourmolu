@@ -1,5 +1,5 @@
 {-| This is a test multiline
- module haddock
+module haddock
 -}
 module Foo where
 
@@ -14,8 +14,8 @@ single2 :: Int
 multi1 :: Int
 
 -- |
---This is a multiline
---function haddock
+-- This is a multiline
+-- function haddock
 multi2 :: Int
 
 -- | This is a haddock

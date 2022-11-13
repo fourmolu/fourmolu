@@ -10,5 +10,5 @@ where
 
 {- $explanation
 
- Here it goes.
+Here it goes.
 -}

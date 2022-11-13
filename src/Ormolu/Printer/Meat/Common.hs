@@ -18,7 +18,6 @@ where
 
 import Control.Monad
 import Data.Foldable (traverse_)
-import Data.List (intersperse)
 import qualified Data.Text as T
 import GHC.Hs.Doc
 import GHC.Hs.Extension (GhcPs)
@@ -178,13 +177,20 @@ p_hsDoc' poHStyle hstyle needsNewline (L l str) = do
             maybe False ((> 1) . srcSpanStartCol) mSrcSpan
           ]
 
-  let txt' x = unless (T.null x) (txt x)
-      body s = sequence_ $ intersperse s $ map txt' docStringLines
+  let body sep' =
+        forM_ (zip docStringLines (True : repeat False)) $ \(x, isFirst) -> do
+          if isFirst
+            then do
+              -- prevent trailing space in multi-line comments
+              unless (not useSingleLineComments && T.null x) space
+            else do
+              sep'
+          unless (T.null x) (txt x)
 
   if useSingleLineComments
     then do
       txt $ "-- " <> haddockDelim
-      body $ newline >> txt "--"
+      body $ newline >> txt "--" >> space
     else do
       txt . T.concat $
         [ "{-",
