@@ -10,11 +10,10 @@ import Data.Maybe (maybeToList)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Development.GitRev
-import GHC.Driver.Ppr (showSDocDump)
+import GHC.Driver.Ppr (showSDocUnsafe)
 import GHC.Generics (Generic)
 import qualified GHC.Hs.Dump as Dump
 import GHC.SyntaxHighlighter
-import GHC.Utils.Outputable (defaultSDocContext)
 import qualified Language.Javascript.JSaddle.Warp.Extra as JSaddleWarp
 import Miso
 import Miso.String (MisoString, fromMisoString, ms)
@@ -96,6 +95,8 @@ viewModel model@Model {..} =
   div_
     []
     [ link_ [rel_ "stylesheet", href_ "bulma.min.css"],
+      link_ [rel_ "stylesheet", href_ "editor.css"],
+      script_ [] "new ClipboardJS('.copy-output');",
       section_ [class_ "section"] . pure . div_ [class_ "container is-fluid"] $
         [ h1_ [class_ "title"] [text "Ormolu Live"],
           div_
@@ -131,11 +132,26 @@ viewModel model@Model {..} =
             [class_ "columns"]
             [ div_
                 [class_ "column is-half is-flex"]
-                [ textarea_
-                    [class_ "textarea is-family-code", onInput SetInput, rows_ "20", autofocus_ True]
-                    [text input]
+                [ div_
+                    [class_ "editor"]
+                    [ div_
+                        [class_ "line-numbers"]
+                        (replicate (editorLineNumbers . fromMisoString $ input) (span_ [] [])),
+                      textarea_
+                        [class_ "is-family-code", onInput SetInput, rows_ "20", autofocus_ True]
+                        [text input]
+                    ]
                 ],
-              div_ [class_ "column is-half is-flex"] [out]
+              div_
+                [id_ "output", class_ "column is-half is-flex card is-shadowless is-radiusless"]
+                [ out,
+                  div_
+                    [class_ "card-content is-overlay"]
+                    [ button_
+                        [class_ "button copy-output", data_ "clipboard-target" "#output", styleInline_ "left:90%;margin-right:20px;"]
+                        [text "Copy"]
+                    ]
+                ]
             ]
         ]
           <> [ div_
@@ -238,10 +254,12 @@ viewModel model@Model {..} =
         printSnippet = \case
           O.ParsedSnippet O.ParseResult {..} ->
             T.pack
-              . showSDocDump defaultSDocContext
+              . showSDocUnsafe
               . Dump.showAstData Dump.NoBlankSrcSpan Dump.NoBlankEpAnnotations
               $ prParsedSource
           O.RawSnippet r -> r
+
+    editorLineNumbers text = 1 + T.count "\n" text
 
 extractOrmoluException :: SomeException -> Either String O.OrmoluException
 extractOrmoluException = \case

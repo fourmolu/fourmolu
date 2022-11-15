@@ -17,6 +17,7 @@ module Ormolu.Utils
     groupBy',
     HasSrcSpan (..),
     getLoc',
+    matchAddEpAnn,
   )
 where
 
@@ -26,6 +27,7 @@ import qualified Data.List.NonEmpty as NE
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified GHC.Data.Strict as Strict
 import GHC.Driver.Ppr
 import GHC.DynFlags (baseDynFlags)
 import GHC.Hs
@@ -77,7 +79,7 @@ splitDocString docStr =
         . dropWhileEnd T.null
         . fmap (T.stripEnd . T.pack)
         . lines
-        $ unpackHDS docStr
+        $ renderHsDocString docStr
     -- We cannot have the first character to be a dollar because in that
     -- case it'll be a parse error (apparently collides with named docs
     -- syntax @-- $name@ somehow).
@@ -98,7 +100,7 @@ incSpanLine i = \case
               line = srcLocLine x
               col = srcLocCol x
            in mkRealSrcLoc file (line + i) col
-     in RealSrcSpan (mkRealSrcSpan (incLine start) (incLine end)) Nothing
+     in RealSrcSpan (mkRealSrcSpan (incLine start) (incLine end)) Strict.Nothing
   UnhelpfulSpan x -> UnhelpfulSpan x
 
 -- | Do two declarations have a blank between them?
@@ -139,3 +141,10 @@ instance HasSrcSpan (SrcSpanAnn' ann) where
 
 getLoc' :: HasSrcSpan l => GenLocated l a -> SrcSpan
 getLoc' = loc' . getLoc
+
+-- | Check whether the given 'AnnKeywordId' or its Unicode variant is in an
+-- 'AddEpAnn', and return the 'EpaLocation' if so.
+matchAddEpAnn :: AnnKeywordId -> AddEpAnn -> Maybe EpaLocation
+matchAddEpAnn annId (AddEpAnn annId' loc)
+  | annId == annId' || unicodeAnn annId == annId' = Just loc
+  | otherwise = Nothing
