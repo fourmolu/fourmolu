@@ -10,8 +10,8 @@ module Ormolu.Printer.Meat.Common
     p_rdrName,
     p_qualName,
     p_infixDefHelper,
-    p_hsDocString,
-    p_hsDocString',
+    p_hsDoc,
+    p_hsDoc',
     p_sourceText,
   )
 where
@@ -21,6 +21,7 @@ import Data.Foldable (traverse_)
 import Data.List (intersperse)
 import qualified Data.Text as T
 import GHC.Hs.Doc
+import GHC.Hs.Extension (GhcPs)
 import GHC.Hs.ImpExp
 import GHC.Parser.Annotation
 import GHC.Types.Name.Occurrence (OccName (..))
@@ -133,30 +134,30 @@ p_infixDefHelper isInfix indentArgs name args =
         inciIf indentArgs $ sitcc (sep breakpoint sitcc args)
 
 -- | Print a Haddock.
-p_hsDocString ::
+p_hsDoc ::
   -- | Haddock style
   HaddockStyle ->
   -- | Finish the doc string with a newline
   Bool ->
-  -- | The doc string to render
-  LHsDocString ->
+  -- | The 'LHsDoc' to render
+  LHsDoc GhcPs ->
   R ()
-p_hsDocString hstyle needsNewline lstr = do
+p_hsDoc hstyle needsNewline lstr = do
   poHStyle <- getPrinterOpt poHaddockStyle
-  p_hsDocString' poHStyle hstyle needsNewline lstr
+  p_hsDoc' poHStyle hstyle needsNewline lstr
 
 -- | Print a Haddock.
-p_hsDocString' ::
+p_hsDoc' ::
   -- | 'haddock-style' configuration option
   HaddockPrintStyle ->
   -- | Haddock style
   HaddockStyle ->
   -- | Finish the doc string with a newline
   Bool ->
-  -- | The doc string to render
-  LHsDocString ->
+  -- | The 'LHsDoc' to render
+  LHsDoc GhcPs ->
   R ()
-p_hsDocString' poHStyle hstyle needsNewline (L l str) = do
+p_hsDoc' poHStyle hstyle needsNewline (L l str) = do
   let isCommentSpan = \case
         HaddockSpan _ _ -> True
         CommentSpan _ -> True
@@ -165,18 +166,20 @@ p_hsDocString' poHStyle hstyle needsNewline (L l str) = do
   -- Make sure the Haddock is separated by a newline from other comments.
   when goesAfterComment newline
 
+  let docStringLines = splitDocString $ hsDocString str
+
   mSrcSpan <- getSrcSpan l
 
   let useSingleLineComments =
         or
           [ poHStyle == HaddockSingleLine,
-            length docLines <= 1,
+            length docStringLines <= 1,
             -- Use multiple single-line comments when the whole comment is indented
             maybe False ((> 1) . srcSpanStartCol) mSrcSpan
           ]
 
   let txt' x = unless (T.null x) (txt x)
-      body s = sequence_ $ intersperse s $ map txt' docLines
+      body s = sequence_ $ intersperse s $ map txt' docStringLines
 
   if useSingleLineComments
     then do
@@ -205,7 +208,6 @@ p_hsDocString' poHStyle hstyle needsNewline (L l str) = do
   when needsNewline newline
   traverse_ (setSpanMark . HaddockSpan hstyle) mSrcSpan
   where
-    docLines = splitDocString str
     haddockDelim =
       case hstyle of
         Pipe -> "|"

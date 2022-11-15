@@ -65,7 +65,7 @@ p_hsModuleHeader HsModule {..} moduleName = do
       getPrinterOpt poHaddockStyleModule >>= \case
         PrintStyleInherit -> getPrinterOpt poHaddockStyle
         PrintStyleOverride style -> pure style
-    forM_ hsmodHaddockModHeader (p_hsDocString' poHStyle Pipe True)
+    forM_ hsmodHaddockModHeader (p_hsDoc' poHStyle Pipe True)
     p_hsmodName name
 
   forM_ hsmodDeprecMessage $ \w -> do
