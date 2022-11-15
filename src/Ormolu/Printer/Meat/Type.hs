@@ -337,7 +337,7 @@ p_conDeclField ConDeclField {..} = do
       breakpoint
       sitcc . inci $ p_hsType (unLoc cd_fld_type)
   when (commaStyle == Leading) $
-    mapM_ (inciByFrac (-1) . (newline >>) . p_hsDocString Caret False) cd_fld_doc
+    mapM_ (inciByFrac (-1) . (newline >>) . p_hsDoc Caret False) cd_fld_doc
 
 p_lhsTypeArg :: LHsTypeArg GhcPs -> R ()
 p_lhsTypeArg = \case

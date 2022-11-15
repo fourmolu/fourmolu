@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -366,8 +367,8 @@ p_hsCmd' s = \case
     p_lamcase variant cmdPlacement p_hsCmd mgroup
   HsCmdIf _ _ if' then' else' ->
     p_if cmdPlacement p_hsCmd if' then' else'
-  HsCmdLet epAnnLet _ localBinds _ c ->
-    p_let (s == S) p_hsCmd epAnnLet localBinds c
+  HsCmdLet _ letToken localBinds _ c ->
+    p_let (s == S) p_hsCmd letToken localBinds c
   HsCmdDo _ es -> do
     txt "do"
     p_stmts cmdPlacement (p_hsCmd' S) es
@@ -746,8 +747,8 @@ p_hsExpr' s = \case
     txt "if"
     breakpoint
     inci . inci $ sep newline (located' (p_grhs RightArrow)) guards
-  HsLet epAnnLet _ localBinds _ e ->
-    p_let (s == S) p_hsExpr epAnnLet localBinds e
+  HsLet _ letToken localBinds _ e ->
+    p_let (s == S) p_hsExpr letToken localBinds e
   HsDo _ doFlavor es -> do
     let doBody moduleName header = do
           forM_ moduleName $ \m -> atom m *> txt "."
@@ -1003,16 +1004,16 @@ p_let ::
   -- | Render
   (body -> R ()) ->
   -- | Annotation for the `let` block
-  EpAnn AnnsLet ->
+  LHsToken "let" GhcPs ->
   HsLocalBinds GhcPs ->
   LocatedA body ->
   R ()
-p_let inDo render epAnnLet localBinds e = p_let' inDo letLoc localBinds $ Just (located e render)
+p_let inDo render letToken localBinds e = p_let' inDo letLoc localBinds $ Just (located e render)
   where
     letLoc =
-      case epAnnLet of
-        EpAnn {anns} -> Just (alLet anns)
-        EpAnnNotUsed -> Nothing
+      case getLoc letToken of
+        TokenLoc loc -> Just loc
+        NoTokenLoc -> Nothing
 
 p_let' ::
   -- | True if in do-block
