@@ -425,8 +425,7 @@ unicodeText `whenUnicodeOtherwise` asciiText = do
   unicodePrinterOption <- getPrinterOpt poUnicode
   unicodeExtensionIsEnabled <- isExtensionEnabled UnicodeSyntax
   txt $ case unicodePrinterOption of
-    UnicodeDetect | unicodeExtensionIsEnabled -> unicodeText
-    UnicodeDetect | otherwise -> asciiText
+    UnicodeDetect -> if unicodeExtensionIsEnabled then unicodeText else asciiText
     UnicodeAlways -> unicodeText
     UnicodeNever -> asciiText
 
