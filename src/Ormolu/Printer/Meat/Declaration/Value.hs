@@ -1243,14 +1243,16 @@ p_hsQuote epAnn = \case
   where
     quote :: Text -> R () -> R ()
     quote name body = do
-      txt "["
-      txt name
-      txt "|"
+      let (startQuote, endQuote) =
+            if Text.null name
+              then (token'openExpQuote, token'closeQuote)
+              else (txt "[" >> txt name >> txt "|", txt "|]")
+      startQuote
       breakpoint'
       inci $ do
         dontUseBraces body
         breakpoint'
-        txt "|]"
+        endQuote
     -- With StarIsType, type and declaration brackets might end with a *,
     -- so we have to insert a space in the end to prevent the (mis)parsing
     -- of an (*|) operator.

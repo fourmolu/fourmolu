@@ -74,6 +74,9 @@ instance (Eq a) => Eq (Tree a) where
 add1 :: Quote m => Int -> m Exp
 add1 x = [|x + 1|]
 
+decl :: Quote m => m Decl
+decl = [d|data Foo|]
+
 monad = do
     putStr "x: "
     l <- getLine
