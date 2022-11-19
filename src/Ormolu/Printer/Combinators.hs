@@ -38,7 +38,6 @@ module Ormolu.Printer.Combinators
     breakpoint,
     breakpoint',
     getPrinterOpt,
-    whenUnicodeOtherwise,
 
     -- ** Formatting lists
     sep,
@@ -183,17 +182,6 @@ breakpoint = vlayout space newline
 -- > breakpoint' = vlayout (return ()) newline
 breakpoint' :: R ()
 breakpoint' = vlayout (return ()) newline
-
--- | Write the one text or the other depending on whether Unicode is enabled.
-whenUnicodeOtherwise :: Text -> Text -> R ()
-unicodeText `whenUnicodeOtherwise` asciiText = do
-  unicodePrinterOption <- getPrinterOpt poUnicode
-  unicodeExtensionIsEnabled <- isExtensionEnabled UnicodeSyntax
-  txt $ case unicodePrinterOption of
-    UnicodeDetect | unicodeExtensionIsEnabled -> unicodeText
-    UnicodeDetect | otherwise -> asciiText
-    UnicodeAlways -> unicodeText
-    UnicodeNever -> asciiText
 
 ----------------------------------------------------------------------------
 -- Formatting lists
@@ -430,6 +418,17 @@ closeQuote = "⟧" `whenUnicodeOtherwise` "|]"
 -- | Print @⊸@ or @%1 ->@ as appropriate.
 lolly :: R ()
 lolly = "⊸" `whenUnicodeOtherwise` "%1 ->"
+
+-- | Write the one text or the other depending on whether Unicode is enabled.
+whenUnicodeOtherwise :: Text -> Text -> R ()
+unicodeText `whenUnicodeOtherwise` asciiText = do
+  unicodePrinterOption <- getPrinterOpt poUnicode
+  unicodeExtensionIsEnabled <- isExtensionEnabled UnicodeSyntax
+  txt $ case unicodePrinterOption of
+    UnicodeDetect | unicodeExtensionIsEnabled -> unicodeText
+    UnicodeDetect | otherwise -> asciiText
+    UnicodeAlways -> unicodeText
+    UnicodeNever -> asciiText
 
 ----------------------------------------------------------------------------
 -- Placement
