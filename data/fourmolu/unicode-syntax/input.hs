@@ -87,6 +87,7 @@ arrow f g h = proc x -> do
     g -< 2 * y
     let z = x + y
     t <- h -< x * z
+    (| f (\y -> returnA -< y) |) ys
     returnA -< t + z
 
 elem :: (Eq a) => a -> [a] -> Bool
