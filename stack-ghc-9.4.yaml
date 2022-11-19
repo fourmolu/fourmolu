@@ -1,0 +1,5 @@
+resolver: nightly-2022-11-19
+
+flags:
+  fourmolu:
+    fixity-th: false

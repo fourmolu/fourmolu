@@ -16,6 +16,7 @@ jobs:
         stack_yaml:
           - stack-ghc-9.0.yaml
           - stack-ghc-9.2.yaml
+          - stack-ghc-9.4.yaml
           # technically redundant, since this should be a symlink,
           # but just to be extra sure
           - stack.yaml
