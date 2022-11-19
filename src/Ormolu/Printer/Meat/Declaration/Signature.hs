@@ -133,7 +133,7 @@ p_specSig name ts InlinePragma {..} = pragmaBraces $ do
   space
   p_rdrName name
   space
-  dcolon
+  token'dcolon
   breakpoint
   inci $ sep commaDel (located' p_hsSigType) ts
 
@@ -204,7 +204,7 @@ p_completeSig cs' mty =
       sep commaDel p_rdrName cs
       forM_ mty $ \ty -> do
         space
-        dcolon
+        token'dcolon
         breakpoint
         inci (p_rdrName ty)
 

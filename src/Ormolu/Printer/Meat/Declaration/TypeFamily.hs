@@ -75,7 +75,7 @@ p_injectivityAnn (InjectivityAnn _ a bs) = do
   space
   p_rdrName a
   space
-  rarrow
+  token'rarrow
   space
   sep space p_rdrName bs
 

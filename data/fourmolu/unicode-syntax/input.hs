@@ -74,6 +74,9 @@ instance (Eq a) => Eq (Tree a) where
 add1 :: Quote m => Int -> m Exp
 add1 x = [|x + 1|]
 
+decl :: Quote m => m Decl
+decl = [d|data Foo|]
+
 monad = do
     putStr "x: "
     l <- getLine
@@ -84,6 +87,7 @@ arrow f g h = proc x -> do
     g -< 2 * y
     let z = x + y
     t <- h -< x * z
+    (| f (\y -> returnA -< y) |) ys
     returnA -< t + z
 
 elem :: (Eq a) => a -> [a] -> Bool
