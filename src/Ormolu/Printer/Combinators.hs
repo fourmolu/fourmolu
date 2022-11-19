@@ -366,69 +366,69 @@ commaDel' = \case
 equals :: R ()
 equals = interferingTxt "="
 
+----------------------------------------------------------------------------
+-- Token literals
 -- The names of the following literals are from GHC's
 -- @compiler/GHC/Parser/Lexer.x@.
 
-llarrowtail,
-  rrarrowtail,
-  darrow,
-  dcolon,
-  larrow,
-  larrowtail,
-  rarrow,
-  rarrowtail,
-  star,
-  forall,
-  oparenbar,
-  cparenbar,
-  openExpQuote,
-  closeQuote,
-  lolly ::
-    R ()
-
 -- | Print @⤛@ or @-<<@ as appropriate.
+llarrowtail :: R ()
 llarrowtail = "⤛" `whenUnicodeOtherwise` "-<<"
 
 -- | Print @⤜@ or @>>-@ as appropriate.
+rrarrowtail :: R ()
 rrarrowtail = "⤜" `whenUnicodeOtherwise` ">>-"
 
 -- | Print @⇒@ or @=>@ as appropriate.
+darrow :: R ()
 darrow = "⇒" `whenUnicodeOtherwise` "=>"
 
 -- | Print @∷@ or @::@ as appropriate.
+dcolon :: R ()
 dcolon = "∷" `whenUnicodeOtherwise` "::"
 
 -- | Print @←@ or @<-@ as appropriate.
+larrow :: R ()
 larrow = "←" `whenUnicodeOtherwise` "<-"
 
 -- | Print @⤙@ or @-<@ as appropriate.
+larrowtail :: R ()
 larrowtail = "⤙" `whenUnicodeOtherwise` "-<"
 
 -- | Print @→@ or @->@ as appropriate.
+rarrow :: R ()
 rarrow = "→" `whenUnicodeOtherwise` "->"
 
 -- | Print @⤚@ or @>-@ as appropriate.
+rarrowtail :: R ()
 rarrowtail = "⤚" `whenUnicodeOtherwise` ">-"
 
 -- | Print @★@ or @*@ as appropriate.
+star :: R ()
 star = "★" `whenUnicodeOtherwise` "*"
 
 -- | Print @∀@ or @forall@ as appropriate.
+forall :: R ()
 forall = "∀" `whenUnicodeOtherwise` "forall"
 
 -- | Print @⦇@ or @(|@ as appropriate.
+oparenbar :: R ()
 oparenbar = "⦇" `whenUnicodeOtherwise` "(|"
 
 -- | Print @⦈@ or @|)@ as appropriate.
+cparenbar :: R ()
 cparenbar = "⦈" `whenUnicodeOtherwise` "|)"
 
 -- | Print @⟦@ or @[|@ as appropriate.
+openExpQuote :: R ()
 openExpQuote = "⟦" `whenUnicodeOtherwise` "[|"
 
 -- | Print @⟧@ or @|]@ as appropriate.
+closeQuote :: R ()
 closeQuote = "⟧" `whenUnicodeOtherwise` "|]"
 
 -- | Print @⊸@ or @%1 ->@ as appropriate.
+lolly :: R ()
 lolly = "⊸" `whenUnicodeOtherwise` "%1 ->"
 
 ----------------------------------------------------------------------------
