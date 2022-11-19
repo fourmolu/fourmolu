@@ -276,7 +276,7 @@ p_match' placer render style isInfix strictness m_pats GRHSs {..} = do
         Function _ -> space >> inci equals
         PatternBind -> space >> inci equals
         s | isCase s && hasGuards -> return ()
-        _ -> space >> rarrow
+        _ -> space >> token'rarrow
     switchLayout [patGrhssSpan] $
       placeHanging placement p_body
     inci p_where
@@ -304,7 +304,7 @@ p_grhs' parentPlacement placer render style (GRHS _ guards body) =
       space
       inci $ case style of
         EqualSign -> equals
-        RightArrow -> rarrow
+        RightArrow -> token'rarrow
       -- If we have a sequence of guards and it is placed in the normal way,
       -- then we indent one level more for readability. Otherwise (all
       -- guards are on the same line) we do not need to indent, as it would
@@ -336,10 +336,10 @@ p_hsCmd' s = \case
     breakpoint
     inci $ do
       case (arrType, rightToLeft) of
-        (HsFirstOrderApp, True) -> larrowtail
-        (HsHigherOrderApp, True) -> llarrowtail
-        (HsFirstOrderApp, False) -> rarrowtail
-        (HsHigherOrderApp, False) -> rrarrowtail
+        (HsFirstOrderApp, True) -> token'larrowtail
+        (HsHigherOrderApp, True) -> token'Larrowtail
+        (HsFirstOrderApp, False) -> token'rarrowtail
+        (HsHigherOrderApp, False) -> token'Rarrowtail
       placeHanging (exprPlacement (unLoc input)) $
         located r p_hsExpr
   HsCmdArrForm _ form Prefix _ cmds -> banana s $ do
@@ -425,7 +425,7 @@ p_stmt' placer render = \case
   BindStmt _ p f@(getLocA -> l) -> do
     located p p_pat
     space
-    larrow
+    token'larrow
     let loc = getLocA p
         placement
           | isOneLineSpan (mkSrcSpan (srcSpanEnd loc) (srcSpanStart l)) = placer (unLoc f)
@@ -853,7 +853,7 @@ p_hsExpr' s = \case
       breakpoint
       inci (p_pat x)
       breakpoint
-    rarrow
+    token'rarrow
     placeHanging (cmdTopPlacement (unLoc e)) $
       located e (p_hsCmdTop N)
   HsStatic _ e -> do
@@ -877,7 +877,7 @@ p_patSynBind PSB {..} = do
         case psb_dir of
           Unidirectional ->
             switchLayout pattern_def_spans $ do
-              larrow
+              token'larrow
               breakpoint
               located psb_def p_pat
           ImplicitBidirectional ->
@@ -887,7 +887,7 @@ p_patSynBind PSB {..} = do
               located psb_def p_pat
           ExplicitBidirectional mgroup -> do
             switchLayout pattern_def_spans $ do
-              larrow
+              token'larrow
               breakpoint
               located psb_def p_pat
             breakpoint
@@ -1146,7 +1146,7 @@ p_pat = \case
   ViewPat _ expr pat -> sitcc $ do
     located expr p_hsExpr
     space
-    rarrow
+    token'rarrow
     breakpoint
     inci (located pat p_pat)
   SplicePat _ splice -> p_hsSplice splice

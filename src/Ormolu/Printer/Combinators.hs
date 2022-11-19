@@ -63,21 +63,21 @@ module Ormolu.Printer.Combinators
     commaDel,
     commaDelImportExport,
     equals,
-    llarrowtail,
-    rrarrowtail,
-    darrow,
-    dcolon,
-    larrow,
-    larrowtail,
-    rarrow,
-    rarrowtail,
-    star,
-    forall,
-    oparenbar,
-    cparenbar,
-    openExpQuote,
-    closeQuote,
-    lolly,
+    token'Larrowtail,
+    token'Rarrowtail,
+    token'darrow,
+    token'dcolon,
+    token'larrow,
+    token'larrowtail,
+    token'rarrow,
+    token'rarrowtail,
+    token'star,
+    token'forall,
+    token'oparenbar,
+    token'cparenbar,
+    token'openExpQuote,
+    token'closeQuote,
+    token'lolly,
 
     -- ** Stateful markers
     SpanMark (..),
@@ -360,64 +360,64 @@ equals = interferingTxt "="
 -- @compiler/GHC/Parser/Lexer.x@.
 
 -- | Print @⤛@ or @-<<@ as appropriate.
-llarrowtail :: R ()
-llarrowtail = "⤛" `whenUnicodeOtherwise` "-<<"
+token'Larrowtail :: R ()
+token'Larrowtail = "⤛" `whenUnicodeOtherwise` "-<<"
 
 -- | Print @⤜@ or @>>-@ as appropriate.
-rrarrowtail :: R ()
-rrarrowtail = "⤜" `whenUnicodeOtherwise` ">>-"
+token'Rarrowtail :: R ()
+token'Rarrowtail = "⤜" `whenUnicodeOtherwise` ">>-"
 
 -- | Print @⇒@ or @=>@ as appropriate.
-darrow :: R ()
-darrow = "⇒" `whenUnicodeOtherwise` "=>"
+token'darrow :: R ()
+token'darrow = "⇒" `whenUnicodeOtherwise` "=>"
 
 -- | Print @∷@ or @::@ as appropriate.
-dcolon :: R ()
-dcolon = "∷" `whenUnicodeOtherwise` "::"
+token'dcolon :: R ()
+token'dcolon = "∷" `whenUnicodeOtherwise` "::"
 
 -- | Print @←@ or @<-@ as appropriate.
-larrow :: R ()
-larrow = "←" `whenUnicodeOtherwise` "<-"
+token'larrow :: R ()
+token'larrow = "←" `whenUnicodeOtherwise` "<-"
 
 -- | Print @⤙@ or @-<@ as appropriate.
-larrowtail :: R ()
-larrowtail = "⤙" `whenUnicodeOtherwise` "-<"
+token'larrowtail :: R ()
+token'larrowtail = "⤙" `whenUnicodeOtherwise` "-<"
 
 -- | Print @→@ or @->@ as appropriate.
-rarrow :: R ()
-rarrow = "→" `whenUnicodeOtherwise` "->"
+token'rarrow :: R ()
+token'rarrow = "→" `whenUnicodeOtherwise` "->"
 
 -- | Print @⤚@ or @>-@ as appropriate.
-rarrowtail :: R ()
-rarrowtail = "⤚" `whenUnicodeOtherwise` ">-"
+token'rarrowtail :: R ()
+token'rarrowtail = "⤚" `whenUnicodeOtherwise` ">-"
 
 -- | Print @★@ or @*@ as appropriate.
-star :: R ()
-star = "★" `whenUnicodeOtherwise` "*"
+token'star :: R ()
+token'star = "★" `whenUnicodeOtherwise` "*"
 
 -- | Print @∀@ or @forall@ as appropriate.
-forall :: R ()
-forall = "∀" `whenUnicodeOtherwise` "forall"
+token'forall :: R ()
+token'forall = "∀" `whenUnicodeOtherwise` "forall"
 
 -- | Print @⦇@ or @(|@ as appropriate.
-oparenbar :: R ()
-oparenbar = "⦇" `whenUnicodeOtherwise` "(|"
+token'oparenbar :: R ()
+token'oparenbar = "⦇" `whenUnicodeOtherwise` "(|"
 
 -- | Print @⦈@ or @|)@ as appropriate.
-cparenbar :: R ()
-cparenbar = "⦈" `whenUnicodeOtherwise` "|)"
+token'cparenbar :: R ()
+token'cparenbar = "⦈" `whenUnicodeOtherwise` "|)"
 
 -- | Print @⟦@ or @[|@ as appropriate.
-openExpQuote :: R ()
-openExpQuote = "⟦" `whenUnicodeOtherwise` "[|"
+token'openExpQuote :: R ()
+token'openExpQuote = "⟦" `whenUnicodeOtherwise` "[|"
 
 -- | Print @⟧@ or @|]@ as appropriate.
-closeQuote :: R ()
-closeQuote = "⟧" `whenUnicodeOtherwise` "|]"
+token'closeQuote :: R ()
+token'closeQuote = "⟧" `whenUnicodeOtherwise` "|]"
 
 -- | Print @⊸@ or @%1 ->@ as appropriate.
-lolly :: R ()
-lolly = "⊸" `whenUnicodeOtherwise` "%1 ->"
+token'lolly :: R ()
+token'lolly = "⊸" `whenUnicodeOtherwise` "%1 ->"
 
 -- | Write the one text or the other depending on whether Unicode is enabled.
 whenUnicodeOtherwise :: Text -> Text -> R ()
