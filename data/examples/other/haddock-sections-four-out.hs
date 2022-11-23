@@ -1,9 +1,9 @@
 {- $weird #anchor#
 
- Section 1
+Section 1
 -}
 
 {- $normal
 
- Section 2
+Section 2
 -}

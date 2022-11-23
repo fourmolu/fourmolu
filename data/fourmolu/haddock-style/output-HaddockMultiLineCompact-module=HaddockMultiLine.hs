@@ -1,5 +1,5 @@
 {- | This is a test multiline
- module haddock
+module haddock
 -}
 module Foo where
 
@@ -10,7 +10,7 @@ single1 :: Int
 single2 :: Int
 
 {-| This is a multiline
- function haddock
+function haddock
 -}
 multi1 :: Int
 
@@ -22,10 +22,10 @@ multi2 :: Int
 
 {-| This is a haddock
 
- with two consecutive newlines
+with two consecutive newlines
 
 
- https://github.com/fourmolu/fourmolu/issues/172
+https://github.com/fourmolu/fourmolu/issues/172
 -}
 foo :: Int
 foo = 42
