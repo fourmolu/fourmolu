@@ -144,6 +144,12 @@ Specify a directory to recursively process all of its `.hs` files:
 $ fourmolu -i src
 ```
 
+Or find all files in a project with `git ls-files`:
+
+```console
+$ fourmolu --mode inplace $(git ls-files '*.hs')
+```
+
 To check if files are are already formatted (useful on CI):
 
 ```console
