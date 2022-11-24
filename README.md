@@ -146,7 +146,7 @@ $ fourmolu -i src
 
 Or find all files in a project with `git ls-files`:
 
-```console
+```bash
 $ fourmolu --mode inplace $(git ls-files '*.hs')
 # Or to avoid hitting command line length limits:
 $ git ls-files -z '*.hs' | xargs -0 fourmolu --mode inplace
