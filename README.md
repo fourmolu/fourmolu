@@ -138,10 +138,10 @@ Add `-i` (or `--mode inplace`) to replace the contents of the input file with th
 $ fourmolu -i Module.hs
 ```
 
-Use `find` to format a tree recursively:
+Specify a directory to recursively process all of its `.hs` files:
 
 ```console
-$ fourmolu -i $(find . -name '*.hs')
+$ fourmolu -i src
 ```
 
 Or find all files in a project with `git ls-files`:
@@ -150,15 +150,10 @@ Or find all files in a project with `git ls-files`:
 $ fourmolu --mode inplace $(git ls-files '*.hs')
 ```
 
-Or directly specify a directory (will recursively process all *.hs files)
-```console
-$ fourmolu -i src
-```
-
 To check if files are are already formatted (useful on CI):
 
 ```console
-$ fourmolu --mode check $(find . -name '*.hs')
+$ fourmolu --mode check src
 ```
 
 #### :zap: Beware git's `core.autocrlf` on Windows :zap:
