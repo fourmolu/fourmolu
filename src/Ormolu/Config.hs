@@ -428,7 +428,8 @@ functionArrowsStyleMap :: BijectiveMap FunctionArrowsStyle
 functionArrowsStyleMap =
   $( mkBijectiveMap
       [ ('TrailingArrows, "trailing"),
-        ('LeadingArrows, "leading")
+        ('LeadingArrows, "leading"),
+        ('LeadingArgsArrows, "leading-args")
       ]
    )
 

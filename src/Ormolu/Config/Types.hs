@@ -55,6 +55,7 @@ data CommaStyle
 data FunctionArrowsStyle
   = TrailingArrows
   | LeadingArrows
+  | LeadingArgsArrows
   deriving (Eq, Show, Enum, Bounded)
 
 data HaddockPrintStyle
