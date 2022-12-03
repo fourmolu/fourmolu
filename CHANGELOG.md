@@ -1,3 +1,50 @@
+## Fourmolu 0.10.0.0
+
+New options:
+
+* New `leading-args` option to `function-arrows` configuration that allows leading arrows only for function arguments ([#233](https://github.com/fourmolu/fourmolu/issues/233))
+* Add `haddock-style-module` option ([#135](https://github.com/fourmolu/fourmolu/pull/135))
+
+Improvements of existing options:
+
+* Add unicode formatting for quasiquotes and arrow brackets ([#261](https://github.com/fourmolu/fourmolu/pull/261))
+
+Bug fixes:
+
+* Fix bug with `let-style` changing single-line let-in blocks in `do` blocks to multiline.
+* Don't consider the first space after `--` part of the comment ([#255](https://github.com/fourmolu/fourmolu/pull/255))
+
+### Upstream changes:
+
+#### Ormolu 0.5.1.0
+
+* Imports are now sorted by package qualifier, if one is present.
+  [Issue 905](https://github.com/tweag/ormolu/issues/905).
+
+* Extension packs like `GHC2021` and `Haskell2010` are now bumped to the top of
+  the list of language pragmas. [Issue
+  922](https://github.com/tweag/ormolu/issues/922).
+
+* Fix formatting of `SCC` pragmas in `do` blocks. [Issue
+  925](https://github.com/tweag/ormolu/issues/925).
+
+* Support type applications in patterns. [Issue
+  930](https://github.com/tweag/ormolu/issues/930).
+
+* Handle `UnicodeSyntax` variants more consistently. [Issue
+  934](https://github.com/tweag/ormolu/issues/934).
+
+* Fix an inconsistency in formatting of types in GADT declarations in
+  certain cases. [PR 932](https://github.com/tweag/ormolu/pull/932).
+
+* Switched to `ghc-lib-parser-9.4`, which brings support for the following new
+  syntactic features:
+  * `\cases` via `LambdaCase`
+  * `OPAQUE` pragmas
+  * Unboxed sum type constructors like `(# | #)`.
+
+* Updated to `Cabal-syntax-3.8`, supporting `cabal-version: 3.8`.
+
 ## Fourmolu 0.9.0.0
 
 New configuration options:
