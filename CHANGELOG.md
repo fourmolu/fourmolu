@@ -2,7 +2,7 @@
 
 New configuration options:
 
-* Add `let-style` and `in-style` configuration options ([#229](https://github.com/fourmolu/fourmolu/pull/229)). The default is set to `let-style: auto` and `in-style: right-align`, which should not reformat already formatted files, but allows users to format with `newline` without additional configuration.
+* Add `let-style` and `in-style` configuration options ([#229](https://github.com/fourmolu/fourmolu/pull/229)). The default is set to `let-style: auto` and `in-style: right-align`, which should not reformat already formatted files _(with some exceptions depending on comment placement)_, but allows users to format with `newline` without additional configuration.
 * Add `unicode` configuration ([#206](https://github.com/fourmolu/fourmolu/pull/206))
 
 Bug fixes:

@@ -30,6 +30,13 @@ let_single_sig =
      in
         a + 2
 
+let_single_comment =
+    let
+        -- a comment
+        a = 1
+     in
+        a + 2
+
 let_multi =
     let
         a = 1
@@ -73,6 +80,8 @@ test_do = do
         e = "world"
      in
         print (d ++ e)
+
+    let f = 1 in print f
 
 {-- list comprehension --}
 

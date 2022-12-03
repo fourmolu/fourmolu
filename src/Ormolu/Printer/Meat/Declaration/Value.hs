@@ -1029,9 +1029,9 @@ p_let' inDo letLoc localBinds mBody = do
   letStyle <- getPrinterOpt poLetStyle
   inStyle <- getPrinterOpt poInStyle
   layout <- getLayout
-  -- isAllInline = True if whole "let ... in ..." is one line
-  let isAllInline = not inDo && layout == SingleLine
-  -- isBlockInline = True if each "let ..." + "in ..." block is one line
+  -- isAllInline = True if whole "let ... in ..." should be one line
+  let isAllInline = layout == SingleLine && (not inDo || isJust mBody)
+  -- isBlockInline = True if each "let ..." + "in ..." block should be one line
   let isBlockInline =
         case letStyle of
           _ | isAllInline -> True
@@ -1049,7 +1049,7 @@ p_let' inDo letLoc localBinds mBody = do
           LetInline -> True
           LetNewline -> False
           LetMixed -> numLocalBinds <= 1
-  -- isInShifted = True if "in" is right-aligned with "let"
+  -- isInShifted = True if "in" should be right-aligned with "let"
   let isInShifted = inDo || inStyle == InRightAlign
 
   -- helpers
