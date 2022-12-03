@@ -26,3 +26,8 @@ multi2 :: Int
 -- https://github.com/fourmolu/fourmolu/issues/172
 foo :: Int
 foo = 42
+
+-- | This is a haddock containing another haddock
+--
+-- > {\-# LANGUAGE ScopedTypeVariables #-\}
+haddock_in_haddock :: Int
