@@ -76,7 +76,7 @@ splitDocString shouldEscapeCommentBraces docStr =
   where
     r =
       fmap (escapeLeadingDollar . escapeCommentBraces)
-        . dropPaddingSpace
+        . dropPaddingSpace'
         . dropWhileEnd T.null
         . fmap (T.stripEnd . T.pack)
         . lines
@@ -88,6 +88,16 @@ splitDocString shouldEscapeCommentBraces docStr =
       case T.uncons txt of
         Just ('$', _) -> T.cons '\\' txt
         _ -> txt
+    dropPaddingSpace' =
+      case docStr of
+        -- comments using '--'
+        MultiLineDocString {} -> dropPaddingSpace
+        -- comments using '{-'
+        NestedDocString {} -> \case
+          x : xs | Just (' ', x') <- T.uncons x -> x' : xs
+          xs -> xs
+        -- don't care about generated
+        GeneratedDocString {} -> id
     dropPaddingSpace xs =
       case dropWhile T.null xs of
         [] -> []

@@ -19,6 +19,11 @@ function haddock
 -}
 multi2 :: Int
 
+{- | This is a multiline haddock
+     with indentation
+-}
+multi_indentation :: Int
+
 {- | This is a haddock
 
 with two consecutive newlines
