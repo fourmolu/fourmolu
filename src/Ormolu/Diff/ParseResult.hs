@@ -129,7 +129,7 @@ matchIgnoringSrcSpans a = genericQuery a
       case cast str1' :: Maybe HsDocString of
         Nothing -> Different []
         Just str1 ->
-          if splitDocString str0 == splitDocString str1
+          if splitDocString True str0 == splitDocString True str1
             then Same
             else Different []
     forLocated ::
