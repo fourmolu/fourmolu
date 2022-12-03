@@ -68,15 +68,15 @@ showOutputable = showSDoc baseDynFlags . ppr
 
 -- | Split and normalize a doc string. The result is a list of lines that
 -- make up the comment.
-splitDocString :: HsDocString -> [Text]
-splitDocString docStr =
+splitDocString :: Bool -> HsDocString -> [Text]
+splitDocString shouldEscapeCommentBraces docStr =
   case r of
     [] -> [""]
     _ -> r
   where
     r =
       fmap (escapeLeadingDollar . escapeCommentBraces)
-        . dropPaddingSpace
+        . dropPaddingSpace'
         . dropWhileEnd T.null
         . fmap (T.stripEnd . T.pack)
         . lines
@@ -88,6 +88,16 @@ splitDocString docStr =
       case T.uncons txt of
         Just ('$', _) -> T.cons '\\' txt
         _ -> txt
+    dropPaddingSpace' =
+      case docStr of
+        -- comments using '--'
+        MultiLineDocString {} -> dropPaddingSpace
+        -- comments using '{-'
+        NestedDocString {} -> \case
+          x : xs | Just (' ', x') <- T.uncons x -> x' : xs
+          xs -> xs
+        -- don't care about generated
+        GeneratedDocString {} -> id
     dropPaddingSpace xs =
       case dropWhile T.null xs of
         [] -> []
@@ -102,7 +112,10 @@ splitDocString docStr =
            in if leadingSpace x
                 then dropSpace <$> xs
                 else xs
-    escapeCommentBraces = T.replace "{-" "{\\-" . T.replace "-}" "-\\}"
+    escapeCommentBraces =
+      if shouldEscapeCommentBraces
+        then T.replace "{-" "{\\-" . T.replace "-}" "-\\}"
+        else id
 
 -- | Increment line number in a 'SrcSpan'.
 incSpanLine :: Int -> SrcSpan -> SrcSpan
