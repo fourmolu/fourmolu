@@ -33,11 +33,13 @@ module Ormolu.Config
     defaultPrinterOpts,
     fillMissingPrinterOpts,
     CommaStyle (..),
+    FunctionArrowsStyle (..),
     HaddockPrintStyle (..),
     HaddockPrintStyleModule (..),
     ImportExportStyle (..),
     LetStyle (..),
     InStyle (..),
+    Unicode (..),
 
     -- ** Loading Fourmolu configuration
     loadConfigFile,
