@@ -426,18 +426,13 @@ sourceTypeParser =
     ]
 
 printerOptsParser :: Parser PrinterOptsPartial
-printerOptsParser = overFieldsM mkOption printerOptsMeta
+printerOptsParser = parsePrinterOptsCLI mkOption
   where
-    mkOption :: PrinterOptsFieldMeta a -> Parser (Maybe a)
-    mkOption PrinterOptsFieldMeta {..} =
-      option (Just <$> eitherReader parseText) . mconcat $
-        [ long metaName,
-          metavar metaPlaceholder,
-          help metaHelp,
-          -- the CLI flag itself should default to Nothing, but we'll show
-          -- the default of the option as-if it weren't set in the config
-          -- file in the help text.
-          showDefaultWith (\_ -> showText metaDefault),
+    mkOption name helpText placeholder =
+      option (Just <$> eitherReader parsePrinterOptType) . mconcat $
+        [ long name,
+          help helpText,
+          metavar placeholder,
           value Nothing
         ]
 

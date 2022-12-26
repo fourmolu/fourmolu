@@ -89,8 +89,7 @@ library
         Ormolu.Utils.Fixity
         Ormolu.Utils.IO
     other-modules:
-        Ormolu.Config.TH
-        Ormolu.Config.Types
+        Ormolu.Config.Gen
 
     hs-source-dirs:   src
     other-modules:    GHC.DynFlags
@@ -116,7 +115,6 @@ library
         text >=0.2 && <3.0,
         -- fourmolu-only deps
         aeson >=1.0 && <3.0,
-        template-haskell,
         yaml >=0.11.6.0 && <1
 
     if flag(dev)
