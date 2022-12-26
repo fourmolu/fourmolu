@@ -40,6 +40,8 @@ module Ormolu.Config
     LetStyle (..),
     InStyle (..),
     Unicode (..),
+    parsePrinterOptsCLI,
+    parsePrinterOptType,
 
     -- ** Loading Fourmolu configuration
     loadConfigFile,
@@ -47,13 +49,6 @@ module Ormolu.Config
     FourmoluConfig (..),
     emptyConfig,
     ConfigFileLoadResult (..),
-
-    -- ** Utilities
-    PrinterOptsFieldMeta (..),
-    PrinterOptsFieldType (..),
-    printerOptsMeta,
-    overFields,
-    overFieldsM,
   )
 where
 
@@ -66,12 +61,10 @@ import qualified Data.Map.Strict as Map
 import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.String (fromString)
-import qualified Data.Text as Text
 import qualified Data.Yaml as Yaml
 import GHC.Generics (Generic)
 import qualified GHC.Types.SrcLoc as GHC
-import Ormolu.Config.TH
-import Ormolu.Config.Types
+import Ormolu.Config.Gen
 import Ormolu.Fixity (FixityMap)
 import Ormolu.Fixity.Parser (parseFixityDeclaration)
 import Ormolu.Terminal (ColorMode (..))
@@ -83,8 +76,6 @@ import System.Directory
   )
 import System.FilePath (splitPath, (</>))
 import Text.Megaparsec (errorBundlePretty)
-import Text.Printf (printf)
-import Text.Read (readEither)
 
 -- | Type of sources that can be formatted by Ormolu.
 data SourceType
@@ -196,19 +187,19 @@ instance Semigroup PrinterOptsPartial where
   (<>) = fillMissingPrinterOpts
 
 instance Monoid PrinterOptsPartial where
-  mempty = $(allNothing 'PrinterOpts)
+  mempty = emptyPrinterOpts
 
 instance Aeson.FromJSON PrinterOptsPartial where
   parseJSON =
     Aeson.withObject "PrinterOpts" $ \o ->
-      overFieldsM (parseField o) printerOptsMeta
+      parsePrinterOptsJSON (parseField o)
     where
-      parseField :: Aeson.Object -> PrinterOptsFieldMeta a -> Aeson.Parser (Maybe a)
-      parseField o PrinterOptsFieldMeta {metaName} = do
-        let key = fromString metaName
+      parseField :: Aeson.FromJSON a => Aeson.Object -> String -> Aeson.Parser (Maybe a)
+      parseField o keyName = do
+        let key = fromString keyName
         mValue <- o Aeson..:? key
         forM mValue $ \value ->
-          parseJSON value Aeson.<?> Aeson.Key key
+          Aeson.parseJSON value Aeson.<?> Aeson.Key key
 
 -- | A version of 'PrinterOpts' without empty fields.
 type PrinterOptsTotal = PrinterOpts Identity
@@ -216,325 +207,6 @@ type PrinterOptsTotal = PrinterOpts Identity
 deriving instance Eq PrinterOptsTotal
 
 deriving instance Show PrinterOptsTotal
-
-overFields :: (forall a. f a -> g a) -> PrinterOpts f -> PrinterOpts g
-overFields f = runIdentity . overFieldsM (Identity . f)
-
-overFieldsM :: Applicative m => (forall a. f a -> m (g a)) -> PrinterOpts f -> m (PrinterOpts g)
-overFieldsM f $(unpackFieldsWithSuffix 'PrinterOpts "0") = do
-  poIndentation <- f poIndentation0
-  poFunctionArrows <- f poFunctionArrows0
-  poCommaStyle <- f poCommaStyle0
-  poImportExportStyle <- f poImportExportStyle0
-  poIndentWheres <- f poIndentWheres0
-  poRecordBraceSpace <- f poRecordBraceSpace0
-  poNewlinesBetweenDecls <- f poNewlinesBetweenDecls0
-  poHaddockStyle <- f poHaddockStyle0
-  poHaddockStyleModule <- f poHaddockStyleModule0
-  poLetStyle <- f poLetStyle0
-  poInStyle <- f poInStyle0
-  poUnicode <- f poUnicode0
-  poRespectful <- f poRespectful0
-  return PrinterOpts {..}
-
-defaultPrinterOpts :: PrinterOptsTotal
-defaultPrinterOpts = overFields (Identity . metaDefault) printerOptsMeta
-
--- | Fill the field values that are 'Nothing' in the first argument
--- with the values of the corresponding fields of the second argument.
-fillMissingPrinterOpts ::
-  forall f.
-  Applicative f =>
-  PrinterOptsPartial ->
-  PrinterOpts f ->
-  PrinterOpts f
-fillMissingPrinterOpts p1 p2 = overFields fillField printerOptsMeta
-  where
-    fillField :: PrinterOptsFieldMeta a -> f a
-    fillField meta = maybe (metaGetField meta p2) pure (metaGetField meta p1)
-
--- | Source of truth for how PrinterOpts is parsed from configuration sources.
-data PrinterOptsFieldMeta a where
-  PrinterOptsFieldMeta ::
-    PrinterOptsFieldType a =>
-    { metaName :: String,
-      -- In future versions of GHC, this could be replaced with a
-      -- `metaProxyField = Proxy @"poIndentation"` field using `HasField`
-      -- https://gitlab.haskell.org/ghc/ghc/-/issues/20989
-      metaGetField :: forall f. PrinterOpts f -> f a,
-      metaPlaceholder :: String,
-      metaHelp :: String,
-      metaDefault :: a
-    } ->
-    PrinterOptsFieldMeta a
-
-printerOptsMeta :: PrinterOpts PrinterOptsFieldMeta
-printerOptsMeta =
-  PrinterOpts
-    { poIndentation =
-        PrinterOptsFieldMeta
-          { metaName = "indentation",
-            metaGetField = poIndentation,
-            metaPlaceholder = "WIDTH",
-            metaHelp = "Number of spaces per indentation step",
-            metaDefault = 4
-          },
-      poFunctionArrows =
-        PrinterOptsFieldMeta
-          { metaName = "function-arrows",
-            metaGetField = poFunctionArrows,
-            metaPlaceholder = "STYLE",
-            metaHelp = "Styling of arrows in type signatures",
-            metaDefault = TrailingArrows
-          },
-      poCommaStyle =
-        PrinterOptsFieldMeta
-          { metaName = "comma-style",
-            metaGetField = poCommaStyle,
-            metaPlaceholder = "STYLE",
-            metaHelp =
-              printf
-                "How to place commas in multi-line lists, records, etc. (choices: %s)"
-                (showAllValues commaStyleMap),
-            metaDefault = Leading
-          },
-      poImportExportStyle =
-        PrinterOptsFieldMeta
-          { metaName = "import-export-style",
-            metaGetField = poImportExportStyle,
-            metaPlaceholder = "STYLE",
-            metaHelp =
-              printf
-                "Styling of import/export lists (choices: %s)"
-                (showAllValues importExportStyleMap),
-            metaDefault = ImportExportDiffFriendly
-          },
-      poIndentWheres =
-        PrinterOptsFieldMeta
-          { metaName = "indent-wheres",
-            metaGetField = poIndentWheres,
-            metaPlaceholder = "BOOL",
-            metaHelp =
-              unwords
-                [ "Whether to indent 'where' bindings past the preceding body",
-                  "(rather than half-indenting the 'where' keyword)"
-                ],
-            metaDefault = False
-          },
-      poRecordBraceSpace =
-        PrinterOptsFieldMeta
-          { metaName = "record-brace-space",
-            metaGetField = poRecordBraceSpace,
-            metaPlaceholder = "BOOL",
-            metaHelp = "Whether to leave a space before an opening record brace",
-            metaDefault = False
-          },
-      poNewlinesBetweenDecls =
-        PrinterOptsFieldMeta
-          { metaName = "newlines-between-decls",
-            metaGetField = poNewlinesBetweenDecls,
-            metaPlaceholder = "HEIGHT",
-            metaHelp = "Number of spaces between top-level declarations",
-            metaDefault = 1
-          },
-      poHaddockStyle =
-        PrinterOptsFieldMeta
-          { metaName = "haddock-style",
-            metaGetField = poHaddockStyle,
-            metaPlaceholder = "STYLE",
-            metaHelp =
-              printf
-                "How to print Haddock comments (choices: %s)"
-                (showAllValues haddockPrintStyleMap),
-            metaDefault = HaddockMultiLine
-          },
-      poHaddockStyleModule =
-        PrinterOptsFieldMeta
-          { metaName = "haddock-style-module",
-            metaGetField = poHaddockStyleModule,
-            metaPlaceholder = "STYLE",
-            metaHelp = "How to print module docstring",
-            metaDefault = PrintStyleInherit
-          },
-      poLetStyle =
-        PrinterOptsFieldMeta
-          { metaName = "let-style",
-            metaGetField = poLetStyle,
-            metaPlaceholder = "STYLE",
-            metaHelp =
-              printf
-                "Styling of let blocks (choices: %s)"
-                (showAllValues letStyleMap),
-            metaDefault = LetAuto
-          },
-      poInStyle =
-        PrinterOptsFieldMeta
-          { metaName = "in-style",
-            metaGetField = poInStyle,
-            metaPlaceholder = "STYLE",
-            metaHelp = "How to align the 'in' keyword with respect to the 'let' keyword",
-            metaDefault = InRightAlign
-          },
-      poUnicode =
-        PrinterOptsFieldMeta
-          { metaName = "unicode",
-            metaGetField = poUnicode,
-            metaPlaceholder = "UNICODE",
-            metaHelp = printf "Output Unicode syntax (choices: %s)" (showAllValues unicodePreferenceMap),
-            metaDefault = UnicodeNever
-          },
-      poRespectful =
-        PrinterOptsFieldMeta
-          { metaName = "respectful",
-            metaGetField = poRespectful,
-            metaPlaceholder = "BOOL",
-            metaHelp = "Give the programmer more choice on where to insert blank lines",
-            metaDefault = True
-          }
-    }
-
-class PrinterOptsFieldType a where
-  parseJSON :: Aeson.Value -> Aeson.Parser a
-  default parseJSON :: Aeson.FromJSON a => Aeson.Value -> Aeson.Parser a
-  parseJSON = Aeson.parseJSON
-
-  parseText :: String -> Either String a
-  default parseText :: Read a => String -> Either String a
-  parseText = readEither
-
-  showText :: a -> String
-  default showText :: Show a => a -> String
-  showText = show
-
-instance PrinterOptsFieldType Int
-
-instance PrinterOptsFieldType Bool where
-  parseText = \case
-    "false" -> Right False
-    "true" -> Right True
-    unknown ->
-      Left . unlines $
-        [ "unknown value: " <> show unknown,
-          "Valid values are: \"false\" or \"true\""
-        ]
-
-commaStyleMap :: BijectiveMap CommaStyle
-commaStyleMap =
-  $( mkBijectiveMap
-      [ ('Leading, "leading"),
-        ('Trailing, "trailing")
-      ]
-   )
-
-functionArrowsStyleMap :: BijectiveMap FunctionArrowsStyle
-functionArrowsStyleMap =
-  $( mkBijectiveMap
-      [ ('TrailingArrows, "trailing"),
-        ('LeadingArrows, "leading"),
-        ('LeadingArgsArrows, "leading-args")
-      ]
-   )
-
-haddockPrintStyleMap :: BijectiveMap HaddockPrintStyle
-haddockPrintStyleMap =
-  $( mkBijectiveMap
-      [ ('HaddockSingleLine, "single-line"),
-        ('HaddockMultiLine, "multi-line"),
-        ('HaddockMultiLineCompact, "multi-line-compact")
-      ]
-   )
-
-importExportStyleMap :: BijectiveMap ImportExportStyle
-importExportStyleMap =
-  $( mkBijectiveMap
-      [ ('ImportExportLeading, "leading"),
-        ('ImportExportTrailing, "trailing"),
-        ('ImportExportDiffFriendly, "diff-friendly")
-      ]
-   )
-
-letStyleMap :: BijectiveMap LetStyle
-letStyleMap =
-  $( mkBijectiveMap
-      [ ('LetAuto, "auto"),
-        ('LetInline, "inline"),
-        ('LetNewline, "newline"),
-        ('LetMixed, "mixed")
-      ]
-   )
-
-inStyleMap :: BijectiveMap InStyle
-inStyleMap =
-  $( mkBijectiveMap
-      [ ('InLeftAlign, "left-align"),
-        ('InRightAlign, "right-align")
-      ]
-   )
-
-unicodePreferenceMap :: BijectiveMap Unicode
-unicodePreferenceMap =
-  $( mkBijectiveMap
-      [ ('UnicodeDetect, "detect"),
-        ('UnicodeAlways, "always"),
-        ('UnicodeNever, "never")
-      ]
-   )
-
-instance PrinterOptsFieldType CommaStyle where
-  parseJSON = parseJSONWith commaStyleMap "CommaStyle"
-  parseText = parseTextWith commaStyleMap
-  showText = show . showTextWith commaStyleMap
-
-instance PrinterOptsFieldType FunctionArrowsStyle where
-  parseJSON = parseJSONWith functionArrowsStyleMap "FunctionArrowStyle"
-  parseText = parseTextWith functionArrowsStyleMap
-  showText = show . showTextWith functionArrowsStyleMap
-
-instance PrinterOptsFieldType HaddockPrintStyle where
-  parseJSON = parseJSONWith haddockPrintStyleMap "HaddockPrintStyle"
-  parseText = parseTextWith haddockPrintStyleMap
-  showText = show . showTextWith haddockPrintStyleMap
-
-instance PrinterOptsFieldType HaddockPrintStyleModule where
-  parseJSON = \case
-    Aeson.Null -> pure PrintStyleInherit
-    Aeson.String "" -> pure PrintStyleInherit
-    v -> PrintStyleOverride <$> parseJSON v
-  parseText = \case
-    "" -> pure PrintStyleInherit
-    s -> PrintStyleOverride <$> parseText s
-  showText = \case
-    PrintStyleInherit -> "same as 'haddock-style'"
-    PrintStyleOverride x -> showText x
-
-instance PrinterOptsFieldType ImportExportStyle where
-  parseJSON = parseJSONWith importExportStyleMap "ImportExportStyle"
-  parseText = parseTextWith importExportStyleMap
-  showText = show . showTextWith importExportStyleMap
-
-instance PrinterOptsFieldType LetStyle where
-  parseJSON = parseJSONWith letStyleMap "LetStyle"
-  parseText = parseTextWith letStyleMap
-  showText = show . showTextWith letStyleMap
-
-instance PrinterOptsFieldType InStyle where
-  parseJSON = parseJSONWith inStyleMap "InStyle"
-  parseText = parseTextWith inStyleMap
-  showText = show . showTextWith inStyleMap
-
-instance PrinterOptsFieldType Unicode where
-  parseJSON = parseJSONWith unicodePreferenceMap "UnicodePreference"
-  parseText = parseTextWith unicodePreferenceMap
-  showText = show . showTextWith unicodePreferenceMap
-
-----------------------------------------------------------------------------
--- BijectiveMap helpers
-
-parseJSONWith :: BijectiveMap a -> String -> Aeson.Value -> Aeson.Parser a
-parseJSONWith mapping name =
-  Aeson.withText name (fromEither . parseTextWith mapping . Text.unpack)
-  where
-    fromEither = either Aeson.parseFail pure
 
 ----------------------------------------------------------------------------
 -- Loading Fourmolu configuration
