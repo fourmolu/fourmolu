@@ -19,5 +19,4 @@ jobs:
             - [ ] A file has been added to `changelog.d/`
             - [ ] "Configuration > Available options" section in `README.md` has been updated
             - [ ] "Configuration > Specifying configuration" section in `README.md` has been updated
-            - [ ] `fourmolu.yaml` updated to stay in sync with config in `README.md`
             - [ ] Tests have been added
