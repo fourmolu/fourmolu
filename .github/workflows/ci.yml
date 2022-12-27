@@ -36,6 +36,15 @@ jobs:
       # use development mode, to enable -Werror
       - run: stack test --flag fourmolu:dev
 
+  check_generated_files:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Check that generated files are up-to-date
+        run: |
+          config/generate.sh
+          git diff --exit-code
+
   cabal_test:
     strategy:
       matrix:
