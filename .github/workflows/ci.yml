@@ -36,9 +36,6 @@ jobs:
       # use development mode, to enable -Werror
       - run: stack test --flag fourmolu:dev
 
-      - name: Check that Cabal file was generated
-        run: git diff --exit-code '*.cabal'
-
   cabal_test:
     strategy:
       matrix:
