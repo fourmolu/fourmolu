@@ -44,12 +44,11 @@ This is optional, but is run in CI regardless.
 
 Considering configurability is the raison d'être of Fourmolu, you're probably making a change that involves adding a new configuration option. Ideally, you've already opened an issue asking for thoughts on the new configuration. Assuming you've already done all that, here's a checklist to follow to ensure you've touched all the right places:
 
-1. Add the configuration option to `PrinterOpts` in `Ormolu.Config.Types`
-    * Follow all the compiler errors
+1. Add the configuration option to `config/ConfigData.hs`
+
+1. Regenerate files with `config/generate.sh`
 
 1. Make the required changes to change styling based on the configuration option
-
-1. Update the in-repo `fourmolu.yaml` with your configuration option set to most closely imitate Ormolu's default style
 
 1. Add a test case to `Ormolu.Config.PrinterOptsSpec`
     * Add a corresponding `data/fourmolu/<label>/input.hs` file
