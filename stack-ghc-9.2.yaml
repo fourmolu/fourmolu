@@ -3,7 +3,3 @@ resolver: lts-20.0
 extra-deps:
   - Cabal-syntax-3.8.1.0
   - ghc-lib-parser-9.4.1.20220807
-
-flags:
-  fourmolu:
-    fixity-th: false

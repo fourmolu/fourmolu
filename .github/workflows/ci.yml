@@ -125,9 +125,6 @@ jobs:
       - name: Build
         run: |
           ARGS=(
-              # turn on fixity-th, for production build
-              --flag fourmolu:fixity-th
-
               # install binary to ./bin/
               --copy-bins --local-bin-path ./bin/
 
