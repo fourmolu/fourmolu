@@ -104,11 +104,11 @@ let showValuePretty
 
 let CLI =
       { help : Optional Text
-      , default_ : Optional Text
+      , default : Optional Text
       , placeholder : Optional Text
       }
 
-let CLITotal = { help : Text, default_ : Text, placeholder : Text }
+let CLITotal = { help : Text, default : Text, placeholder : Text }
 
 let CommaStyle =
       { name = "CommaStyle", constructors = [ Enum.Leading, Enum.Trailing ] }
@@ -217,8 +217,8 @@ let Option =
       , fieldName : Text
       , -- fieldName : Optional Text,
         description : Text
-      , type_ : OptionType
-      , default_ : Value
+      , type : OptionType
+      , default : Value
       , ormolu : Value
       , cli : Optional CLI
       }
@@ -227,7 +227,7 @@ let defaultCLI
     : Option -> CLITotal
     = \(option : Option) ->
         { help = option.description
-        , default_ = showValuePretty option.default_
+        , default = showValuePretty option.default
         , placeholder = "OPTION"
         }
 
@@ -247,16 +247,16 @@ in  { showPlaceholder
           [ { name = "indentation"
             , fieldName = "poIndentation"
             , description = "Number of spaces per indentation step"
-            , type_ = OptionType.Natural
-            , default_ = Value.Natural 4
+            , type = OptionType.Natural
+            , default = Value.Natural 4
             , ormolu = Value.Natural 2
             , cli = None CLI
             }
           , { name = "function-arrows"
             , fieldName = "poFunctionArrows"
             , description = "Styling of arrows in type signatures"
-            , type_ = OptionType.Enum FunctionArrowsStyle
-            , default_ = Value.Enum Enum.TrailingArrows
+            , type = OptionType.Enum FunctionArrowsStyle
+            , default = Value.Enum Enum.TrailingArrows
             , ormolu = Value.Enum Enum.TrailingArrows
             , cli = None CLI
             }
@@ -264,16 +264,16 @@ in  { showPlaceholder
             , fieldName = "poCommaStyle"
             , description =
                 "How to place commas in multi-line lists, records, etc."
-            , type_ = OptionType.Enum CommaStyle
-            , default_ = Value.Enum Enum.Leading
+            , type = OptionType.Enum CommaStyle
+            , default = Value.Enum Enum.Leading
             , ormolu = Value.Enum Enum.Trailing
             , cli = None CLI
             }
           , { name = "import-export-style"
             , fieldName = "poImportExportStyle"
             , description = "Styling of import/export lists"
-            , type_ = OptionType.Enum ImportExportStyle
-            , default_ = Value.Enum Enum.ImportExportDiffFriendly
+            , type = OptionType.Enum ImportExportStyle
+            , default = Value.Enum Enum.ImportExportDiffFriendly
             , ormolu = Value.Enum Enum.ImportExportTrailing
             , cli = None CLI
             }
@@ -281,8 +281,8 @@ in  { showPlaceholder
             , fieldName = "poIndentWheres"
             , description =
                 "Whether to full-indent or half-indent 'where' bindings past the preceding body"
-            , type_ = OptionType.Bool
-            , default_ = Value.Bool False
+            , type = OptionType.Bool
+            , default = Value.Bool False
             , ormolu = Value.Bool True
             , cli = None CLI
             }
@@ -290,40 +290,40 @@ in  { showPlaceholder
             , fieldName = "poRecordBraceSpace"
             , description =
                 "Whether to leave a space before an opening record brace"
-            , type_ = OptionType.Bool
-            , default_ = Value.Bool False
+            , type = OptionType.Bool
+            , default = Value.Bool False
             , ormolu = Value.Bool True
             , cli = None CLI
             }
           , { name = "newlines-between-decls"
             , fieldName = "poNewlinesBetweenDecls"
             , description = "Number of spaces between top-level declarations"
-            , type_ = OptionType.Natural
-            , default_ = Value.Natural 1
+            , type = OptionType.Natural
+            , default = Value.Natural 1
             , ormolu = Value.Natural 1
             , cli = None CLI
             }
           , { name = "haddock-style"
             , fieldName = "poHaddockStyle"
             , description = "How to print Haddock comments"
-            , type_ = OptionType.Enum HaddockPrintStyle
-            , default_ = Value.Enum Enum.HaddockMultiLine
+            , type = OptionType.Enum HaddockPrintStyle
+            , default = Value.Enum Enum.HaddockMultiLine
             , ormolu = Value.Enum Enum.HaddockSingleLine
             , cli = None CLI
             }
           , { name = "haddock-style-module"
             , fieldName = "poHaddockStyleModule"
             , description = "How to print module docstring"
-            , type_ = OptionType.ADT HaddockPrintStyleModule
-            , default_ = Value.Enum Enum.PrintStyleInherit
+            , type = OptionType.ADT HaddockPrintStyleModule
+            , default = Value.Enum Enum.PrintStyleInherit
             , ormolu = Value.Enum Enum.PrintStyleInherit
             , cli = None CLI
             }
           , { name = "let-style"
             , fieldName = "poLetStyle"
             , description = "Styling of let blocks"
-            , type_ = OptionType.Enum LetStyle
-            , default_ = Value.Enum Enum.LetAuto
+            , type = OptionType.Enum LetStyle
+            , default = Value.Enum Enum.LetAuto
             , ormolu = Value.Enum Enum.LetInline
             , cli = None CLI
             }
@@ -331,16 +331,16 @@ in  { showPlaceholder
             , fieldName = "poInStyle"
             , description =
                 "How to align the 'in' keyword with respect to the 'let' keyword"
-            , type_ = OptionType.Enum InStyle
-            , default_ = Value.Enum Enum.InRightAlign
+            , type = OptionType.Enum InStyle
+            , default = Value.Enum Enum.InRightAlign
             , ormolu = Value.Enum Enum.InRightAlign
             , cli = None CLI
             }
           , { name = "unicode"
             , fieldName = "poUnicode"
             , description = "Output Unicode syntax"
-            , type_ = OptionType.Enum Unicode
-            , default_ = Value.Enum Enum.UnicodeNever
+            , type = OptionType.Enum Unicode
+            , default = Value.Enum Enum.UnicodeNever
             , ormolu = Value.Enum Enum.UnicodeNever
             , cli = None CLI
             }
@@ -348,8 +348,8 @@ in  { showPlaceholder
             , fieldName = "poRespectful"
             , description =
                 "Give the programmer more choice on where to insert blank lines"
-            , type_ = OptionType.Bool
-            , default_ = Value.Bool True
+            , type = OptionType.Bool
+            , default = Value.Bool True
             , ormolu = Value.Bool False
             , cli = None CLI
             }

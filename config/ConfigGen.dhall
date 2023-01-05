@@ -88,7 +88,7 @@ in  ''
             in  ''
                     ${lead} -- | ${option.value.description}
                       ${option.value.fieldName} :: f ${data.showType
-                                                         option.value.type_}
+                                                         option.value.type}
                 ''
         )
         (Prelude.List.indexed data.Option data.options)}    }
@@ -118,7 +118,7 @@ in  ''
 
             in  ''
                     ${lead} ${option.value.fieldName} = pure ${data.showValue
-                                                                 option.value.default_}
+                                                                 option.value.default}
                 ''
         )
         (Prelude.List.indexed data.Option data.options)}    }
@@ -164,11 +164,11 @@ in  ''
                             \(ft : data.EnumType) -> "(choices: ${list ft}) "
                         , ADT = \(ft : data.ADT) -> ""
                         }
-                        option.value.type_
+                        option.value.type
 
                 let default =
                       "${option.value.description} ${choices}(default: ${data.showValuePretty
-                                                                           option.value.default_})"
+                                                                           option.value.default})"
 
                 in  ''
                         <*> f
@@ -180,8 +180,8 @@ in  ''
                                , Text = default
                                , ADT = \(x : data.ADT) -> x.cli
                                }
-                               option.value.type_}"
-                          "${data.showPlaceholder option.value.type_}"
+                               option.value.type}"
+                          "${data.showPlaceholder option.value.type}"
                     ''
         )
         (Prelude.List.indexed data.Option data.options)}
