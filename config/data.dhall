@@ -215,8 +215,7 @@ let showPlaceholder =
 let Option =
       { name : Text
       , fieldName : Text
-      , -- fieldName : Optional Text,
-        description : Text
+      , description : Text
       , type : OptionType
       , default : Value
       , ormolu : Value
