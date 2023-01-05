@@ -1,8 +1,5 @@
 cradle:
   multi:
-    - path: "config"
-      # config: { cradle: { cabal: }}
-      config: { cradle: { direct: { arguments: [] } } }
     - path: "data"
       config: { cradle: { none: }}
     - path: "region-tests"
