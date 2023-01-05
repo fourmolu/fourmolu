@@ -1,4 +1,6 @@
-{-# LANGUAGE DeriveLift #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -15,36 +17,19 @@ module Ormolu.Fixity.Internal
   )
 where
 
-import Data.Aeson (FromJSON (..), ToJSON (..), (.:), (.:?), (.=))
-import qualified Data.Aeson as A
+import Data.Binary (Binary)
 import Data.Foldable (asum)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
-import Data.Text (Text)
-import qualified Data.Text as T
-import Instances.TH.Lift ()
-import qualified Language.Haskell.TH.Syntax as TH
+import GHC.Generics (Generic)
 
 -- | Fixity direction.
 data FixityDirection
   = InfixL
   | InfixR
   | InfixN
-  deriving (Eq, Ord, Show, TH.Lift)
-
-instance FromJSON FixityDirection where
-  parseJSON = A.withText "FixityDirection" $ \case
-    "InfixL" -> pure InfixL
-    "InfixN" -> pure InfixN
-    "InfixR" -> pure InfixR
-    x -> fail (T.unpack x ++ " is not a fixity direction")
-
-instance ToJSON FixityDirection where
-  toJSON x =
-    toJSON $ case x of
-      InfixL -> "InfixL" :: Text
-      InfixN -> "InfixN"
-      InfixR -> "InfixR"
+  deriving stock (Eq, Ord, Show, Generic)
+  deriving anyclass (Binary)
 
 -- | Fixity information about an infix operator that takes the uncertainty
 -- that can arise from conflicting definitions into account.
@@ -58,29 +43,15 @@ data FixityInfo = FixityInfo
     -- definitions for the operator (inclusive)
     fiMaxPrecedence :: Int
   }
-  deriving (Eq, Ord, Show, TH.Lift)
-
-instance FromJSON FixityInfo where
-  parseJSON = A.withObject "FixitiyInfo" $ \o ->
-    FixityInfo
-      <$> (o .:? "dir")
-      <*> o .: "min_prec"
-      <*> o .: "max_prec"
-
-instance ToJSON FixityInfo where
-  toJSON FixityInfo {..} =
-    A.object
-      [ "dir" .= fiDirection,
-        "min_prec" .= fiMinPrecedence,
-        "max_prec" .= fiMaxPrecedence
-      ]
+  deriving stock (Eq, Ord, Show, Generic)
+  deriving anyclass (Binary)
 
 -- | The lowest level of information we can have about an operator.
 defaultFixityInfo :: FixityInfo
 defaultFixityInfo =
   FixityInfo
-    { fiDirection = Nothing,
-      fiMinPrecedence = 0,
+    { fiDirection = Just InfixL,
+      fiMinPrecedence = 9,
       fiMaxPrecedence = 9
     }
 
@@ -117,8 +88,7 @@ newtype LazyFixityMap = LazyFixityMap [FixityMap]
   deriving (Show)
 
 -- | Lookup a 'FixityInfo' of an operator. This might have drastically
--- different performance depending on whether this is an "unusal"
--- operator.
+-- different performance depending on whether this is an "unusual" operator.
 lookupFixity :: String -> LazyFixityMap -> Maybe FixityInfo
 lookupFixity op (LazyFixityMap maps) = asum (Map.lookup op <$> maps)
 
@@ -130,17 +100,5 @@ data HackageInfo
       -- ^ Map from package name to a map from operator name to its fixity
       (Map String Int)
       -- ^ Map from package name to its 30-days download count from Hackage
-  deriving (TH.Lift)
-
-instance FromJSON HackageInfo where
-  parseJSON = A.withObject "HackageInfo" $ \o ->
-    HackageInfo
-      <$> o .: "operators"
-      <*> o .: "popularity"
-
-instance ToJSON HackageInfo where
-  toJSON (HackageInfo operators popularity) =
-    A.object
-      [ "operators" .= operators,
-        "popularity" .= popularity
-      ]
+  deriving stock (Generic)
+  deriving anyclass (Binary)

@@ -19,7 +19,6 @@ import Path
 import Path.IO
 import System.Environment (lookupEnv)
 import qualified System.FilePath as F
-import System.IO.Unsafe (unsafePerformIO)
 import Test.Hspec
 
 spec :: Spec
@@ -69,7 +68,7 @@ checkExample (cfg, label, suffix) srcPath' = it (fromRelFile srcPath' ++ " works
   formatted0 <- ormoluFile config inputPath
   -- 3. Check the output against expected output. Thus all tests should
   -- include two files: input and expected output.
-  when shouldRegenerateOutput $
+  whenShouldRegenerateOutput $
     T.writeFile (fromRelFile expectedOutputPath) formatted0
   expected <- readFileUtf8 $ fromRelFile expectedOutputPath
   shouldMatch False formatted0 expected
@@ -130,7 +129,7 @@ withNiceExceptions m = m `catch` h
     h :: OrmoluException -> IO ()
     h = expectationFailure . displayException
 
-shouldRegenerateOutput :: Bool
-shouldRegenerateOutput =
-  unsafePerformIO $ isJust <$> lookupEnv "ORMOLU_REGENERATE_EXAMPLES"
-{-# NOINLINE shouldRegenerateOutput #-}
+whenShouldRegenerateOutput :: IO () -> IO ()
+whenShouldRegenerateOutput action = do
+  shouldRegenerateOutput <- isJust <$> lookupEnv "ORMOLU_REGENERATE_EXAMPLES"
+  when shouldRegenerateOutput action

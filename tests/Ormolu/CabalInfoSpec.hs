@@ -17,9 +17,9 @@ spec = do
           Just absolute <- findCabalFile start
           absolute `shouldSatisfy` isAbsolute
           makeRelativeToCurrentDirectory absolute `shouldReturn` expectedCabalFile
-    it "it returns correct absolute path" $
+    it "returns correct absolute path" $
       findsOrmoluCabal "src/Ormolu/Config.hs" "fourmolu.cabal"
-    it "it finds correct path even when it starts from nonsense" $
+    it "finds correct path even when it starts from nonsense" $
       findsOrmoluCabal "a/b/c/d/e" "fourmolu.cabal"
     it "returns Nothing when it cannot find a cabal file" $
       findCabalFile "/foo.hs" `shouldReturn` Nothing
@@ -38,10 +38,10 @@ spec = do
       ciDynOpts `shouldBe` [DynOption "-XHaskell2010"]
     it "extracts correct dependencies from fourmolu.cabal (src/Ormolu/Config.hs)" $ do
       CabalInfo {..} <- parseCabalInfo "fourmolu.cabal" "src/Ormolu/Config.hs"
-      ciDependencies `shouldBe` Set.fromList ["Cabal-syntax", "Diff", "MemoTrie", "aeson", "ansi-terminal", "array", "base", "bytestring", "containers", "directory", "dlist", "exceptions", "file-embed", "filepath", "ghc-lib-parser", "megaparsec", "mtl", "syb", "template-haskell", "text", "th-lift-instances", "yaml"]
+      ciDependencies `shouldBe` Set.fromList ["Cabal-syntax", "Diff", "MemoTrie", "aeson", "ansi-terminal", "array", "base", "binary", "bytestring", "containers", "directory", "dlist", "file-embed", "filepath", "ghc-lib-parser", "megaparsec", "mtl", "syb", "template-haskell", "text", "yaml"]
     it "extracts correct dependencies from fourmolu.cabal (tests/Ormolu/PrinterSpec.hs)" $ do
       CabalInfo {..} <- parseCabalInfo "fourmolu.cabal" "tests/Ormolu/PrinterSpec.hs"
-      ciDependencies `shouldBe` Set.fromList ["Diff", "QuickCheck", "base", "containers", "directory", "filepath", "ghc-lib-parser", "hspec", "hspec-megaparsec", "megaparsec", "fourmolu", "path", "path-io", "pretty", "process", "temporary", "text"]
+      ciDependencies `shouldBe` Set.fromList ["Diff", "QuickCheck", "base", "containers", "directory", "filepath", "ghc-lib-parser", "hspec", "hspec-megaparsec", "fourmolu", "path", "path-io", "pretty", "process", "temporary", "text"]
 
     it "handles `hs-source-dirs: .`" $ do
       CabalInfo {..} <- parseTestCabalInfo "Foo.hs"
