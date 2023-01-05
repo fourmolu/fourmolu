@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE PackageImports #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Ormolu.Config.TH
@@ -18,9 +19,9 @@ where
 import Control.Monad (forM, when, (>=>))
 import Data.Containers.ListUtils (nubOrd)
 import Data.List (nub)
-import Language.Haskell.TH
-import Language.Haskell.TH.Syntax (lift)
 import Text.Printf (printf)
+import "template-haskell" Language.Haskell.TH
+import "template-haskell" Language.Haskell.TH.Syntax (lift)
 
 allNothing :: Name -> Q Exp
 allNothing name = do

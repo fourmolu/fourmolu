@@ -119,8 +119,6 @@ library
         template-haskell,
         yaml >=0.11.6.0 && <1
 
-    mixins:           ghc-lib-parser hiding (Language.Haskell.TH, Language.Haskell.TH.Syntax)
-
     if flag(dev)
         ghc-options:
             -Wall -Werror -Wcompat -Wincomplete-record-updates
