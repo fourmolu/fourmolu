@@ -190,8 +190,8 @@ in  ''
     parsePrinterOptsCLI f =
       pure PrinterOpts
     ${Prelude.Text.concatMap
-        { index : Natural, value : data.Option }
-        ( \(option : { index : Natural, value : data.Option }) ->
+        data.Option
+        ( \(option : data.Option) ->
             let choices =
                   merge
                     { Bool = ""
@@ -200,15 +200,15 @@ in  ''
                     , Enum = \(ft : data.EnumType) -> "(choices: ${list ft}) "
                     , ADT = \(ft : data.ADT) -> ""
                     }
-                    option.value.type
+                    option.type
 
             let default =
-                  "${option.value.description} ${choices}(default: ${data.showValuePretty
-                                                                       option.value.default})"
+                  "${option.description} ${choices}(default: ${data.showValuePretty
+                                                                 option.default})"
 
             in  ''
                     <*> f
-                      "${option.value.name}"
+                      "${option.name}"
                       "${merge
                            { Enum = \(x : data.EnumType) -> default
                            , Bool = default
@@ -216,11 +216,11 @@ in  ''
                            , Text = default
                            , ADT = \(x : data.ADT) -> x.cli
                            }
-                           option.value.type}"
-                      "${data.showPlaceholder option.value.type}"
+                           option.type}"
+                      "${data.showPlaceholder option.type}"
                 ''
         )
-        (Prelude.List.indexed data.Option data.options)}
+        data.options}
     parsePrinterOptsJSON ::
       Applicative f =>
       (forall a. PrinterOptsFieldType a => String -> f (Maybe a)) ->
@@ -228,13 +228,13 @@ in  ''
     parsePrinterOptsJSON f =
       pure PrinterOpts
     ${Prelude.Text.concatMap
-        { index : Natural, value : data.Option }
-        ( \(option : { index : Natural, value : data.Option }) ->
+        data.Option
+        ( \(option : data.Option) ->
             ''
-                <*> f "${option.value.name}"
+                <*> f "${option.name}"
             ''
         )
-        (Prelude.List.indexed data.Option data.options)}
+        data.options}
     {---------- PrinterOpts field types ----------}
 
     class Aeson.FromJSON a => PrinterOptsFieldType a where
