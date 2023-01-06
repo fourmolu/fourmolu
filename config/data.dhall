@@ -86,20 +86,20 @@ let showEnumPretty =
 
 let showValue
     : Value -> Text
-    = \(v : Value) ->
+    = \(x : Value) ->
         merge
           { Natural = Natural/show, Text = \(x : Text) -> x, Enum = showEnum }
-          v
+          x
 
 let showValuePretty
     : Value -> Text
-    = \(v : Value) ->
+    = \(x : Value) ->
         merge
           { Natural = Natural/show
           , Text = \(x : Text) -> x
           , Enum = showEnumPretty
           }
-          v
+          x
 
 let EnumType = { name : Text, constructors : List Enum }
 
