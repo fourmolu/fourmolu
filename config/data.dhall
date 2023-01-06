@@ -1,5 +1,3 @@
-let Prelude = ./Prelude.dhall
-
 let Enum =
       < Leading
       | Trailing
@@ -108,8 +106,6 @@ let CLI =
       , default : Optional Text
       , placeholder : Optional Text
       }
-
-let CLITotal = { help : Text, default : Text, placeholder : Text }
 
 let CommaStyle =
       { name = "CommaStyle", constructors = [ Enum.Leading, Enum.Trailing ] }
@@ -222,14 +218,6 @@ let Option =
       , ormolu : Value
       , cli : Optional CLI
       }
-
-let defaultCLI
-    : Option -> CLITotal
-    = \(option : Option) ->
-        { help = option.description
-        , default = showValuePretty option.default
-        , placeholder = "OPTION"
-        }
 
 in  { showPlaceholder
     , showType
