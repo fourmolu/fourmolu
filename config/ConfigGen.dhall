@@ -2,6 +2,9 @@ let data = ./data.dhall
 
 let Prelude = ./Prelude.dhall
 
+let pad =
+      \(n : Natural) -> Text/replace "\n" ("\n" ++ Prelude.Text.replicate n " ")
+
 let list =
       \(fieldType : data.EnumType) ->
         let length = Prelude.List.length data.Enum fieldType.constructors
@@ -37,27 +40,27 @@ let instancePrinterOptsFieldType =
                     \(x : data.EnumType) ->
                       ''
                       \s ->
-                          case s of
+                        case s of
                       ${Prelude.Text.concatMap
                           data.Enum
                           ( \(enum : data.Enum) ->
                               ''
-                                    "${data.showEnumPretty
-                                         enum}" -> Right ${data.showEnum enum}
+                                  "${data.showEnumPretty
+                                       enum}" -> Right ${data.showEnum enum}
                               ''
                           )
-                          x.constructors}      _ ->
-                              Left . unlines $
-                                [ "unknown value: " <> show s
-                                , "Valid values are: ${list x}"
-                                ]''
+                          x.constructors}    _ ->
+                            Left . unlines $
+                              [ "unknown value: " <> show s
+                              , "Valid values are: ${list x}"
+                              ]''
                 , ADT = \(x : data.ADT) -> x.parsePrinterOptType
                 }
                 fieldType
 
         in  ''
             instance PrinterOptsFieldType ${data.typeName fieldType} where
-              parsePrinterOptType = ${def}''
+              parsePrinterOptType = ${pad 2 def}''
 
 let instanceFromJSON =
       \(fieldType : data.FieldType) ->
@@ -66,9 +69,9 @@ let instanceFromJSON =
                 { Enum =
                     \(x : data.EnumType) ->
                       ''
-                        Aeson.withText "${data.typeName fieldType}" $ \s ->
-                              either Aeson.parseFail pure $
-                                parsePrinterOptType (Text.unpack s)''
+                      Aeson.withText "${data.typeName fieldType}" $ \s ->
+                        either Aeson.parseFail pure $
+                          parsePrinterOptType (Text.unpack s)''
                 , ADT = \(x : data.ADT) -> x.parseJSON
                 }
                 fieldType
@@ -76,7 +79,7 @@ let instanceFromJSON =
         in  ''
             instance Aeson.FromJSON ${data.typeName fieldType} where
               parseJSON =
-                ${def}''
+                ${pad 4 def}''
 
 in  ''
     {- FOURMOLU_DISABLE -}
@@ -112,33 +115,37 @@ in  ''
     -- | Options controlling formatting output.
     data PrinterOpts f =
       PrinterOpts
-    ${Prelude.Text.concatMap
-        { index : Natural, value : data.Option }
-        ( \(option : { index : Natural, value : data.Option }) ->
-            let lead = if Prelude.Natural.isZero option.index then "{" else ","
+        ${Prelude.Text.concatMap
+            { index : Natural, value : data.Option }
+            ( \(option : { index : Natural, value : data.Option }) ->
+                let lead =
+                      if Prelude.Natural.isZero option.index then "{" else ","
 
-            in  ''
-                    ${lead} -- | ${option.value.description}
-                      ${option.value.fieldName} :: f ${data.showType
-                                                         option.value.type}
-                ''
-        )
-        (Prelude.List.indexed data.Option data.options)}    }
+                in  pad
+                      4
+                      ''
+                      ${lead} -- | ${option.value.description}
+                        ${option.value.fieldName} :: f ${data.showType
+                                                           option.value.type}
+                      ''
+            )
+            (Prelude.List.indexed data.Option data.options)}}
       deriving (Generic)
 
     emptyPrinterOpts :: PrinterOpts Maybe
     emptyPrinterOpts =
       PrinterOpts
-    ${Prelude.Text.concatMap
-        { index : Natural, value : data.Option }
-        ( \(option : { index : Natural, value : data.Option }) ->
-            let lead = if Prelude.Natural.isZero option.index then "{" else ","
+        ${Prelude.Text.concatMapSep
+            ("\n" ++ "    ")
+            { index : Natural, value : data.Option }
+            ( \(option : { index : Natural, value : data.Option }) ->
+                let lead =
+                      if Prelude.Natural.isZero option.index then "{" else ","
 
-            in  ''
-                    ${lead} ${option.value.fieldName} = Nothing
-                ''
-        )
-        (Prelude.List.indexed data.Option data.options)}    }
+                in  "${lead} ${option.value.fieldName} = Nothing"
+            )
+            (Prelude.List.indexed data.Option data.options)}
+        }
 
     defaultPrinterOpts :: PrinterOpts Identity
     defaultPrinterOpts =

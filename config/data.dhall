@@ -173,15 +173,15 @@ let HaddockPrintStyleModule
         [ "PrintStyleInherit", "PrintStyleOverride HaddockPrintStyle" ]
       , parseJSON =
           ''
-            \v -> case v of
-                  Aeson.Null -> pure PrintStyleInherit
-                  Aeson.String "" -> pure PrintStyleInherit
-                  _ -> PrintStyleOverride <$> Aeson.parseJSON v''
+          \v -> case v of
+            Aeson.Null -> pure PrintStyleInherit
+            Aeson.String "" -> pure PrintStyleInherit
+            _ -> PrintStyleOverride <$> Aeson.parseJSON v''
       , parsePrinterOptType =
           ''
           \s -> case s of
-              "" -> pure PrintStyleInherit
-              _ -> PrintStyleOverride <$> parsePrinterOptType s''
+            "" -> pure PrintStyleInherit
+            _ -> PrintStyleOverride <$> parsePrinterOptType s''
       , cli = "How to print module docstring (default: same as 'haddock-style')"
       }
 
