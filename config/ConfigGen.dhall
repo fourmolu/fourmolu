@@ -29,7 +29,7 @@ let list =
               )
               (Prelude.List.indexed data.Enum fieldType.constructors)
 
-let instance =
+let instancePrinterOptsFieldType =
       \(fieldType : data.FieldType) ->
         let def =
               merge
@@ -237,7 +237,7 @@ in  ''
     instance PrinterOptsFieldType Int where
       parsePrinterOptType = readEither
 
-    ${instance (data.FieldType.Enum data.Boolean)}
+    ${instancePrinterOptsFieldType (data.FieldType.Enum data.Boolean)}
 
 
     ${Prelude.Text.concatMapSep
@@ -288,7 +288,7 @@ in  ''
 
             ${instanceFromJSON fieldType}
 
-            ${instance fieldType}
+            ${instancePrinterOptsFieldType fieldType}
             ''
         )
         data.fieldTypes}''
