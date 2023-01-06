@@ -29,31 +29,6 @@ let list =
               )
               (Prelude.List.indexed data.Enum fieldType.constructors)
 
-let parsePrinterOptType =
-      \(fieldType : data.FieldType) ->
-        merge
-          { Enum =
-              \(x : data.EnumType) ->
-                ''
-                \s ->
-                    case s of
-                ${Prelude.Text.concatMap
-                    data.Enum
-                    ( \(enum : data.Enum) ->
-                        ''
-                              "${data.showEnumPretty
-                                   enum}" -> Right ${data.showEnum enum}
-                        ''
-                    )
-                    x.constructors}      _ ->
-                        Left . unlines $
-                          [ "unknown value: " <> show s
-                          , "Valid values are: ${list x}"
-                          ]''
-          , ADT = \(x : data.ADT) -> x.parsePrinterOptType
-          }
-          fieldType
-
 let instance1 =
       \(typeName : Text) ->
       \(parsePrinterOptType : Text) ->
@@ -63,7 +38,31 @@ let instance1 =
 
 let instance =
       \(fieldType : data.FieldType) ->
-        instance1 (data.typeName fieldType) (parsePrinterOptType fieldType)
+        instance1
+          (data.typeName fieldType)
+          ( merge
+              { Enum =
+                  \(x : data.EnumType) ->
+                    ''
+                    \s ->
+                        case s of
+                    ${Prelude.Text.concatMap
+                        data.Enum
+                        ( \(enum : data.Enum) ->
+                            ''
+                                  "${data.showEnumPretty
+                                       enum}" -> Right ${data.showEnum enum}
+                            ''
+                        )
+                        x.constructors}      _ ->
+                            Left . unlines $
+                              [ "unknown value: " <> show s
+                              , "Valid values are: ${list x}"
+                              ]''
+              , ADT = \(x : data.ADT) -> x.parsePrinterOptType
+              }
+              fieldType
+          )
 
 in  ''
     {- FOURMOLU_DISABLE -}
