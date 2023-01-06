@@ -20,6 +20,8 @@ let Enum =
       | UnicodeDetect
       | UnicodeAlways
       | UnicodeNever
+      | False
+      | True
       >
 
 let Value = < Bool : Bool | Natural : Natural | Text : Text | Enum : Enum >
@@ -48,6 +50,8 @@ let showEnum =
           , UnicodeDetect = "UnicodeDetect"
           , UnicodeAlways = "UnicodeAlways"
           , UnicodeNever = "UnicodeNever"
+          , False = "False"
+          , True = "True"
           }
           x
 
@@ -75,6 +79,8 @@ let showEnumPretty =
           , UnicodeDetect = "detect"
           , UnicodeAlways = "always"
           , UnicodeNever = "never"
+          , False = "false"
+          , True = "true"
           }
           x
 
