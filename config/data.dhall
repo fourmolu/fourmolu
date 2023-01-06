@@ -101,12 +101,6 @@ let showValuePretty
           }
           v
 
-let CLI =
-      { help : Optional Text
-      , default : Optional Text
-      , placeholder : Optional Text
-      }
-
 let EnumType = { name : Text, constructors : List Enum }
 
 let CommaStyle
@@ -172,12 +166,6 @@ let ADT =
       , cli : Text
       }
 
-let FieldType = < Enum : EnumType | ADT : ADT >
-
-let typeName =
-      \(t : FieldType) ->
-        merge { Enum = \(x : EnumType) -> x.name, ADT = \(x : ADT) -> x.name } t
-
 let HaddockPrintStyleModule
     : ADT
     = { name = "HaddockPrintStyleModule"
@@ -196,6 +184,12 @@ let HaddockPrintStyleModule
               _ -> PrintStyleOverride <$> parsePrinterOptType s''
       , cli = "How to print module docstring (default: same as 'haddock-style')"
       }
+
+let FieldType = < Enum : EnumType | ADT : ADT >
+
+let typeName =
+      \(t : FieldType) ->
+        merge { Enum = \(x : EnumType) -> x.name, ADT = \(x : ADT) -> x.name } t
 
 let OptionType = < Bool | Natural | Text | Enum : EnumType | ADT : ADT >
 
@@ -240,7 +234,6 @@ let Option =
       , type : OptionType
       , default : Value
       , ormolu : Value
-      , cli : Optional CLI
       }
 
 let options
@@ -251,7 +244,6 @@ let options
         , type = OptionType.Natural
         , default = Value.Natural 4
         , ormolu = Value.Natural 2
-        , cli = None CLI
         }
       , { name = "function-arrows"
         , fieldName = "poFunctionArrows"
@@ -259,7 +251,6 @@ let options
         , type = OptionType.Enum FunctionArrowsStyle
         , default = Value.Enum Enum.TrailingArrows
         , ormolu = Value.Enum Enum.TrailingArrows
-        , cli = None CLI
         }
       , { name = "comma-style"
         , fieldName = "poCommaStyle"
@@ -267,7 +258,6 @@ let options
         , type = OptionType.Enum CommaStyle
         , default = Value.Enum Enum.Leading
         , ormolu = Value.Enum Enum.Trailing
-        , cli = None CLI
         }
       , { name = "import-export-style"
         , fieldName = "poImportExportStyle"
@@ -275,7 +265,6 @@ let options
         , type = OptionType.Enum ImportExportStyle
         , default = Value.Enum Enum.ImportExportDiffFriendly
         , ormolu = Value.Enum Enum.ImportExportTrailing
-        , cli = None CLI
         }
       , { name = "indent-wheres"
         , fieldName = "poIndentWheres"
@@ -284,7 +273,6 @@ let options
         , type = OptionType.Bool
         , default = Value.Enum Enum.False
         , ormolu = Value.Enum Enum.True
-        , cli = None CLI
         }
       , { name = "record-brace-space"
         , fieldName = "poRecordBraceSpace"
@@ -293,7 +281,6 @@ let options
         , type = OptionType.Bool
         , default = Value.Enum Enum.False
         , ormolu = Value.Enum Enum.True
-        , cli = None CLI
         }
       , { name = "newlines-between-decls"
         , fieldName = "poNewlinesBetweenDecls"
@@ -301,7 +288,6 @@ let options
         , type = OptionType.Natural
         , default = Value.Natural 1
         , ormolu = Value.Natural 1
-        , cli = None CLI
         }
       , { name = "haddock-style"
         , fieldName = "poHaddockStyle"
@@ -309,7 +295,6 @@ let options
         , type = OptionType.Enum HaddockPrintStyle
         , default = Value.Enum Enum.HaddockMultiLine
         , ormolu = Value.Enum Enum.HaddockSingleLine
-        , cli = None CLI
         }
       , { name = "haddock-style-module"
         , fieldName = "poHaddockStyleModule"
@@ -317,7 +302,6 @@ let options
         , type = OptionType.ADT HaddockPrintStyleModule
         , default = Value.Enum Enum.PrintStyleInherit
         , ormolu = Value.Enum Enum.PrintStyleInherit
-        , cli = None CLI
         }
       , { name = "let-style"
         , fieldName = "poLetStyle"
@@ -325,7 +309,6 @@ let options
         , type = OptionType.Enum LetStyle
         , default = Value.Enum Enum.LetAuto
         , ormolu = Value.Enum Enum.LetInline
-        , cli = None CLI
         }
       , { name = "in-style"
         , fieldName = "poInStyle"
@@ -334,7 +317,6 @@ let options
         , type = OptionType.Enum InStyle
         , default = Value.Enum Enum.InRightAlign
         , ormolu = Value.Enum Enum.InRightAlign
-        , cli = None CLI
         }
       , { name = "unicode"
         , fieldName = "poUnicode"
@@ -342,7 +324,6 @@ let options
         , type = OptionType.Enum Unicode
         , default = Value.Enum Enum.UnicodeNever
         , ormolu = Value.Enum Enum.UnicodeNever
-        , cli = None CLI
         }
       , { name = "respectful"
         , fieldName = "poRespectful"
@@ -351,7 +332,6 @@ let options
         , type = OptionType.Bool
         , default = Value.Enum Enum.True
         , ormolu = Value.Enum Enum.False
-        , cli = None CLI
         }
       ]
 
