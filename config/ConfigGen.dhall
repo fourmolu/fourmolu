@@ -61,23 +61,22 @@ let instancePrinterOptsFieldType =
 
 let instanceFromJSON =
       \(fieldType : data.FieldType) ->
-        merge
-          { Enum =
-              \(x : data.EnumType) ->
-                ''
-                instance Aeson.FromJSON ${data.typeName fieldType} where
-                  parseJSON =
-                    Aeson.withText "${data.typeName fieldType}" $ \s ->
-                      either Aeson.parseFail pure $
-                        parsePrinterOptType (Text.unpack s)''
-          , ADT =
-              \(x : data.ADT) ->
-                    "instance Aeson.FromJSON ${data.typeName fieldType} where"
-                ++  ''
+        let def =
+              merge
+                { Enum =
+                    \(x : data.EnumType) ->
+                      ''
+                        Aeson.withText "${data.typeName fieldType}" $ \s ->
+                              either Aeson.parseFail pure $
+                                parsePrinterOptType (Text.unpack s)''
+                , ADT = \(x : data.ADT) -> x.parseJSON
+                }
+                fieldType
 
-                    ${"  "}parseJSON = ${x.parseJSON}''
-          }
-          fieldType
+        in  ''
+            instance Aeson.FromJSON ${data.typeName fieldType} where
+              parseJSON =
+                ${def}''
 
 in  ''
     {- FOURMOLU_DISABLE -}

@@ -327,10 +327,11 @@ instance PrinterOptsFieldType HaddockPrintStyle where
 
 
 instance Aeson.FromJSON HaddockPrintStyleModule where
-  parseJSON = \v -> case v of
-    Aeson.Null -> pure PrintStyleInherit
-    Aeson.String "" -> pure PrintStyleInherit
-    _ -> PrintStyleOverride <$> Aeson.parseJSON v
+  parseJSON =
+    \v -> case v of
+      Aeson.Null -> pure PrintStyleInherit
+      Aeson.String "" -> pure PrintStyleInherit
+      _ -> PrintStyleOverride <$> Aeson.parseJSON v
 
 instance PrinterOptsFieldType HaddockPrintStyleModule where
   parsePrinterOptType = \s -> case s of
