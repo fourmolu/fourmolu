@@ -32,6 +32,28 @@ let list =
               )
               (Prelude.List.indexed data.Enum fieldType.constructors)
 
+let indexed =
+      \(T : Type) ->
+      \(start : Text) ->
+      \(separator : Text) ->
+      \(end : Text) ->
+      \(f : T -> Text) ->
+      \(xs : List T) ->
+            Prelude.Text.concatMapSep
+              "\n"
+              { index : Natural, value : T }
+              ( \(x : { index : Natural, value : T }) ->
+                  let lead =
+                        if    Prelude.Natural.isZero x.index
+                        then  start
+                        else  separator
+
+                  in  "${lead} ${f x.value}"
+              )
+              (Prelude.List.indexed T xs)
+        ++  "\n"
+        ++  end
+
 let instancePrinterOptsFieldType =
       \(fieldType : data.FieldType) ->
         let def =
@@ -115,52 +137,52 @@ in  ''
     -- | Options controlling formatting output.
     data PrinterOpts f =
       PrinterOpts
-        ${Prelude.Text.concatMap
-            { index : Natural, value : data.Option }
-            ( \(option : { index : Natural, value : data.Option }) ->
-                let lead =
-                      if Prelude.Natural.isZero option.index then "{" else ","
-
-                in  pad
-                      4
-                      ''
-                      ${lead} -- | ${option.value.description}
-                        ${option.value.fieldName} :: f ${data.showType
-                                                           option.value.type}
-                      ''
-            )
-            (Prelude.List.indexed data.Option data.options)}}
+        ${pad
+            4
+            ( indexed
+                data.Option
+                "{"
+                ","
+                "}"
+                ( \(option : data.Option) ->
+                    ''
+                    -- | ${option.description}
+                      ${option.fieldName} :: f ${data.showType option.type}''
+                )
+                data.options
+            )}
       deriving (Generic)
 
     emptyPrinterOpts :: PrinterOpts Maybe
     emptyPrinterOpts =
       PrinterOpts
-        ${Prelude.Text.concatMapSep
-            ("\n" ++ "    ")
-            { index : Natural, value : data.Option }
-            ( \(option : { index : Natural, value : data.Option }) ->
-                let lead =
-                      if Prelude.Natural.isZero option.index then "{" else ","
-
-                in  "${lead} ${option.value.fieldName} = Nothing"
-            )
-            (Prelude.List.indexed data.Option data.options)}
-        }
+        ${pad
+            4
+            ( indexed
+                data.Option
+                "{"
+                ","
+                "}"
+                (\(option : data.Option) -> "${option.fieldName} = Nothing")
+                data.options
+            )}
 
     defaultPrinterOpts :: PrinterOpts Identity
     defaultPrinterOpts =
       PrinterOpts
-    ${Prelude.Text.concatMap
-        { index : Natural, value : data.Option }
-        ( \(option : { index : Natural, value : data.Option }) ->
-            let lead = if Prelude.Natural.isZero option.index then "{" else ","
-
-            in  ''
-                    ${lead} ${option.value.fieldName} = pure ${data.showValue
-                                                                 option.value.default}
-                ''
-        )
-        (Prelude.List.indexed data.Option data.options)}    }
+        ${pad
+            4
+            ( indexed
+                data.Option
+                "{"
+                ","
+                "}"
+                ( \(option : data.Option) ->
+                    "${option.fieldName} = pure ${data.showValue
+                                                    option.default}"
+                )
+                data.options
+            )}
 
     -- | Fill the field values that are 'Nothing' in the first argument
     -- with the values of the corresponding fields of the second argument.
@@ -172,16 +194,18 @@ in  ''
       PrinterOpts f
     fillMissingPrinterOpts p1 p2 =
       PrinterOpts
-    ${Prelude.Text.concatMap
-        { index : Natural, value : data.Option }
-        ( \(option : { index : Natural, value : data.Option }) ->
-            let lead = if Prelude.Natural.isZero option.index then "{" else ","
-
-            in  ''
-                    ${lead} ${option.value.fieldName} = maybe (${option.value.fieldName} p2) pure (${option.value.fieldName} p1)
-                ''
-        )
-        (Prelude.List.indexed data.Option data.options)}    }
+        ${pad
+            4
+            ( indexed
+                data.Option
+                "{"
+                ","
+                "}"
+                ( \(option : data.Option) ->
+                    "${option.fieldName} = maybe (${option.fieldName} p2) pure (${option.fieldName} p1)"
+                )
+                data.options
+            )}
 
     parsePrinterOptsCLI ::
       Applicative f =>
@@ -252,37 +276,34 @@ in  ''
         ( \(fieldType : data.FieldType) ->
             ''
             data ${data.typeName fieldType}
-            ${Prelude.Text.concatMap
-                { index : Natural, value : Text }
-                ( \(enum : { index : Natural, value : Text }) ->
-                    let lead =
-                          if Prelude.Natural.isZero enum.index then "=" else "|"
-
-                    in  ''
-                          ${lead} ${enum.value}
-                        ''
-                )
-                ( Prelude.List.indexed
-                    Text
-                    ( merge
-                        { Enum =
-                            \(x : data.EnumType) ->
-                              Prelude.List.map
-                                data.Enum
-                                Text
-                                data.showEnum
-                                x.constructors
-                        , ADT = \(x : data.ADT) -> x.constructors
-                        }
-                        fieldType
-                    )
-                )}  ${merge
-                        { Enum =
-                            \(x : data.EnumType) ->
-                              "deriving (Eq, Show, Enum, Bounded)"
-                        , ADT = \(x : data.ADT) -> "deriving (Eq, Show)"
-                        }
-                        fieldType}
+              ${pad
+                  2
+                  ( indexed
+                      Text
+                      "="
+                      "|"
+                      ( merge
+                          { Enum =
+                              \(x : data.EnumType) ->
+                                "deriving (Eq, Show, Enum, Bounded)"
+                          , ADT = \(x : data.ADT) -> "deriving (Eq, Show)"
+                          }
+                          fieldType
+                      )
+                      (\(t : Text) -> t)
+                      ( merge
+                          { Enum =
+                              \(x : data.EnumType) ->
+                                Prelude.List.map
+                                  data.Enum
+                                  Text
+                                  data.showEnum
+                                  x.constructors
+                          , ADT = \(x : data.ADT) -> x.constructors
+                          }
+                          fieldType
+                      )
+                  )}
             ''
         )
         data.fieldTypes}
