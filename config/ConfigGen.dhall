@@ -29,29 +29,27 @@ let list =
               )
               (Prelude.List.indexed data.Enum fieldType.constructors)
 
-let parsePrinterOptTypeEnum =
-      \(x : data.EnumType) ->
-        ''
-        \s ->
-            case s of
-        ${Prelude.Text.concatMap
-            data.Enum
-            ( \(enum : data.Enum) ->
-                ''
-                      "${data.showEnumPretty enum}" -> Right ${data.showEnum
-                                                                 enum}
-                ''
-            )
-            x.constructors}      _ ->
-                Left . unlines $
-                  [ "unknown value: " <> show s
-                  , "Valid values are: ${list x}"
-                  ]''
-
 let parsePrinterOptType =
       \(fieldType : data.FieldType) ->
         merge
-          { Enum = \(x : data.EnumType) -> parsePrinterOptTypeEnum x
+          { Enum =
+              \(x : data.EnumType) ->
+                ''
+                \s ->
+                    case s of
+                ${Prelude.Text.concatMap
+                    data.Enum
+                    ( \(enum : data.Enum) ->
+                        ''
+                              "${data.showEnumPretty
+                                   enum}" -> Right ${data.showEnum enum}
+                        ''
+                    )
+                    x.constructors}      _ ->
+                        Left . unlines $
+                          [ "unknown value: " <> show s
+                          , "Valid values are: ${list x}"
+                          ]''
           , ADT = \(x : data.ADT) -> x.parsePrinterOptType
           }
           fieldType
