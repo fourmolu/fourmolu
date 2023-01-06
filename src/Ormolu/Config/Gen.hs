@@ -269,6 +269,7 @@ data Unicode
   | UnicodeNever
   deriving (Eq, Show, Enum, Bounded)
 
+
 instance Aeson.FromJSON CommaStyle where
   parseJSON =
     Aeson.withText "CommaStyle" $ \s ->
@@ -285,6 +286,7 @@ instance PrinterOptsFieldType CommaStyle where
           [ "unknown value: " <> show s
           , "Valid values are: \"leading\" or \"trailing\""
           ]
+
 
 instance Aeson.FromJSON FunctionArrowsStyle where
   parseJSON =
@@ -304,6 +306,7 @@ instance PrinterOptsFieldType FunctionArrowsStyle where
           , "Valid values are: \"trailing\", \"leading\", or \"leading-args\""
           ]
 
+
 instance Aeson.FromJSON HaddockPrintStyle where
   parseJSON =
     Aeson.withText "HaddockPrintStyle" $ \s ->
@@ -322,6 +325,7 @@ instance PrinterOptsFieldType HaddockPrintStyle where
           , "Valid values are: \"single-line\", \"multi-line\", or \"multi-line-compact\""
           ]
 
+
 instance Aeson.FromJSON HaddockPrintStyleModule where
   parseJSON = \v -> case v of
     Aeson.Null -> pure PrintStyleInherit
@@ -332,6 +336,7 @@ instance PrinterOptsFieldType HaddockPrintStyleModule where
   parsePrinterOptType = \s -> case s of
     "" -> pure PrintStyleInherit
     _ -> PrintStyleOverride <$> parsePrinterOptType s
+
 
 instance Aeson.FromJSON ImportExportStyle where
   parseJSON =
@@ -350,6 +355,7 @@ instance PrinterOptsFieldType ImportExportStyle where
           [ "unknown value: " <> show s
           , "Valid values are: \"leading\", \"trailing\", or \"diff-friendly\""
           ]
+
 
 instance Aeson.FromJSON LetStyle where
   parseJSON =
@@ -370,6 +376,7 @@ instance PrinterOptsFieldType LetStyle where
           , "Valid values are: \"auto\", \"inline\", \"newline\", or \"mixed\""
           ]
 
+
 instance Aeson.FromJSON InStyle where
   parseJSON =
     Aeson.withText "InStyle" $ \s ->
@@ -386,6 +393,7 @@ instance PrinterOptsFieldType InStyle where
           [ "unknown value: " <> show s
           , "Valid values are: \"left-align\" or \"right-align\""
           ]
+
 
 instance Aeson.FromJSON Unicode where
   parseJSON =

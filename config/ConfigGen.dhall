@@ -285,6 +285,7 @@ in  ''
         data.FieldType
         ( \(fieldType : data.FieldType) ->
             ''
+
             ${instanceFromJSON fieldType}
 
             ${instance fieldType}
