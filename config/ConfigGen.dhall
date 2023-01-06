@@ -307,12 +307,12 @@ in  ''
             ''
         )
         data.fieldTypes}
+
     ${Prelude.Text.concatMapSep
-        "\n"
+        "\n\n"
         data.FieldType
         ( \(fieldType : data.FieldType) ->
             ''
-
             ${instanceFromJSON fieldType}
 
             ${instancePrinterOptsFieldType fieldType}
