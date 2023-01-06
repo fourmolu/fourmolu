@@ -107,17 +107,22 @@ let CLI =
       , placeholder : Optional Text
       }
 
-let CommaStyle =
-      { name = "CommaStyle", constructors = [ Enum.Leading, Enum.Trailing ] }
+let EnumType = { name : Text, constructors : List Enum }
 
-let FunctionArrowsStyle =
-      { name = "FunctionArrowsStyle"
+let CommaStyle
+    : EnumType
+    = { name = "CommaStyle", constructors = [ Enum.Leading, Enum.Trailing ] }
+
+let FunctionArrowsStyle
+    : EnumType
+    = { name = "FunctionArrowsStyle"
       , constructors =
         [ Enum.TrailingArrows, Enum.LeadingArrows, Enum.LeadingArgsArrows ]
       }
 
-let HaddockPrintStyle =
-      { name = "HaddockPrintStyle"
+let HaddockPrintStyle
+    : EnumType
+    = { name = "HaddockPrintStyle"
       , constructors =
         [ Enum.HaddockSingleLine
         , Enum.HaddockMultiLine
@@ -125,8 +130,9 @@ let HaddockPrintStyle =
         ]
       }
 
-let ImportExportStyle =
-      { name = "ImportExportStyle"
+let ImportExportStyle
+    : EnumType
+    = { name = "ImportExportStyle"
       , constructors =
         [ Enum.ImportExportLeading
         , Enum.ImportExportTrailing
@@ -134,26 +140,29 @@ let ImportExportStyle =
         ]
       }
 
-let LetStyle =
-      { name = "LetStyle"
+let LetStyle
+    : EnumType
+    = { name = "LetStyle"
       , constructors =
         [ Enum.LetAuto, Enum.LetInline, Enum.LetNewline, Enum.LetMixed ]
       }
 
-let InStyle =
-      { name = "InStyle"
+let InStyle
+    : EnumType
+    = { name = "InStyle"
       , constructors = [ Enum.InLeftAlign, Enum.InRightAlign ]
       }
 
-let Unicode =
-      { name = "Unicode"
+let Unicode
+    : EnumType
+    = { name = "Unicode"
       , constructors =
         [ Enum.UnicodeDetect, Enum.UnicodeAlways, Enum.UnicodeNever ]
       }
 
-let Boolean = { name = "Bool", constructors = [ Enum.False, Enum.True ] }
-
-let EnumType = { name : Text, constructors : List Enum }
+let Boolean
+    : EnumType
+    = { name = "Bool", constructors = [ Enum.False, Enum.True ] }
 
 let ADT =
       { name : Text
@@ -169,8 +178,9 @@ let typeName =
       \(t : FieldType) ->
         merge { Enum = \(x : EnumType) -> x.name, ADT = \(x : ADT) -> x.name } t
 
-let HaddockPrintStyleModule =
-      { name = "HaddockPrintStyleModule"
+let HaddockPrintStyleModule
+    : ADT
+    = { name = "HaddockPrintStyleModule"
       , constructors =
         [ "PrintStyleInherit", "PrintStyleOverride HaddockPrintStyle" ]
       , parseJSON =
@@ -211,6 +221,18 @@ let showPlaceholder =
           }
           t
 
+let fieldTypes
+    : List FieldType
+    = [ FieldType.Enum CommaStyle
+      , FieldType.Enum FunctionArrowsStyle
+      , FieldType.Enum HaddockPrintStyle
+      , FieldType.ADT HaddockPrintStyleModule
+      , FieldType.Enum ImportExportStyle
+      , FieldType.Enum LetStyle
+      , FieldType.Enum InStyle
+      , FieldType.Enum Unicode
+      ]
+
 let Option =
       { name : Text
       , fieldName : Text
@@ -220,6 +242,118 @@ let Option =
       , ormolu : Value
       , cli : Optional CLI
       }
+
+let options
+    : List Option
+    = [ { name = "indentation"
+        , fieldName = "poIndentation"
+        , description = "Number of spaces per indentation step"
+        , type = OptionType.Natural
+        , default = Value.Natural 4
+        , ormolu = Value.Natural 2
+        , cli = None CLI
+        }
+      , { name = "function-arrows"
+        , fieldName = "poFunctionArrows"
+        , description = "Styling of arrows in type signatures"
+        , type = OptionType.Enum FunctionArrowsStyle
+        , default = Value.Enum Enum.TrailingArrows
+        , ormolu = Value.Enum Enum.TrailingArrows
+        , cli = None CLI
+        }
+      , { name = "comma-style"
+        , fieldName = "poCommaStyle"
+        , description = "How to place commas in multi-line lists, records, etc."
+        , type = OptionType.Enum CommaStyle
+        , default = Value.Enum Enum.Leading
+        , ormolu = Value.Enum Enum.Trailing
+        , cli = None CLI
+        }
+      , { name = "import-export-style"
+        , fieldName = "poImportExportStyle"
+        , description = "Styling of import/export lists"
+        , type = OptionType.Enum ImportExportStyle
+        , default = Value.Enum Enum.ImportExportDiffFriendly
+        , ormolu = Value.Enum Enum.ImportExportTrailing
+        , cli = None CLI
+        }
+      , { name = "indent-wheres"
+        , fieldName = "poIndentWheres"
+        , description =
+            "Whether to full-indent or half-indent 'where' bindings past the preceding body"
+        , type = OptionType.Bool
+        , default = Value.Enum Enum.False
+        , ormolu = Value.Enum Enum.True
+        , cli = None CLI
+        }
+      , { name = "record-brace-space"
+        , fieldName = "poRecordBraceSpace"
+        , description =
+            "Whether to leave a space before an opening record brace"
+        , type = OptionType.Bool
+        , default = Value.Enum Enum.False
+        , ormolu = Value.Enum Enum.True
+        , cli = None CLI
+        }
+      , { name = "newlines-between-decls"
+        , fieldName = "poNewlinesBetweenDecls"
+        , description = "Number of spaces between top-level declarations"
+        , type = OptionType.Natural
+        , default = Value.Natural 1
+        , ormolu = Value.Natural 1
+        , cli = None CLI
+        }
+      , { name = "haddock-style"
+        , fieldName = "poHaddockStyle"
+        , description = "How to print Haddock comments"
+        , type = OptionType.Enum HaddockPrintStyle
+        , default = Value.Enum Enum.HaddockMultiLine
+        , ormolu = Value.Enum Enum.HaddockSingleLine
+        , cli = None CLI
+        }
+      , { name = "haddock-style-module"
+        , fieldName = "poHaddockStyleModule"
+        , description = "How to print module docstring"
+        , type = OptionType.ADT HaddockPrintStyleModule
+        , default = Value.Enum Enum.PrintStyleInherit
+        , ormolu = Value.Enum Enum.PrintStyleInherit
+        , cli = None CLI
+        }
+      , { name = "let-style"
+        , fieldName = "poLetStyle"
+        , description = "Styling of let blocks"
+        , type = OptionType.Enum LetStyle
+        , default = Value.Enum Enum.LetAuto
+        , ormolu = Value.Enum Enum.LetInline
+        , cli = None CLI
+        }
+      , { name = "in-style"
+        , fieldName = "poInStyle"
+        , description =
+            "How to align the 'in' keyword with respect to the 'let' keyword"
+        , type = OptionType.Enum InStyle
+        , default = Value.Enum Enum.InRightAlign
+        , ormolu = Value.Enum Enum.InRightAlign
+        , cli = None CLI
+        }
+      , { name = "unicode"
+        , fieldName = "poUnicode"
+        , description = "Output Unicode syntax"
+        , type = OptionType.Enum Unicode
+        , default = Value.Enum Enum.UnicodeNever
+        , ormolu = Value.Enum Enum.UnicodeNever
+        , cli = None CLI
+        }
+      , { name = "respectful"
+        , fieldName = "poRespectful"
+        , description =
+            "Give the programmer more choice on where to insert blank lines"
+        , type = OptionType.Bool
+        , default = Value.Enum Enum.True
+        , ormolu = Value.Enum Enum.False
+        , cli = None CLI
+        }
+      ]
 
 in  { showPlaceholder
     , showType
@@ -234,127 +368,6 @@ in  { showPlaceholder
     , EnumType
     , FieldType
     , typeName
-    , options =
-          [ { name = "indentation"
-            , fieldName = "poIndentation"
-            , description = "Number of spaces per indentation step"
-            , type = OptionType.Natural
-            , default = Value.Natural 4
-            , ormolu = Value.Natural 2
-            , cli = None CLI
-            }
-          , { name = "function-arrows"
-            , fieldName = "poFunctionArrows"
-            , description = "Styling of arrows in type signatures"
-            , type = OptionType.Enum FunctionArrowsStyle
-            , default = Value.Enum Enum.TrailingArrows
-            , ormolu = Value.Enum Enum.TrailingArrows
-            , cli = None CLI
-            }
-          , { name = "comma-style"
-            , fieldName = "poCommaStyle"
-            , description =
-                "How to place commas in multi-line lists, records, etc."
-            , type = OptionType.Enum CommaStyle
-            , default = Value.Enum Enum.Leading
-            , ormolu = Value.Enum Enum.Trailing
-            , cli = None CLI
-            }
-          , { name = "import-export-style"
-            , fieldName = "poImportExportStyle"
-            , description = "Styling of import/export lists"
-            , type = OptionType.Enum ImportExportStyle
-            , default = Value.Enum Enum.ImportExportDiffFriendly
-            , ormolu = Value.Enum Enum.ImportExportTrailing
-            , cli = None CLI
-            }
-          , { name = "indent-wheres"
-            , fieldName = "poIndentWheres"
-            , description =
-                "Whether to full-indent or half-indent 'where' bindings past the preceding body"
-            , type = OptionType.Bool
-            , default = Value.Enum Enum.False
-            , ormolu = Value.Enum Enum.True
-            , cli = None CLI
-            }
-          , { name = "record-brace-space"
-            , fieldName = "poRecordBraceSpace"
-            , description =
-                "Whether to leave a space before an opening record brace"
-            , type = OptionType.Bool
-            , default = Value.Enum Enum.False
-            , ormolu = Value.Enum Enum.True
-            , cli = None CLI
-            }
-          , { name = "newlines-between-decls"
-            , fieldName = "poNewlinesBetweenDecls"
-            , description = "Number of spaces between top-level declarations"
-            , type = OptionType.Natural
-            , default = Value.Natural 1
-            , ormolu = Value.Natural 1
-            , cli = None CLI
-            }
-          , { name = "haddock-style"
-            , fieldName = "poHaddockStyle"
-            , description = "How to print Haddock comments"
-            , type = OptionType.Enum HaddockPrintStyle
-            , default = Value.Enum Enum.HaddockMultiLine
-            , ormolu = Value.Enum Enum.HaddockSingleLine
-            , cli = None CLI
-            }
-          , { name = "haddock-style-module"
-            , fieldName = "poHaddockStyleModule"
-            , description = "How to print module docstring"
-            , type = OptionType.ADT HaddockPrintStyleModule
-            , default = Value.Enum Enum.PrintStyleInherit
-            , ormolu = Value.Enum Enum.PrintStyleInherit
-            , cli = None CLI
-            }
-          , { name = "let-style"
-            , fieldName = "poLetStyle"
-            , description = "Styling of let blocks"
-            , type = OptionType.Enum LetStyle
-            , default = Value.Enum Enum.LetAuto
-            , ormolu = Value.Enum Enum.LetInline
-            , cli = None CLI
-            }
-          , { name = "in-style"
-            , fieldName = "poInStyle"
-            , description =
-                "How to align the 'in' keyword with respect to the 'let' keyword"
-            , type = OptionType.Enum InStyle
-            , default = Value.Enum Enum.InRightAlign
-            , ormolu = Value.Enum Enum.InRightAlign
-            , cli = None CLI
-            }
-          , { name = "unicode"
-            , fieldName = "poUnicode"
-            , description = "Output Unicode syntax"
-            , type = OptionType.Enum Unicode
-            , default = Value.Enum Enum.UnicodeNever
-            , ormolu = Value.Enum Enum.UnicodeNever
-            , cli = None CLI
-            }
-          , { name = "respectful"
-            , fieldName = "poRespectful"
-            , description =
-                "Give the programmer more choice on where to insert blank lines"
-            , type = OptionType.Bool
-            , default = Value.Enum Enum.True
-            , ormolu = Value.Enum Enum.False
-            , cli = None CLI
-            }
-          ]
-        : List Option
-    , fieldTypes =
-          [ FieldType.Enum CommaStyle
-          , FieldType.Enum FunctionArrowsStyle
-          , FieldType.Enum HaddockPrintStyle
-          , FieldType.ADT HaddockPrintStyleModule
-          , FieldType.Enum ImportExportStyle
-          , FieldType.Enum LetStyle
-          , FieldType.Enum InStyle
-          , FieldType.Enum Unicode
-          ]
-        : List FieldType
+    , options
+    , fieldTypes
     }
