@@ -29,40 +29,35 @@ let list =
               )
               (Prelude.List.indexed data.Enum fieldType.constructors)
 
-let instance1 =
-      \(typeName : Text) ->
-      \(parsePrinterOptType : Text) ->
-        ''
-        instance PrinterOptsFieldType ${typeName} where
-          parsePrinterOptType = ${parsePrinterOptType}''
-
 let instance =
       \(fieldType : data.FieldType) ->
-        instance1
-          (data.typeName fieldType)
-          ( merge
-              { Enum =
-                  \(x : data.EnumType) ->
-                    ''
-                    \s ->
-                        case s of
-                    ${Prelude.Text.concatMap
-                        data.Enum
-                        ( \(enum : data.Enum) ->
-                            ''
-                                  "${data.showEnumPretty
-                                       enum}" -> Right ${data.showEnum enum}
-                            ''
-                        )
-                        x.constructors}      _ ->
-                            Left . unlines $
-                              [ "unknown value: " <> show s
-                              , "Valid values are: ${list x}"
-                              ]''
-              , ADT = \(x : data.ADT) -> x.parsePrinterOptType
-              }
-              fieldType
-          )
+        let def =
+              merge
+                { Enum =
+                    \(x : data.EnumType) ->
+                      ''
+                      \s ->
+                          case s of
+                      ${Prelude.Text.concatMap
+                          data.Enum
+                          ( \(enum : data.Enum) ->
+                              ''
+                                    "${data.showEnumPretty
+                                         enum}" -> Right ${data.showEnum enum}
+                              ''
+                          )
+                          x.constructors}      _ ->
+                              Left . unlines $
+                                [ "unknown value: " <> show s
+                                , "Valid values are: ${list x}"
+                                ]''
+                , ADT = \(x : data.ADT) -> x.parsePrinterOptType
+                }
+                fieldType
+
+        in  ''
+            instance PrinterOptsFieldType ${data.typeName fieldType} where
+              parsePrinterOptType = ${def}''
 
 in  ''
     {- FOURMOLU_DISABLE -}
