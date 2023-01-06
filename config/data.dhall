@@ -24,7 +24,7 @@ let Enum =
       | True
       >
 
-let Value = < Bool : Bool | Natural : Natural | Text : Text | Enum : Enum >
+let Value = < Natural : Natural | Text : Text | Enum : Enum >
 
 let showEnum =
       \(x : Enum) ->
@@ -88,19 +88,14 @@ let showValue
     : Value -> Text
     = \(v : Value) ->
         merge
-          { Bool = \(x : Bool) -> if x then "True" else "False"
-          , Natural = Natural/show
-          , Text = \(x : Text) -> x
-          , Enum = showEnum
-          }
+          { Natural = Natural/show, Text = \(x : Text) -> x, Enum = showEnum }
           v
 
 let showValuePretty
     : Value -> Text
     = \(v : Value) ->
         merge
-          { Bool = \(x : Bool) -> if x then "true" else "false"
-          , Natural = Natural/show
+          { Natural = Natural/show
           , Text = \(x : Text) -> x
           , Enum = showEnumPretty
           }
@@ -155,6 +150,8 @@ let Unicode =
       , constructors =
         [ Enum.UnicodeDetect, Enum.UnicodeAlways, Enum.UnicodeNever ]
       }
+
+let Boolean = { name = "Bool", constructors = [ Enum.False, Enum.True ] }
 
 let EnumType = { name : Text, constructors : List Enum }
 
@@ -233,6 +230,7 @@ in  { showPlaceholder
     , Option
     , Enum
     , ADT
+    , Boolean
     , EnumType
     , FieldType
     , typeName
@@ -275,8 +273,8 @@ in  { showPlaceholder
             , description =
                 "Whether to full-indent or half-indent 'where' bindings past the preceding body"
             , type = OptionType.Bool
-            , default = Value.Bool False
-            , ormolu = Value.Bool True
+            , default = Value.Enum Enum.False
+            , ormolu = Value.Enum Enum.True
             , cli = None CLI
             }
           , { name = "record-brace-space"
@@ -284,8 +282,8 @@ in  { showPlaceholder
             , description =
                 "Whether to leave a space before an opening record brace"
             , type = OptionType.Bool
-            , default = Value.Bool False
-            , ormolu = Value.Bool True
+            , default = Value.Enum Enum.False
+            , ormolu = Value.Enum Enum.True
             , cli = None CLI
             }
           , { name = "newlines-between-decls"
@@ -342,8 +340,8 @@ in  { showPlaceholder
             , description =
                 "Give the programmer more choice on where to insert blank lines"
             , type = OptionType.Bool
-            , default = Value.Bool True
-            , ormolu = Value.Bool False
+            , default = Value.Enum Enum.True
+            , ormolu = Value.Enum Enum.False
             , cli = None CLI
             }
           ]

@@ -240,10 +240,7 @@ in  ''
     instance PrinterOptsFieldType Int where
       parsePrinterOptType = readEither
 
-    ${instance
-        ( data.FieldType.Enum
-            { name = "Bool", constructors = [ data.Enum.False, data.Enum.True ] }
-        )}
+    ${instance (data.FieldType.Enum data.Boolean)}
 
 
     ${Prelude.Text.concatMapSep
