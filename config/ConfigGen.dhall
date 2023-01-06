@@ -1,40 +1,40 @@
 let data = ./data.dhall
 
-let prelude = ./prelude.dhall
+let Prelude = ./Prelude.dhall
 
 let list =
       \(fieldType : data.EnumType) ->
-        prelude.Text.concatMap
+        Prelude.Text.concatMap
           { index : Natural, value : data.Enum }
           ( \(enum : { index : Natural, value : data.Enum }) ->
                   "\\\"${data.showEnumPretty enum.value}\\\""
-              ++  ( if        prelude.Natural.greaterThan
-                                ( prelude.List.length
+              ++  ( if        Prelude.Natural.greaterThan
+                                ( Prelude.List.length
                                     data.Enum
                                     fieldType.constructors
                                 )
                                 2
-                          &&  prelude.Natural.lessThan
+                          &&  Prelude.Natural.lessThan
                                 (enum.index + 1)
-                                ( prelude.List.length
+                                ( Prelude.List.length
                                     data.Enum
                                     fieldType.constructors
                                 )
                     then  ","
                     else  ""
                   )
-              ++  ( if    prelude.Natural.lessThan
+              ++  ( if    Prelude.Natural.lessThan
                             (enum.index + 1)
-                            ( prelude.List.length
+                            ( Prelude.List.length
                                 data.Enum
                                 fieldType.constructors
                             )
                     then  " "
                     else  ""
                   )
-              ++  ( if    prelude.Natural.equal
+              ++  ( if    Prelude.Natural.equal
                             (enum.index + 2)
-                            ( prelude.List.length
+                            ( Prelude.List.length
                                 data.Enum
                                 fieldType.constructors
                             )
@@ -42,7 +42,7 @@ let list =
                     else  ""
                   )
           )
-          (prelude.List.indexed data.Enum fieldType.constructors)
+          (Prelude.List.indexed data.Enum fieldType.constructors)
 
 let q = 1
 
@@ -56,7 +56,7 @@ in  ''
 
     module Ormolu.Config.Gen
       ( PrinterOpts (..)
-    ${prelude.Text.concatMapSep
+    ${Prelude.Text.concatMapSep
         "\n"
         data.FieldType
         (\(fieldType : data.FieldType) -> "  , ${data.typeName fieldType} (..)")
@@ -80,10 +80,10 @@ in  ''
     -- | Options controlling formatting output.
     data PrinterOpts f =
       PrinterOpts
-    ${prelude.Text.concatMap
+    ${Prelude.Text.concatMap
         { index : Natural, value : data.Option }
         ( \(option : { index : Natural, value : data.Option }) ->
-            let lead = if prelude.Natural.isZero option.index then "{" else ","
+            let lead = if Prelude.Natural.isZero option.index then "{" else ","
 
             in  ''
                     ${lead} -- | ${option.value.description}
@@ -91,37 +91,37 @@ in  ''
                                                          option.value.type}
                 ''
         )
-        (prelude.List.indexed data.Option data.options)}    }
+        (Prelude.List.indexed data.Option data.options)}    }
       deriving (Generic)
 
     emptyPrinterOpts :: PrinterOpts Maybe
     emptyPrinterOpts =
       PrinterOpts
-    ${prelude.Text.concatMap
+    ${Prelude.Text.concatMap
         { index : Natural, value : data.Option }
         ( \(option : { index : Natural, value : data.Option }) ->
-            let lead = if prelude.Natural.isZero option.index then "{" else ","
+            let lead = if Prelude.Natural.isZero option.index then "{" else ","
 
             in  ''
                     ${lead} ${option.value.fieldName} = Nothing
                 ''
         )
-        (prelude.List.indexed data.Option data.options)}    }
+        (Prelude.List.indexed data.Option data.options)}    }
 
     defaultPrinterOpts :: PrinterOpts Identity
     defaultPrinterOpts =
       PrinterOpts
-    ${prelude.Text.concatMap
+    ${Prelude.Text.concatMap
         { index : Natural, value : data.Option }
         ( \(option : { index : Natural, value : data.Option }) ->
-            let lead = if prelude.Natural.isZero option.index then "{" else ","
+            let lead = if Prelude.Natural.isZero option.index then "{" else ","
 
             in  ''
                     ${lead} ${option.value.fieldName} = pure ${data.showValue
                                                                  option.value.default}
                 ''
         )
-        (prelude.List.indexed data.Option data.options)}    }
+        (Prelude.List.indexed data.Option data.options)}    }
 
     -- | Fill the field values that are 'Nothing' in the first argument
     -- with the values of the corresponding fields of the second argument.
@@ -133,16 +133,16 @@ in  ''
       PrinterOpts f
     fillMissingPrinterOpts p1 p2 =
       PrinterOpts
-    ${prelude.Text.concatMap
+    ${Prelude.Text.concatMap
         { index : Natural, value : data.Option }
         ( \(option : { index : Natural, value : data.Option }) ->
-            let lead = if prelude.Natural.isZero option.index then "{" else ","
+            let lead = if Prelude.Natural.isZero option.index then "{" else ","
 
             in  ''
                     ${lead} ${option.value.fieldName} = maybe (${option.value.fieldName} p2) pure (${option.value.fieldName} p1)
                 ''
         )
-        (prelude.List.indexed data.Option data.options)}    }
+        (Prelude.List.indexed data.Option data.options)}    }
 
     parsePrinterOptsCLI ::
       Applicative f =>
@@ -150,10 +150,10 @@ in  ''
       f (PrinterOpts Maybe)
     parsePrinterOptsCLI f =
       pure PrinterOpts
-    ${prelude.Text.concatMap
+    ${Prelude.Text.concatMap
         { index : Natural, value : data.Option }
         ( \(option : { index : Natural, value : data.Option }) ->
-            let lead = if prelude.Natural.isZero option.index then "{" else ","
+            let lead = if Prelude.Natural.isZero option.index then "{" else ","
 
             in  let choices =
                       merge
@@ -184,23 +184,23 @@ in  ''
                           "${data.showPlaceholder option.value.type}"
                     ''
         )
-        (prelude.List.indexed data.Option data.options)}
+        (Prelude.List.indexed data.Option data.options)}
     parsePrinterOptsJSON ::
       Applicative f =>
       (forall a. PrinterOptsFieldType a => String -> f (Maybe a)) ->
       f (PrinterOpts Maybe)
     parsePrinterOptsJSON f =
       pure PrinterOpts
-    ${prelude.Text.concatMap
+    ${Prelude.Text.concatMap
         { index : Natural, value : data.Option }
         ( \(option : { index : Natural, value : data.Option }) ->
-            let lead = if prelude.Natural.isZero option.index then "{" else ","
+            let lead = if Prelude.Natural.isZero option.index then "{" else ","
 
             in  ''
                     <*> f "${option.value.name}"
                 ''
         )
-        (prelude.List.indexed data.Option data.options)}
+        (Prelude.List.indexed data.Option data.options)}
     {---------- PrinterOpts field types ----------}
 
     class Aeson.FromJSON a => PrinterOptsFieldType a where
@@ -221,28 +221,28 @@ in  ''
               ]
 
 
-    ${prelude.Text.concatMapSep
+    ${Prelude.Text.concatMapSep
         "\n"
         data.FieldType
         ( \(fieldType : data.FieldType) ->
             ''
             data ${data.typeName fieldType}
-            ${prelude.Text.concatMap
+            ${Prelude.Text.concatMap
                 { index : Natural, value : Text }
                 ( \(enum : { index : Natural, value : Text }) ->
                     let lead =
-                          if prelude.Natural.isZero enum.index then "=" else "|"
+                          if Prelude.Natural.isZero enum.index then "=" else "|"
 
                     in  ''
                           ${lead} ${enum.value}
                         ''
                 )
-                ( prelude.List.indexed
+                ( Prelude.List.indexed
                     Text
                     ( merge
                         { Enum =
                             \(x : data.EnumType) ->
-                              prelude.List.map
+                              Prelude.List.map
                                 data.Enum
                                 Text
                                 data.showEnum
@@ -261,7 +261,7 @@ in  ''
             ''
         )
         data.fieldTypes}
-    ${prelude.Text.concatMapSep
+    ${Prelude.Text.concatMapSep
         "\n"
         data.FieldType
         ( \(fieldType : data.FieldType) ->
@@ -292,7 +292,7 @@ in  ''
                       ''
                         parsePrinterOptType s =
                           case s of
-                      ${prelude.Text.concatMap
+                      ${Prelude.Text.concatMap
                           data.Enum
                           ( \(enum : data.Enum) ->
                               ''

@@ -1,4 +1,4 @@
-let prelude = ./prelude.dhall
+let Prelude = ./Prelude.dhall
 
 let Enum =
       < Leading
