@@ -37,25 +37,22 @@ let indexed =
       \(T : Type) ->
       \(start : Text) ->
       \(separator : Text) ->
-      \(end : Text) ->
       \(f : T -> Text) ->
       \(xs : List T) ->
         pad
           n
-          (     Prelude.Text.concatMapSep
-                  "\n"
-                  { index : Natural, value : T }
-                  ( \(x : { index : Natural, value : T }) ->
-                      let lead =
-                            if    Prelude.Natural.isZero x.index
-                            then  start
-                            else  separator
+          ( Prelude.Text.concatMapSep
+              "\n"
+              { index : Natural, value : T }
+              ( \(x : { index : Natural, value : T }) ->
+                  let lead =
+                        if    Prelude.Natural.isZero x.index
+                        then  start
+                        else  separator
 
-                      in  "${lead} ${f x.value}"
-                  )
-                  (Prelude.List.indexed T xs)
-            ++  "\n"
-            ++  end
+                  in  "${lead} ${f x.value}"
+              )
+              (Prelude.List.indexed T xs)
           )
 
 let instancePrinterOptsFieldType =
@@ -117,11 +114,13 @@ in  ''
 
     module Ormolu.Config.Gen
       ( PrinterOpts (..)
-    ${Prelude.Text.concatMapSep
-        "\n"
-        data.FieldType
-        (\(fieldType : data.FieldType) -> "  , ${data.typeName fieldType} (..)")
-        data.fieldTypes}
+      ${indexed
+          2
+          data.FieldType
+          ","
+          ","
+          (\(fieldType : data.FieldType) -> "${data.typeName fieldType} (..)")
+          data.fieldTypes}
       , emptyPrinterOpts
       , defaultPrinterOpts
       , fillMissingPrinterOpts
@@ -146,13 +145,13 @@ in  ''
             data.Option
             "{"
             ","
-            "}"
             ( \(option : data.Option) ->
                 ''
                 -- | ${option.description}
                   ${option.fieldName} :: f ${data.showType option.type}''
             )
             data.options}
+        }
       deriving (Generic)
 
     emptyPrinterOpts :: PrinterOpts Maybe
@@ -163,9 +162,9 @@ in  ''
             data.Option
             "{"
             ","
-            "}"
             (\(option : data.Option) -> "${option.fieldName} = Nothing")
             data.options}
+        }
 
     defaultPrinterOpts :: PrinterOpts Identity
     defaultPrinterOpts =
@@ -175,11 +174,11 @@ in  ''
             data.Option
             "{"
             ","
-            "}"
             ( \(option : data.Option) ->
                 "${option.fieldName} = pure ${data.showValue option.default}"
             )
             data.options}
+        }
 
     -- | Fill the field values that are 'Nothing' in the first argument
     -- with the values of the corresponding fields of the second argument.
@@ -196,11 +195,11 @@ in  ''
             data.Option
             "{"
             ","
-            "}"
             ( \(option : data.Option) ->
                 "${option.fieldName} = maybe (${option.fieldName} p2) pure (${option.fieldName} p1)"
             )
             data.options}
+        }
 
     parsePrinterOptsCLI ::
       Applicative f =>
@@ -276,14 +275,6 @@ in  ''
                   Text
                   "="
                   "|"
-                  ( merge
-                      { Enum =
-                          \(x : data.EnumType) ->
-                            "deriving (Eq, Show, Enum, Bounded)"
-                      , ADT = \(x : data.ADT) -> "deriving (Eq, Show)"
-                      }
-                      fieldType
-                  )
                   (\(t : Text) -> t)
                   ( merge
                       { Enum =
@@ -297,6 +288,13 @@ in  ''
                       }
                       fieldType
                   )}
+              ${merge
+                  { Enum =
+                      \(x : data.EnumType) ->
+                        "deriving (Eq, Show, Enum, Bounded)"
+                  , ADT = \(x : data.ADT) -> "deriving (Eq, Show)"
+                  }
+                  fieldType}
             ''
         )
         data.fieldTypes}
