@@ -4,45 +4,30 @@ let Prelude = ./Prelude.dhall
 
 let list =
       \(fieldType : data.EnumType) ->
-        Prelude.Text.concatMap
-          { index : Natural, value : data.Enum }
-          ( \(enum : { index : Natural, value : data.Enum }) ->
-                  "\\\"${data.showEnumPretty enum.value}\\\""
-              ++  ( if        Prelude.Natural.greaterThan
-                                ( Prelude.List.length
-                                    data.Enum
-                                    fieldType.constructors
-                                )
-                                2
-                          &&  Prelude.Natural.lessThan
-                                (enum.index + 1)
-                                ( Prelude.List.length
-                                    data.Enum
-                                    fieldType.constructors
-                                )
-                    then  ","
-                    else  ""
-                  )
-              ++  ( if    Prelude.Natural.lessThan
-                            (enum.index + 1)
-                            ( Prelude.List.length
-                                data.Enum
-                                fieldType.constructors
-                            )
-                    then  " "
-                    else  ""
-                  )
-              ++  ( if    Prelude.Natural.equal
-                            (enum.index + 2)
-                            ( Prelude.List.length
-                                data.Enum
-                                fieldType.constructors
-                            )
-                    then  "or "
-                    else  ""
-                  )
-          )
-          (Prelude.List.indexed data.Enum fieldType.constructors)
+        let length = Prelude.List.length data.Enum fieldType.constructors
+
+        let comma =
+              \(i : Natural) ->
+                    Prelude.Natural.greaterThan length 2
+                &&  Prelude.Natural.lessThan (i + 1) length
+
+        let space = \(i : Natural) -> Prelude.Natural.lessThan (i + 1) length
+
+        let or = \(i : Natural) -> Prelude.Natural.equal (i + 2) length
+
+        let when = \(b : Bool) -> \(t : Text) -> if b then t else ""
+
+        in  Prelude.Text.concatMap
+              { index : Natural, value : data.Enum }
+              ( \(enum : { index : Natural, value : data.Enum }) ->
+                      "\\\""
+                  ++  data.showEnumPretty enum.value
+                  ++  "\\\""
+                  ++  when (comma enum.index) ","
+                  ++  when (space enum.index) " "
+                  ++  when (or enum.index) "or "
+              )
+              (Prelude.List.indexed data.Enum fieldType.constructors)
 
 let parsePrinterOptTypeEnum =
       \(x : data.EnumType) ->
