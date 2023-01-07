@@ -64,14 +64,12 @@ let instancePrinterOptsFieldType =
                       ''
                       \s ->
                         case s of
-                      ${Prelude.Text.concatMap
-                          data.Enum
-                          ( \(enum : data.Enum) ->
-                              ''
-                                  "${data.showEnumPretty enum}" -> Right ${data.showEnum enum}
-                              ''
-                          )
-                          x.constructors}    _ ->
+                          ${pad 4 (Prelude.Text.concatMapSep
+                              "\n"
+                              data.Enum
+                              (\(x : data.Enum) -> "\"${data.showEnumPretty x}\" -> Right ${data.showEnum x}")
+                              x.constructors)}
+                          _ ->
                             Left . unlines $
                               [ "unknown value: " <> show s
                               , "Valid values are: ${list x}"
