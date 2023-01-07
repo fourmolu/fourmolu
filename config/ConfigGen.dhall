@@ -2,7 +2,7 @@ let data = ./data.dhall
 
 let Prelude = ./Prelude.dhall
 
-let pad =
+let indent =
       \(n : Natural) -> Text/replace "\n" ("\n" ++ Prelude.Text.replicate n " ")
 
 let list =
@@ -39,7 +39,7 @@ let indexed =
       \(separator : Text) ->
       \(f : T -> Text) ->
       \(xs : List T) ->
-        pad
+        indent
           n
           ( Prelude.Text.concatMapSep
               "\n"
@@ -64,7 +64,7 @@ let instancePrinterOptsFieldType =
                       ''
                       \s ->
                         case s of
-                          ${pad 4 (Prelude.Text.concatMapSep
+                          ${indent 4 (Prelude.Text.concatMapSep
                               "\n"
                               data.Enum
                               (\(x : data.Enum) -> "\"${data.showEnumPretty x}\" -> Right ${data.showEnum x}")
@@ -80,7 +80,7 @@ let instancePrinterOptsFieldType =
 
         in  ''
             instance PrinterOptsFieldType ${data.typeName fieldType} where
-              parsePrinterOptType = ${pad 2 def}''
+              parsePrinterOptType = ${indent 2 def}''
 
 let instanceFromJSON =
       \(fieldType : data.FieldType) ->
@@ -99,7 +99,7 @@ let instanceFromJSON =
         in  ''
             instance Aeson.FromJSON ${data.typeName fieldType} where
               parseJSON =
-                ${pad 4 def}''
+                ${indent 4 def}''
 
 in  ''
 {- FOURMOLU_DISABLE -}
