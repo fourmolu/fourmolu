@@ -129,8 +129,8 @@ parsePrinterOptsCLI ::
   (forall a. PrinterOptsFieldType a => String -> String -> String -> f (Maybe a)) ->
   f (PrinterOpts Maybe)
 parsePrinterOptsCLI f =
-  pure PrinterOpts
-    <*> f
+  PrinterOpts
+    <$> f
       "indentation"
       "Number of spaces per indentation step (default: 4)"
       "INT"
@@ -188,8 +188,8 @@ parsePrinterOptsJSON ::
   (forall a. PrinterOptsFieldType a => String -> f (Maybe a)) ->
   f (PrinterOpts Maybe)
 parsePrinterOptsJSON f =
-  pure PrinterOpts
-    <*> f "indentation"
+  PrinterOpts
+    <$> f "indentation"
     <*> f "function-arrows"
     <*> f "comma-style"
     <*> f "import-export-style"

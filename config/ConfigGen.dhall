@@ -205,11 +205,11 @@ parsePrinterOptsCLI ::
   (forall a. PrinterOptsFieldType a => String -> String -> String -> f (Maybe a)) ->
   f (PrinterOpts Maybe)
 parsePrinterOptsCLI f =
-  pure PrinterOpts
+  PrinterOpts
     ${indexed
         4
         data.Option
-        "<*>"
+        "<$>"
         "<*>"
         ( \(option : data.Option) ->
             let choices =
@@ -246,11 +246,11 @@ parsePrinterOptsJSON ::
   (forall a. PrinterOptsFieldType a => String -> f (Maybe a)) ->
   f (PrinterOpts Maybe)
 parsePrinterOptsJSON f =
-  pure PrinterOpts
+  PrinterOpts
     ${indexed
         4
         data.Option
-        "<*>"
+        "<$>"
         "<*>"
         (\(option : data.Option) -> "f \"${option.name}\"")
         data.options}
