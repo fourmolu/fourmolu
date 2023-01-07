@@ -129,8 +129,8 @@ parsePrinterOptsCLI ::
   (forall a. PrinterOptsFieldType a => String -> String -> String -> f (Maybe a)) ->
   f (PrinterOpts Maybe)
 parsePrinterOptsCLI f =
-  pure PrinterOpts
-    <*> f
+  PrinterOpts
+    <$> f
       "indentation"
       "Number of spaces per indentation step (default: 4)"
       "INT"
@@ -188,8 +188,8 @@ parsePrinterOptsJSON ::
   (forall a. PrinterOptsFieldType a => String -> f (Maybe a)) ->
   f (PrinterOpts Maybe)
 parsePrinterOptsJSON f =
-  pure PrinterOpts
-    <*> f "indentation"
+  PrinterOpts
+    <$> f "indentation"
     <*> f "function-arrows"
     <*> f "comma-style"
     <*> f "import-export-style"
@@ -212,14 +212,14 @@ instance PrinterOptsFieldType Int where
   parsePrinterOptType = readEither
 
 instance PrinterOptsFieldType Bool where
-  parsePrinterOptType s =
+  parsePrinterOptType = \s ->
     case s of
       "false" -> Right False
       "true" -> Right True
       _ ->
         Left . unlines $
-          [ "unknown value: " <> show s,
-            "Valid values are: \"false\" or \"true\""
+          [ "unknown value: " <> show s
+          , "Valid values are: \"false\" or \"true\""
           ]
 
 
@@ -276,7 +276,7 @@ instance Aeson.FromJSON CommaStyle where
         parsePrinterOptType (Text.unpack s)
 
 instance PrinterOptsFieldType CommaStyle where
-  parsePrinterOptType s =
+  parsePrinterOptType = \s ->
     case s of
       "leading" -> Right Leading
       "trailing" -> Right Trailing
@@ -293,7 +293,7 @@ instance Aeson.FromJSON FunctionArrowsStyle where
         parsePrinterOptType (Text.unpack s)
 
 instance PrinterOptsFieldType FunctionArrowsStyle where
-  parsePrinterOptType s =
+  parsePrinterOptType = \s ->
     case s of
       "trailing" -> Right TrailingArrows
       "leading" -> Right LeadingArrows
@@ -311,7 +311,7 @@ instance Aeson.FromJSON HaddockPrintStyle where
         parsePrinterOptType (Text.unpack s)
 
 instance PrinterOptsFieldType HaddockPrintStyle where
-  parsePrinterOptType s =
+  parsePrinterOptType = \s ->
     case s of
       "single-line" -> Right HaddockSingleLine
       "multi-line" -> Right HaddockMultiLine
@@ -323,10 +323,11 @@ instance PrinterOptsFieldType HaddockPrintStyle where
           ]
 
 instance Aeson.FromJSON HaddockPrintStyleModule where
-  parseJSON = \v -> case v of
-    Aeson.Null -> pure PrintStyleInherit
-    Aeson.String "" -> pure PrintStyleInherit
-    _ -> PrintStyleOverride <$> Aeson.parseJSON v
+  parseJSON =
+    \v -> case v of
+      Aeson.Null -> pure PrintStyleInherit
+      Aeson.String "" -> pure PrintStyleInherit
+      _ -> PrintStyleOverride <$> Aeson.parseJSON v
 
 instance PrinterOptsFieldType HaddockPrintStyleModule where
   parsePrinterOptType = \s -> case s of
@@ -340,7 +341,7 @@ instance Aeson.FromJSON ImportExportStyle where
         parsePrinterOptType (Text.unpack s)
 
 instance PrinterOptsFieldType ImportExportStyle where
-  parsePrinterOptType s =
+  parsePrinterOptType = \s ->
     case s of
       "leading" -> Right ImportExportLeading
       "trailing" -> Right ImportExportTrailing
@@ -358,7 +359,7 @@ instance Aeson.FromJSON LetStyle where
         parsePrinterOptType (Text.unpack s)
 
 instance PrinterOptsFieldType LetStyle where
-  parsePrinterOptType s =
+  parsePrinterOptType = \s ->
     case s of
       "auto" -> Right LetAuto
       "inline" -> Right LetInline
@@ -377,7 +378,7 @@ instance Aeson.FromJSON InStyle where
         parsePrinterOptType (Text.unpack s)
 
 instance PrinterOptsFieldType InStyle where
-  parsePrinterOptType s =
+  parsePrinterOptType = \s ->
     case s of
       "left-align" -> Right InLeftAlign
       "right-align" -> Right InRightAlign
@@ -394,7 +395,7 @@ instance Aeson.FromJSON Unicode where
         parsePrinterOptType (Text.unpack s)
 
 instance PrinterOptsFieldType Unicode where
-  parsePrinterOptType s =
+  parsePrinterOptType = \s ->
     case s of
       "detect" -> Right UnicodeDetect
       "always" -> Right UnicodeAlways

@@ -5,9 +5,5 @@ set -eux -o pipefail
 HERE="$(builtin cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "${HERE}"
 
-if [[ ! -d "${HERE}/venv" ]]; then
-    python3 -m venv venv
-fi
-
-venv/bin/python -m pip install Jinja2 PyYAML
-venv/bin/python generate.py
+dhall text --file fourmolu_yaml.dhall --output ../fourmolu.yaml
+dhall text --file ConfigGen.dhall --output ../src/Ormolu/Config/Gen.hs
