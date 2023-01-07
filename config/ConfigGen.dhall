@@ -68,8 +68,7 @@ let instancePrinterOptsFieldType =
                           data.Enum
                           ( \(enum : data.Enum) ->
                               ''
-                                  "${data.showEnumPretty
-                                       enum}" -> Right ${data.showEnum enum}
+                                  "${data.showEnumPretty enum}" -> Right ${data.showEnum enum}
                               ''
                           )
                           x.constructors}    _ ->
