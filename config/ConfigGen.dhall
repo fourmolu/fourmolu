@@ -207,25 +207,28 @@ parsePrinterOptsCLI ::
   f (PrinterOpts Maybe)
 parsePrinterOptsCLI f =
   pure PrinterOpts
-${Prelude.Text.concatMap
-    data.Option
-    ( \(option : data.Option) ->
-        let choices =
-              merge
-                { Bool = ""
-                , Natural = ""
-                , Text = ""
-                , Enum = \(ft : data.EnumType) -> "(choices: ${list ft}) "
-                , ADT = \(ft : data.ADT) -> ""
-                }
-                option.type
+    ${indexed
+        4
+        data.Option
+        "<*>"
+        "<*>"
+        ( \(option : data.Option) ->
+            let choices =
+                  merge
+                    { Bool = ""
+                    , Natural = ""
+                    , Text = ""
+                    , Enum =
+                        \(ft : data.EnumType) -> "(choices: ${list ft}) "
+                    , ADT = \(ft : data.ADT) -> ""
+                    }
+                    option.type
 
-        let default =
-              "${option.description} ${choices}(default: ${data.showValuePretty
-                                                                 option.default})"
+            let default =
+                  "${option.description} ${choices}(default: ${data.showValuePretty option.default})"
 
-        in  ''
-                <*> f
+            in  ''
+                f
                   "${option.name}"
                   "${merge
                        { Enum = \(x : data.EnumType) -> default
@@ -235,24 +238,24 @@ ${Prelude.Text.concatMap
                        , ADT = \(x : data.ADT) -> x.cli
                        }
                        option.type}"
-                  "${data.showPlaceholder option.type}"
-            ''
-    )
-    data.options}
+                  "${data.showPlaceholder option.type}"''
+        )
+        data.options}
+
 parsePrinterOptsJSON ::
   Applicative f =>
   (forall a. PrinterOptsFieldType a => String -> f (Maybe a)) ->
   f (PrinterOpts Maybe)
 parsePrinterOptsJSON f =
   pure PrinterOpts
-${Prelude.Text.concatMap
-    data.Option
-    ( \(option : data.Option) ->
-        ''
-            <*> f "${option.name}"
-        ''
-    )
-    data.options}
+    ${indexed
+        4
+        data.Option
+        "<*>"
+        "<*>"
+        (\(option : data.Option) -> "f \"${option.name}\"")
+        data.options}
+
 {---------- PrinterOpts field types ----------}
 
 class Aeson.FromJSON a => PrinterOptsFieldType a where
