@@ -5,7 +5,7 @@ let Prelude = ./Prelude.dhall
 let indent =
       \(n : Natural) -> Text/replace "\n" ("\n" ++ Prelude.Text.replicate n " ")
 
-let list =
+let typeValueCommaList =
       \(fieldType : data.EnumType) ->
         let length = Prelude.List.length data.Enum fieldType.constructors
 
@@ -72,7 +72,7 @@ let instancePrinterOptsFieldType =
                           _ ->
                             Left . unlines $
                               [ "unknown value: " <> show s
-                              , "Valid values are: ${list x}"
+                              , "Valid values are: ${typeValueCommaList x}"
                               ]''
                 , ADT = \(x : data.ADT) -> x.parsePrinterOptType
                 }
@@ -213,7 +213,7 @@ parsePrinterOptsCLI f =
                     { Bool = ""
                     , Natural = ""
                     , Text = ""
-                    , Enum = \(x : data.EnumType) -> "(choices: ${list x}) "
+                    , Enum = \(x : data.EnumType) -> "(choices: ${typeValueCommaList x}) "
                     , ADT = \(x : data.ADT) -> ""
                     }
                     option.type
