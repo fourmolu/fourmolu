@@ -335,19 +335,21 @@ let options
         }
       ]
 
-in  { showPlaceholder
-    , showType
+in  { Enum
+    , Value
     , showEnum
     , showEnumPretty
     , showValue
     , showValuePretty
-    , Option
-    , Enum
-    , ADT
-    , Boolean
     , EnumType
+    , Boolean
+    , ADT
     , FieldType
     , typeName
-    , options
+    , OptionType
+    , showType
+    , showPlaceholder
     , fieldTypes
+    , Option
+    , options
     }
