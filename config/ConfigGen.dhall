@@ -32,7 +32,7 @@ let typeValueCommaList =
               )
               (Prelude.List.indexed data.Enum fieldType.constructors)
 
-let indexed =
+let list =
       \(n : Natural) ->
       \(T : Type) ->
       \(start : Text) ->
@@ -111,7 +111,7 @@ in  ''
 
 module Ormolu.Config.Gen
   ( PrinterOpts (..)
-  ${indexed
+  ${list
       2
       data.FieldType
       ","
@@ -137,7 +137,7 @@ import Text.Read (readEither)
 -- | Options controlling formatting output.
 data PrinterOpts f =
   PrinterOpts
-    ${indexed
+    ${list
         4
         data.Option
         "{"
@@ -154,7 +154,7 @@ data PrinterOpts f =
 emptyPrinterOpts :: PrinterOpts Maybe
 emptyPrinterOpts =
   PrinterOpts
-    ${indexed
+    ${list
         4
         data.Option
         "{"
@@ -166,7 +166,7 @@ emptyPrinterOpts =
 defaultPrinterOpts :: PrinterOpts Identity
 defaultPrinterOpts =
   PrinterOpts
-    ${indexed
+    ${list
         4
         data.Option
         "{"
@@ -185,7 +185,7 @@ fillMissingPrinterOpts ::
   PrinterOpts f
 fillMissingPrinterOpts p1 p2 =
   PrinterOpts
-    ${indexed
+    ${list
         4
         data.Option
         "{"
@@ -202,7 +202,7 @@ parsePrinterOptsCLI ::
   f (PrinterOpts Maybe)
 parsePrinterOptsCLI f =
   PrinterOpts
-    ${indexed
+    ${list
         4
         data.Option
         "<$>"
@@ -242,7 +242,7 @@ parsePrinterOptsJSON ::
   f (PrinterOpts Maybe)
 parsePrinterOptsJSON f =
   PrinterOpts
-    ${indexed
+    ${list
         4
         data.Option
         "<$>"
@@ -267,7 +267,7 @@ ${Prelude.Text.concatMapSep
     ( \(fieldType : data.FieldType) ->
         ''
         data ${data.typeName fieldType}
-          ${indexed
+          ${list
               2
               Text
               "="
