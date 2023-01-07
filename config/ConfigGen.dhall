@@ -173,9 +173,7 @@ defaultPrinterOpts =
         data.Option
         "{"
         ","
-        ( \(option : data.Option) ->
-            "${option.fieldName} = pure ${data.showValue option.default}"
-        )
+        (\(option : data.Option) -> "${option.fieldName} = pure ${data.showValue option.default}")
         data.options}
     }
 
@@ -217,9 +215,8 @@ parsePrinterOptsCLI f =
                     { Bool = ""
                     , Natural = ""
                     , Text = ""
-                    , Enum =
-                        \(ft : data.EnumType) -> "(choices: ${list ft}) "
-                    , ADT = \(ft : data.ADT) -> ""
+                    , Enum = \(x : data.EnumType) -> "(choices: ${list x}) "
+                    , ADT = \(x : data.ADT) -> ""
                     }
                     option.type
 
@@ -291,9 +288,7 @@ ${Prelude.Text.concatMapSep
                   fieldType
               )}
           ${merge
-              { Enum =
-                  \(x : data.EnumType) ->
-                    "deriving (Eq, Show, Enum, Bounded)"
+              { Enum = \(x : data.EnumType) -> "deriving (Eq, Show, Enum, Bounded)"
               , ADT = \(x : data.ADT) -> "deriving (Eq, Show)"
               }
               fieldType}
