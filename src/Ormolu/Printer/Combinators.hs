@@ -99,7 +99,6 @@ import qualified GHC.Data.Strict as Strict
 import GHC.LanguageExtensions.Type
 import GHC.Types.SrcLoc
 import Ormolu.Config
-import Ormolu.Config.Types
 import Ormolu.Printer.Comments
 import Ormolu.Printer.Internal
 import Ormolu.Utils (HasSrcSpan (..))

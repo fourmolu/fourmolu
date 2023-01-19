@@ -31,7 +31,6 @@ import GHC.Types.SourceText
 import GHC.Types.SrcLoc
 import GHC.Types.Var
 import Ormolu.Config
-import Ormolu.Config.Types (FunctionArrowsStyle (..))
 import Ormolu.Printer.Combinators
 import Ormolu.Printer.Meat.Common
 import {-# SOURCE #-} Ormolu.Printer.Meat.Declaration.OpTree (p_tyOpTree, tyOpTree)
