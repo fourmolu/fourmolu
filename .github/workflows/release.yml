@@ -14,43 +14,46 @@ jobs:
       VERSION: ${{ needs.ci.outputs.version }}
 
     steps:
-      - uses: actions/checkout@v3
+      -
+        uses: actions/checkout@v3
         with:
           ref: main
-
-      - uses: actions/download-artifact@v3
+      -
+        uses: actions/download-artifact@v3
         with:
           name: fourmolu-binary-ubuntu-latest
           path: ./bin/
-      - uses: actions/download-artifact@v3
+      -
+        uses: actions/download-artifact@v3
         with:
           name: fourmolu-binary-macos-latest
           path: ./bin/
-      - uses: actions/download-artifact@v3
+      -
+        uses: actions/download-artifact@v3
         with:
           name: fourmolu-sdist
           path: ./sdist/
-
-      - name: Load Hackage token secret name
+      -
+        name: Load Hackage token secret name
         id: hackage_token_secret
         run: |
           USERNAME="$(echo "${GITHUB_ACTOR}" | tr '[:lower:]' '[:upper:]' | tr '-' '_')"
           echo "name=HACKAGE_TOKEN_${USERNAME}" >> "${GITHUB_OUTPUT}"
-
-      - name: Get CHANGELOG section
+      -
+        name: Get CHANGELOG section
         run: |
           if [[ "$(head -n 1 CHANGELOG.md)" != "## Fourmolu ${VERSION}" ]]; then
             echo "CHANGELOG doesn't look updated" >&2
             exit 1
           fi
           sed '1 d; /^## Fourmolu/,$ d' CHANGELOG.md > /tmp/changelog-body
-
-      - uses: brandonchinn178/haskell-actions/hackage-upload@hackage-upload
+      -
+        uses: brandonchinn178/haskell-actions/hackage-upload@hackage-upload
         with:
           archive: sdist/fourmolu-*.tar.gz
           token: ${{ secrets[steps.hackage_token_secret.outputs.name] }}
-
-      - uses: softprops/action-gh-release@v1
+      -
+        uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ env.VERSION }}
           body_path: /tmp/changelog-body
