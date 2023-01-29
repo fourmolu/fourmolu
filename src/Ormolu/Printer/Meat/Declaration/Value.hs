@@ -1049,8 +1049,14 @@ p_let' inDo letLoc localBinds mBody = do
           LetInline -> True
           LetNewline -> False
           LetMixed -> numLocalBinds <= 1
-  -- isInShifted = True if "in" should be right-aligned with "let"
-  let isInShifted = inDo || inStyle == InRightAlign
+  let inString =
+        case inStyle of
+          _ | inDo -> " in"
+          InRightAlign -> " in"
+          InNoAlign -> "in"
+          InLeftAlign
+            | isBlockInline -> "in "
+            | otherwise -> "in"
 
   -- helpers
   let block keyword body = do
@@ -1069,11 +1075,7 @@ p_let' inDo letLoc localBinds mBody = do
             block "in" body
         | otherwise -> do
             newline
-            let in_
-                  | isInShifted = " in"
-                  | isBlockInline = "in "
-                  | otherwise = "in"
-            block in_ body
+            block inString body
       Nothing -> pure ()
   where
     numLocalBinds =
