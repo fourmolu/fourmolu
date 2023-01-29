@@ -137,22 +137,24 @@ Fourmolu aims to continue merging upstream changes in Ormolu. Whenever Ormolu ma
 ### Resolving conflicts
 
 * Conflicts at the following paths should be resolved by keeping the files DELETED (i.e. if there's a "deleted by us" conflict, use `git rm` to avoid adding the file to our repo):
+    * `**/.envrc`
+    * `**/default.nix`
     * `.github/workflows/binaries.yml`
-    * `.buildkite/`
     * `CONTRIBUTING.md`
     * `DESIGN.md`
-    * `format.sh`
+    * `flake.lock`
+    * `flake.nix`
     * `nix/`
-    * `shell.nix`
     * `weeder.dhall`
 
 * Conflicts at the following paths should be resolved by throwing out Ormolu's changes and keeping our changes (i.e. if there's a conflict, use `git checkout --ours`):
     * `stack.yaml`
+    * `.github/workflows/ci.yml`
 
 * The state of the following paths should be the same as they are in Ormolu (i.e. if there's a conflict, use `git checkout --theirs`)
     * `expected-failures/`
 
-* If `default.nix` is changed, manually verify that all end-to-end tests are accounted for. For example, `./region-tests/` is one directory of tests, which is captured in the `fourmolu:region-tests` test suite, where every test in `default.nix` has been ported into the Haskell test suite.
+* If any of the `default.nix` files are changed, manually verify that all end-to-end tests are accounted for. For example, `./region-tests/` is one directory of tests, which is captured in the `fourmolu:region-tests` test suite, where every test in `region-tests/default.nix` has been ported into the Haskell test suite.
 
 * Any Ormolu additions to `CHANGELOG.md` should NOT be kept, but instead be added to a new file in `changelog.d/` (e.g. named `ormolu-X.Y.Z`). See `changelog.d/README.md` for more details.
 
