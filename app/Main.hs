@@ -14,30 +14,25 @@ import Control.Exception (throwIO)
 import Control.Monad
 import Data.Bool (bool)
 import Data.List (intercalate, isSuffixOf, sort)
-import qualified Data.Map as Map
-import Data.Maybe (fromMaybe, mapMaybe)
+import qualified Data.Map.Strict as Map
+import Data.Maybe (fromMaybe, mapMaybe, maybeToList)
 import qualified Data.Set as Set
-import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import Data.Version (showVersion)
 import qualified Data.Yaml as Yaml
-import Development.GitRev
+import Language.Haskell.TH.Env (envQ)
 import Options.Applicative
 import Ormolu
 import Ormolu.Config
 import Ormolu.Diff.Text (diffText, printTextDiff)
-import Ormolu.Fixity (FixityInfo)
+import Ormolu.Fixity (FixityInfo, OpName)
 import Ormolu.Parser (manualExts)
 import Ormolu.Terminal
 import Ormolu.Utils (showOutputable)
-import Ormolu.Utils.Cabal
-import Ormolu.Utils.Fixity
-  ( getFixityOverridesForSourceFile,
-    parseFixityDeclarationStr,
-  )
+import Ormolu.Utils.Fixity (parseFixityDeclarationStr)
 import Ormolu.Utils.IO
 import Paths_fourmolu (version)
-import System.Directory (doesDirectoryExist, getCurrentDirectory, listDirectory)
+import System.Directory
 import System.Exit (ExitCode (..), exitWith)
 import qualified System.FilePath as FP
 import System.IO (hPutStrLn, stderr)
@@ -150,15 +145,35 @@ formatOne ::
   IO ExitCode
 formatOne CabalOpts {..} mode reqSourceType rawConfig mpath =
   withPrettyOrmoluExceptions (cfgColorMode rawConfig) $ do
+    let getCabalInfoForSourceFile' sourceFile = do
+          cabalSearchResult <- getCabalInfoForSourceFile sourceFile
+          let debugEnabled = cfgDebug rawConfig
+          case cabalSearchResult of
+            CabalNotFound -> do
+              when debugEnabled $
+                hPutStrLn stderr $
+                  "Could not find a .cabal file for " <> sourceFile
+              return Nothing
+            CabalDidNotMention cabalInfo -> do
+              when debugEnabled $ do
+                relativeCabalFile <-
+                  makeRelativeToCurrentDirectory (ciCabalFilePath cabalInfo)
+                hPutStrLn stderr $
+                  "Found .cabal file "
+                    <> relativeCabalFile
+                    <> ", but it did not mention "
+                    <> sourceFile
+              return (Just cabalInfo)
+            CabalFound cabalInfo -> return (Just cabalInfo)
     case FP.normalise <$> mpath of
       -- input source = STDIN
       Nothing -> do
         resultConfig <-
           ( if optDoNotUseCabal
-              then pure defaultCabalInfo
+              then pure Nothing
               else case optStdinInputFile of
                 Just stdinInputFile ->
-                  getCabalInfoForSourceFile stdinInputFile
+                  getCabalInfoForSourceFile' stdinInputFile
                 Nothing -> throwIO OrmoluMissingStdinInputFile
             )
             >>= patchConfig Nothing
@@ -177,14 +192,14 @@ formatOne CabalOpts {..} mode reqSourceType rawConfig mpath =
             originalInput <- getContentsUtf8
             let stdinRepr = "<stdin>"
             formattedInput <-
-              ormolu resultConfig stdinRepr (T.unpack originalInput)
+              ormolu resultConfig stdinRepr originalInput
             handleDiff originalInput formattedInput stdinRepr
       -- input source = a file
       Just inputFile -> do
         resultConfig <-
           ( if optDoNotUseCabal
-              then pure defaultCabalInfo
-              else getCabalInfoForSourceFile inputFile
+              then pure Nothing
+              else getCabalInfoForSourceFile' inputFile
             )
             >>= patchConfig (Just (detectSourceType inputFile))
         case mode of
@@ -195,7 +210,7 @@ formatOne CabalOpts {..} mode reqSourceType rawConfig mpath =
             -- ormoluFile is not used because we need originalInput
             originalInput <- readFileUtf8 inputFile
             formattedInput <-
-              ormolu resultConfig inputFile (T.unpack originalInput)
+              ormolu resultConfig inputFile originalInput
             when (formattedInput /= originalInput) $
               writeFileUtf8 inputFile formattedInput
             return ExitSuccess
@@ -203,30 +218,16 @@ formatOne CabalOpts {..} mode reqSourceType rawConfig mpath =
             -- ormoluFile is not used because we need originalInput
             originalInput <- readFileUtf8 inputFile
             formattedInput <-
-              ormolu resultConfig inputFile (T.unpack originalInput)
+              ormolu resultConfig inputFile originalInput
             handleDiff originalInput formattedInput inputFile
   where
-    patchConfig mdetectedSourceType cabalInfo@CabalInfo {..} = do
-      let depsFromCabal =
-            -- It makes sense to take into account the operator info for the
-            -- package itself if we know it, as if it were its own
-            -- dependency.
-            case ciPackageName of
-              Nothing -> ciDependencies
-              Just p -> Set.insert p ciDependencies
-      fixityOverrides <- getFixityOverridesForSourceFile cabalInfo
-      return
-        rawConfig
-          { cfgDynOptions = cfgDynOptions rawConfig ++ ciDynOpts,
-            cfgFixityOverrides =
-              Map.unionWith (<>) (cfgFixityOverrides rawConfig) fixityOverrides,
-            cfgDependencies =
-              Set.union (cfgDependencies rawConfig) depsFromCabal,
-            cfgSourceType =
-              fromMaybe
-                ModuleSource
-                (reqSourceType <|> mdetectedSourceType)
-          }
+    patchConfig mdetectedSourceType mcabalInfo = do
+      let sourceType =
+            fromMaybe
+              ModuleSource
+              (reqSourceType <|> mdetectedSourceType)
+      mfixityOverrides <- traverse getFixityOverridesForSourceFile mcabalInfo
+      return (refineConfig sourceType mcabalInfo mfixityOverrides rawConfig)
     handleDiff originalInput formattedInput fileRepr =
       case diffText originalInput formattedInput fileRepr of
         Nothing -> return ExitSuccess
@@ -294,12 +295,9 @@ optsParserInfo =
     verStr =
       intercalate
         "\n"
-        [ unwords
-            [ "fourmolu",
-              showVersion version,
-              $gitBranch,
-              $gitHash
-            ],
+        [ unwords $
+            ["fourmolu", showVersion version]
+              <> maybeToList $$(envQ @String "ORMOLU_REV"),
           "using ghc-lib-parser " ++ VERSION_ghc_lib_parser
         ]
     exts :: Parser (a -> a)
@@ -448,7 +446,7 @@ parseMode = eitherReader $ \case
   s -> Left $ "unknown mode: " ++ s
 
 -- | Parse a fixity declaration.
-parseFixityDeclaration :: ReadM [(String, FixityInfo)]
+parseFixityDeclaration :: ReadM [(OpName, FixityInfo)]
 parseFixityDeclaration = eitherReader parseFixityDeclarationStr
 
 -- | Parse 'ColorMode'.

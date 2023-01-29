@@ -61,6 +61,7 @@ module Ormolu.Printer.Internal
   )
 where
 
+import Control.Monad
 import Control.Monad.Reader
 import Control.Monad.State.Strict
 import Data.Bool (bool)
@@ -260,7 +261,7 @@ interferingTxt = spit InterferingText
 -- literals and similar. Everything that doesn't have inner structure but
 -- does have an 'Outputable' instance.
 atom ::
-  Outputable a =>
+  (Outputable a) =>
   a ->
   R ()
 atom = spit Atom . T.pack . showOutputable

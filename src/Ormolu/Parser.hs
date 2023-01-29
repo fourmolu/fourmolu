@@ -13,16 +13,18 @@ module Ormolu.Parser
 where
 
 import Control.Exception
-import Control.Monad.Except
+import Control.Monad
+import Control.Monad.Except (ExceptT (..), runExceptT)
+import Control.Monad.IO.Class
 import Data.Char (isSpace)
 import Data.Functor
 import Data.Generics
 import qualified Data.List as L
 import qualified Data.List.NonEmpty as NE
+import Data.Text (Text)
 import GHC.Data.Bag (bagToList)
 import qualified GHC.Data.EnumSet as EnumSet
 import qualified GHC.Data.FastString as GHC
-import qualified GHC.Data.StringBuffer as GHC
 import qualified GHC.Driver.CmdLine as GHC
 import GHC.Driver.Config.Parser (initParserOpts)
 import GHC.Driver.Session as GHC
@@ -45,11 +47,11 @@ import Ormolu.Parser.CommentStream
 import Ormolu.Parser.Result
 import Ormolu.Processing.Common
 import Ormolu.Processing.Preprocess
-import Ormolu.Utils (incSpanLine, showOutputable)
+import Ormolu.Utils (incSpanLine, showOutputable, textToStringBuffer)
 
 -- | Parse a complete module from string.
 parseModule ::
-  MonadIO m =>
+  (MonadIO m) =>
   -- | Ormolu configuration
   Config RegionDeltas ->
   -- | Fixity map to include in the resulting 'ParseResult's
@@ -57,7 +59,7 @@ parseModule ::
   -- | File name (only for source location annotations)
   FilePath ->
   -- | Input for parser
-  String ->
+  Text ->
   m
     ( [GHC.Warn],
       Either (SrcSpan, String) [SourceSnippet]
@@ -89,12 +91,12 @@ parseModule config@Config {..} fixityMap path rawInput = liftIO $ do
   pure (warnings, snippets)
 
 parseModuleSnippet ::
-  MonadIO m =>
+  (MonadIO m) =>
   Config RegionDeltas ->
   LazyFixityMap ->
   DynFlags ->
   FilePath ->
-  String ->
+  Text ->
   m (Either (SrcSpan, String) ParseResult)
 parseModuleSnippet Config {..} fixityMap dynFlags path rawInput = liftIO $ do
   let (input, indent) = removeIndentation . linesInRegion cfgRegion $ rawInput
@@ -152,7 +154,7 @@ parseModuleSnippet Config {..} fixityMap dynFlags path rawInput = liftIO $ do
 normalizeModule :: HsModule -> HsModule
 normalizeModule hsmod =
   everywhere
-    (mkT dropBlankTypeHaddocks)
+    (extT (mkT dropBlankTypeHaddocks) patchContext)
     hsmod
       { hsmodImports =
           hsmodImports hsmod,
@@ -172,11 +174,15 @@ normalizeModule hsmod =
       IEGroup _ _ s -> isBlankDocString s
       IEDoc _ s -> isBlankDocString s
       _ -> False
-
     dropBlankTypeHaddocks = \case
       L _ (HsDocTy _ ty s) :: LHsType GhcPs
         | isBlankDocString s -> ty
       a -> a
+    patchContext :: LHsContext GhcPs -> LHsContext GhcPs
+    patchContext = mapLoc $ \case
+      [x@(L _ (HsParTy _ _))] -> [x]
+      [x@(L lx _)] -> [L lx (HsParTy EpAnnNotUsed x)]
+      xs -> xs
 
 -- | Enable all language extensions that we think should be enabled by
 -- default for ease of use.
@@ -226,13 +232,13 @@ runParser ::
   -- | Module path
   FilePath ->
   -- | Module contents
-  String ->
+  Text ->
   -- | Parse result
   GHC.ParseResult a
 runParser parser flags filename input = GHC.unP parser parseState
   where
     location = mkRealSrcLoc (GHC.mkFastString filename) 1 1
-    buffer = GHC.stringToStringBuffer input
+    buffer = textToStringBuffer input
     parseState = GHC.initParserState (initParserOpts flags) buffer location
 
 ----------------------------------------------------------------------------
@@ -246,14 +252,14 @@ parsePragmasIntoDynFlags ::
   -- | File name (only for source location annotations)
   FilePath ->
   -- | Input for parser
-  String ->
+  Text ->
   IO (Either String ([GHC.Warn], DynFlags))
 parsePragmasIntoDynFlags flags extraOpts filepath str =
   catchErrors $ do
     let (_warnings, fileOpts) =
           GHC.getOptions
             (initParserOpts flags)
-            (GHC.stringToStringBuffer str)
+            (textToStringBuffer str)
             filepath
     (flags', leftovers, warnings) <-
       parseDynamicFilePragma flags (extraOpts <> fileOpts)

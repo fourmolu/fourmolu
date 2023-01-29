@@ -28,35 +28,32 @@ cacheRef :: IORef (Map FilePath FixityMap)
 cacheRef = unsafePerformIO (newIORef Map.empty)
 {-# NOINLINE cacheRef #-}
 
--- | Attempt to locate and parse a @.ormolu@ file. If it does not exist,
+-- | Attempt to locate and parse an @.ormolu@ file. If it does not exist,
 -- empty fixity map is returned. This function maintains a cache of fixity
 -- overrides where cabal file paths act as keys.
 getFixityOverridesForSourceFile ::
-  MonadIO m =>
+  (MonadIO m) =>
   -- | 'CabalInfo' already obtained for this source file
   CabalInfo ->
   m FixityMap
 getFixityOverridesForSourceFile CabalInfo {..} = liftIO $ do
-  case ciCabalFilePath of
-    Nothing -> return Map.empty
-    Just cabalPath -> do
-      cache <- readIORef cacheRef
-      case Map.lookup cabalPath cache of
-        Nothing -> do
-          let dotOrmolu = replaceFileName cabalPath ".ormolu"
-          exists <- doesFileExist dotOrmolu
-          if exists
-            then do
-              dotOrmoluRelative <- makeRelativeToCurrentDirectory dotOrmolu
-              contents <- readFileUtf8 dotOrmolu
-              case parseFixityMap dotOrmoluRelative contents of
-                Left errorBundle ->
-                  throwIO (OrmoluFixityOverridesParseError errorBundle)
-                Right x -> do
-                  modifyIORef' cacheRef (Map.insert cabalPath x)
-                  return x
-            else return Map.empty
-        Just x -> return x
+  cache <- readIORef cacheRef
+  case Map.lookup ciCabalFilePath cache of
+    Nothing -> do
+      let dotOrmolu = replaceFileName ciCabalFilePath ".ormolu"
+      exists <- doesFileExist dotOrmolu
+      if exists
+        then do
+          dotOrmoluRelative <- makeRelativeToCurrentDirectory dotOrmolu
+          contents <- readFileUtf8 dotOrmolu
+          case parseFixityMap dotOrmoluRelative contents of
+            Left errorBundle ->
+              throwIO (OrmoluFixityOverridesParseError errorBundle)
+            Right x -> do
+              modifyIORef' cacheRef (Map.insert ciCabalFilePath x)
+              return x
+        else return Map.empty
+    Just x -> return x
 
 -- | A wrapper around 'parseFixityDeclaration' for parsing individual fixity
 -- definitions.
@@ -64,6 +61,6 @@ parseFixityDeclarationStr ::
   -- | Input to parse
   String ->
   -- | Parse result
-  Either String [(String, FixityInfo)]
+  Either String [(OpName, FixityInfo)]
 parseFixityDeclarationStr =
   first errorBundlePretty . parseFixityDeclaration . T.pack
