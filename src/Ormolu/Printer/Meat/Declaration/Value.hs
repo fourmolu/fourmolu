@@ -1053,10 +1053,10 @@ p_let' inDo letLoc localBinds mBody = do
         case inStyle of
           _ | inDo -> " in"
           InRightAlign -> " in"
-          InNoAlign -> "in"
           InLeftAlign
             | isBlockInline -> "in "
             | otherwise -> "in"
+          InNoSpace -> "in"
 
   -- helpers
   let block keyword body = do
