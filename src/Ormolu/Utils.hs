@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ViewPatterns #-}
 
@@ -18,6 +19,7 @@ module Ormolu.Utils
     HasSrcSpan (..),
     getLoc',
     matchAddEpAnn,
+    textToStringBuffer,
   )
 where
 
@@ -27,10 +29,15 @@ import qualified Data.List.NonEmpty as NE
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.Foreign as TFFI
+import Foreign (pokeElemOff, withForeignPtr)
 import qualified GHC.Data.Strict as Strict
+import GHC.Data.StringBuffer (StringBuffer (..))
 import GHC.Driver.Ppr
 import GHC.DynFlags (baseDynFlags)
+import GHC.ForeignPtr (mallocPlainForeignPtrBytes)
 import GHC.Hs
+import GHC.IO.Unsafe (unsafePerformIO)
 import GHC.Types.SrcLoc
 import GHC.Utils.Outputable
 
@@ -63,7 +70,7 @@ notImplemented :: String -> a
 notImplemented msg = error $ "not implemented yet: " ++ msg
 
 -- | Pretty-print an 'GHC.Outputable' thing.
-showOutputable :: Outputable o => o -> String
+showOutputable :: (Outputable o) => o -> String
 showOutputable = showSDoc baseDynFlags . ppr
 
 -- | Split and normalize a doc string. The result is a list of lines that
@@ -167,7 +174,7 @@ instance HasSrcSpan SrcSpan where
 instance HasSrcSpan (SrcSpanAnn' ann) where
   loc' = locA
 
-getLoc' :: HasSrcSpan l => GenLocated l a -> SrcSpan
+getLoc' :: (HasSrcSpan l) => GenLocated l a -> SrcSpan
 getLoc' = loc' . getLoc
 
 -- | Check whether the given 'AnnKeywordId' or its Unicode variant is in an
@@ -176,3 +183,17 @@ matchAddEpAnn :: AnnKeywordId -> AddEpAnn -> Maybe EpaLocation
 matchAddEpAnn annId (AddEpAnn annId' loc)
   | annId == annId' || unicodeAnn annId == annId' = Just loc
   | otherwise = Nothing
+
+-- | Convert 'Text' to a 'StringBuffer' by making a copy.
+textToStringBuffer :: Text -> StringBuffer
+textToStringBuffer txt = unsafePerformIO $ do
+  buf <- mallocPlainForeignPtrBytes (len + 3)
+  withForeignPtr buf $ \ptr -> do
+    TFFI.unsafeCopyToPtr txt ptr
+    -- last three bytes have to be zero for easier decoding
+    pokeElemOff ptr len 0
+    pokeElemOff ptr (len + 1) 0
+    pokeElemOff ptr (len + 2) 0
+  pure StringBuffer {buf, len, cur = 0}
+  where
+    len = TFFI.lengthWord8 txt

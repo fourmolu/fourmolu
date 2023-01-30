@@ -210,14 +210,14 @@ p_hsType' multilineArgs docStyle = \case
     p_hsTypeR m = p_hsType' multilineArgs docStyle m
 
 startTypeAnnotation ::
-  HasSrcSpan l =>
+  (HasSrcSpan l) =>
   GenLocated l a ->
   (a -> R ()) ->
   R ()
 startTypeAnnotation = startTypeAnnotation' breakpoint breakpoint
 
 startTypeAnnotationDecl ::
-  HasSrcSpan l =>
+  (HasSrcSpan l) =>
   GenLocated l a ->
   (a -> HsType GhcPs) ->
   (a -> R ()) ->
@@ -232,7 +232,7 @@ startTypeAnnotationDecl lItem getType =
     lItem
 
 startTypeAnnotation' ::
-  HasSrcSpan l =>
+  (HasSrcSpan l) =>
   R () ->
   R () ->
   GenLocated l a ->
@@ -284,7 +284,7 @@ instance IsInferredTyVarBndr Specificity where
     InferredSpec -> True
     SpecifiedSpec -> False
 
-p_hsTyVarBndr :: IsInferredTyVarBndr flag => HsTyVarBndr flag GhcPs -> R ()
+p_hsTyVarBndr :: (IsInferredTyVarBndr flag) => HsTyVarBndr flag GhcPs -> R ()
 p_hsTyVarBndr = \case
   UserTyVar _ flag x ->
     (if isInferred flag then braces N else id) $ p_rdrName x
@@ -296,7 +296,7 @@ data ForAllVisibility = ForAllInvis | ForAllVis
 
 -- | Render several @forall@-ed variables.
 p_forallBndrs ::
-  HasSrcSpan l =>
+  (HasSrcSpan l) =>
   ForAllVisibility ->
   (a -> R ()) ->
   [GenLocated l a] ->
@@ -305,7 +305,7 @@ p_forallBndrs vis p tyvars = do
   p_forallBndrsStart p tyvars
   p_forallBndrsEnd vis
 
-p_forallBndrsStart :: HasSrcSpan l => (a -> R ()) -> [GenLocated l a] -> R ()
+p_forallBndrsStart :: (HasSrcSpan l) => (a -> R ()) -> [GenLocated l a] -> R ()
 p_forallBndrsStart _ [] = token'forall
 p_forallBndrsStart p tyvars = do
   switchLayout (getLoc' <$> tyvars) $ do

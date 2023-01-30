@@ -231,7 +231,7 @@ runTestGroup isMulti TestGroup {..} =
 
 runOrmolu :: PrinterOptsTotal -> FilePath -> Text -> IO Text
 runOrmolu opts inputPath input =
-  ormolu config inputPath (T.unpack input) `catch` \e -> do
+  ormolu config inputPath input `catch` \e -> do
     msg <- renderOrmoluException e
     expectationFailure' $ unlines ["Got ormolu exception:", "", msg]
   where
@@ -262,10 +262,10 @@ allOptions = [minBound .. maxBound]
 suffixWith :: [String] -> String
 suffixWith xs = concatMap ('-' :) . filter (not . null) $ xs
 
-suffix1 :: Show a => a -> String
+suffix1 :: (Show a) => a -> String
 suffix1 a1 = suffixWith [show a1]
 
-overSectionsM :: Monad m => Text -> (Text -> m Text) -> Text -> m Text
+overSectionsM :: (Monad m) => Text -> (Text -> m Text) -> Text -> m Text
 overSectionsM delim f =
   fmap T.concat
     . mapM (\(s, isDelim) -> if isDelim then pure s else f s)
@@ -291,7 +291,7 @@ renderOrmoluException e =
     hClose handle
     readFile fp
 
-expectationFailure' :: HasCallStack => String -> IO a
+expectationFailure' :: (HasCallStack) => String -> IO a
 expectationFailure' msg = do
   withFrozenCallStack $ expectationFailure msg
   -- satisfy type-checker, since hspec's expectationFailure is IO ()
@@ -333,7 +333,7 @@ splitOnDelim delim =
       Space -> error "isDelim called on Space, but all Spaces should've been eliminated at this point"
 
     -- Like 'NE.groupWith', except annotates group with comparator
-    groupWith :: Eq b => (a -> b) -> [a] -> [([a], b)]
+    groupWith :: (Eq b) => (a -> b) -> [a] -> [([a], b)]
     groupWith f =
       let liftComparator xs = (map fst $ NE.toList xs, snd $ NE.head xs)
        in map liftComparator . NE.groupWith snd . map (\a -> (a, f a))

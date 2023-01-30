@@ -2,6 +2,7 @@
 
 [![License BSD3](https://img.shields.io/badge/license-BSD3-brightgreen.svg)](http://opensource.org/licenses/BSD-3-Clause)
 [![Hackage](https://img.shields.io/hackage/v/fourmolu.svg?style=flat)](https://hackage.haskell.org/package/fourmolu)
+[![CI](https://github.com/fourmolu/fourmolu/actions/workflows/ci.yml/badge.svg)](https://github.com/fourmolu/fourmolu/actions/workflows/ci.yml)
 
 * [Configuration](#configuration)
 * [Installation](#installation)
@@ -12,6 +13,7 @@
     * [Magic comments](#magic-comments)
     * [Regions](#regions)
     * [Exit codes](#exit-codes)
+    * [Using as a library](#using-as-a-library)
 * [Limitations](#limitations)
 * [Contributing](#contributing)
 * [License](#license)
@@ -255,6 +257,13 @@ Exit code | Meaning
 101       | Inplace mode does not work with stdin
 102       | Other issue (with multiple input files)
 400       | Failed to load Fourmolu configuration file
+
+### Using as a library
+
+The `fourmolu` package can also be depended upon from other Haskell programs.
+For these purposes only the top `Ormolu` module should be considered stable.
+It follows [PVP](https://pvp.haskell.org/) starting from the version
+0.10.2.0. Rely on other modules at your own risk.
 
 ## Limitations
 

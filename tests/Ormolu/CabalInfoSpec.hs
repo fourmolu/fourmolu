@@ -3,6 +3,7 @@
 module Ormolu.CabalInfoSpec (spec) where
 
 import qualified Data.Set as Set
+import Distribution.Types.PackageName (unPackageName)
 import Ormolu.Config (DynOption (..))
 import Ormolu.Utils.Cabal
 import System.Directory
@@ -30,24 +31,35 @@ spec = do
           cabalFile <- findCabalFile (dir </> "foo/bar.hs")
           cabalFile `shouldBe` Nothing
   describe "parseCabalInfo" $ do
-    it "extracts correct package name from fourmolu.cabal" $ do
-      CabalInfo {..} <- parseCabalInfo "fourmolu.cabal" "src/Ormolu/Config.hs"
-      ciPackageName `shouldBe` Just "fourmolu"
-    it "extracts correct dyn opts from fourmolu.cabal" $ do
-      CabalInfo {..} <- parseCabalInfo "fourmolu.cabal" "src/Ormolu/Config.hs"
+    it "extracts correct cabal info from fourmolu.cabal for src/Ormolu/Config.hs" $ do
+      (mentioned, CabalInfo {..}) <- parseCabalInfo "fourmolu.cabal" "src/Ormolu/Config.hs"
+      mentioned `shouldBe` True
+      unPackageName ciPackageName `shouldBe` "fourmolu"
       ciDynOpts `shouldBe` [DynOption "-XHaskell2010"]
-    it "extracts correct dependencies from fourmolu.cabal (src/Ormolu/Config.hs)" $ do
-      CabalInfo {..} <- parseCabalInfo "fourmolu.cabal" "src/Ormolu/Config.hs"
-      ciDependencies `shouldBe` Set.fromList ["Cabal-syntax", "Diff", "MemoTrie", "aeson", "ansi-terminal", "array", "base", "binary", "bytestring", "containers", "directory", "dlist", "file-embed", "filepath", "ghc-lib-parser", "megaparsec", "mtl", "syb", "text", "yaml"]
-    it "extracts correct dependencies from fourmolu.cabal (tests/Ormolu/PrinterSpec.hs)" $ do
-      CabalInfo {..} <- parseCabalInfo "fourmolu.cabal" "tests/Ormolu/PrinterSpec.hs"
-      ciDependencies `shouldBe` Set.fromList ["Diff", "QuickCheck", "base", "containers", "directory", "filepath", "ghc-lib-parser", "hspec", "hspec-megaparsec", "fourmolu", "path", "path-io", "pretty", "process", "temporary", "text"]
-
+      Set.map unPackageName ciDependencies `shouldBe` Set.fromList ["Cabal-syntax", "Diff", "MemoTrie", "aeson", "ansi-terminal", "array", "base", "binary", "bytestring", "containers", "directory", "dlist", "file-embed", "filepath", "ghc-lib-parser", "megaparsec", "mtl", "syb", "text", "yaml"]
+      ciCabalFilePath `shouldSatisfy` isAbsolute
+      makeRelativeToCurrentDirectory ciCabalFilePath `shouldReturn` "fourmolu.cabal"
+    it "extracts correct cabal info from fourmolu.cabal for tests/Ormolu/PrinterSpec.hs" $ do
+      (mentioned, CabalInfo {..}) <- parseCabalInfo "fourmolu.cabal" "tests/Ormolu/PrinterSpec.hs"
+      mentioned `shouldBe` True
+      unPackageName ciPackageName `shouldBe` "fourmolu"
+      ciDynOpts `shouldBe` [DynOption "-XHaskell2010"]
+      Set.map unPackageName ciDependencies `shouldBe` Set.fromList ["Cabal-syntax", "Diff", "QuickCheck", "base", "containers", "directory", "filepath", "ghc-lib-parser", "hspec", "hspec-megaparsec", "fourmolu", "path", "path-io", "pretty", "process", "temporary", "text"]
+      ciCabalFilePath `shouldSatisfy` isAbsolute
+      makeRelativeToCurrentDirectory ciCabalFilePath `shouldReturn` "fourmolu.cabal"
+    it "handles correctly files that are not mentioned in fourmolu.cabal" $ do
+      (mentioned, CabalInfo {..}) <- parseCabalInfo "fourmolu.cabal" "src/FooBob.hs"
+      mentioned `shouldBe` False
+      unPackageName ciPackageName `shouldBe` "fourmolu"
+      ciDynOpts `shouldBe` []
+      Set.map unPackageName ciDependencies `shouldBe` Set.empty
+      ciCabalFilePath `shouldSatisfy` isAbsolute
+      makeRelativeToCurrentDirectory ciCabalFilePath `shouldReturn` "fourmolu.cabal"
     it "handles `hs-source-dirs: .`" $ do
-      CabalInfo {..} <- parseTestCabalInfo "Foo.hs"
+      (_, CabalInfo {..}) <- parseTestCabalInfo "Foo.hs"
       ciDynOpts `shouldContain` [DynOption "-XImportQualifiedPost"]
     it "handles empty hs-source-dirs" $ do
-      CabalInfo {..} <- parseTestCabalInfo "Bar.hs"
+      (_, CabalInfo {..}) <- parseTestCabalInfo "Bar.hs"
       ciDynOpts `shouldContain` [DynOption "-XImportQualifiedPost"]
   where
     parseTestCabalInfo f =

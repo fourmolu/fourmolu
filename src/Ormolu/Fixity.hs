@@ -1,10 +1,17 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 -- | Definitions for fixity analysis.
 module Ormolu.Fixity
-  ( FixityDirection (..),
+  ( OpName,
+    pattern OpName,
+    unOpName,
+    occOpName,
+    FixityDirection (..),
     FixityInfo (..),
     FixityMap,
     LazyFixityMap,
@@ -23,31 +30,51 @@ where
 import qualified Data.Binary as Binary
 import qualified Data.Binary.Get as Binary
 import qualified Data.ByteString.Lazy as BL
-import Data.FileEmbed (embedFile)
 import Data.Foldable (foldl')
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.List.NonEmpty as NE
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (fromMaybe)
-import Data.MemoTrie (HasTrie, memo)
+import Data.MemoTrie (memo)
 import Data.Semigroup (sconcat)
 import Data.Set (Set)
 import qualified Data.Set as Set
+import Distribution.Types.PackageName (PackageName, mkPackageName, unPackageName)
 import Ormolu.Fixity.Internal
+#if BUNDLE_FIXITIES
+import Data.FileEmbed (embedFile)
+#else
+import qualified Data.ByteString.Unsafe as BU
+import Foreign.Ptr
+import System.Environment (getEnv)
+import System.IO.Unsafe (unsafePerformIO)
+#endif
 
-packageToOps :: Map String FixityMap
-packageToPopularity :: Map String Int
+packageToOps :: Map PackageName FixityMap
+packageToPopularity :: Map PackageName Int
+#if BUNDLE_FIXITIES
 HackageInfo packageToOps packageToPopularity =
   Binary.runGet Binary.get $
     BL.fromStrict $(embedFile "extract-hackage-info/hackage-info.bin")
+#else
+-- The GHC WASM backend does not yet support Template Haskell, so we instead
+-- pass in the encoded fixity DB at runtime by storing the pointer and length of
+-- the bytes in an environment variable.
+HackageInfo packageToOps packageToPopularity = unsafePerformIO $ do
+  (ptr, len) <- read <$> getEnv "ORMOLU_HACKAGE_INFO"
+  Binary.runGet Binary.get . BL.fromStrict
+    <$> BU.unsafePackMallocCStringLen (intPtrToPtr $ IntPtr ptr, len)
+{-# NOINLINE packageToOps #-}
+{-# NOINLINE packageToPopularity #-}
+#endif
 
 -- | List of packages shipped with GHC, for which the download count from
 -- Hackage does not reflect their high popularity.
 -- See https://github.com/tweag/ormolu/pull/830#issuecomment-986609572.
 -- "base" is not is this list, because it is already whitelisted
 -- by buildFixityMap'.
-bootPackages :: Set String
+bootPackages :: Set PackageName
 bootPackages =
   Set.fromList
     [ "array",
@@ -87,7 +114,7 @@ buildFixityMap ::
   -- instead of being merged with them
   Float ->
   -- | Explicitly known dependencies
-  Set String ->
+  Set PackageName ->
   -- | Resulting map
   LazyFixityMap
 buildFixityMap = buildFixityMap' packageToOps packageToPopularity bootPackages
@@ -98,17 +125,17 @@ buildFixityMap = buildFixityMap' packageToOps packageToPopularity bootPackages
 -- specify the package databases used to build the final fixity map.
 buildFixityMap' ::
   -- | Map from package to fixity map for operators defined in this package
-  Map String FixityMap ->
+  Map PackageName FixityMap ->
   -- | Map from package to popularity
-  Map String Int ->
+  Map PackageName Int ->
   -- | Higher priority packages
-  Set String ->
+  Set PackageName ->
   -- | Popularity ratio threshold, after which a very popular package will
   -- completely rule out conflicting definitions coming from other packages
   -- instead of being merged with them
   Float ->
   -- | Explicitly known dependencies
-  Set String ->
+  Set PackageName ->
   -- | Resulting map
   LazyFixityMap
 buildFixityMap'
@@ -147,8 +174,8 @@ buildFixityMap'
             remainingFixityMap
           ]
 
-memoSet :: (HasTrie a, Eq a) => (Set a -> v) -> Set a -> v
-memoSet f = memo (f . Set.fromAscList) . Set.toAscList
+memoSet :: (Set PackageName -> v) -> Set PackageName -> v
+memoSet f = memo (f . Set.fromAscList . fmap mkPackageName) . fmap unPackageName . Set.toAscList
 
 -- | Merge a list of individual fixity maps, coming from different packages.
 -- Package popularities and the given threshold are used to choose between
@@ -156,11 +183,11 @@ memoSet f = memo (f . Set.fromAscList) . Set.toAscList
 -- strategies when conflicting definitions are encountered for an operator.
 mergeFixityMaps ::
   -- | Map from package name to 30-days download count
-  Map String Int ->
+  Map PackageName Int ->
   -- | Popularity ratio threshold
   Float ->
   -- | List of (package name, package fixity map) to merge
-  [(String, FixityMap)] ->
+  [(PackageName, FixityMap)] ->
   -- | Resulting fixity map
   FixityMap
 mergeFixityMaps popularityMap threshold packageMaps =
@@ -174,7 +201,7 @@ mergeFixityMaps popularityMap threshold packageMaps =
     --   op1 -map-> {definitions1 -map-> originPackages}
     --   op1 -map-> {definitions2 -map-> originPackages}
     -- so we merge the keys (which have the type:
-    -- Map FixityInfo (NonEmpty String))
+    -- Map FixityInfo (NonEmpty PackageName))
     -- using 'Map.unionWith (<>)', to "concatenate" the list of
     -- definitions for this operator, and to also "concatenate" origin
     -- packages if a same definition is found in both maps
@@ -202,7 +229,7 @@ mergeFixityMaps popularityMap threshold packageMaps =
     getScores ::
       -- Map for a given operator associating each of its conflicting
       -- definitions with the packages that define it
-      Map FixityInfo (NonEmpty String) ->
+      Map FixityInfo (NonEmpty PackageName) ->
       -- Map for a given operator associating each of its conflicting
       -- definitions with their score (= sum of the popularity of the
       -- packages that define it)
@@ -212,18 +239,18 @@ mergeFixityMaps popularityMap threshold packageMaps =
         (sum . fmap (fromMaybe 0 . flip Map.lookup popularityMap))
     opFixityMapFrom ::
       -- (packageName, package fixity map)
-      (String, FixityMap) ->
+      (PackageName, FixityMap) ->
       -- Map associating each operator of the package with a
       -- {map for a given operator associating each of its definitions with
       -- the list of packages that define it}
       -- (this list can only be == [packageName] in the context of this
       -- function)
-      Map String (Map FixityInfo (NonEmpty String))
+      Map OpName (Map FixityInfo (NonEmpty PackageName))
     opFixityMapFrom (packageName, opsMap) =
       Map.map
         (flip Map.singleton (packageName :| []))
         opsMap
-    maxWith :: Ord b => (a -> b) -> NonEmpty a -> NonEmpty a
+    maxWith :: (Ord b) => (a -> b) -> NonEmpty a -> NonEmpty a
     maxWith f xs = snd $ foldl' comp (f h, h :| []) t
       where
         h :| t = xs

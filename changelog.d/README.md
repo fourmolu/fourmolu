@@ -1,6 +1,6 @@
 # Changelog
 
-Every PR that makes a user-facing change (e.g. adding features, fixing bugs, etc.) should include a new `.md` file in this directory, containing:
+Every PR that makes a user-facing change (e.g. adding features, fixing bugs, etc.) should include a new `.md` file in this directory (e.g. `my-feature.md`), containing:
 
 * A quick summary of the change
 * A link to the PR (the PR should link to any relevant issues)

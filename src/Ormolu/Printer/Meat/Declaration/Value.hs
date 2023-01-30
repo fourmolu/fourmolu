@@ -546,8 +546,11 @@ p_hsLocalBinds = \case
     -- of p_hsLocalBinds). Hence, we introduce a manual Located as we
     -- depend on the layout being correctly set.
     pseudoLocated = \case
-      EpAnn {anns = AnnList {al_anchor = Just Anchor {anchor}}} ->
-        located (L (RealSrcSpan anchor Strict.Nothing) ()) . const
+      EpAnn {anns = AnnList {al_anchor = Just Anchor {anchor}}}
+        | let sp = RealSrcSpan anchor Strict.Nothing,
+          -- excluding cases where there are no bindings
+          not $ isZeroWidthSpan sp ->
+            located (L sp ()) . const
       _ -> id
 
 p_ldotFieldOcc :: XRec GhcPs (DotFieldOcc GhcPs) -> R ()
@@ -1260,7 +1263,7 @@ p_hsQuote epAnn = \case
     -- of an (*|) operator.
     -- The detection is a bit overcautious, as it adds the spaces as soon as
     -- HsStarTy is anywhere in the type/declaration.
-    handleStarIsType :: Data a => a -> R () -> R ()
+    handleStarIsType :: (Data a) => a -> R () -> R ()
     handleStarIsType a p
       | containsHsStarTy a = space *> p <* space
       | otherwise = p
@@ -1326,7 +1329,7 @@ layoutToBraces = \case
 
 -- | Append each element in both lists with semigroups. If one list is shorter
 -- than the other, return the rest of the longer list unchanged.
-liftAppend :: Semigroup a => [a] -> [a] -> [a]
+liftAppend :: (Semigroup a) => [a] -> [a] -> [a]
 liftAppend [] [] = []
 liftAppend [] (y : ys) = y : ys
 liftAppend (x : xs) [] = x : xs

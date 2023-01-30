@@ -121,7 +121,7 @@ inciIf b m = if b then inci m else m
 -- 'Located' wrapper, it should be “discharged” with a corresponding
 -- 'located' invocation.
 located ::
-  HasSrcSpan l =>
+  (HasSrcSpan l) =>
   -- | Thing to enter
   GenLocated l a ->
   -- | How to render inner value
@@ -137,7 +137,7 @@ located (L l' a) f = case loc' l' of
 
 -- | A version of 'located' with arguments flipped.
 located' ::
-  HasSrcSpan l =>
+  (HasSrcSpan l) =>
   -- | How to render inner value
   (a -> R ()) ->
   -- | Thing to enter

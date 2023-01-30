@@ -25,7 +25,7 @@ data Term a where
     If ∷ Term Bool → Term a → Term a → Term a
     Pair ∷ Term a → Term b → Term (a, b)
 
-newtype Swizzle = MkSwizzle (∀ a. Ord a ⇒ [a] → [a])
+newtype Swizzle = MkSwizzle (∀ a. (Ord a) ⇒ [a] → [a])
 
 data family GMap k ∷ Type → Type
 
@@ -71,10 +71,10 @@ instance (Eq a) ⇒ Eq (Tree a) where
     (Branch l1 r1) == (Branch l2 r2) = (l1 == l2) && (r1 == r2)
     _ == _ = False
 
-add1 ∷ Quote m ⇒ Int → m Exp
+add1 ∷ (Quote m) ⇒ Int → m Exp
 add1 x = ⟦x + 1⟧
 
-decl ∷ Quote m ⇒ m Decl
+decl ∷ (Quote m) ⇒ m Decl
 decl = [d|data Foo|]
 
 monad = do
