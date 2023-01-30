@@ -262,7 +262,8 @@ fieldTypes =
       { fieldTypeName = "InStyle",
         enumOptions =
           [ ("InLeftAlign", "left-align"),
-            ("InRightAlign", "right-align")
+            ("InRightAlign", "right-align"),
+            ("InNoSpace", "no-space")
           ]
       },
     FieldTypeEnum

@@ -172,7 +172,7 @@ parsePrinterOptsCLI f =
       "OPTION"
     <*> f
       "in-style"
-      "How to align the 'in' keyword with respect to the 'let' keyword (choices: \"left-align\" or \"right-align\") (default: right-align)"
+      "How to align the 'in' keyword with respect to the 'let' keyword (choices: \"left-align\", \"right-align\", or \"no-space\") (default: right-align)"
       "OPTION"
     <*> f
       "unicode"
@@ -260,6 +260,7 @@ data LetStyle
 data InStyle
   = InLeftAlign
   | InRightAlign
+  | InNoSpace
   deriving (Eq, Show, Enum, Bounded)
 
 data Unicode
@@ -382,10 +383,11 @@ instance PrinterOptsFieldType InStyle where
     case s of
       "left-align" -> Right InLeftAlign
       "right-align" -> Right InRightAlign
+      "no-space" -> Right InNoSpace
       _ ->
         Left . unlines $
           [ "unknown value: " <> show s
-          , "Valid values are: \"left-align\" or \"right-align\""
+          , "Valid values are: \"left-align\", \"right-align\", or \"no-space\""
           ]
 
 instance Aeson.FromJSON Unicode where
