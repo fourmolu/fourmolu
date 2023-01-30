@@ -195,7 +195,7 @@ instance Aeson.FromJSON PrinterOptsPartial where
     Aeson.withObject "PrinterOpts" $ \o ->
       parsePrinterOptsJSON (parseField o)
     where
-      parseField :: Aeson.FromJSON a => Aeson.Object -> String -> Aeson.Parser (Maybe a)
+      parseField :: (Aeson.FromJSON a) => Aeson.Object -> String -> Aeson.Parser (Maybe a)
       parseField o keyName = do
         let key = fromString keyName
         mValue <- o Aeson..:? key
