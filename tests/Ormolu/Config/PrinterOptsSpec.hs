@@ -231,7 +231,7 @@ runTestGroup isMulti TestGroup {..} =
 
 runOrmolu :: PrinterOptsTotal -> FilePath -> Text -> IO Text
 runOrmolu opts inputPath input =
-  ormolu config inputPath (T.unpack input) `catch` \e -> do
+  ormolu config inputPath input `catch` \e -> do
     msg <- renderOrmoluException e
     expectationFailure' $ unlines ["Got ormolu exception:", "", msg]
   where
