@@ -1,0 +1,154 @@
+name: Fourmolu website
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  build_wasm:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web/fourmolu-wasm/
+    steps:
+      -
+        uses: actions/checkout@v3
+      -
+        name: Install preprocessors
+        run: |
+          cabal update
+          cabal install --overwrite-policy=always alex happy
+          echo ~/.cabal/bin >> "${GITHUB_PATH}"
+      -
+        name: Install wasm32-wasi-ghc
+        run: |
+          cd "$(mktemp -d)"
+          curl -L https://gitlab.haskell.org/ghc/ghc-wasm-meta/-/archive/master/ghc-wasm-meta-master.tar.gz \
+            | tar xz --strip-components=1
+          ./setup.sh
+          ~/.ghc-wasm/add_to_github_path.sh
+      -
+        run: wasm32-wasi-cabal update
+      -
+        run: wasm32-wasi-cabal freeze
+      -
+        name: Invalidate the cache every month
+        run: echo "CURR_MONTH=$(date +%B)" | tee -a "${GITHUB_ENV}"
+      -
+        uses: actions/cache@v3
+        with:
+          # https://gitlab.haskell.org/ghc/ghc-wasm-meta/-/blob/master/setup.sh#L134
+          path: ~/.ghc-wasm/.cabal
+          key: ${{ runner.os }}-fourmolu_wasm-cache-${{ env.CURR_MONTH }}-${{ hashFiles('web/fourmolu-wasm/cabal.project.freeze') }}
+          restore-keys: |
+               ${{ runner.os }}-fourmolu_wasm-cache-${{ env.CURR_MONTH }}-
+      -
+        name: Build fourmolu-wasm
+        # remove no-x-partial after ormolu updated for GHC 9.8
+        run: ./build.sh --ghc-options='-Werror -Wno-x-partial'
+      -
+        uses: actions/upload-artifact@v3
+        with:
+          name: fourmolu-wasm
+          path: web/fourmolu-wasm/dist/fourmolu-wasm.wasm
+
+  build_worker:
+    runs-on: ubuntu-latest
+    steps:
+      -
+        uses: actions/checkout@v3
+      -
+        name: Build web worker
+        run: web/worker/build.sh --mode=production
+      -
+        uses: actions/upload-artifact@v3
+        with:
+          name: fourmolu-web-worker
+          path: web/worker/dist/worker.js
+
+  build_web:
+    runs-on: ubuntu-latest
+    needs: [build_wasm, build_worker]
+    defaults:
+      run:
+        working-directory: web/site/
+    steps:
+      -
+        uses: actions/checkout@v3
+      -
+        run: cabal update
+      -
+        run: cabal freeze
+      -
+        name: Invalidate the cache every month
+        run: echo "CURR_MONTH=$(date +%B)" | tee -a "${GITHUB_ENV}"
+      -
+        uses: actions/cache@v3
+        with:
+          # https://gitlab.haskell.org/ghc/ghc-wasm-meta/-/blob/master/setup.sh#L134
+          path: ~/.ghc-wasm/.cabal
+          key: ${{ runner.os }}-hakyll-cache-${{ env.CURR_MONTH }}-${{ hashFiles('web/site/cabal.project.freeze') }}
+          restore-keys: |
+               ${{ runner.os }}-hakyll-cache-${{ env.CURR_MONTH }}-
+      -
+        name: Build site
+        run: cabal run fourmolu-web --ghc-options='-Werror' -- build
+        env:
+          FOURMOLU_REV: ${{ github.sha }}
+      -
+        name: Copy files to staging area
+        run: mv _site ~/out
+      -
+        uses: actions/download-artifact@v3
+        with:
+          name: fourmolu-wasm
+          path: ~/out/static/
+      -
+        uses: actions/download-artifact@v3
+        with:
+          name: fourmolu-web-worker
+          path: ~/out/static/
+      -
+        uses: actions/upload-artifact@v3
+        with:
+          name: fourmolu-web
+          path: ~/out
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [build_web]
+    if: github.ref_name == 'main'
+    steps:
+      -
+        uses: actions/checkout@v3
+      -
+        name: Set deploy key
+        run: |
+          mkdir -p ~/.ssh/
+          DEPLOY_KEY=${HOME}/.ssh/deploy_key
+          echo '${{ secrets.FOURMOLU_WEB_DEPLOY_KEY }}' > "${DEPLOY_KEY}"
+          chmod 600 "${DEPLOY_KEY}"
+          echo "GIT_SSH_COMMAND=ssh -i '${DEPLOY_KEY}'" >> "${GITHUB_ENV}"
+      -
+        name: Initialize fourmolu.github.io
+        run: |
+          git clone --depth=1 git@github.com:fourmolu/fourmolu.github.io ~/deploy
+          cd ~/deploy
+          git ls-files | xargs rm -rf
+      -
+        uses: actions/download-artifact@v3
+        with:
+          name: fourmolu-web
+          path: ~/deploy
+      -
+        name: Deploy site
+        run: |
+          cd ~/deploy
+
+          git config user.name 'Fourmolu'
+          git config user.email 'fourmolu@users.noreply.github.com'
+
+          git add .
+          git commit -m 'Deploy fourmolu/fourmolu@${{ github.sha }}'
+          git push origin main
