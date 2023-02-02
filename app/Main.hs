@@ -297,7 +297,7 @@ optsParserInfo =
         "\n"
         [ unwords $
             ["fourmolu", showVersion version]
-              <> maybeToList $$(envQ @String "ORMOLU_REV"),
+              <> maybeToList $$(envQ @String "FOURMOLU_REV"),
           "using ghc-lib-parser " ++ VERSION_ghc_lib_parser
         ]
     exts :: Parser (a -> a)
