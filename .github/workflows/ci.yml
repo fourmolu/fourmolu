@@ -137,6 +137,8 @@ jobs:
 
     name: 'build_prod: ${{ matrix.os }}'
     runs-on: ${{ matrix.os }}
+    env:
+      FOURMOLU_REV: ${{ github.sha }}
 
     steps:
       -
