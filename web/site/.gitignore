@@ -1,2 +1,7 @@
+# Hakyll outputs
 _cache/
 _site/
+
+# Build outputs
+/static/fourmolu-wasm.wasm
+/static/worker.js
