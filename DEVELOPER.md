@@ -45,6 +45,7 @@ This is optional, but is run in CI regardless.
 Considering configurability is the raison d'être of Fourmolu, you're probably making a change that involves adding a new configuration option. Ideally, you've already opened an issue asking for thoughts on the new configuration. Assuming you've already done all that, here's a checklist to follow to ensure you've touched all the right places:
 
 1. Add the configuration option to `config/FourmoluConfig/ConfigData.hs`
+    * Set `since` to `unreleased`
 
 1. Regenerate files with `config/generate.sh`
 
@@ -55,8 +56,7 @@ Considering configurability is the raison d'être of Fourmolu, you're probably m
 
 1. Regenerate test outputs (see the "Running tests" section above)
 
-1. Add your new option to the "Configuration" section in `README.md`
-    * Both in the table and in the example `fourmolu.yaml` files
+1. Add documentation in `web/site/pages/config/<name>.md`
 
 1. Add a file to `changelog.d/` (see `changelog.d/README.md`)
 
@@ -102,10 +102,14 @@ To release a new version, do the following workflow:
     1. Curate `CHANGELOG.md` (see `changelog.d/README.md`)
 
     1. Curate option order
-        * Re-order the "Available options" table in the `README` with the options sorted by popularity/importance (using your best judgement, without too much churn every release)
-        * Ensure the options are in the same order in `config/ConfigData.hs` (and regenerate with `config/generate.sh`)
-        * Ensure the options are in the same order in the `README` examples
+        * Re-order the options in `config/ConfigData.hs`
+            * Sort by popularity/importance (using your best judgement, without too much churn every release)
+            * Regenerate with `config/generate.sh`
         * Ensure the `PrinterOptsSpec.hs` tests are also in the same order as the options
+
+    1. Set the `since` version for any options marked as `unreleased` in `ConfigData.hs`
+
+    1. Audit `web/site/` docs
 
 1. Create PR as usual and merge into `main`
     1. In the `check_sdist` CI job, check the output of the `stack sdist` step for any warnings.
@@ -146,6 +150,7 @@ Fourmolu aims to continue merging upstream changes in Ormolu. Whenever Ormolu ma
     * `flake.lock`
     * `flake.nix`
     * `nix/`
+    * `ormolu-live/`
     * `weeder.dhall`
 
 * Conflicts at the following paths should be resolved by throwing out Ormolu's changes and keeping our changes (i.e. if there's a conflict, use `git checkout --ours`):
