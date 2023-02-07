@@ -72,7 +72,12 @@ getPageInfo :: FilePath -> PageInfo
 getPageInfo = \case
   "index.md" ->
     PageInfo
-      { pageContext = constField "demo" "**&lt;TODO: demo&gt;**", -- TODO
+      { pageContext =
+          listFieldString "demoOptions" "widget" $
+            [ (ConfigData.name option, widget)
+              | option <- ConfigData.allOptions,
+                Just widget <- pure $ getOptionDemoWidget option
+            ],
         pageSidebar = Nothing
       }
   "changelog.md" ->
@@ -122,6 +127,37 @@ getPageInfo = \case
         [ Item (fromFilePath $ ConfigData.name option) option
           | option <- ConfigData.allOptions
         ]
+
+    getOptionDemoWidget option@ConfigData.Option {..}
+      | name == "fixities" = Nothing
+      | otherwise =
+          Just . concat $
+            [ printf "<label>",
+              printf "  <code>%s</code>" name,
+              case getFieldOptions option of
+                Just vals ->
+                  concat
+                    [ printf "<select class='demo-printerOpt' name='%s'>" name,
+                      concat
+                        [ printf "<option %s>%s</option>" (selected :: String) v
+                          | v <- vals,
+                            let selected = if v == hs2yaml type_ default_ then "selected" else ""
+                        ],
+                      printf "</select>"
+                    ]
+                Nothing ->
+                  let (inputType, inputInitial) =
+                        case default_ of
+                          ConfigData.HsBool b -> ("checkbox", if b then "checked" else "")
+                          ConfigData.HsInt x -> ("number", printf "value='%d'" x)
+                          _ -> ("text", printf "value='%s'" $ hs2yaml type_ default_)
+                   in printf
+                        "<input class='demo-printerOpt' name='%s' type='%s' %s />"
+                        name
+                        (inputType :: String)
+                        (inputInitial :: String),
+              printf "</label>"
+            ]
 
 getConfigOptionContext :: ConfigData.Option -> [Context a]
 getConfigOptionContext option@ConfigData.Option {..} =
@@ -322,3 +358,8 @@ markdownCompiler ctx mdProcess =
   where
     mdParse = CMarkGFM.parse CMarkGFM.defaultSettings
     mdRender = CMarkGFM.renderHtml
+
+listFieldString :: String -> String -> [(String, String)] -> Context a
+listFieldString listName itemName items =
+  listField listName (field itemName (pure . itemBody)) $
+    pure [Item (fromFilePath name) item | (name, item) <- items]
