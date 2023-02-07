@@ -1,11 +1,9 @@
-{-# LANGUAGE DeriveAnyClass #-}
-
 -- | This module contains the source of truth for configuration fields.
 --
 -- This module is broken up into two sections: the first is the list of
 -- options available in Fourmolu configuration, and the second is the
 -- definition of new Haskell types.
-module ConfigData where
+module FourmoluConfig.ConfigData where
 
 {----- Options -----}
 
@@ -46,8 +44,8 @@ data HaskellValue
   | HsBool Bool
   | HsList [HaskellValue]
 
-options :: [Option]
-options =
+allOptions :: [Option]
+allOptions =
   [ Option
       { name = "indentation",
         fieldName = Just "poIndentation",
@@ -213,8 +211,8 @@ data FieldType
         adtParsePrinterOptType :: String
       }
 
-fieldTypes :: [FieldType]
-fieldTypes =
+allFieldTypes :: [FieldType]
+allFieldTypes =
   [ FieldTypeEnum
       { fieldTypeName = "CommaStyle",
         enumOptions =

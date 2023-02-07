@@ -44,7 +44,7 @@ This is optional, but is run in CI regardless.
 
 Considering configurability is the raison d'être of Fourmolu, you're probably making a change that involves adding a new configuration option. Ideally, you've already opened an issue asking for thoughts on the new configuration. Assuming you've already done all that, here's a checklist to follow to ensure you've touched all the right places:
 
-1. Add the configuration option to `config/ConfigData.hs`
+1. Add the configuration option to `config/FourmoluConfig/ConfigData.hs`
 
 1. Regenerate files with `config/generate.sh`
 
