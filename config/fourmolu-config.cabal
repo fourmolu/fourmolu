@@ -1,0 +1,12 @@
+cabal-version: 2.4
+name: fourmolu-config
+version: 0.0.0
+
+library
+    exposed-modules:
+        FourmoluConfig.ConfigData
+        FourmoluConfig.GenerateUtils
+    default-language: GHC2021
+    build-depends:
+        , base
+        , containers

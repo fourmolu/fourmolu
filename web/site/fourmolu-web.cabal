@@ -1,0 +1,23 @@
+cabal-version: 3.0
+
+name: fourmolu-web
+version: 0
+
+executable fourmolu-web
+    main-is: site.hs
+    hs-source-dirs: ./ src/
+    default-language: GHC2021
+    ghc-options: -Wall -Wunused-packages
+
+    build-depends:
+        , aeson
+        , base
+        , bytestring
+        , cmark-gfm-simple
+        , filepath
+        , fourmolu
+        , fourmolu-config
+        , ghc-syntax-highlighter-themed
+        , hakyll == 4.15.*
+        , process
+        , text

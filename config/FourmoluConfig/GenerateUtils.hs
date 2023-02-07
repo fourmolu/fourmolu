@@ -5,7 +5,7 @@ module FourmoluConfig.GenerateUtils where
 import Control.Monad ((>=>))
 import Data.List (intercalate, isSuffixOf, stripPrefix)
 import Data.Map (Map)
-import qualified Data.Map as Map
+import Data.Map qualified as Map
 import Data.Maybe (fromMaybe)
 import FourmoluConfig.ConfigData
 
@@ -13,6 +13,20 @@ import FourmoluConfig.ConfigData
 
 fieldTypesMap :: Map String FieldType
 fieldTypesMap = Map.fromList [(fieldTypeName fieldType, fieldType) | fieldType <- allFieldTypes]
+
+getFieldOptions :: Option -> Maybe [String]
+getFieldOptions option = getOptions <$> Map.lookup (type_ option) fieldTypesMap
+  where
+    getOptions = \case
+      FieldTypeEnum {enumOptions} -> map snd enumOptions
+      FieldTypeADT {adtOptions} ->
+        flip concatMap adtOptions $ \case
+          ADTOptionLiteral s -> ["<code>" <> s <> "</code>"]
+          ADTOptionRaw s -> [s]
+          ADTOptionsFromType enum ->
+            case enum `Map.lookup` fieldTypesMap of
+              Just ty -> getOptions ty
+              Nothing -> error $ "ADTOptionsFromType contains unknown type: " <> enum
 
 -- | Render a HaskellValue for Haskell.
 renderHs :: HaskellValue -> String

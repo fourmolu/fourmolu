@@ -20,6 +20,8 @@ data Option = Option
     default_ :: HaskellValue,
     -- | The option that mimics Ormolu's formatting
     ormolu :: HaskellValue,
+    -- | The version the option was added in
+    sinceVersion :: String,
     -- | Overriding CLI information
     cliOverrides :: CLIOverrides
   }
@@ -53,6 +55,7 @@ allOptions =
         type_ = "Int",
         default_ = HsInt 4,
         ormolu = HsInt 2,
+        sinceVersion = "0.1.0.0",
         cliOverrides = emptyOverrides
       },
     Option
@@ -62,6 +65,7 @@ allOptions =
         type_ = "ColumnLimit",
         default_ = HsExpr "NoLimit",
         ormolu = HsExpr "NoLimit",
+        sinceVersion = "0.12.0.0",
         cliOverrides = emptyOverrides
       },
     Option
@@ -71,6 +75,7 @@ allOptions =
         type_ = "FunctionArrowsStyle",
         default_ = HsExpr "TrailingArrows",
         ormolu = HsExpr "TrailingArrows",
+        sinceVersion = "0.8.2.0",
         cliOverrides = emptyOverrides
       },
     Option
@@ -80,6 +85,7 @@ allOptions =
         type_ = "CommaStyle",
         default_ = HsExpr "Leading",
         ormolu = HsExpr "Trailing",
+        sinceVersion = "0.2.0.0",
         cliOverrides = emptyOverrides
       },
     Option
@@ -89,6 +95,7 @@ allOptions =
         type_ = "ImportExportStyle",
         default_ = HsExpr "ImportExportDiffFriendly",
         ormolu = HsExpr "ImportExportTrailing",
+        sinceVersion = "0.8.0.0",
         cliOverrides = emptyOverrides
       },
     Option
@@ -98,6 +105,7 @@ allOptions =
         type_ = "Bool",
         default_ = HsBool False,
         ormolu = HsBool True,
+        sinceVersion = "0.2.0.0",
         cliOverrides = emptyOverrides
       },
     Option
@@ -107,6 +115,7 @@ allOptions =
         type_ = "Bool",
         default_ = HsBool False,
         ormolu = HsBool True,
+        sinceVersion = "0.2.0.0",
         cliOverrides = emptyOverrides
       },
     Option
@@ -116,6 +125,7 @@ allOptions =
         type_ = "Int",
         default_ = HsInt 1,
         ormolu = HsInt 1,
+        sinceVersion = "0.3.0.0",
         cliOverrides = emptyOverrides
       },
     Option
@@ -125,6 +135,7 @@ allOptions =
         type_ = "HaddockPrintStyle",
         default_ = HsExpr "HaddockMultiLine",
         ormolu = HsExpr "HaddockSingleLine",
+        sinceVersion = "0.2.0.0",
         cliOverrides = emptyOverrides
       },
     Option
@@ -134,6 +145,7 @@ allOptions =
         type_ = "HaddockPrintStyleModule",
         default_ = HsExpr "PrintStyleInherit",
         ormolu = HsExpr "PrintStyleInherit",
+        sinceVersion = "0.10.0.0",
         cliOverrides = emptyOverrides {cliDefault = Just "same as 'haddock-style'"}
       },
     Option
@@ -143,6 +155,7 @@ allOptions =
         type_ = "LetStyle",
         default_ = HsExpr "LetAuto",
         ormolu = HsExpr "LetInline",
+        sinceVersion = "0.9.0.0",
         cliOverrides = emptyOverrides
       },
     Option
@@ -152,6 +165,7 @@ allOptions =
         type_ = "InStyle",
         default_ = HsExpr "InRightAlign",
         ormolu = HsExpr "InRightAlign",
+        sinceVersion = "0.9.0.0",
         cliOverrides = emptyOverrides
       },
     Option
@@ -161,6 +175,7 @@ allOptions =
         type_ = "SingleConstraintParens",
         default_ = HsExpr "ConstraintAlways",
         ormolu = HsExpr "ConstraintAlways",
+        sinceVersion = "0.12.0.0",
         cliOverrides = emptyOverrides
       },
     Option
@@ -170,6 +185,7 @@ allOptions =
         type_ = "Unicode",
         default_ = HsExpr "UnicodeNever",
         ormolu = HsExpr "UnicodeNever",
+        sinceVersion = "0.9.0.0",
         cliOverrides = emptyOverrides
       },
     Option
@@ -179,6 +195,7 @@ allOptions =
         type_ = "Bool",
         default_ = HsBool True,
         ormolu = HsBool False,
+        sinceVersion = "0.2.0.0",
         cliOverrides = emptyOverrides
       },
     Option
@@ -188,6 +205,7 @@ allOptions =
         type_ = "[String]",
         default_ = HsList [],
         ormolu = HsList [],
+        sinceVersion = "0.7.0.0",
         cliOverrides = emptyOverrides
       }
   ]
@@ -203,6 +221,8 @@ data FieldType
   | FieldTypeADT
       { fieldTypeName :: String,
         adtConstructors :: [String],
+        -- | List of available options for this type.
+        adtOptions :: [ADTOption],
         -- | Mapping from Haskell expression (in `HsExpr`) to string representation
         adtRender :: [(String, String)],
         -- | Implementation of `Aeson.parseJSON`
@@ -210,6 +230,14 @@ data FieldType
         -- | Implementation of `String -> Either String a`
         adtParsePrinterOptType :: String
       }
+
+data ADTOption
+  = -- | A literal YAML value
+    ADTOptionLiteral String
+  | -- | Raw HTML to display
+    ADTOptionRaw String
+  | -- | Concatenate all options from the given type
+    ADTOptionsFromType String
 
 allFieldTypes :: [FieldType]
 allFieldTypes =
@@ -241,6 +269,10 @@ allFieldTypes =
         adtConstructors =
           [ "PrintStyleInherit",
             "PrintStyleOverride HaddockPrintStyle"
+          ],
+        adtOptions =
+          [ ADTOptionLiteral "null",
+            ADTOptionsFromType "HaddockPrintStyle"
           ],
         adtRender = [("PrintStyleInherit", "null")],
         adtParseJSON =
@@ -303,6 +335,10 @@ allFieldTypes =
         adtConstructors =
           [ "NoLimit",
             "ColumnLimit Int"
+          ],
+        adtOptions =
+          [ ADTOptionLiteral "none",
+            ADTOptionRaw "Any non-negative integer"
           ],
         adtRender = [("NoLimit", "none")],
         adtParseJSON =

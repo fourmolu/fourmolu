@@ -96,6 +96,7 @@ library
         Ormolu.Utils.Cabal
         Ormolu.Utils.Fixity
         Ormolu.Utils.IO
+        Paths_fourmolu
     other-modules:
         Ormolu.Config.Gen
 

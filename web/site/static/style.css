@@ -1,0 +1,34 @@
+main {
+    padding: 0 5em;
+}
+
+.sidebar-container {
+    display: grid;
+    grid-auto-flow: column;
+    grid-template-columns: max-content 1fr;
+}
+
+.sidebar-container nav.sidebar h3 {
+    margin-bottom: 0;
+}
+
+/* Reset some github-markdown that interferes with other styles */
+
+.markdown-body nav ul {
+    margin-bottom: 0;
+}
+.markdown-body nav li {
+    margin-top: 0;
+}
+
+.markdown-body main ul.nav-tabs {
+    margin-bottom: 0;
+}
+
+.markdown-body main li.nav-item {
+    margin-top: 0;
+}
+
+.markdown-body main td ul {
+    margin-bottom: 0;
+}
