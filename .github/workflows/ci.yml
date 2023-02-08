@@ -22,7 +22,7 @@ jobs:
           - stack.yaml
 
     name: 'stack_test: ${{ matrix.stack_yaml }}'
-    runs-on: ubuntu-22.04 # switch back to ubuntu-latest when latest uses 22
+    runs-on: ubuntu-latest
     env:
       STACK_YAML: ${{ matrix.stack_yaml }}
 
@@ -62,6 +62,10 @@ jobs:
     steps:
       -
         uses: actions/checkout@v3
+      -
+        # https://github.com/actions/runner-images/issues/7061#issuecomment-1422639889
+        name: Workaround ghcup error
+        run: sudo chown -R $USER /usr/local/.ghcup
       -
         uses: haskell/actions/setup@v2
         with:
