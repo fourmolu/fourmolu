@@ -22,7 +22,7 @@ jobs:
           - stack.yaml
 
     name: 'stack_test: ${{ matrix.stack_yaml }}'
-    runs-on: ubuntu-22.04 # switch back to ubuntu-latest when latest uses 22
+    runs-on: ubuntu-latest
     env:
       STACK_YAML: ${{ matrix.stack_yaml }}
 
