@@ -48,7 +48,7 @@ jobs:
           fi
           sed '1 d; /^## Fourmolu/,$ d' CHANGELOG.md > /tmp/changelog-body
       -
-        uses: brandonchinn178/haskell-actions/hackage-upload@hackage-upload
+        uses: brandonchinn178/haskell-actions/hackage-upload@parse-cabal-file
         with:
           archive: sdist/fourmolu-*.tar.gz
           token: ${{ secrets[steps.hackage_token_secret.outputs.name] }}
