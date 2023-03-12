@@ -141,8 +141,9 @@ parseCabalInfo cabalFileAsGiven sourceFileAsGiven = liftIO $ do
   CachedCabalFile {..} <- whenNothing (M.lookup cabalFile cabalCache) $ do
     cabalFileBs <- B.readFile cabalFile
     genericPackageDescription <-
-      whenNothing (parseGenericPackageDescriptionMaybe cabalFileBs) $
-        throwIO (OrmoluCabalFileParsingFailed cabalFile)
+      whenLeft
+        (snd . runParseResult $ parseGenericPackageDescription cabalFileBs)
+        $ throwIO . OrmoluCabalFileParsingFailed cabalFile . snd
     let extensionsAndDeps =
           getExtensionAndDepsMap cabalFile genericPackageDescription
         cachedCabalFile = CachedCabalFile {..}
@@ -165,6 +166,8 @@ parseCabalInfo cabalFileAsGiven sourceFileAsGiven = liftIO $ do
   where
     whenNothing :: (Monad m) => Maybe a -> m a -> m a
     whenNothing maya ma = maybe ma pure maya
+    whenLeft :: (Monad m) => Either e a -> (e -> m a) -> m a
+    whenLeft eith ma = either ma pure eith
 
 -- | Get a map from Haskell source file paths (without any extensions) to
 -- the corresponding 'DynOption's and dependencies.
