@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
@@ -18,6 +19,7 @@ import Control.Monad.Except (ExceptT (..), runExceptT)
 import Control.Monad.IO.Class
 import Data.Char (isSpace)
 import Data.Functor
+import Data.Functor.Identity (Identity (..))
 import Data.Generics
 import qualified Data.List as L
 import qualified Data.List.NonEmpty as NE
@@ -41,6 +43,7 @@ import GHC.Utils.Error
 import GHC.Utils.Outputable (defaultSDocContext)
 import qualified GHC.Utils.Panic as GHC
 import Ormolu.Config
+import Ormolu.Config.Gen (SingleConstraintParens (..))
 import Ormolu.Exception
 import Ormolu.Fixity (LazyFixityMap)
 import Ormolu.Parser.CommentStream
@@ -98,7 +101,7 @@ parseModuleSnippet ::
   FilePath ->
   Text ->
   m (Either (SrcSpan, String) ParseResult)
-parseModuleSnippet Config {..} fixityMap dynFlags path rawInput = liftIO $ do
+parseModuleSnippet config@Config {..} fixityMap dynFlags path rawInput = liftIO $ do
   let (input, indent) = removeIndentation . linesInRegion cfgRegion $ rawInput
   let pStateErrors pstate =
         let errs = bagToList . getMessages $ GHC.getPsErrorMessages pstate
@@ -125,7 +128,7 @@ parseModuleSnippet Config {..} fixityMap dynFlags path rawInput = liftIO $ do
           case pStateErrors pstate of
             Just err -> Left err
             Nothing -> error "PFailed does not have an error"
-        GHC.POk pstate (L _ (normalizeModule -> hsModule)) ->
+        GHC.POk pstate (L _ (normalizeModule config -> hsModule)) ->
           case pStateErrors pstate of
             -- Some parse errors (pattern/arrow syntax in expr context)
             -- do not cause a parse error, but they are replaced with "_"
@@ -151,8 +154,8 @@ parseModuleSnippet Config {..} fixityMap dynFlags path rawInput = liftIO $ do
 
 -- | Normalize a 'HsModule' by sorting its export lists, dropping
 -- blank comments, etc.
-normalizeModule :: HsModule -> HsModule
-normalizeModule hsmod =
+normalizeModule :: Config RegionDeltas -> HsModule -> HsModule
+normalizeModule Config {..} hsmod =
   everywhere
     (extT (mkT dropBlankTypeHaddocks) patchContext)
     hsmod
@@ -180,9 +183,16 @@ normalizeModule hsmod =
       a -> a
     patchContext :: LHsContext GhcPs -> LHsContext GhcPs
     patchContext = mapLoc $ \case
-      [x@(L _ (HsParTy _ _))] -> [x]
-      [x@(L lx _)] -> [L lx (HsParTy EpAnnNotUsed x)]
+      [x@(L _ (HsParTy _ t))] -> unwrapParens x t
+      [x@(L _ _)] -> wrapParens x
       xs -> xs
+    constraintParens = runIdentity (poSingleConstraintParens cfgPrinterOpts)
+    unwrapParens outer inner = case constraintParens of
+      ConstraintNever -> [inner]
+      _ -> [outer]
+    wrapParens x@(L lx _) = case constraintParens of
+      ConstraintAlways -> [L lx (HsParTy EpAnnNotUsed x)]
+      _ -> [x]
 
 -- | Enable all language extensions that we think should be enabled by
 -- default for ease of use.

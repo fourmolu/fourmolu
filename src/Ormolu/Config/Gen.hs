@@ -15,6 +15,7 @@ module Ormolu.Config.Gen
   , LetStyle (..)
   , InStyle (..)
   , Unicode (..)
+  , SingleConstraintParens (..)
   , emptyPrinterOpts
   , defaultPrinterOpts
   , fillMissingPrinterOpts
@@ -60,6 +61,8 @@ data PrinterOpts f =
       poUnicode :: f Unicode
     , -- | Give the programmer more choice on where to insert blank lines
       poRespectful :: f Bool
+    , -- | Whether to put parentheses around a single constraint
+      poSingleConstraintParens :: f SingleConstraintParens
     }
   deriving (Generic)
 
@@ -79,6 +82,7 @@ emptyPrinterOpts =
     , poInStyle = Nothing
     , poUnicode = Nothing
     , poRespectful = Nothing
+    , poSingleConstraintParens = Nothing
     }
 
 defaultPrinterOpts :: PrinterOpts Identity
@@ -97,6 +101,7 @@ defaultPrinterOpts =
     , poInStyle = pure InRightAlign
     , poUnicode = pure UnicodeNever
     , poRespectful = pure True
+    , poSingleConstraintParens = pure ConstraintAlways
     }
 
 -- | Fill the field values that are 'Nothing' in the first argument
@@ -122,6 +127,7 @@ fillMissingPrinterOpts p1 p2 =
     , poInStyle = maybe (poInStyle p2) pure (poInStyle p1)
     , poUnicode = maybe (poUnicode p2) pure (poUnicode p1)
     , poRespectful = maybe (poRespectful p2) pure (poRespectful p1)
+    , poSingleConstraintParens = maybe (poSingleConstraintParens p2) pure (poSingleConstraintParens p1)
     }
 
 parsePrinterOptsCLI ::
@@ -182,6 +188,10 @@ parsePrinterOptsCLI f =
       "respectful"
       "Give the programmer more choice on where to insert blank lines (default: true)"
       "BOOL"
+    <*> f
+      "single-constraint-parens"
+      "Whether to put parentheses around a single constraint (choices: \"auto\", \"always\", or \"never\") (default: always)"
+      "OPTION"
 
 parsePrinterOptsJSON ::
   Applicative f =>
@@ -202,6 +212,7 @@ parsePrinterOptsJSON f =
     <*> f "in-style"
     <*> f "unicode"
     <*> f "respectful"
+    <*> f "single-constraint-parens"
 
 {---------- PrinterOpts field types ----------}
 
@@ -267,6 +278,12 @@ data Unicode
   = UnicodeDetect
   | UnicodeAlways
   | UnicodeNever
+  deriving (Eq, Show, Enum, Bounded)
+
+data SingleConstraintParens
+  = ConstraintAuto
+  | ConstraintAlways
+  | ConstraintNever
   deriving (Eq, Show, Enum, Bounded)
 
 instance Aeson.FromJSON CommaStyle where
@@ -406,4 +423,22 @@ instance PrinterOptsFieldType Unicode where
         Left . unlines $
           [ "unknown value: " <> show s
           , "Valid values are: \"detect\", \"always\", or \"never\""
+          ]
+
+instance Aeson.FromJSON SingleConstraintParens where
+  parseJSON =
+    Aeson.withText "SingleConstraintParens" $ \s ->
+      either Aeson.parseFail pure $
+        parsePrinterOptType (Text.unpack s)
+
+instance PrinterOptsFieldType SingleConstraintParens where
+  parsePrinterOptType s =
+    case s of
+      "auto" -> Right ConstraintAuto
+      "always" -> Right ConstraintAlways
+      "never" -> Right ConstraintNever
+      _ ->
+        Left . unlines $
+          [ "unknown value: " <> show s
+          , "Valid values are: \"auto\", \"always\", or \"never\""
           ]

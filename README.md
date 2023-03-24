@@ -45,22 +45,23 @@ We share all bar one of Ormolu's goals:
 
 Defaults are in bold.
 
-| Configuration option     | Valid options                                         | Description
-|--------------------------|-------------------------------------------------------|-------------
-| `indentation`            | any non-negative integer (**`4`**)                    | How many spaces to use as an indent
-| `function-arrows`        | **`trailing`**, `leading`, `leading-args`             | Where to place arrows in type signatures
-| `comma-style`            | **`leading`**, `trailing`                             | Where to place commas in lists, tuples, etc.
-| `import-export-style`    | `leading`, `trailing`, **`diff-friendly`**            | How to format multiline import/export lists (`diff-friendly` lists have trailing commas but keep the opening parenthesis on the same line as `import`)
-| `indent-wheres`          | `true`, **`false`**                                   | Use an extra level of indentation _vs_ only half-indent the `where` keyword
-| `record-brace-space`     | `true`, **`false`**                                   | `rec {x = 1}` _vs_ `rec{x = 1}`
-| `newlines-between-decls` | any integer (**`1`**)                                 | Number of newlines between top-level declarations
-| `haddock-style`          | `single-line`, **`multi-line`**, `multi-line-compact` | Use `-- \|`, `{- \|`, or `{-\|` for multiline haddocks (single-line haddocks always use `--`)
-| `haddock-style-module`   | same as `haddock-style`                               | `haddock-style`, but specifically for the module docstring (not specifying anything = use the same setting as `haddock-style`) |
-| `let-style`              | `inline`, `newline`, **`auto`**, `mixed`              | How to style `let` blocks (`auto` uses `newline` if there's a newline in the input and `inline` otherwise, and `mixed` uses `inline` only when the `let` has exactly one binding)
-| `in-style`               | `left-align`, **`right-align`**, `no-space`           | How to align the `in` keyword with respect to `let` (`left-align` produces <code>in &nbsp;...</code>, `right-align` produces <code>&nbsp;in ...</code>, `no-space` produces <code>in ...</code>)
-| `unicode`                | `always`, `detect`, **`never`**                       | Output Unicode syntax. With `detect` we output Unicode syntax exactly when the extension is seen to be enabled. When using `always`, make sure to have the `UnicodeSyntax` extension enabled, or Fourmolu will throw errors.
-| `respectful`             | **`true`**, `false`                                   | Be less aggressive in reformatting input, e.g. keep empty lines in import list
-| `fixities`               | list of strings (**`[]`**)                            | See the "Language extensions, dependencies, and fixities" section below
+| Configuration option       | Valid options                                         | Description
+|----------------------------|-------------------------------------------------------|-------------
+| `indentation`              | any non-negative integer (**`4`**)                    | How many spaces to use as an indent
+| `function-arrows`          | **`trailing`**, `leading`, `leading-args`             | Where to place arrows in type signatures
+| `comma-style`              | **`leading`**, `trailing`                             | Where to place commas in lists, tuples, etc.
+| `import-export-style`      | `leading`, `trailing`, **`diff-friendly`**            | How to format multiline import/export lists (`diff-friendly` lists have trailing commas but keep the opening parenthesis on the same line as `import`)
+| `indent-wheres`            | `true`, **`false`**                                   | Use an extra level of indentation _vs_ only half-indent the `where` keyword
+| `record-brace-space`       | `true`, **`false`**                                   | `rec {x = 1}` _vs_ `rec{x = 1}`
+| `newlines-between-decls`   | any integer (**`1`**)                                 | Number of newlines between top-level declarations
+| `haddock-style`            | `single-line`, **`multi-line`**, `multi-line-compact` | Use `-- \|`, `{- \|`, or `{-\|` for multiline haddocks (single-line haddocks always use `--`)
+| `haddock-style-module`     | same as `haddock-style`                               | `haddock-style`, but specifically for the module docstring (not specifying anything = use the same setting as `haddock-style`) |
+| `let-style`                | `inline`, `newline`, **`auto`**, `mixed`              | How to style `let` blocks (`auto` uses `newline` if there's a newline in the input and `inline` otherwise, and `mixed` uses `inline` only when the `let` has exactly one binding)
+| `in-style`                 | `left-align`, **`right-align`**, `no-space`           | How to align the `in` keyword with respect to `let` (`left-align` produces <code>in &nbsp;...</code>, `right-align` produces <code>&nbsp;in ...</code>, `no-space` produces <code>in ...</code>)
+| `unicode`                  | `always`, `detect`, **`never`**                       | Output Unicode syntax. With `detect` we output Unicode syntax exactly when the extension is seen to be enabled. When using `always`, make sure to have the `UnicodeSyntax` extension enabled, or Fourmolu will throw errors.
+| `respectful`               | **`true`**, `false`                                   | Be less aggressive in reformatting input, e.g. keep empty lines in import list
+| `fixities`                 | list of strings (**`[]`**)                            | See the "Language extensions, dependencies, and fixities" section below
+| `single-constraint-parens` | **`always`**, `never`, `auto`                         | Whether to style optional parentheses around single constraints
 
 For examples of each of these options, see the [test files](https://github.com/fourmolu/fourmolu/tree/main/data/fourmolu/).
 
@@ -85,6 +86,7 @@ in-style: right-align
 respectful: true
 fixities: []
 unicode: never
+single-constraint-parens: always
 ```
 
 The configuration that most closely matches Ormolu's styling is:
@@ -104,6 +106,7 @@ in-style: right-align
 respectful: false
 fixities: []
 unicode: never
+single-constraint-parens: always
 ```
 
 Command-line options override options in a configuration file. Run `fourmolu --help` to see all options.

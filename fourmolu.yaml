@@ -15,3 +15,4 @@ in-style: right-align
 unicode: never
 respectful: false
 fixities: []
+single-constraint-parens: always

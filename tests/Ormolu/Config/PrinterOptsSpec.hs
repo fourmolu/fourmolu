@@ -177,6 +177,13 @@ singleTests =
           updateConfig = \respectful opts -> opts {poRespectful = pure respectful},
           showTestCase = show,
           testCaseSuffix = suffix1
+        },
+      TestGroup
+        { label = "single-context-parens",
+          testCases = allOptions,
+          updateConfig = \parens opts -> opts {poSingleConstraintParens = pure parens},
+          showTestCase = show,
+          testCaseSuffix = suffix1
         }
     ]
 
