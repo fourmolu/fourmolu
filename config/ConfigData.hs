@@ -173,6 +173,15 @@ options =
         default_ = HsList [],
         ormolu = HsList [],
         cliOverrides = emptyOverrides
+      },
+    Option
+      { name = "single-constraint-parens",
+        fieldName = Just "poSingleConstraintParens",
+        description = "Whether to put parentheses around a single constraint",
+        type_ = "SingleConstraintParens",
+        default_ = HsExpr "ConstraintAlways",
+        ormolu = HsExpr "ConstraintAlways",
+        cliOverrides = emptyOverrides
       }
   ]
 
@@ -272,6 +281,14 @@ fieldTypes =
           [ ("UnicodeDetect", "detect"),
             ("UnicodeAlways", "always"),
             ("UnicodeNever", "never")
+          ]
+      },
+    FieldTypeEnum
+      { fieldTypeName = "SingleConstraintParens",
+        enumOptions =
+          [ ("ConstraintAuto", "auto"),
+            ("ConstraintAlways", "always"),
+            ("ConstraintNever", "never")
           ]
       }
   ]
