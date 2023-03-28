@@ -182,6 +182,15 @@ options =
         default_ = HsExpr "ConstraintAlways",
         ormolu = HsExpr "ConstraintAlways",
         cliOverrides = emptyOverrides
+      },
+    Option
+      { name = "column-limit",
+        fieldName = Just "poColumnLimit",
+        description = "Max line length for automatic line breaking",
+        type_ = "ColumnLimit",
+        default_ = HsExpr "NoLimit",
+        ormolu = HsExpr "NoLimit",
+        cliOverrides = emptyOverrides
       }
   ]
 
@@ -290,5 +299,41 @@ fieldTypes =
             ("ConstraintAlways", "always"),
             ("ConstraintNever", "never")
           ]
+      },
+    FieldTypeADT
+      { fieldTypeName = "ColumnLimit",
+        adtConstructors =
+          [ "NoLimit",
+            "ColumnLimit Int"
+          ],
+        adtRender = [("NoLimit", "none")],
+        adtParseJSON =
+          unlines
+            [ "\\case",
+              "   Aeson.String \"none\" ->",
+              "     pure NoLimit",
+              "   Aeson.Number x",
+              "     | Right x' <- (floatingOrInteger x :: Either Double Int) ->",
+              "         pure $ ColumnLimit x'",
+              "   s ->",
+              "     fail . unlines $",
+              "       [ \"unknown value: \" <> show s,",
+              "         \"Valid values are: \\\"none\\\", or an integer\"",
+              "       ]"
+            ],
+        adtParsePrinterOptType =
+          unlines
+            [ "\\s ->",
+              "  case s of",
+              "    \"none\" -> Right NoLimit",
+              "    _",
+              "      | Just someInt <- readMaybe s ->",
+              "          Right . ColumnLimit $ someInt",
+              "    _ ->",
+              "      Left . unlines $",
+              "        [ \"unknown value: \" <> show s,",
+              "          \"Valid values are: \\\"none\\\", or an integer\"",
+              "        ]"
+            ]
       }
   ]

@@ -36,7 +36,7 @@ spec = do
       mentioned `shouldBe` True
       unPackageName ciPackageName `shouldBe` "fourmolu"
       ciDynOpts `shouldBe` [DynOption "-XHaskell2010"]
-      Set.map unPackageName ciDependencies `shouldBe` Set.fromList ["Cabal-syntax", "Diff", "MemoTrie", "aeson", "ansi-terminal", "array", "base", "binary", "bytestring", "containers", "directory", "dlist", "file-embed", "filepath", "ghc-lib-parser", "megaparsec", "mtl", "syb", "text", "yaml"]
+      Set.map unPackageName ciDependencies `shouldBe` Set.fromList ["Cabal-syntax", "Diff", "MemoTrie", "aeson", "ansi-terminal", "array", "base", "binary", "bytestring", "containers", "directory", "dlist", "file-embed", "filepath", "ghc-lib-parser", "megaparsec", "mtl", "scientific", "syb", "text", "yaml"]
       ciCabalFilePath `shouldSatisfy` isAbsolute
       makeRelativeToCurrentDirectory ciCabalFilePath `shouldReturn` "fourmolu.cabal"
     it "extracts correct cabal info from fourmolu.cabal for tests/Ormolu/PrinterSpec.hs" $ do

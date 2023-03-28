@@ -28,7 +28,7 @@ import Ormolu
     detectSourceType,
     ormolu,
   )
-import Ormolu.Config (HaddockPrintStyleModule (..))
+import Ormolu.Config (ColumnLimit (..), HaddockPrintStyleModule (..))
 import Ormolu.Exception (OrmoluException, printOrmoluException)
 import Ormolu.Terminal (ColorMode (..), runTerm)
 import Ormolu.Utils.IO (readFileUtf8, writeFileUtf8)
@@ -57,7 +57,8 @@ data TestGroup = forall a.
     testCases :: [a],
     updateConfig :: a -> PrinterOptsTotal -> PrinterOptsTotal,
     showTestCase :: a -> String,
-    testCaseSuffix :: a -> String
+    testCaseSuffix :: a -> String,
+    checkIdempotence :: Bool
   }
 
 spec :: Spec
@@ -84,7 +85,8 @@ singleTests =
           showTestCase = \(indent, indentWheres) ->
             show indent ++ if indentWheres then " + indent wheres" else "",
           testCaseSuffix = \(indent, indentWheres) ->
-            suffixWith [show indent, if indentWheres then "indent_wheres" else ""]
+            suffixWith [show indent, if indentWheres then "indent_wheres" else ""],
+          checkIdempotence = True
         },
       TestGroup
         { label = "function-arrows",
@@ -92,14 +94,16 @@ singleTests =
           updateConfig = \functionArrows opts ->
             opts {poFunctionArrows = pure functionArrows},
           showTestCase = show,
-          testCaseSuffix = suffix1
+          testCaseSuffix = suffix1,
+          checkIdempotence = True
         },
       TestGroup
         { label = "comma-style",
           testCases = allOptions,
           updateConfig = \commaStyle opts -> opts {poCommaStyle = pure commaStyle},
           showTestCase = show,
-          testCaseSuffix = suffix1
+          testCaseSuffix = suffix1,
+          checkIdempotence = True
         },
       TestGroup
         { label = "import-export",
@@ -107,14 +111,16 @@ singleTests =
           updateConfig = \commaStyle opts ->
             opts {poImportExportStyle = pure commaStyle},
           showTestCase = show,
-          testCaseSuffix = suffix1
+          testCaseSuffix = suffix1,
+          checkIdempotence = True
         },
       TestGroup
         { label = "record-brace-space",
           testCases = allOptions,
           updateConfig = \recordBraceSpace opts -> opts {poRecordBraceSpace = pure recordBraceSpace},
           showTestCase = show,
-          testCaseSuffix = suffix1
+          testCaseSuffix = suffix1,
+          checkIdempotence = True
         },
       TestGroup
         { label = "newlines-between-decls",
@@ -127,7 +133,8 @@ singleTests =
           showTestCase = \(newlines, respectful) ->
             show newlines ++ if respectful then " (respectful)" else "",
           testCaseSuffix = \(newlines, respectful) ->
-            suffixWith [show newlines, if respectful then "respectful" else ""]
+            suffixWith [show newlines, if respectful then "respectful" else ""],
+          checkIdempotence = True
         },
       TestGroup
         { label = "haddock-style",
@@ -148,7 +155,8 @@ singleTests =
                 case haddockStyleModule of
                   PrintStyleInherit -> ""
                   PrintStyleOverride style -> "module=" ++ show style
-              ]
+              ],
+          checkIdempotence = True
         },
       TestGroup
         { label = "let-style",
@@ -162,28 +170,45 @@ singleTests =
           showTestCase = \(letStyle, inStyle, indent) ->
             printf "%s + %s (indent=%d)" (show letStyle) (show inStyle) indent,
           testCaseSuffix = \(letStyle, inStyle, indent) ->
-            suffixWith [show letStyle, show inStyle, "indent=" ++ show indent]
+            suffixWith [show letStyle, show inStyle, "indent=" ++ show indent],
+          checkIdempotence = True
         },
       TestGroup
         { label = "unicode-syntax",
           testCases = allOptions,
           updateConfig = \unicodePreference options -> options {poUnicode = pure unicodePreference},
           showTestCase = show,
-          testCaseSuffix = suffix1
+          testCaseSuffix = suffix1,
+          checkIdempotence = True
         },
       TestGroup
         { label = "respectful",
           testCases = allOptions,
           updateConfig = \respectful opts -> opts {poRespectful = pure respectful},
           showTestCase = show,
-          testCaseSuffix = suffix1
+          testCaseSuffix = suffix1,
+          checkIdempotence = True
         },
       TestGroup
         { label = "single-context-parens",
           testCases = allOptions,
           updateConfig = \parens opts -> opts {poSingleConstraintParens = pure parens},
           showTestCase = show,
-          testCaseSuffix = suffix1
+          testCaseSuffix = suffix1,
+          checkIdempotence = True
+        },
+      TestGroup
+        { label = "column-limit",
+          testCases = [NoLimit, ColumnLimit 80, ColumnLimit 100],
+          updateConfig = \columnLimit opts -> opts {poColumnLimit = pure columnLimit},
+          showTestCase = show,
+          testCaseSuffix = \columnLimit ->
+            let limitStr =
+                  case columnLimit of
+                    NoLimit -> "none"
+                    ColumnLimit x -> show x
+             in suffixWith ["limit=" ++ limitStr],
+          checkIdempotence = False
         }
     ]
 
@@ -205,7 +230,8 @@ multiTests =
           showTestCase = \(respectful, importExportStyle) ->
             (if respectful then "respectful" else "not respectful") ++ " + " ++ show importExportStyle,
           testCaseSuffix = \(respectful, importExportStyle) ->
-            suffixWith ["respectful=" ++ show respectful, show importExportStyle]
+            suffixWith ["respectful=" ++ show respectful, show importExportStyle],
+          checkIdempotence = True
         }
     ]
 
@@ -222,8 +248,8 @@ runTestGroup isMulti TestGroup {..} =
         input <- readFileUtf8 inputPath
         actual <-
           if isMulti
-            then overSectionsM (T.pack "{- // -}") (runOrmolu opts inputPath) input
-            else runOrmolu opts inputPath input
+            then overSectionsM (T.pack "{- // -}") (runOrmolu opts checkIdempotence inputPath) input
+            else runOrmolu opts checkIdempotence inputPath input
         checkResult outputFile actual
   where
     testDir = toRelDir $ "data/fourmolu/" ++ label
@@ -236,8 +262,8 @@ runTestGroup isMulti TestGroup {..} =
         Just path -> path
         Nothing -> error $ "Not a valid file name: " ++ show name
 
-runOrmolu :: PrinterOptsTotal -> FilePath -> Text -> IO Text
-runOrmolu opts inputPath input =
+runOrmolu :: PrinterOptsTotal -> Bool -> FilePath -> Text -> IO Text
+runOrmolu opts checkIdempotence inputPath input =
   ormolu config inputPath input `catch` \e -> do
     msg <- renderOrmoluException e
     expectationFailure' $ unlines ["Got ormolu exception:", "", msg]
@@ -246,7 +272,7 @@ runOrmolu opts inputPath input =
       defaultConfig
         { cfgPrinterOpts = opts,
           cfgSourceType = detectSourceType inputPath,
-          cfgCheckIdempotence = True
+          cfgCheckIdempotence = checkIdempotence
         }
 
 checkResult :: Path Rel File -> Text -> Expectation
