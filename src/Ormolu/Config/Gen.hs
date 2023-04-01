@@ -19,8 +19,8 @@ module Ormolu.Config.Gen
   , SingleConstraintParens (..)
   , ColumnLimit (..)
   , emptyPrinterOpts
-  , defaultPrinterOptsYaml
   , defaultPrinterOpts
+  , defaultPrinterOptsYaml
   , fillMissingPrinterOpts
   , parsePrinterOptsCLI
   , parsePrinterOptsJSON
