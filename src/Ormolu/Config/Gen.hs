@@ -19,6 +19,7 @@ module Ormolu.Config.Gen
   , SingleConstraintParens (..)
   , ColumnLimit (..)
   , emptyPrinterOpts
+  , defaultPrinterOptsYaml
   , defaultPrinterOpts
   , fillMissingPrinterOpts
   , parsePrinterOptsCLI
@@ -488,3 +489,6 @@ instance PrinterOptsFieldType ColumnLimit where
             [ "unknown value: " <> show s,
               "Valid values are: \"none\", or an integer"
             ]
+
+defaultPrinterOptsYaml :: String
+defaultPrinterOptsYaml = "indentation: 4 # Number of spaces per indentation step\nfunction-arrows: trailing # Styling of arrows in type signatures (choices: \"trailing\", \"leading\", or \"leading-args\")\ncomma-style: leading # How to place commas in multi-line lists, records, etc. (choices: \"leading\" or \"trailing\")\nimport-export-style: diff-friendly # Styling of import/export lists (choices: \"leading\", \"trailing\", or \"diff-friendly\")\nindent-wheres: false # Whether to full-indent or half-indent 'where' bindings past the preceding body\nrecord-brace-space: false # Whether to leave a space before an opening record brace\nnewlines-between-decls: 1 # Number of spaces between top-level declarations\nhaddock-style: multi-line # How to print Haddock comments (choices: \"single-line\", \"multi-line\", or \"multi-line-compact\")\nhaddock-style-module: null # How to print module docstring\nlet-style: auto # Styling of let blocks (choices: \"auto\", \"inline\", \"newline\", or \"mixed\")\nin-style: right-align # How to align the 'in' keyword with respect to the 'let' keyword (choices: \"left-align\", \"right-align\", or \"no-space\")\nunicode: never # Output Unicode syntax (choices: \"detect\", \"always\", or \"never\")\nrespectful: true # Give the programmer more choice on where to insert blank lines\nfixities: [] # Fixity information for operators\nsingle-constraint-parens: always # Whether to put parentheses around a single constraint (choices: \"auto\", \"always\", or \"never\")\ncolumn-limit: none # Max line length for automatic line breaking\n"

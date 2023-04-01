@@ -92,6 +92,12 @@ single-constraint-parens: always
 column-limit: none
 ```
 
+Starting with fourmolu 0.12.0.0 you can generate the default configuration file like this:
+
+```console
+$ fourmolu --default-config > fourmolu.yaml
+```
+
 The configuration that most closely matches Ormolu's styling is:
 
 ```yaml
@@ -161,7 +167,7 @@ $ fourmolu --mode inplace $(git ls-files '*.hs')
 $ git ls-files -z '*.hs' | xargs -0 fourmolu --mode inplace
 ```
 
-To check if files are are already formatted (useful on CI):
+To check if files are already formatted (useful on CI):
 
 ```console
 $ fourmolu --mode check src

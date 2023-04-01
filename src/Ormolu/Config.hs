@@ -31,6 +31,7 @@ module Ormolu.Config
     PrinterOptsPartial,
     PrinterOptsTotal,
     defaultPrinterOpts,
+    defaultPrinterOptsYaml,
     fillMissingPrinterOpts,
     CommaStyle (..),
     FunctionArrowsStyle (..),
