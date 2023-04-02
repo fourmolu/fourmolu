@@ -249,7 +249,7 @@ fourmoluYamlFourmoluStyle = unlines_ config
       ]
 
     renderEnumOptions enumOptions =
-      renderList [printf "\"%s\"" opt | (_, opt) <- enumOptions]
+      renderList [quote opt | (_, opt) <- enumOptions]
 
     getComment Option {..} =
       let help = fromMaybe description (cliHelp cliOverrides)
