@@ -241,10 +241,10 @@ fourmoluYamlOrmoluStyle = unlines $ header <> config
 
 -- | Default fourmolu config that can be printed via `fourmolu --print-defaults`
 fourmoluYamlFourmoluStyle :: String
-fourmoluYamlFourmoluStyle = unlines config
+fourmoluYamlFourmoluStyle = unlines_ config
   where
     config =
-      [ printf "%s: %s # %s" name (hs2yaml type_ default_) (getComment opt)
+      [ printf "# %s\n%s: %s\n" (getComment opt) name (hs2yaml type_ default_)
         | opt@Option {..} <- options
       ]
 

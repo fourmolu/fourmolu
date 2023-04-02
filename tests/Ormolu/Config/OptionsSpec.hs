@@ -1,5 +1,6 @@
 module Ormolu.Config.OptionsSpec (spec) where
 
+import Data.List (isPrefixOf)
 import IntegrationUtils (getFourmoluExe, readProcess)
 import System.FilePath ((</>))
 import System.IO.Temp (withSystemTempDirectory)
@@ -46,23 +47,9 @@ spec =
         withCLI `shouldBe` indented4
 
     it "prints defaults to stdout" $ \fourmoluExe -> do
-      readProcess fourmoluExe ["--print-defaults"]
-        `shouldReturn` "indentation: 4 # Number of spaces per indentation step\n\
-                       \function-arrows: trailing # Styling of arrows in type signatures (choices: \"trailing\", \"leading\", or \"leading-args\")\n\
-                       \comma-style: leading # How to place commas in multi-line lists, records, etc. (choices: \"leading\" or \"trailing\")\n\
-                       \import-export-style: diff-friendly # Styling of import/export lists (choices: \"leading\", \"trailing\", or \"diff-friendly\")\n\
-                       \indent-wheres: false # Whether to full-indent or half-indent 'where' bindings past the preceding body\n\
-                       \record-brace-space: false # Whether to leave a space before an opening record brace\n\
-                       \newlines-between-decls: 1 # Number of spaces between top-level declarations\n\
-                       \haddock-style: multi-line # How to print Haddock comments (choices: \"single-line\", \"multi-line\", or \"multi-line-compact\")\n\
-                       \haddock-style-module: null # How to print module docstring\n\
-                       \let-style: auto # Styling of let blocks (choices: \"auto\", \"inline\", \"newline\", or \"mixed\")\n\
-                       \in-style: right-align # How to align the 'in' keyword with respect to the 'let' keyword (choices: \"left-align\", \"right-align\", or \"no-space\")\n\
-                       \unicode: never # Output Unicode syntax (choices: \"detect\", \"always\", or \"never\")\n\
-                       \respectful: true # Give the programmer more choice on where to insert blank lines\n\
-                       \fixities: [] # Fixity information for operators\n\
-                       \single-constraint-parens: always # Whether to put parentheses around a single constraint (choices: \"auto\", \"always\", or \"never\")\n\
-                       \column-limit: none # Max line length for automatic line breaking\n\n"
+      stdOutput <- readProcess fourmoluExe ["--print-defaults"]
+      -- Only check prefix of the output, so we don't have to update the test with every new option added
+      stdOutput `shouldSatisfy` isPrefixOf "# Number of spaces per indentation step\nindentation: 4\n"
   where
     withTempDir = withSystemTempDirectory "fourmolu-cli-options-test"
     indented2 =
