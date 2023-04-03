@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
@@ -10,7 +11,6 @@ where
 import Control.Monad
 import GHC.Hs hiding (comment)
 import GHC.Types.SrcLoc
-import GHC.Unit.Module.Name
 import GHC.Utils.Outputable (ppr, showSDocUnsafe)
 import Ormolu.Config
 import Ormolu.Imports (normalizeImports)
@@ -58,8 +58,8 @@ p_hsModule mstackHeader pragmas hsmod@HsModule {..} = do
       newline
       spitRemainingComments
 
-p_hsModuleHeader :: HsModule -> LocatedA ModuleName -> R ()
-p_hsModuleHeader HsModule {..} moduleName = do
+p_hsModuleHeader :: HsModule GhcPs -> LocatedA ModuleName -> R ()
+p_hsModuleHeader HsModule {hsmodExt = XModulePs {..}, ..} moduleName = do
   located moduleName $ \name -> do
     poHStyle <-
       getPrinterOpt poHaddockStyleModule >>= \case
