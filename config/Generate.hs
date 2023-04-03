@@ -181,8 +181,7 @@ configGenHs =
       "defaultPrinterOptsYaml :: String",
       "defaultPrinterOptsYaml =",
       "  unlines",
-      indent' 2 (renderMultiLineStringList fourmoluYamlFourmoluStyle),
-      "    ]"
+      indent' 2 (renderMultiLineStringList fourmoluYamlFourmoluStyle)
     ]
   where
     mkPrinterOpts :: ((String, Option) -> String) -> String
@@ -210,7 +209,7 @@ configGenHs =
       renderList [printf "\\\"%s\\\"" opt | (_, opt) <- enumOptions]
 
     renderMultiLineStringList =
-      unlines . zipWith (\c str -> c : ' ' : show str) ('[' : repeat ',') . lines
+      unlines . (++ ["]"]) . zipWith (\c str -> c : ' ' : show str) ('[' : repeat ',') . lines
 
     getCLIHelp Option {..} =
       let help = fromMaybe description (cliHelp cliOverrides)
