@@ -1,5 +1,8 @@
 resolver: nightly-2023-04-03
+compiler: ghc-9.6.1
 
 extra-deps:
   - Cabal-syntax-3.10.1.0
   - ghc-lib-parser-9.6.1.20230312
+  - unix-compat-0.7
+  - happy-1.20.1.1
