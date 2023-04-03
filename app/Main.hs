@@ -282,7 +282,7 @@ data CabalOpts = CabalOpts
 
 optsParserInfo :: ParserInfo Opts
 optsParserInfo =
-  info (helper <*> ver <*> exts <*> optsParser) . mconcat $
+  info (helper <*> ver <*> exts <*> printDefaults <*> optsParser) . mconcat $
     [fullDesc]
   where
     ver :: Parser (a -> a)
@@ -307,6 +307,13 @@ optsParserInfo =
           help "Display extensions that need to be enabled manually"
         ]
     displayExts = unlines $ sort (showOutputable <$> manualExts)
+
+    printDefaults :: Parser (a -> a)
+    printDefaults =
+      infoOption defaultPrinterOptsYaml . mconcat $
+        [ long "print-defaults",
+          help "Print default configuration options that can be used in fourmolu.yaml"
+        ]
 
 optsParser :: Parser Opts
 optsParser =
