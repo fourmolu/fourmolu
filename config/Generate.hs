@@ -209,8 +209,8 @@ configGenHs =
     renderEnumOptions enumOptions =
       renderList [printf "\\\"%s\\\"" opt | (_, opt) <- enumOptions]
 
-    renderMultiLineStringList multiLineStr =
-      unlines $ zipWith (\c str -> c : ' ' : show str) ('[' : repeat ',') (lines multiLineStr)
+    renderMultiLineStringList =
+      unlines . zipWith (\c str -> c : ' ' : show str) ('[' : repeat ',') . lines
 
     getCLIHelp Option {..} =
       let help = fromMaybe description (cliHelp cliOverrides)
@@ -253,15 +253,12 @@ fourmoluYamlFourmoluStyle = unlines_ config
         | opt@Option {..} <- options
       ]
 
-    renderEnumOptions enumOptions =
-      renderList [opt | (_, opt) <- enumOptions]
-
     getComment Option {..} =
       let help = fromMaybe description (cliHelp cliOverrides)
           choicesText =
             case type_ `Map.lookup` fieldTypesMap of
               Just FieldTypeEnum {enumOptions} ->
-                printf " (choices: %s)" (renderEnumOptions enumOptions)
+                printf " (choices: %s)" (renderList $ map snd enumOptions)
               _ -> ""
        in concat [help, choicesText]
 
