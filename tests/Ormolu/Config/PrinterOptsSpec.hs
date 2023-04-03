@@ -14,10 +14,10 @@ import Control.Exception (catch)
 import Control.Monad (forM_, when)
 import Data.Algorithm.DiffContext (getContextDiff, prettyContextDiff)
 import Data.Char (isSpace)
-import qualified Data.List.NonEmpty as NE
+import Data.List.NonEmpty qualified as NE
 import Data.Maybe (isJust)
 import Data.Text (Text)
-import qualified Data.Text as T
+import Data.Text qualified as T
 import GHC.Stack (withFrozenCallStack)
 import Ormolu
   ( Config (..),
@@ -48,7 +48,7 @@ import System.IO (hClose)
 import System.IO.Temp (withSystemTempFile)
 import System.IO.Unsafe (unsafePerformIO)
 import Test.Hspec
-import qualified Text.PrettyPrint as Doc
+import Text.PrettyPrint qualified as Doc
 import Text.Printf (printf)
 
 data TestGroup = forall a.
