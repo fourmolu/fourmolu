@@ -23,6 +23,7 @@ module Ormolu.Printer.Meat.Type
 where
 
 import Control.Monad
+import Data.Functor ((<&>))
 import GHC.Hs hiding (isPromoted)
 import GHC.Types.SourceText
 import GHC.Types.SrcLoc
@@ -135,9 +136,20 @@ p_hsType' multilineArgs = \case
     located t p_hsType
     inci $ startTypeAnnotation k p_hsType
   HsSpliceTy _ splice -> p_hsUntypedSplice DollarSplice splice
-  HsDocTy _ t str ->
-    p_hsDoc Pipe True str
-    located t p_hsType
+  HsDocTy _ t str -> do
+    usePipe <-
+      getPrinterOpt poFunctionArrows <&> \case
+        TrailingArrows -> True
+        LeadingArrows -> False
+        LeadingArgsArrows -> False
+    if usePipe
+      then do
+        p_hsDoc Pipe True str
+        located t p_hsType
+      else do
+        located t p_hsType
+        newline
+        p_hsDoc Caret False str
   HsBangTy _ (HsSrcBang _ u s) t -> do
     case u of
       SrcUnpack -> txt "{-# UNPACK #-}" >> space
