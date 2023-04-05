@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QualifiedDo #-}
 
 -- | 'OrmoluException' type and surrounding definitions.
 module Ormolu.Exception
@@ -10,15 +11,17 @@ module Ormolu.Exception
 where
 
 import Control.Exception
-import Control.Monad (forM_)
+import Data.Foldable (for_)
 import Data.List.NonEmpty (NonEmpty (..))
-import qualified Data.List.NonEmpty as NE
+import Data.List.NonEmpty qualified as NE
 import Data.Text (Text)
-import qualified Data.Text as T
+import Data.Text qualified as T
 import Data.Void (Void)
+import Distribution.Parsec.Error (PError, showPError)
 import GHC.Types.SrcLoc
 import Ormolu.Diff.Text (TextDiff, printTextDiff)
 import Ormolu.Terminal
+import Ormolu.Terminal.QualifiedDo qualified as Term
 import System.Exit (ExitCode (..))
 import System.IO
 import Text.Megaparsec (ParseErrorBundle, errorBundlePretty)
@@ -36,74 +39,76 @@ data OrmoluException
   | -- | Some GHC options were not recognized
     OrmoluUnrecognizedOpts (NonEmpty String)
   | -- | Cabal file parsing failed
-    OrmoluCabalFileParsingFailed FilePath
+    OrmoluCabalFileParsingFailed FilePath (NonEmpty PError)
   | -- | Missing input file path when using stdin input and
     -- accounting for .cabal files
     OrmoluMissingStdinInputFile
   | -- | A parse error in a fixity overrides file
     OrmoluFixityOverridesParseError (ParseErrorBundle Text Void)
-  deriving (Eq, Show)
+  deriving (Show)
 
 instance Exception OrmoluException
 
 -- | Print an 'OrmoluException'.
 printOrmoluException ::
   OrmoluException ->
-  Term ()
+  Term
 printOrmoluException = \case
-  OrmoluParsingFailed s e -> do
-    bold (putSrcSpan s)
+  OrmoluParsingFailed s e -> Term.do
+    bold (putOutputable s)
     newline
     put "  The GHC parser (in Haddock mode) failed:"
     newline
     put "  "
     put (T.pack e)
     newline
-  OrmoluOutputParsingFailed s e -> do
-    bold (putSrcSpan s)
+  OrmoluOutputParsingFailed s e -> Term.do
+    bold (putOutputable s)
     newline
     put "  Parsing of formatted code failed:"
+    newline
     put "  "
     put (T.pack e)
     newline
-  OrmoluASTDiffers diff ss -> do
+  OrmoluASTDiffers diff ss -> Term.do
     printTextDiff diff
     newline
     put "  AST of input and AST of formatted code differ."
     newline
-    forM_ ss $ \s -> do
+    for_ ss $ \s -> Term.do
       put "    at "
-      putRealSrcSpan s
+      putOutputable s
       newline
     put "  Please, consider reporting the bug."
     newline
     put "  To format anyway, use --unsafe."
     newline
-  OrmoluNonIdempotentOutput diff -> do
+  OrmoluNonIdempotentOutput diff -> Term.do
     printTextDiff diff
     newline
     put "  Formatting is not idempotent."
     newline
     put "  Please, consider reporting the bug."
     newline
-  OrmoluUnrecognizedOpts opts -> do
+  OrmoluUnrecognizedOpts opts -> Term.do
     put "The following GHC options were not recognized:"
     newline
     put "  "
-    (putS . unwords . NE.toList) opts
+    (put . T.unwords . map T.pack . NE.toList) opts
     newline
-  OrmoluCabalFileParsingFailed cabalFile -> do
+  OrmoluCabalFileParsingFailed cabalFile parseErrors -> Term.do
     put "Parsing this .cabal file failed:"
     newline
-    put $ "  " <> T.pack cabalFile
-    newline
-  OrmoluMissingStdinInputFile -> do
+    for_ parseErrors $ \e -> Term.do
+      put . T.pack $ "  " <> showPError cabalFile e
+      newline
+  OrmoluMissingStdinInputFile -> Term.do
     put "The --stdin-input-file option is necessary when using input"
     newline
     put "from stdin and accounting for .cabal files"
     newline
-  OrmoluFixityOverridesParseError errorBundle -> do
-    putS (errorBundlePretty errorBundle)
+  OrmoluFixityOverridesParseError errorBundle -> Term.do
+    put . T.pack . errorBundlePretty $ errorBundle
     newline
 
 -- | Inside this wrapper 'OrmoluException' will be caught and displayed

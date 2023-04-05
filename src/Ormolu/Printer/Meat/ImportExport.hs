@@ -10,12 +10,11 @@ module Ormolu.Printer.Meat.ImportExport
 where
 
 import Control.Monad
-import qualified Data.Text as T
+import Data.Text qualified as T
 import GHC.Hs
 import GHC.LanguageExtensions.Type
 import GHC.Types.PkgQual
 import GHC.Types.SrcLoc
-import GHC.Unit.Types
 import Ormolu.Config
 import Ormolu.Printer.Combinators
 import Ormolu.Printer.Meat.Common
@@ -64,13 +63,12 @@ p_hsmodImport ImportDecl {..} = do
         space
         located l atom
     space
-    case ideclHiding of
+    case ideclImportList of
       Nothing -> return ()
-      Just (hiding, _) ->
-        when hiding (txt "hiding")
-    case ideclHiding of
-      Nothing -> return ()
-      Just (_, L _ xs) -> do
+      Just (hiding, L _ xs) -> do
+        case hiding of
+          Exactly -> pure ()
+          EverythingBut -> txt "hiding"
         breakIfNotDiffFriendly
         parens' True $ do
           layout <- getLayout

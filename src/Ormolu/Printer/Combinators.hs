@@ -1,4 +1,3 @@
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -96,7 +95,7 @@ where
 import Control.Monad
 import Data.List (intersperse)
 import Data.Text (Text)
-import qualified GHC.Data.Strict as Strict
+import GHC.Data.Strict qualified as Strict
 import GHC.LanguageExtensions.Type
 import GHC.Types.SrcLoc
 import Ormolu.Config

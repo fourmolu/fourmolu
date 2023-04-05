@@ -1,13 +1,11 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
 
 -- | Rendering of types.
 module Ormolu.Printer.Meat.Type
   ( p_hsType,
-    p_hsTypePostDoc,
     startTypeAnnotation,
     startTypeAnnotationDecl,
     hasDocStrings,
@@ -25,8 +23,7 @@ module Ormolu.Printer.Meat.Type
 where
 
 import Control.Monad
-import GHC.Hs
-import GHC.Types.Basic hiding (isPromoted)
+import GHC.Hs hiding (isPromoted)
 import GHC.Types.SourceText
 import GHC.Types.SrcLoc
 import GHC.Types.Var
@@ -34,30 +31,17 @@ import Ormolu.Config
 import Ormolu.Printer.Combinators
 import Ormolu.Printer.Meat.Common
 import {-# SOURCE #-} Ormolu.Printer.Meat.Declaration.OpTree (p_tyOpTree, tyOpTree)
-import {-# SOURCE #-} Ormolu.Printer.Meat.Declaration.Value (p_hsSplice, p_stringLit)
+import {-# SOURCE #-} Ormolu.Printer.Meat.Declaration.Value (p_hsUntypedSplice, p_stringLit)
 import Ormolu.Printer.Operators
 import Ormolu.Utils
 
 p_hsType :: HsType GhcPs -> R ()
 p_hsType t = do
-  s <-
-    getPrinterOpt poFunctionArrows >>= \case
-      TrailingArrows -> pure PipeStyle
-      LeadingArrows -> pure CaretStyle
-      LeadingArgsArrows -> pure CaretStyle
   layout <- getLayout
-  p_hsType' (hasDocStrings t || layout == MultiLine) s t
+  p_hsType' (hasDocStrings t || layout == MultiLine) t
 
-p_hsTypePostDoc :: HsType GhcPs -> R ()
-p_hsTypePostDoc t = p_hsType' (hasDocStrings t) CaretStyle t
-
--- | How to render Haddocks associated with a type.
-data TypeDocStyle
-  = PipeStyle
-  | CaretStyle
-
-p_hsType' :: Bool -> TypeDocStyle -> HsType GhcPs -> R ()
-p_hsType' multilineArgs docStyle = \case
+p_hsType' :: Bool -> HsType GhcPs -> R ()
+p_hsType' multilineArgs = \case
   HsForAllTy _ tele t -> do
     vis <-
       case tele of
@@ -150,16 +134,10 @@ p_hsType' multilineArgs docStyle = \case
   HsKindSig _ t k -> sitcc $ do
     located t p_hsType
     inci $ startTypeAnnotation k p_hsType
-  HsSpliceTy _ splice -> p_hsSplice splice
+  HsSpliceTy _ splice -> p_hsUntypedSplice DollarSplice splice
   HsDocTy _ t str ->
-    case docStyle of
-      PipeStyle -> do
-        p_hsDoc Pipe True str
-        located t p_hsType
-      CaretStyle -> do
-        located t p_hsType
-        newline
-        p_hsDoc Caret False str
+    p_hsDoc Pipe True str
+    located t p_hsType
   HsBangTy _ (HsSrcBang _ u s) t -> do
     case u of
       SrcUnpack -> txt "{-# UNPACK #-}" >> space
@@ -177,17 +155,17 @@ p_hsType' multilineArgs docStyle = \case
       IsPromoted -> txt "'"
       NotPromoted -> return ()
     brackets N $ do
-      -- If both this list itself and the first element is promoted,
-      -- we need to put a space in between or it fails to parse.
+      -- If this list is promoted and the first element starts with a single
+      -- quote, we need to put a space in between or it fails to parse.
       case (p, xs) of
-        (IsPromoted, L _ t : _) | isPromoted t -> space
+        (IsPromoted, L _ t : _) | startsWithSingleQuote t -> space
         _ -> return ()
       sep commaDel (sitcc . located' p_hsType) xs
   HsExplicitTupleTy _ xs -> do
     txt "'"
     parens N $ do
       case xs of
-        L _ t : _ | isPromoted t -> space
+        L _ t : _ | startsWithSingleQuote t -> space
         _ -> return ()
       sep commaDel (located' p_hsType) xs
   HsTyLit _ t ->
@@ -197,17 +175,18 @@ p_hsType' multilineArgs docStyle = \case
   HsWildCardTy _ -> txt "_"
   XHsType t -> atom t
   where
-    isPromoted = \case
-      HsAppTy _ (L _ f) _ -> isPromoted f
+    startsWithSingleQuote = \case
+      HsAppTy _ (L _ f) _ -> startsWithSingleQuote f
       HsTyVar _ IsPromoted _ -> True
       HsExplicitTupleTy {} -> True
       HsExplicitListTy {} -> True
+      HsTyLit _ HsCharTy {} -> True
       _ -> False
     interArgBreak =
       if multilineArgs
         then newline
         else breakpoint
-    p_hsTypeR m = p_hsType' multilineArgs docStyle m
+    p_hsTypeR m = p_hsType' multilineArgs m
 
 startTypeAnnotation ::
   (HasSrcSpan l) =>

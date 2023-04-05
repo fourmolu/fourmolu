@@ -1,7 +1,6 @@
-{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE QualifiedDo #-}
 {-# LANGUAGE RecordWildCards #-}
 
 -- | This module allows us to diff two 'Text' values.
@@ -13,16 +12,18 @@ module Ormolu.Diff.Text
   )
 where
 
-import Control.Monad
-import qualified Data.Algorithm.Diff as D
+import Control.Monad (unless, when)
+import Data.Algorithm.Diff qualified as D
+import Data.Foldable (for_)
 import Data.IntSet (IntSet)
-import qualified Data.IntSet as IntSet
+import Data.IntSet qualified as IntSet
 import Data.List (foldl')
 import Data.Maybe (listToMaybe)
 import Data.Text (Text)
-import qualified Data.Text as T
+import Data.Text qualified as T
 import GHC.Types.SrcLoc
 import Ormolu.Terminal
+import Ormolu.Terminal.QualifiedDo qualified as Term
 
 ----------------------------------------------------------------------------
 -- Types
@@ -103,39 +104,39 @@ selectSpans ss textDiff = textDiff {textDiffSelectedLines = xs}
 
 -- | Print the given 'TextDiff' as a 'Term' action. This function tries to
 -- mimic the style of @git diff@.
-printTextDiff :: TextDiff -> Term ()
-printTextDiff TextDiff {..} = do
-  (bold . putS) textDiffPath
+printTextDiff :: TextDiff -> Term
+printTextDiff TextDiff {..} = Term.do
+  (bold . put . T.pack) textDiffPath
   newline
-  forM_ (toHunks (assignLines textDiffDiffList)) $ \hunk@Hunk {..} ->
-    when (isSelectedLine textDiffSelectedLines hunk) $ do
-      cyan $ do
+  for_ (toHunks (assignLines textDiffDiffList)) $ \hunk@Hunk {..} ->
+    when (isSelectedLine textDiffSelectedLines hunk) $ Term.do
+      cyan $ Term.do
         put "@@ -"
-        putS (show hunkFirstStartLine)
+        putShow hunkFirstStartLine
         put ","
-        putS (show hunkFirstLength)
+        putShow hunkFirstLength
         put " +"
-        putS (show hunkSecondStartLine)
+        putShow hunkSecondStartLine
         put ","
-        putS (show hunkSecondLength)
+        putShow hunkSecondLength
         put " @@"
       newline
-      forM_ hunkDiff $ \case
+      for_ hunkDiff $ \case
         D.Both ys _ ->
-          forM_ ys $ \y -> do
+          for_ ys $ \y -> Term.do
             unless (T.null y) $
               put "  "
             put y
             newline
         D.First ys ->
-          forM_ ys $ \y -> red $ do
+          for_ ys $ \y -> red $ Term.do
             put "-"
             unless (T.null y) $
               put " "
             put y
             newline
         D.Second ys ->
-          forM_ ys $ \y -> green $ do
+          for_ ys $ \y -> green $ Term.do
             put "+"
             unless (T.null y) $
               put " "

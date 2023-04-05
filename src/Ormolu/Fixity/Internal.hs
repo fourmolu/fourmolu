@@ -1,11 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ViewPatterns #-}
 
 module Ormolu.Fixity.Internal
@@ -24,16 +19,17 @@ module Ormolu.Fixity.Internal
   )
 where
 
+import Control.DeepSeq (NFData)
 import Data.Binary (Binary)
 import Data.ByteString.Short (ShortByteString)
-import qualified Data.ByteString.Short as SBS
+import Data.ByteString.Short qualified as SBS
 import Data.Foldable (asum)
 import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map
+import Data.Map.Strict qualified as Map
 import Data.String (IsString (..))
 import Data.Text (Text)
-import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
+import Data.Text qualified as T
+import Data.Text.Encoding qualified as T
 import Distribution.Types.PackageName (PackageName)
 import GHC.Data.FastString (fs_sbs)
 import GHC.Generics (Generic)
@@ -45,7 +41,7 @@ data FixityDirection
   | InfixR
   | InfixN
   deriving stock (Eq, Ord, Show, Generic)
-  deriving anyclass (Binary)
+  deriving anyclass (Binary, NFData)
 
 -- | Fixity information about an infix operator that takes the uncertainty
 -- that can arise from conflicting definitions into account.
@@ -60,7 +56,7 @@ data FixityInfo = FixityInfo
     fiMaxPrecedence :: Int
   }
   deriving stock (Eq, Ord, Show, Generic)
-  deriving anyclass (Binary)
+  deriving anyclass (Binary, NFData)
 
 -- | The lowest level of information we can have about an operator.
 defaultFixityInfo :: FixityInfo
@@ -100,7 +96,7 @@ newtype OpName = MkOpName
   { -- | Invariant: UTF-8 encoded
     getOpName :: ShortByteString
   }
-  deriving newtype (Eq, Ord, Binary)
+  deriving newtype (Eq, Ord, Binary, NFData)
 
 -- | Convert an 'OpName' to 'Text'.
 unOpName :: OpName -> Text
@@ -140,9 +136,9 @@ lookupFixity op (LazyFixityMap maps) = asum (Map.lookup op <$> maps)
 -- each package, if available.
 data HackageInfo
   = HackageInfo
+      -- | Map from package name to a map from operator name to its fixity
       (Map PackageName FixityMap)
-      -- ^ Map from package name to a map from operator name to its fixity
+      -- | Map from package name to its 30-days download count from Hackage
       (Map PackageName Int)
-      -- ^ Map from package name to its 30-days download count from Hackage
   deriving stock (Generic)
   deriving anyclass (Binary)

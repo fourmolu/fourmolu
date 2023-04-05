@@ -1,7 +1,7 @@
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
@@ -21,27 +21,27 @@ import Data.Char (isSpace)
 import Data.Functor
 import Data.Functor.Identity (Identity (..))
 import Data.Generics
-import qualified Data.List as L
-import qualified Data.List.NonEmpty as NE
+import Data.List qualified as L
+import Data.List.NonEmpty qualified as NE
 import Data.Text (Text)
 import GHC.Data.Bag (bagToList)
-import qualified GHC.Data.EnumSet as EnumSet
-import qualified GHC.Data.FastString as GHC
-import qualified GHC.Driver.CmdLine as GHC
+import GHC.Data.EnumSet qualified as EnumSet
+import GHC.Data.FastString qualified as GHC
+import GHC.Driver.CmdLine qualified as GHC
 import GHC.Driver.Config.Parser (initParserOpts)
 import GHC.Driver.Session as GHC
 import GHC.DynFlags (baseDynFlags)
 import GHC.Hs hiding (UnicodeSyntax)
 import GHC.LanguageExtensions.Type (Extension (..))
-import qualified GHC.Parser as GHC
-import qualified GHC.Parser.Header as GHC
-import qualified GHC.Parser.Lexer as GHC
-import GHC.Types.Error (getMessages)
-import qualified GHC.Types.SourceError as GHC (handleSourceError)
+import GHC.Parser qualified as GHC
+import GHC.Parser.Header qualified as GHC
+import GHC.Parser.Lexer qualified as GHC
+import GHC.Types.Error (NoDiagnosticOpts (..), getMessages)
+import GHC.Types.SourceError qualified as GHC (handleSourceError)
 import GHC.Types.SrcLoc
 import GHC.Utils.Error
 import GHC.Utils.Outputable (defaultSDocContext)
-import qualified GHC.Utils.Panic as GHC
+import GHC.Utils.Panic qualified as GHC
 import Ormolu.Config
 import Ormolu.Config.Gen (SingleConstraintParens (..))
 import Ormolu.Exception
@@ -110,15 +110,19 @@ parseModuleSnippet config@Config {..} fixityMap dynFlags path rawInput = liftIO 
               SevError -> 1 :: Int
               SevWarning -> 2
               SevIgnore -> 3
-            showErr =
-              showOutputable
-                . formatBulleted defaultSDocContext
-                . diagnosticMessage
-                . errMsgDiagnostic
+            showErr (errMsgDiagnostic -> err) = codeMsg <> msg
+              where
+                codeMsg = case diagnosticCode err of
+                  Just code -> "[" <> showOutputable code <> "] "
+                  Nothing -> ""
+                msg =
+                  showOutputable
+                    . formatBulleted defaultSDocContext
+                    . diagnosticMessage NoDiagnosticOpts
+                    $ err
          in case L.sortOn (rateSeverity . errMsgSeverity) errs of
               [] -> Nothing
               err : _ ->
-                -- Show instance returns a short error message
                 Just (fixupErrSpan (errMsgSpan err), showErr err)
       parser = case cfgSourceType of
         ModuleSource -> GHC.parseModule
@@ -154,7 +158,7 @@ parseModuleSnippet config@Config {..} fixityMap dynFlags path rawInput = liftIO 
 
 -- | Normalize a 'HsModule' by sorting its export lists, dropping
 -- blank comments, etc.
-normalizeModule :: Config RegionDeltas -> HsModule -> HsModule
+normalizeModule :: Config RegionDeltas -> HsModule GhcPs -> HsModule GhcPs
 normalizeModule Config {..} hsmod =
   everywhere
     (extT (mkT dropBlankTypeHaddocks) patchContext)
@@ -163,8 +167,11 @@ normalizeModule Config {..} hsmod =
           hsmodImports hsmod,
         hsmodDecls =
           filter (not . isBlankDocD . unLoc) (hsmodDecls hsmod),
-        hsmodHaddockModHeader =
-          mfilter (not . isBlankDocString) (hsmodHaddockModHeader hsmod),
+        hsmodExt =
+          (hsmodExt hsmod)
+            { hsmodHaddockModHeader =
+                mfilter (not . isBlankDocString) (hsmodHaddockModHeader (hsmodExt hsmod))
+            },
         hsmodExports =
           (fmap . fmap) (filter (not . isBlankDocIE . unLoc)) (hsmodExports hsmod)
       }
@@ -182,7 +189,7 @@ normalizeModule Config {..} hsmod =
         | isBlankDocString s -> ty
       a -> a
     patchContext :: LHsContext GhcPs -> LHsContext GhcPs
-    patchContext = mapLoc $ \case
+    patchContext = fmap $ \case
       [x@(L _ (HsParTy _ t))] -> unwrapParens x t
       [x@(L _ _)] -> wrapParens x
       xs -> xs
@@ -230,7 +237,8 @@ manualExts =
     LexicalNegation, -- implies NegativeLiterals
     LinearTypes, -- steals the (%) type operator in some cases
     OverloadedRecordDot, -- f.g parses differently
-    OverloadedRecordUpdate -- qualified fields are not supported
+    OverloadedRecordUpdate, -- qualified fields are not supported
+    OverloadedLabels -- a#b is parsed differently
   ]
 
 -- | Run a 'GHC.P' computation.
