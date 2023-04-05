@@ -164,7 +164,7 @@ jobs:
           stack build "${ARGS[@]}"
 
       -
-        uses: brandonchinn178/haskell-actions/parse-cabal-file@parse-cabal-file
+        uses: haskell-actions/parse-cabal-file@v1
         id: cabal_file
         with:
           cabal_file: fourmolu.cabal
