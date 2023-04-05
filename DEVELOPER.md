@@ -103,12 +103,13 @@ To release a new version, do the following workflow:
 
     1. Curate option order
         * Re-order the "Available options" table in the `README` with the options sorted by popularity/importance (using your best judgement, without too much churn every release)
-        * Ensure the options are in the same order in the `fourmolu.yaml` file and `README` examples
-        * Ensure the options are in the same order in `Ormolu.Config.Types`, `overFieldsM`, and `printerOptsMeta`
+        * Ensure the options are in the same order in `config/ConfigData.hs` (and regenerate with `config/generate.sh`)
+        * Ensure the options are in the same order in the `README` examples
         * Ensure the `PrinterOptsSpec.hs` tests are also in the same order as the options
 
 1. Create PR as usual and merge into `main`
     1. In the `check_sdist` CI job, check the output of the `stack sdist` step for any warnings.
+    1. **MAKE SURE TO CREATE A MERGE COMMIT**. Don't use the "Squash and merge" or "Rebase and merge" options.
 
 1. Ensure your Hackage token is set in Settings > Secrets > Actions as `HACKAGE_TOKEN_<github_username>` (replace any non alphanumeric characters in username with `_`).
     * Generate a token from `https://hackage.haskell.org/user/<hackage_username>/manage`
