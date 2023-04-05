@@ -2,19 +2,20 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
 module Main where
 
+import Control.DeepSeq (force)
 import Control.Exception qualified as E
 import Data.Aeson qualified as A
 import Data.ByteString.Lazy qualified as BL
 import Data.ByteString.Unsafe qualified as BU
-import Data.Knob qualified as Knob
+import Data.Functor (void)
 import Data.Text (Text)
 import Data.Text qualified as T
-import Data.Text.Encoding qualified as T
-import Foreign
+import Foreign hiding (void)
 import Foreign.C.Types
 import GHC.Driver.Ppr (showSDocUnsafe)
 import GHC.Generics (Generic)
@@ -22,12 +23,11 @@ import GHC.Hs.Dump qualified as Dump
 import Ormolu
 import Ormolu.Config qualified as O
 import Ormolu.Exception qualified as O
+import Ormolu.Fixity qualified as O
 import Ormolu.Fixity.Internal qualified as O
 import Ormolu.Parser qualified as O
 import Ormolu.Parser.Result as O
 import Ormolu.Terminal qualified as O
-import System.Environment (setEnv)
-import System.IO (IOMode (..))
 
 main :: IO ()
 main = mempty
@@ -52,12 +52,11 @@ formatRaw inputPtr inputLen outputPtrPtr = do
     copyBytes outputPtr buf len
     pure len
 
-foreign export ccall initFixityDB :: Ptr CChar -> Int -> IO ()
+foreign export ccall evaluateFixityInfo :: IO ()
 
-initFixityDB :: Ptr CChar -> Int -> IO ()
-initFixityDB ptr len = do
-  let IntPtr ptr' = ptrToIntPtr ptr
-  setEnv "ORMOLU_HACKAGE_INFO" $ show (ptr', len)
+evaluateFixityInfo :: IO ()
+evaluateFixityInfo =
+  void . E.evaluate $ force (O.packageToOps, O.packageToPopularity)
 
 -- actual logic
 
@@ -82,11 +81,7 @@ data Output = Output
 format :: Input -> IO Output
 format Input {..} = do
   output <-
-    (Right <$> ormolu cfg "<input>" inputStr) `E.catch` \ex -> do
-      knob <- Knob.newKnob mempty
-      Knob.withFileHandle knob "err" WriteMode $
-        O.runTerm (O.printOrmoluException ex) Never
-      Left . T.decodeUtf8 <$> Knob.getContents knob
+    (Right <$> ormolu cfg "<input>" inputStr) `E.catch` (pure . Left . O.runTermPure . O.printOrmoluException)
   inputAST <- if showAST then prettyAST cfg inputStr else pure T.empty
   outputAST <- case output of
     Right src' | showAST -> prettyAST cfg src'

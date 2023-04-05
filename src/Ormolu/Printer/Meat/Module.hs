@@ -11,7 +11,6 @@ where
 import Control.Monad
 import GHC.Hs hiding (comment)
 import GHC.Types.SrcLoc
-import GHC.Unit.Module.Name
 import GHC.Utils.Outputable (ppr, showSDocUnsafe)
 import Ormolu.Config
 import Ormolu.Imports (normalizeImports)
@@ -33,10 +32,11 @@ p_hsModule ::
   -- | Pragmas and the associated comments
   [([RealLocated Comment], Pragma)] ->
   -- | AST to print
-  HsModule ->
+  HsModule GhcPs ->
   R ()
 p_hsModule mstackHeader pragmas hsmod@HsModule {..} = do
-  let deprecSpan = maybe [] (pure . getLocA) hsmodDeprecMessage
+  let XModulePs {..} = hsmodExt
+      deprecSpan = maybe [] (pure . getLocA) hsmodDeprecMessage
       exportSpans = maybe [] (pure . getLocA) hsmodExports
   switchLayout (deprecSpan <> exportSpans) $ do
     forM_ mstackHeader $ \(L spn comment) -> do
@@ -58,8 +58,8 @@ p_hsModule mstackHeader pragmas hsmod@HsModule {..} = do
       newline
       spitRemainingComments
 
-p_hsModuleHeader :: HsModule -> LocatedA ModuleName -> R ()
-p_hsModuleHeader HsModule {..} moduleName = do
+p_hsModuleHeader :: HsModule GhcPs -> LocatedA ModuleName -> R ()
+p_hsModuleHeader HsModule {hsmodExt = XModulePs {..}, ..} moduleName = do
   located moduleName $ \name -> do
     poHStyle <-
       getPrinterOpt poHaddockStyleModule >>= \case

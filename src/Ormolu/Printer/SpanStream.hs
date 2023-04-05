@@ -1,6 +1,3 @@
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-
 -- | Build span stream from AST.
 module Ormolu.Printer.SpanStream
   ( SpanStream (..),
@@ -8,12 +5,13 @@ module Ormolu.Printer.SpanStream
   )
 where
 
-import Data.DList (DList)
-import qualified Data.DList as D
 import Data.Data (Data)
+import Data.Foldable (toList)
 import Data.Generics (everything, ext1Q, ext2Q)
 import Data.List (sortOn)
 import Data.Maybe (maybeToList)
+import Data.Sequence (Seq)
+import Data.Sequence qualified as Seq
 import Data.Typeable (cast)
 import GHC.Parser.Annotation
 import GHC.Types.SrcLoc
@@ -34,16 +32,16 @@ mkSpanStream ::
 mkSpanStream a =
   SpanStream
     . sortOn realSrcSpanStart
-    . D.toList
+    . toList
     $ everything mappend (const mempty `ext2Q` queryLocated `ext1Q` querySrcSpanAnn) a
   where
     queryLocated ::
       (Data e0) =>
       GenLocated e0 e1 ->
-      DList RealSrcSpan
+      Seq RealSrcSpan
     queryLocated (L mspn _) =
-      maybe mempty srcSpanToRealSrcSpanDList (cast mspn :: Maybe SrcSpan)
-    querySrcSpanAnn :: SrcSpanAnn' a -> DList RealSrcSpan
-    querySrcSpanAnn = srcSpanToRealSrcSpanDList . locA
-    srcSpanToRealSrcSpanDList =
-      D.fromList . maybeToList . srcSpanToRealSrcSpan
+      maybe mempty srcSpanToRealSrcSpanSeq (cast mspn :: Maybe SrcSpan)
+    querySrcSpanAnn :: SrcSpanAnn' a -> Seq RealSrcSpan
+    querySrcSpanAnn = srcSpanToRealSrcSpanSeq . locA
+    srcSpanToRealSrcSpanSeq =
+      Seq.fromList . maybeToList . srcSpanToRealSrcSpan

@@ -1,7 +1,5 @@
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE DefaultSignatures #-}
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
@@ -56,17 +54,17 @@ where
 
 import Control.Monad (forM)
 import Data.Aeson ((.!=), (.:?))
-import qualified Data.Aeson as Aeson
-import qualified Data.Aeson.Types as Aeson
+import Data.Aeson qualified as Aeson
+import Data.Aeson.Types qualified as Aeson
 import Data.Functor.Identity (Identity (..))
-import qualified Data.Map.Strict as Map
+import Data.Map.Strict qualified as Map
 import Data.Set (Set)
-import qualified Data.Set as Set
+import Data.Set qualified as Set
 import Data.String (fromString)
-import qualified Data.Yaml as Yaml
+import Data.Yaml qualified as Yaml
 import Distribution.Types.PackageName (PackageName)
 import GHC.Generics (Generic)
-import qualified GHC.Types.SrcLoc as GHC
+import GHC.Types.SrcLoc qualified as GHC
 import Ormolu.Config.Gen
 import Ormolu.Fixity (FixityMap)
 import Ormolu.Fixity.Parser (parseFixityDeclaration)

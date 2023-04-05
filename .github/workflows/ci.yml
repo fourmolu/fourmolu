@@ -14,9 +14,9 @@ jobs:
     strategy:
       matrix:
         stack_yaml:
-          - stack-ghc-9.0.yaml
           - stack-ghc-9.2.yaml
           - stack-ghc-9.4.yaml
+          - stack-ghc-9.6.yaml
           # technically redundant, since this should be a symlink,
           # but just to be extra sure
           - stack.yaml
@@ -53,9 +53,9 @@ jobs:
     strategy:
       matrix:
         ghc_version:
-          - '9.0'
           - '9.2'
           - '9.4'
+          - '9.6'
 
     name: 'cabal_test: ghc-${{ matrix.ghc_version }}'
     runs-on: ubuntu-latest

@@ -1,5 +1,4 @@
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
@@ -27,27 +26,25 @@ module Ormolu.Fixity
   )
 where
 
-import qualified Data.Binary as Binary
-import qualified Data.Binary.Get as Binary
-import qualified Data.ByteString.Lazy as BL
+import Data.Binary qualified as Binary
+import Data.Binary.Get qualified as Binary
+import Data.ByteString.Lazy qualified as BL
 import Data.Foldable (foldl')
 import Data.List.NonEmpty (NonEmpty ((:|)))
-import qualified Data.List.NonEmpty as NE
+import Data.List.NonEmpty qualified as NE
 import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map
+import Data.Map.Strict qualified as Map
 import Data.Maybe (fromMaybe)
 import Data.MemoTrie (memo)
 import Data.Semigroup (sconcat)
 import Data.Set (Set)
-import qualified Data.Set as Set
+import Data.Set qualified as Set
 import Distribution.Types.PackageName (PackageName, mkPackageName, unPackageName)
 import Ormolu.Fixity.Internal
 #if BUNDLE_FIXITIES
 import Data.FileEmbed (embedFile)
 #else
-import qualified Data.ByteString.Unsafe as BU
-import Foreign.Ptr
-import System.Environment (getEnv)
+import qualified Data.ByteString as B
 import System.IO.Unsafe (unsafePerformIO)
 #endif
 
@@ -59,12 +56,10 @@ HackageInfo packageToOps packageToPopularity =
     BL.fromStrict $(embedFile "extract-hackage-info/hackage-info.bin")
 #else
 -- The GHC WASM backend does not yet support Template Haskell, so we instead
--- pass in the encoded fixity DB at runtime by storing the pointer and length of
--- the bytes in an environment variable.
-HackageInfo packageToOps packageToPopularity = unsafePerformIO $ do
-  (ptr, len) <- read <$> getEnv "ORMOLU_HACKAGE_INFO"
-  Binary.runGet Binary.get . BL.fromStrict
-    <$> BU.unsafePackMallocCStringLen (intPtrToPtr $ IntPtr ptr, len)
+-- pass in the encoded fixity DB via pre-initialization with Wizer.
+HackageInfo packageToOps packageToPopularity =
+  unsafePerformIO $
+    Binary.runGet Binary.get . BL.fromStrict <$> B.readFile "hackage-info.bin"
 {-# NOINLINE packageToOps #-}
 {-# NOINLINE packageToPopularity #-}
 #endif

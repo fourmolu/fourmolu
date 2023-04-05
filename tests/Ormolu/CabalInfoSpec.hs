@@ -2,7 +2,7 @@
 
 module Ormolu.CabalInfoSpec (spec) where
 
-import qualified Data.Set as Set
+import Data.Set qualified as Set
 import Distribution.Types.PackageName (unPackageName)
 import Ormolu.Config (DynOption (..))
 import Ormolu.Utils.Cabal
@@ -35,15 +35,15 @@ spec = do
       (mentioned, CabalInfo {..}) <- parseCabalInfo "fourmolu.cabal" "src/Ormolu/Config.hs"
       mentioned `shouldBe` True
       unPackageName ciPackageName `shouldBe` "fourmolu"
-      ciDynOpts `shouldBe` [DynOption "-XHaskell2010"]
-      Set.map unPackageName ciDependencies `shouldBe` Set.fromList ["Cabal-syntax", "Diff", "MemoTrie", "aeson", "ansi-terminal", "array", "base", "binary", "bytestring", "containers", "directory", "dlist", "file-embed", "filepath", "ghc-lib-parser", "megaparsec", "mtl", "scientific", "syb", "text", "yaml"]
+      ciDynOpts `shouldBe` [DynOption "-XGHC2021"]
+      Set.map unPackageName ciDependencies `shouldBe` Set.fromList ["Cabal-syntax", "Diff", "MemoTrie", "aeson", "ansi-terminal", "array", "base", "binary", "bytestring", "containers", "deepseq", "directory", "file-embed", "filepath", "ghc-lib-parser", "megaparsec", "mtl", "scientific", "syb", "text", "yaml"]
       ciCabalFilePath `shouldSatisfy` isAbsolute
       makeRelativeToCurrentDirectory ciCabalFilePath `shouldReturn` "fourmolu.cabal"
     it "extracts correct cabal info from fourmolu.cabal for tests/Ormolu/PrinterSpec.hs" $ do
       (mentioned, CabalInfo {..}) <- parseCabalInfo "fourmolu.cabal" "tests/Ormolu/PrinterSpec.hs"
       mentioned `shouldBe` True
       unPackageName ciPackageName `shouldBe` "fourmolu"
-      ciDynOpts `shouldBe` [DynOption "-XHaskell2010"]
+      ciDynOpts `shouldBe` [DynOption "-XGHC2021"]
       Set.map unPackageName ciDependencies `shouldBe` Set.fromList ["Cabal-syntax", "Diff", "QuickCheck", "base", "containers", "directory", "filepath", "ghc-lib-parser", "hspec", "hspec-megaparsec", "fourmolu", "path", "path-io", "pretty", "process", "temporary", "text"]
       ciCabalFilePath `shouldSatisfy` isAbsolute
       makeRelativeToCurrentDirectory ciCabalFilePath `shouldReturn` "fourmolu.cabal"
