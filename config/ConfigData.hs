@@ -58,6 +58,15 @@ options =
         cliOverrides = emptyOverrides
       },
     Option
+      { name = "column-limit",
+        fieldName = Just "poColumnLimit",
+        description = "Max line length for automatic line breaking",
+        type_ = "ColumnLimit",
+        default_ = HsExpr "NoLimit",
+        ormolu = HsExpr "NoLimit",
+        cliOverrides = emptyOverrides
+      },
+    Option
       { name = "function-arrows",
         fieldName = Just "poFunctionArrows",
         description = "Styling of arrows in type signatures",
@@ -148,6 +157,15 @@ options =
         cliOverrides = emptyOverrides
       },
     Option
+      { name = "single-constraint-parens",
+        fieldName = Just "poSingleConstraintParens",
+        description = "Whether to put parentheses around a single constraint",
+        type_ = "SingleConstraintParens",
+        default_ = HsExpr "ConstraintAlways",
+        ormolu = HsExpr "ConstraintAlways",
+        cliOverrides = emptyOverrides
+      },
+    Option
       { name = "unicode",
         fieldName = Just "poUnicode",
         description = "Output Unicode syntax",
@@ -172,24 +190,6 @@ options =
         type_ = "[String]",
         default_ = HsList [],
         ormolu = HsList [],
-        cliOverrides = emptyOverrides
-      },
-    Option
-      { name = "single-constraint-parens",
-        fieldName = Just "poSingleConstraintParens",
-        description = "Whether to put parentheses around a single constraint",
-        type_ = "SingleConstraintParens",
-        default_ = HsExpr "ConstraintAlways",
-        ormolu = HsExpr "ConstraintAlways",
-        cliOverrides = emptyOverrides
-      },
-    Option
-      { name = "column-limit",
-        fieldName = Just "poColumnLimit",
-        description = "Max line length for automatic line breaking",
-        type_ = "ColumnLimit",
-        default_ = HsExpr "NoLimit",
-        ormolu = HsExpr "NoLimit",
         cliOverrides = emptyOverrides
       }
   ]

@@ -41,6 +41,8 @@ data PrinterOpts f =
   PrinterOpts
     { -- | Number of spaces per indentation step
       poIndentation :: f Int
+    , -- | Max line length for automatic line breaking
+      poColumnLimit :: f ColumnLimit
     , -- | Styling of arrows in type signatures
       poFunctionArrows :: f FunctionArrowsStyle
     , -- | How to place commas in multi-line lists, records, etc.
@@ -61,14 +63,12 @@ data PrinterOpts f =
       poLetStyle :: f LetStyle
     , -- | How to align the 'in' keyword with respect to the 'let' keyword
       poInStyle :: f InStyle
+    , -- | Whether to put parentheses around a single constraint
+      poSingleConstraintParens :: f SingleConstraintParens
     , -- | Output Unicode syntax
       poUnicode :: f Unicode
     , -- | Give the programmer more choice on where to insert blank lines
       poRespectful :: f Bool
-    , -- | Whether to put parentheses around a single constraint
-      poSingleConstraintParens :: f SingleConstraintParens
-    , -- | Max line length for automatic line breaking
-      poColumnLimit :: f ColumnLimit
     }
   deriving (Generic)
 
@@ -76,6 +76,7 @@ emptyPrinterOpts :: PrinterOpts Maybe
 emptyPrinterOpts =
   PrinterOpts
     { poIndentation = Nothing
+    , poColumnLimit = Nothing
     , poFunctionArrows = Nothing
     , poCommaStyle = Nothing
     , poImportExportStyle = Nothing
@@ -86,16 +87,16 @@ emptyPrinterOpts =
     , poHaddockStyleModule = Nothing
     , poLetStyle = Nothing
     , poInStyle = Nothing
+    , poSingleConstraintParens = Nothing
     , poUnicode = Nothing
     , poRespectful = Nothing
-    , poSingleConstraintParens = Nothing
-    , poColumnLimit = Nothing
     }
 
 defaultPrinterOpts :: PrinterOpts Identity
 defaultPrinterOpts =
   PrinterOpts
     { poIndentation = pure 4
+    , poColumnLimit = pure NoLimit
     , poFunctionArrows = pure TrailingArrows
     , poCommaStyle = pure Leading
     , poImportExportStyle = pure ImportExportDiffFriendly
@@ -106,10 +107,9 @@ defaultPrinterOpts =
     , poHaddockStyleModule = pure PrintStyleInherit
     , poLetStyle = pure LetAuto
     , poInStyle = pure InRightAlign
+    , poSingleConstraintParens = pure ConstraintAlways
     , poUnicode = pure UnicodeNever
     , poRespectful = pure True
-    , poSingleConstraintParens = pure ConstraintAlways
-    , poColumnLimit = pure NoLimit
     }
 
 -- | Fill the field values that are 'Nothing' in the first argument
@@ -123,6 +123,7 @@ fillMissingPrinterOpts ::
 fillMissingPrinterOpts p1 p2 =
   PrinterOpts
     { poIndentation = maybe (poIndentation p2) pure (poIndentation p1)
+    , poColumnLimit = maybe (poColumnLimit p2) pure (poColumnLimit p1)
     , poFunctionArrows = maybe (poFunctionArrows p2) pure (poFunctionArrows p1)
     , poCommaStyle = maybe (poCommaStyle p2) pure (poCommaStyle p1)
     , poImportExportStyle = maybe (poImportExportStyle p2) pure (poImportExportStyle p1)
@@ -133,10 +134,9 @@ fillMissingPrinterOpts p1 p2 =
     , poHaddockStyleModule = maybe (poHaddockStyleModule p2) pure (poHaddockStyleModule p1)
     , poLetStyle = maybe (poLetStyle p2) pure (poLetStyle p1)
     , poInStyle = maybe (poInStyle p2) pure (poInStyle p1)
+    , poSingleConstraintParens = maybe (poSingleConstraintParens p2) pure (poSingleConstraintParens p1)
     , poUnicode = maybe (poUnicode p2) pure (poUnicode p1)
     , poRespectful = maybe (poRespectful p2) pure (poRespectful p1)
-    , poSingleConstraintParens = maybe (poSingleConstraintParens p2) pure (poSingleConstraintParens p1)
-    , poColumnLimit = maybe (poColumnLimit p2) pure (poColumnLimit p1)
     }
 
 parsePrinterOptsCLI ::
@@ -149,6 +149,10 @@ parsePrinterOptsCLI f =
       "indentation"
       "Number of spaces per indentation step (default: 4)"
       "INT"
+    <*> f
+      "column-limit"
+      "Max line length for automatic line breaking (default: none)"
+      "OPTION"
     <*> f
       "function-arrows"
       "Styling of arrows in type signatures (choices: \"trailing\", \"leading\", or \"leading-args\") (default: trailing)"
@@ -190,6 +194,10 @@ parsePrinterOptsCLI f =
       "How to align the 'in' keyword with respect to the 'let' keyword (choices: \"left-align\", \"right-align\", or \"no-space\") (default: right-align)"
       "OPTION"
     <*> f
+      "single-constraint-parens"
+      "Whether to put parentheses around a single constraint (choices: \"auto\", \"always\", or \"never\") (default: always)"
+      "OPTION"
+    <*> f
       "unicode"
       "Output Unicode syntax (choices: \"detect\", \"always\", or \"never\") (default: never)"
       "OPTION"
@@ -197,14 +205,6 @@ parsePrinterOptsCLI f =
       "respectful"
       "Give the programmer more choice on where to insert blank lines (default: true)"
       "BOOL"
-    <*> f
-      "single-constraint-parens"
-      "Whether to put parentheses around a single constraint (choices: \"auto\", \"always\", or \"never\") (default: always)"
-      "OPTION"
-    <*> f
-      "column-limit"
-      "Max line length for automatic line breaking (default: none)"
-      "OPTION"
 
 parsePrinterOptsJSON ::
   Applicative f =>
@@ -213,6 +213,7 @@ parsePrinterOptsJSON ::
 parsePrinterOptsJSON f =
   pure PrinterOpts
     <*> f "indentation"
+    <*> f "column-limit"
     <*> f "function-arrows"
     <*> f "comma-style"
     <*> f "import-export-style"
@@ -223,10 +224,9 @@ parsePrinterOptsJSON f =
     <*> f "haddock-style-module"
     <*> f "let-style"
     <*> f "in-style"
+    <*> f "single-constraint-parens"
     <*> f "unicode"
     <*> f "respectful"
-    <*> f "single-constraint-parens"
-    <*> f "column-limit"
 
 {---------- PrinterOpts field types ----------}
 
@@ -496,6 +496,9 @@ defaultPrinterOptsYaml =
     [ "# Number of spaces per indentation step"
     , "indentation: 4"
     , ""
+    , "# Max line length for automatic line breaking"
+    , "column-limit: none"
+    , ""
     , "# Styling of arrows in type signatures (choices: trailing, leading, or leading-args)"
     , "function-arrows: trailing"
     , ""
@@ -526,6 +529,9 @@ defaultPrinterOptsYaml =
     , "# How to align the 'in' keyword with respect to the 'let' keyword (choices: left-align, right-align, or no-space)"
     , "in-style: right-align"
     , ""
+    , "# Whether to put parentheses around a single constraint (choices: auto, always, or never)"
+    , "single-constraint-parens: always"
+    , ""
     , "# Output Unicode syntax (choices: detect, always, or never)"
     , "unicode: never"
     , ""
@@ -534,10 +540,4 @@ defaultPrinterOptsYaml =
     , ""
     , "# Fixity information for operators"
     , "fixities: []"
-    , ""
-    , "# Whether to put parentheses around a single constraint (choices: auto, always, or never)"
-    , "single-constraint-parens: always"
-    , ""
-    , "# Max line length for automatic line breaking"
-    , "column-limit: none"
     ]
