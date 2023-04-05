@@ -89,6 +89,19 @@ singleTests =
           checkIdempotence = True
         },
       TestGroup
+        { label = "column-limit",
+          testCases = [NoLimit, ColumnLimit 80, ColumnLimit 100],
+          updateConfig = \columnLimit opts -> opts {poColumnLimit = pure columnLimit},
+          showTestCase = show,
+          testCaseSuffix = \columnLimit ->
+            let limitStr =
+                  case columnLimit of
+                    NoLimit -> "none"
+                    ColumnLimit x -> show x
+             in suffixWith ["limit=" ++ limitStr],
+          checkIdempotence = False
+        },
+      TestGroup
         { label = "function-arrows",
           testCases = allOptions,
           updateConfig = \functionArrows opts ->
@@ -174,6 +187,14 @@ singleTests =
           checkIdempotence = True
         },
       TestGroup
+        { label = "single-constraint-parens",
+          testCases = allOptions,
+          updateConfig = \parens opts -> opts {poSingleConstraintParens = pure parens},
+          showTestCase = show,
+          testCaseSuffix = suffix1,
+          checkIdempotence = True
+        },
+      TestGroup
         { label = "unicode-syntax",
           testCases = allOptions,
           updateConfig = \unicodePreference options -> options {poUnicode = pure unicodePreference},
@@ -188,27 +209,6 @@ singleTests =
           showTestCase = show,
           testCaseSuffix = suffix1,
           checkIdempotence = True
-        },
-      TestGroup
-        { label = "single-context-parens",
-          testCases = allOptions,
-          updateConfig = \parens opts -> opts {poSingleConstraintParens = pure parens},
-          showTestCase = show,
-          testCaseSuffix = suffix1,
-          checkIdempotence = True
-        },
-      TestGroup
-        { label = "column-limit",
-          testCases = [NoLimit, ColumnLimit 80, ColumnLimit 100],
-          updateConfig = \columnLimit opts -> opts {poColumnLimit = pure columnLimit},
-          showTestCase = show,
-          testCaseSuffix = \columnLimit ->
-            let limitStr =
-                  case columnLimit of
-                    NoLimit -> "none"
-                    ColumnLimit x -> show x
-             in suffixWith ["limit=" ++ limitStr],
-          checkIdempotence = False
         }
     ]
 

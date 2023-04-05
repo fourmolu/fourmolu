@@ -16,8 +16,6 @@ jobs:
     steps:
       -
         uses: actions/checkout@v3
-        with:
-          ref: main
       -
         uses: actions/download-artifact@v3
         with:
@@ -48,10 +46,10 @@ jobs:
           fi
           sed '1 d; /^## Fourmolu/,$ d' CHANGELOG.md > /tmp/changelog-body
       -
-        uses: brandonchinn178/haskell-actions/hackage-upload@hackage-upload
+        uses: haskell-actions/hackage-publish@v1
         with:
-          archive: sdist/fourmolu-*.tar.gz
-          token: ${{ secrets[steps.hackage_token_secret.outputs.name] }}
+          hackageToken: ${{ secrets[steps.hackage_token_secret.outputs.name] }}
+          packagesPath: ./sdist
       -
         uses: softprops/action-gh-release@v1
         with:
