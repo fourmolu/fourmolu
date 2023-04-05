@@ -190,7 +190,7 @@ singleTests =
           checkIdempotence = True
         },
       TestGroup
-        { label = "single-context-parens",
+        { label = "single-constraint-parens",
           testCases = allOptions,
           updateConfig = \parens opts -> opts {poSingleConstraintParens = pure parens},
           showTestCase = show,
