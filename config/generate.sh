@@ -5,4 +5,4 @@ set -eux -o pipefail
 HERE="$(builtin cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "${HERE}"
 
-runghc Generate.hs
+runghc -Wall -Werror Generate.hs

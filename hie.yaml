@@ -17,3 +17,15 @@ cradle:
 
             - path: "tests"
               component: "fourmolu:test:tests"
+
+            - path: "region-tests"
+              component: "fourmolu:test:region-tests"
+
+            - path: "fixity-tests"
+              component: "fourmolu:test:fixity-tests"
+
+    - path: "config"
+      config:
+        cradle:
+          direct:
+            arguments: ["-iconfig"]

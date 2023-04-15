@@ -1,0 +1,96 @@
+#demo {
+    padding-top: 1em;
+    border-top: 1px solid #ccc;
+}
+
+/***** AST modal *****/
+
+#demo-ast-modal-toggle {
+    margin-bottom: 1em;
+}
+
+#demo-ast-modal h1 {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    font-size: 1.2em;
+}
+#demo-ast-modal h2 {
+    margin: 0;
+}
+
+#demo-ast {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-gap: 1em;
+    padding: 1em;
+}
+#demo-ast pre {
+    margin: 0;
+    padding: 0 1em;
+}
+
+/***** Input/output *****/
+
+#demo-app {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-gap: 2em;
+    height: 500px;
+}
+
+#demo-app-input, #demo-app-output {
+    font-family: monospace;
+    padding: 0.5em;
+    margin: 0;
+    overflow: scroll;
+}
+
+#demo-app-input {
+    resize: none;
+}
+
+#demo-app-output {
+    border: 1px solid #aaa;
+    background: #fafafa;
+}
+#demo-app-output pre {
+    margin: 0;
+    padding: 0;
+    background: none;
+    height: 100%;
+}
+#demo-app-output.error {
+    color: red;
+}
+
+/***** Options *****/
+
+#demo-options {
+    margin: 1em 0;
+    user-select: none;
+}
+
+#demo-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-gap: 5px;
+    padding: 0.5em 0;
+}
+#demo-options label {
+    white-space: nowrap;
+    text-align: center;
+    border: 1px solid #ddd;
+    padding: 0.5em 0;
+}
+
+#demo-options input,
+#demo-options select {
+    display: block;
+    margin: 0 auto;
+    margin-top: 0.5em;
+}
+#demo-options input[type=number] {
+    width: 35px;
+    text-align: center;
+}

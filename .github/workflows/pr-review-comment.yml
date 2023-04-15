@@ -18,6 +18,5 @@ jobs:
 
             Reviewer: Please verify the following things have been done, if applicable.
             - [ ] A file has been added to `changelog.d/`
-            - [ ] "Configuration > Available options" section in `README.md` has been updated
-            - [ ] "Configuration > Specifying configuration" section in `README.md` has been updated
+            - [ ] Docs have been updated in `web/site/pages/config/`
             - [ ] Tests have been added

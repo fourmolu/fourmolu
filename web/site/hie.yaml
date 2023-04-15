@@ -1,0 +1,7 @@
+cradle:
+  cabal:
+    - path: "."
+      component: "fourmolu-web:exe:fourmolu-web"
+
+    - path: "../../config/./"
+      component: "lib:fourmolu-config"

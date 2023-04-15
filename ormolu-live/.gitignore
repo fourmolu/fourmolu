@@ -1,6 +1,0 @@
-node_modules
-output/
-dist/
-site/
-.parcel-cache/
-src/ormolu.wasm

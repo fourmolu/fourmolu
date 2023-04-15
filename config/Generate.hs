@@ -1,14 +1,9 @@
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TupleSections #-}
 
-import ConfigData
-import Control.Monad ((>=>))
-import Data.List (intercalate, isSuffixOf, stripPrefix)
-import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe (fromMaybe, mapMaybe)
+import FourmoluConfig.ConfigData
+import FourmoluConfig.GenerateUtils
 import Text.Printf (printf)
 
 main :: IO ()
@@ -29,7 +24,7 @@ configGenHs =
       "",
       "module Ormolu.Config.Gen",
       "  ( PrinterOpts (..)",
-      unlines_ $ map (printf "  , %s (..)" . fieldTypeName) fieldTypes,
+      unlines_ $ map (printf "  , %s (..)" . fieldTypeName) allFieldTypes,
       "  , emptyPrinterOpts",
       "  , defaultPrinterOpts",
       "  , defaultPrinterOptsYaml",
@@ -94,7 +89,7 @@ configGenHs =
                   quote (getCLIPlaceholder option)
                 ]
             ]
-          | option@Option {name, fieldName = Just _} <- options
+          | option@Option {name, fieldName = Just _} <- allOptions
         ],
       "",
       "parsePrinterOptsJSON ::",
@@ -105,7 +100,7 @@ configGenHs =
       "  pure PrinterOpts",
       indent' 2 . unlines_ $
         [ "<*> f " <> quote name
-          | option@Option {name, fieldName = Just _} <- options
+          | Option {name, fieldName = Just _} <- allOptions
         ],
       "",
       "{---------- PrinterOpts field types ----------}",
@@ -140,7 +135,7 @@ configGenHs =
                   "  deriving (Eq, Show)",
                   ""
                 ]
-          | fieldType <- fieldTypes
+          | fieldType <- allFieldTypes
         ],
       unlines_
         [ unlines_ $
@@ -176,7 +171,7 @@ configGenHs =
                   indent' 2 adtParsePrinterOptType,
                   printf ""
                 ]
-          | fieldType <- fieldTypes
+          | fieldType <- allFieldTypes
         ],
       "defaultPrinterOptsYaml :: String",
       "defaultPrinterOptsYaml =",
@@ -186,13 +181,13 @@ configGenHs =
   where
     mkPrinterOpts :: ((String, Option) -> String) -> String
     mkPrinterOpts f =
-      let fieldOptions = mapMaybe (\o -> (,o) <$> fieldName o) options
+      let fieldOptions = mapMaybe (\o -> (,o) <$> fieldName o) allOptions
        in unlines_
             [ "PrinterOpts",
               indent . unlines_ $
                 [ printf "%c %s" delim (f option)
-                  | (option, i) <- zip fieldOptions [0 ..],
-                    let delim = if i == 0 then '{' else ','
+                  | (isFirst, option) <- withFirst fieldOptions,
+                    let delim = if isFirst then '{' else ','
                 ],
               "  }"
             ]
@@ -201,8 +196,8 @@ configGenHs =
       unlines_ $
         "data " <> name
           : [ printf "  %c %s" delim con
-              | (con, i) <- zip cons [0 ..],
-                let delim = if i == 0 then '=' else '|'
+              | (isFirst, con) <- withFirst cons,
+                let delim = if isFirst then '=' else '|'
             ]
 
     renderEnumOptions enumOptions =
@@ -240,7 +235,7 @@ fourmoluYamlOrmoluStyle = unlines $ header <> config
       ]
     config =
       [ printf "%s: %s" name (hs2yaml type_ ormolu)
-        | Option {..} <- options
+        | Option {..} <- allOptions
       ]
 
 -- | Default fourmolu config that can be printed via `fourmolu --print-defaults`
@@ -249,7 +244,7 @@ fourmoluYamlFourmoluStyle = unlines_ config
   where
     config =
       [ printf "# %s\n%s: %s\n" (getComment opt) name (hs2yaml type_ default_)
-        | opt@Option {..} <- options
+        | opt@Option {..} <- allOptions
       ]
 
     getComment Option {..} =
@@ -260,62 +255,3 @@ fourmoluYamlFourmoluStyle = unlines_ config
                 printf " (choices: %s)" (renderList $ map snd enumOptions)
               _ -> ""
        in concat [help, choicesText]
-
-{----- Helpers -----}
-
-fieldTypesMap :: Map String FieldType
-fieldTypesMap = Map.fromList [(fieldTypeName fieldType, fieldType) | fieldType <- fieldTypes]
-
--- | Render a HaskellValue for Haskell.
-renderHs :: HaskellValue -> String
-renderHs = \case
-  HsExpr v -> v
-  HsInt v -> show v
-  HsBool v -> show v
-  HsList vs -> "[" <> intercalate ", " (map renderHs vs) <> "]"
-
--- | Render a HaskellValue for YAML.
-hs2yaml :: String -> HaskellValue -> String
-hs2yaml hsType = \case
-  HsExpr v ->
-    fromMaybe (error $ "Could not render " <> hsType <> " value: " <> v) $
-      case hsType `Map.lookup` fieldTypesMap of
-        Just FieldTypeEnum {enumOptions} -> v `lookup` enumOptions
-        Just FieldTypeADT {adtRender} -> v `lookup` adtRender
-        Nothing -> Nothing
-  HsInt v -> show v
-  HsBool v -> if v then "true" else "false"
-  HsList vs ->
-    let hsType' =
-          case (stripPrefix "[" >=> stripSuffix "]") hsType of
-            Just s -> s
-            Nothing -> error $ "Not a list type: " <> hsType
-     in "[" <> intercalate ", " (map (hs2yaml hsType') vs) <> "]"
-
-{----- Utilities -----}
-
--- | Like 'unlines', except without a trailing newline.
-unlines_ :: [String] -> String
-unlines_ = intercalate "\n"
-
-indent :: String -> String
-indent = indent' 1
-
-indent' :: Int -> String -> String
-indent' n = unlines_ . map (replicate (n * 2) ' ' <>) . lines
-
-quote :: String -> String
-quote s = "\"" <> s <> "\""
-
-renderList :: [String] -> String
-renderList = \case
-  [] -> ""
-  [s] -> s
-  [s1, s2] -> s1 <> " or " <> s2
-  ss -> intercalate ", " (init ss) <> ", or " <> last ss
-
-stripSuffix :: String -> String -> Maybe String
-stripSuffix suffix s =
-  if suffix `isSuffixOf` s
-    then Just $ take (length s - length suffix) s
-    else Nothing

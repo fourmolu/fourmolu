@@ -1,0 +1,35 @@
+cabal-version: 3.0
+
+name: fourmolu-wasm
+version: 0
+
+executable fourmolu-wasm
+    main-is: Main.hs
+    hs-source-dirs: src
+    other-modules:
+        ForeignUtils
+    default-language: GHC2021
+    ghc-options:
+        -Wall
+        -Wunused-packages
+        -no-hs-main
+        -optl-mexec-model=reactor
+        "-optl-Wl\
+        \,--export=hs_init\
+        \,--export=malloc\
+        \,--export=free\
+        \,--export=runFourmolu\
+        \,--export=initFixityDB\
+        \,--export=getString\
+        \,--export=getStringLen\
+        \,--export=freeStringWithLen\
+        \"
+
+    build-depends:
+        , aeson
+        , base
+        , bytestring
+        , fourmolu
+        , ghc-lib-parser
+        , ghc-syntax-highlighter-themed
+        , text

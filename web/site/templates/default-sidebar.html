@@ -1,0 +1,9 @@
+<div class="sidebar-container">
+    <nav class="sidebar nav flex-column" aria-label="sidebar">
+        <h3 class="nav-link disabled">$sidebar.title$</h3>
+        $for(sidebar.links)$
+          <a class="nav-link" href="$url$">$name$</a>
+        $endfor$
+    </nav>
+    $partial("templates/default-main.html")$
+</div>
