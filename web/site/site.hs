@@ -14,7 +14,7 @@ import Data.Text qualified as Text
 import Data.Text.Encoding qualified as Text
 import Data.Version (showVersion)
 import FourmoluConfig.ConfigData qualified as ConfigData
-import FourmoluConfig.GenerateUtils (getFieldOptions, hs2yaml)
+import FourmoluConfig.GenerateUtils (getFieldOptionsHtml, hs2yaml)
 import GHC.SyntaxHighlighter.Themed.HighlightJS qualified as HighlightJS
 import Hakyll
 import Hakyll.Core.Compiler.Internal (compilerUnsafeIO)
@@ -134,7 +134,7 @@ getPageInfo = \case
           Just . concat $
             [ printf "<label>",
               printf "  <code>%s</code>" name,
-              case getFieldOptions option of
+              case getFieldOptionsHtml option of
                 Just vals ->
                   concat
                     [ printf "<select class='demo-printerOpt' name='%s'>" name,
@@ -172,7 +172,7 @@ getConfigOptionContext option@ConfigData.Option {..} =
   ]
   where
     schema =
-      case getFieldOptions option of
+      case getFieldOptionsHtml option of
         Just typeOptions ->
           ( "Options",
             unlines . wrap ["<ul>"] ["</ul>"] $

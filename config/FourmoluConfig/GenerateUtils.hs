@@ -14,11 +14,14 @@ import FourmoluConfig.ConfigData
 fieldTypesMap :: Map String FieldType
 fieldTypesMap = Map.fromList [(fieldTypeName fieldType, fieldType) | fieldType <- allFieldTypes]
 
-getFieldOptions :: Option -> Maybe [String]
-getFieldOptions option = getOptions <$> Map.lookup (type_ option) fieldTypesMap
+getFieldOptionsHtml :: Option -> Maybe [String]
+getFieldOptionsHtml option = getOptions <$> Map.lookup (type_ option) fieldTypesMap
   where
     getOptions = \case
-      FieldTypeEnum {enumOptions} -> map snd enumOptions
+      FieldTypeEnum {enumOptions} ->
+        [ "<code>" <> opt <> "</code>"
+          | (_, opt) <- enumOptions
+        ]
       FieldTypeADT {adtOptions} ->
         flip concatMap adtOptions $ \case
           ADTOptionLiteral s -> ["<code>" <> s <> "</code>"]
