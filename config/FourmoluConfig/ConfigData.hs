@@ -45,6 +45,7 @@ data HaskellValue
   | HsInt Int
   | HsBool Bool
   | HsList [HaskellValue]
+  deriving (Eq)
 
 allOptions :: [Option]
 allOptions =
@@ -221,8 +222,7 @@ data FieldType
   | FieldTypeADT
       { fieldTypeName :: String,
         adtConstructors :: [String],
-        -- | List of available options for this type.
-        adtOptions :: [ADTOption],
+        adtSchema :: ADTSchema,
         -- | Mapping from Haskell expression (in `HsExpr`) to string representation
         adtRender :: [(String, String)],
         -- | Implementation of `Aeson.parseJSON`
@@ -231,13 +231,22 @@ data FieldType
         adtParsePrinterOptType :: String
       }
 
-data ADTOption
-  = -- | A literal YAML value
-    ADTOptionLiteral String
-  | -- | Raw HTML to display
-    ADTOptionRaw String
-  | -- | Concatenate all options from the given type
-    ADTOptionsFromType String
+-- | The definition of possible values in a data type.
+data ADTSchema = ADTSchema
+  { adtOptionsHtml :: [String],
+    adtInputType :: ADTSchemaInputType
+  }
+
+data ADTSchemaInputType
+  = ADTSchemaInputText [ADTSchemaInputParser]
+  | ADTSchemaInputNumber
+  | ADTSchemaInputCheckbox
+  | ADTSchemaInputDropdown [ADTSchemaInputParser]
+
+data ADTSchemaInputParser
+  = ADTSchemaInputParserString
+  | ADTSchemaInputParserNumber
+  | ADTSchemaInputParserNull
 
 allFieldTypes :: [FieldType]
 allFieldTypes =
@@ -270,10 +279,20 @@ allFieldTypes =
           [ "PrintStyleInherit",
             "PrintStyleOverride HaddockPrintStyle"
           ],
-        adtOptions =
-          [ ADTOptionLiteral "null",
-            ADTOptionsFromType "HaddockPrintStyle"
-          ],
+        adtSchema =
+          ADTSchema
+            { adtOptionsHtml =
+                let printStyleOpts =
+                      case filter ((== "HaddockPrintStyle") . fieldTypeName) allFieldTypes of
+                        [FieldTypeEnum {enumOptions}] -> map snd enumOptions
+                        _ -> error "Could not find HaddockPrintStyle option"
+                 in map (\s -> "<code>" <> s <> "</code>") $ "null" : printStyleOpts,
+              adtInputType =
+                ADTSchemaInputDropdown
+                  [ ADTSchemaInputParserNull,
+                    ADTSchemaInputParserString
+                  ]
+            },
         adtRender = [("PrintStyleInherit", "null")],
         adtParseJSON =
           unlines
@@ -336,10 +355,15 @@ allFieldTypes =
           [ "NoLimit",
             "ColumnLimit Int"
           ],
-        adtOptions =
-          [ ADTOptionLiteral "none",
-            ADTOptionRaw "Any non-negative integer"
-          ],
+        adtSchema =
+          ADTSchema
+            { adtOptionsHtml = ["<code>none</code>", "Any non-negative integer"],
+              adtInputType =
+                ADTSchemaInputText
+                  [ ADTSchemaInputParserNumber,
+                    ADTSchemaInputParserString
+                  ]
+            },
         adtRender = [("NoLimit", "none")],
         adtParseJSON =
           unlines
