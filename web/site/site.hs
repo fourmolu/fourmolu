@@ -128,36 +128,37 @@ getPageInfo = \case
           | option <- ConfigData.allOptions
         ]
 
-    getOptionDemoWidget option@ConfigData.Option {..}
-      | name == "fixities" = Nothing
-      | otherwise =
-          Just . concat $
-            [ printf "<label>",
-              printf "  <code>%s</code>" name,
-              case getFieldOptionsHtml option of
-                Just vals ->
+getOptionDemoWidget :: ConfigData.Option -> Maybe String
+getOptionDemoWidget option@ConfigData.Option {..}
+  | name == "fixities" = Nothing
+  | otherwise =
+      Just . concat $
+        [ printf "<label>",
+          printf "  <code>%s</code>" name,
+          case getFieldOptionsHtml option of
+            Just vals ->
+              concat
+                [ printf "<select class='demo-printerOpt' name='%s'>" name,
                   concat
-                    [ printf "<select class='demo-printerOpt' name='%s'>" name,
-                      concat
-                        [ printf "<option %s>%s</option>" (selected :: String) v
-                          | v <- vals,
-                            let selected = if v == hs2yaml type_ default_ then "selected" else ""
-                        ],
-                      printf "</select>"
-                    ]
-                Nothing ->
-                  let (inputType, inputInitial) =
-                        case default_ of
-                          ConfigData.HsBool b -> ("checkbox", if b then "checked" else "")
-                          ConfigData.HsInt x -> ("number", printf "value='%d'" x)
-                          _ -> ("text", printf "value='%s'" $ hs2yaml type_ default_)
-                   in printf
-                        "<input class='demo-printerOpt' name='%s' type='%s' %s />"
-                        name
-                        (inputType :: String)
-                        (inputInitial :: String),
-              printf "</label>"
-            ]
+                    [ printf "<option %s>%s</option>" (selected :: String) v
+                      | v <- vals,
+                        let selected = if v == hs2yaml type_ default_ then "selected" else ""
+                    ],
+                  printf "</select>"
+                ]
+            Nothing ->
+              let (inputType, inputInitial) =
+                    case default_ of
+                      ConfigData.HsBool b -> ("checkbox", if b then "checked" else "")
+                      ConfigData.HsInt x -> ("number", printf "value='%d'" x)
+                      _ -> ("text", printf "value='%s'" $ hs2yaml type_ default_)
+               in printf
+                    "<input class='demo-printerOpt' name='%s' type='%s' %s />"
+                    name
+                    (inputType :: String)
+                    (inputInitial :: String),
+          printf "</label>"
+        ]
 
 getConfigOptionContext :: ConfigData.Option -> [Context a]
 getConfigOptionContext option@ConfigData.Option {..} =
