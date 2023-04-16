@@ -19,7 +19,7 @@
 * [Contributing](#contributing)
 * [License](#license)
 
-Fourmolu is a formatter for Haskell source code. It is a fork of [Ormolu](https://github.com/tweag/ormolu), with the intention to continue to merge upstream improvements.
+Fourmolu is a formatter for Haskell source code. It is a fork of [Ormolu](https://github.com/tweag/ormolu), with upstream improvements continually merged.
 
 We share all bar one of Ormolu's goals:
 
