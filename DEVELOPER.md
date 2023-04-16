@@ -113,7 +113,6 @@ To release a new version, do the following workflow:
 
 1. Create PR as usual and merge into `main`
     1. In the `check_sdist` CI job, check the output of the `stack sdist` step for any warnings.
-    1. **MAKE SURE TO CREATE A MERGE COMMIT**. Don't use the "Squash and merge" or "Rebase and merge" options.
 
 1. Ensure your Hackage token is set in Settings > Secrets > Actions as `HACKAGE_TOKEN_<github_username>` (replace any non alphanumeric characters in username with `_`).
     * Generate a token from `https://hackage.haskell.org/user/<hackage_username>/manage`
@@ -138,6 +137,8 @@ Fourmolu aims to continue merging upstream changes in Ormolu. Whenever Ormolu ma
 1. (Recommended) Switch to diff3 conflicts: `git checkout --conflict=diff3`. This provides more context that might be helpful for resolving conflicts. See [docs](https://git-scm.com/book/en/v2/Git-Tools-Advanced-Merging#_checking_out_conflicts).
 1. Resolve conflicts + finish merge: `git merge --continue`
 1. Run tests to ensure everything works well: `stack test`
+1. Make a PR and merge as usual
+    1. **MAKE SURE TO CREATE A MERGE COMMIT**. Don't use the "Squash and merge" or "Rebase and merge" options.
 
 ### Resolving conflicts
 
