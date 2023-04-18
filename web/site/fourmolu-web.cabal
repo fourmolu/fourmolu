@@ -14,6 +14,7 @@ executable fourmolu-web
         , base
         , bytestring
         , cmark-gfm-simple
+        , containers
         , filepath
         , fourmolu
         , fourmolu-config

@@ -9,12 +9,14 @@ import Control.Monad (forM, (<=<))
 import Data.Aeson qualified as Aeson
 import Data.Bifunctor (first)
 import Data.ByteString qualified as ByteString
+import Data.List (intercalate)
+import Data.Map qualified as Map
 import Data.Text (Text)
 import Data.Text qualified as Text
 import Data.Text.Encoding qualified as Text
 import Data.Version (showVersion)
 import FourmoluConfig.ConfigData qualified as ConfigData
-import FourmoluConfig.GenerateUtils (getFieldOptions, hs2yaml)
+import FourmoluConfig.GenerateUtils (fieldTypesMap, getOptionSchema, hs2yaml)
 import GHC.SyntaxHighlighter.Themed.HighlightJS qualified as HighlightJS
 import Hakyll
 import Hakyll.Core.Compiler.Internal (compilerUnsafeIO)
@@ -128,36 +130,60 @@ getPageInfo = \case
           | option <- ConfigData.allOptions
         ]
 
-    getOptionDemoWidget option@ConfigData.Option {..}
-      | name == "fixities" = Nothing
-      | otherwise =
-          Just . concat $
-            [ printf "<label>",
-              printf "  <code>%s</code>" name,
-              case getFieldOptions option of
-                Just vals ->
-                  concat
-                    [ printf "<select class='demo-printerOpt' name='%s'>" name,
-                      concat
-                        [ printf "<option %s>%s</option>" (selected :: String) v
-                          | v <- vals,
-                            let selected = if v == hs2yaml type_ default_ then "selected" else ""
-                        ],
-                      printf "</select>"
-                    ]
-                Nothing ->
-                  let (inputType, inputInitial) =
-                        case default_ of
-                          ConfigData.HsBool b -> ("checkbox", if b then "checked" else "")
-                          ConfigData.HsInt x -> ("number", printf "value='%d'" x)
-                          _ -> ("text", printf "value='%s'" $ hs2yaml type_ default_)
-                   in printf
-                        "<input class='demo-printerOpt' name='%s' type='%s' %s />"
-                        name
-                        (inputType :: String)
-                        (inputInitial :: String),
-              printf "</label>"
+getOptionDemoWidget :: ConfigData.Option -> Maybe String
+getOptionDemoWidget option@ConfigData.Option {..}
+  | name == "fixities" = Nothing
+  | otherwise =
+      Just . concat $
+        [ printf "<label>",
+          printf "  <code>%s</code>" name,
+          optionDemoInput,
+          printf "</label>"
+        ]
+  where
+    ConfigData.ADTSchema {..} = getOptionSchema option
+    inputDefault = hs2yaml type_ default_
+    inputClass = "demo-printerOpt" :: String
+    optionDemoInput =
+      case adtInputType of
+        ConfigData.ADTSchemaInputText parsers ->
+          printf
+            "<input class='%s' name='%s' type='text' value='%s' data-parsers='%s' />"
+            inputClass
+            name
+            inputDefault
+            (renderParsers parsers)
+        ConfigData.ADTSchemaInputNumber ->
+          printf
+            "<input class='%s' name='%s' type='number' value='%s' />"
+            inputClass
+            name
+            inputDefault
+        ConfigData.ADTSchemaInputCheckbox ->
+          printf
+            "<input class='%s' name='%s' type='checkbox' %s />"
+            inputClass
+            name
+            (if default_ == ConfigData.HsBool True then "checked" else "" :: String)
+        ConfigData.ADTSchemaInputDropdown parsers ->
+          concat
+            [ printf
+                "<select class='%s' name='%s' data-parsers='%s'>"
+                inputClass
+                name
+                (renderParsers parsers),
+              concat
+                [ printf "<option %s>%s</option>" selected v
+                  | v <- adtOptionsHtml,
+                    let selected = if v == inputDefault then "selected" else "" :: String
+                ],
+              printf "</select>"
             ]
+    renderParsers parsers =
+      intercalate ("|" :: String) . flip map parsers $ \case
+        ConfigData.ADTSchemaInputParserString -> "string"
+        ConfigData.ADTSchemaInputParserNumber -> "number"
+        ConfigData.ADTSchemaInputParserNull -> "null"
 
 getConfigOptionContext :: ConfigData.Option -> [Context a]
 getConfigOptionContext option@ConfigData.Option {..} =
@@ -171,16 +197,20 @@ getConfigOptionContext option@ConfigData.Option {..} =
         ]
   ]
   where
+    ConfigData.ADTSchema {adtOptionsHtml} = getOptionSchema option
     schema =
-      case getFieldOptions option of
-        Just typeOptions ->
+      if type_ `Map.member` fieldTypesMap
+        then
           ( "Options",
             unlines . wrap ["<ul>"] ["</ul>"] $
               [ printf "<li>%s</li>" opt
-                | opt <- typeOptions
+                | opt <- adtOptionsHtml
               ]
           )
-        Nothing -> ("Type", printf "<code>%s</code>" type_)
+        else
+          ( "Type",
+            printf "<code>%s</code>" type_
+          )
     mkTable rows =
       unlines . wrap ["<table>", "<tbody>"] ["</tbody>", "</table>"] . concat $
         [ [ "  <tr>",

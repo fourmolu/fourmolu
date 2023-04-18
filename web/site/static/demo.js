@@ -65,7 +65,16 @@ function getOptionValue(el) {
     case 'checkbox':
       return el.checked
     default:
-      return el.value === 'null' ? null : el.value
+      // very basic type coercion; let the fourmolu backend do any value checks
+      const parsers = el.dataset.parsers.split('|')
+      for (const parser of parsers) {
+        switch (parser) {
+          case 'string': return el.value
+          case 'number': try { return Number(el.value) } catch (_) {}
+          case 'null': if (el.value === 'null') { return null }
+        }
+      }
+      throw new Error(`Could not parse value: ${el.value}`)
   }
 }
 

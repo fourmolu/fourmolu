@@ -14,19 +14,33 @@ import FourmoluConfig.ConfigData
 fieldTypesMap :: Map String FieldType
 fieldTypesMap = Map.fromList [(fieldTypeName fieldType, fieldType) | fieldType <- allFieldTypes]
 
-getFieldOptions :: Option -> Maybe [String]
-getFieldOptions option = getOptions <$> Map.lookup (type_ option) fieldTypesMap
-  where
-    getOptions = \case
-      FieldTypeEnum {enumOptions} -> map snd enumOptions
-      FieldTypeADT {adtOptions} ->
-        flip concatMap adtOptions $ \case
-          ADTOptionLiteral s -> ["<code>" <> s <> "</code>"]
-          ADTOptionRaw s -> [s]
-          ADTOptionsFromType enum ->
-            case enum `Map.lookup` fieldTypesMap of
-              Just ty -> getOptions ty
-              Nothing -> error $ "ADTOptionsFromType contains unknown type: " <> enum
+getOptionSchema :: Option -> ADTSchema
+getOptionSchema Option {type_ = ty} =
+  case ty of
+    "Int" ->
+      ADTSchema
+        { adtOptionsHtml = ["Any integer"],
+          adtInputType = ADTSchemaInputNumber
+        }
+    "Bool" ->
+      ADTSchema
+        { adtOptionsHtml = ["Any boolean"],
+          adtInputType = ADTSchemaInputCheckbox
+        }
+    "String" ->
+      ADTSchema
+        { adtOptionsHtml = ["Any string"],
+          adtInputType = ADTSchemaInputText [ADTSchemaInputParserString]
+        }
+    _ | Just fieldType <- Map.lookup ty fieldTypesMap ->
+      case fieldType of
+        FieldTypeEnum {enumOptions} ->
+          ADTSchema
+            { adtOptionsHtml = map (\(_, s) -> "<code>" <> s <> "</code>") enumOptions,
+              adtInputType = ADTSchemaInputDropdown [ADTSchemaInputParserString]
+            }
+        FieldTypeADT {adtSchema} -> adtSchema
+    _ -> error $ "Cannot get schema for type: " ++ ty
 
 -- | Render a HaskellValue for Haskell.
 renderHs :: HaskellValue -> String
