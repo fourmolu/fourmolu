@@ -4,7 +4,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
-import Control.Exception (SomeException, catch, try)
+import Control.DeepSeq (force)
+import Control.Exception (SomeException, catch, evaluate, try)
+import Control.Monad (void)
 import Data.Aeson qualified as Aeson
 import Data.ByteString qualified as ByteString
 import Data.ByteString.Unsafe
@@ -26,17 +28,17 @@ import Ormolu (ormolu)
 import Ormolu.Config (PrinterOptsPartial)
 import Ormolu.Config qualified as Config
 import Ormolu.Exception (printOrmoluException)
+import Ormolu.Fixity qualified as Fixity
 import Ormolu.Fixity.Internal (LazyFixityMap (..))
 import Ormolu.Parser (parseModule)
 import Ormolu.Parser.Result (ParseResult (..), SourceSnippet (..))
 import Ormolu.Terminal (runTermPure)
-import System.Environment (setEnv)
 
 foreign export ccall
   runFourmolu :: Ptr CChar -> Int -> IO (Ptr StringWithLen)
 
 foreign export ccall
-  initFixityDB :: Ptr CChar -> Int -> IO ()
+  evaluateFixityInfo :: IO ()
 
 foreign export ccall
   getString :: Ptr StringWithLen -> IO (Ptr CChar)
@@ -77,12 +79,9 @@ runFourmolu inputPtr inputLen = do
         }
 
 -- See comments in Ormolu.Fixity
-initFixityDB :: Ptr CChar -> Int -> IO ()
-initFixityDB ptr len = do
-  -- freed in Ormolu.Fixity
-  ptr' <- Foreign.mallocBytes len
-  Foreign.copyBytes ptr' ptr len
-  setEnv "ORMOLU_HACKAGE_INFO" $ show (ptr', len)
+evaluateFixityInfo :: IO ()
+evaluateFixityInfo =
+  void . evaluate $ force (Fixity.packageToOps, Fixity.packageToPopularity)
 
 {----- StringWithLen -----}
 

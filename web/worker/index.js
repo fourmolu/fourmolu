@@ -4,10 +4,7 @@ const encoder = new TextEncoder()
 const decoder = new TextDecoder()
 
 async function main() {
-  const [wasm, hackageInfoBuf] = await Promise.all([
-    initWebAssembly(fetch('/static/fourmolu-wasm.wasm')),
-    fetch('/static/hackage-info.bin').then((r) => r.arrayBuffer()),
-  ])
+  const wasm = await initWebAssembly(fetch('/static/fourmolu-wasm.wasm'))
   const hs = wasm.instance.exports
 
   const withBytesPtr = (bytes, callback) => {
@@ -20,11 +17,6 @@ async function main() {
       hs.free(ptr)
     }
   }
-
-  hs._initialize()
-  hs.hs_init(0, 0)
-
-  withBytesPtr(hackageInfoBuf, hs.initFixityDB)
 
   self.onmessage = (event) => {
     const inputBytes = encoder.encode(event.data)

@@ -13,27 +13,31 @@ This directory contains files that are served at `fourmolu.github.io`.
 
 ### Build locally
 
-To build locally, follow the steps at https://gitlab.haskell.org/ghc/ghc-wasm-meta to install GHC with the WASM backend. Then run the following steps:
+1. Follow the steps at https://gitlab.haskell.org/ghc/ghc-wasm-meta to install GHC with the WASM backend
 
-```bash
-wasm32-wasi-cabal update
-web/fourmolu-wasm/build.sh
-```
+1. Install [Wizer](https://github.com/bytecodealliance/wizer)
+
+1. `wasm32-wasi-cabal update`
+
+1. `web/fourmolu-wasm/build.sh`
 
 ### Build with Docker
 
-If it's too difficult to install GHC with WASM locally, you can run the WASM build in a Docker container:
+If it's too difficult to install locally, you can run the WASM build in a Docker container:
 
 ```bash
-# host machine
+# in the root directory of the fourmolu repo
+docker build -t fourmolu-wasm -f web/fourmolu-wasm/Dockerfile .
 docker run --rm -it \
     -v $PWD:/src \
     -v /tmp/fourmolu-wasm-cabal-cache:/root/.wasm32-wasi-cabal \
     -e CABAL_DIR=/root/.wasm32-wasi-cabal \
     --entrypoint bash \
-    brandonchinn178/ghc-wasm-backend
+    fourmolu-wasm
+```
 
-# in docker
+```bash
+# in the Docker container
 wasm32-wasi-cabal update
 /src/web/fourmolu-wasm/build.sh
 ```
