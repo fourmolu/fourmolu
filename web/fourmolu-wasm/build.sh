@@ -19,8 +19,16 @@ listbin() {
 # can't do cabal install because it'll build fourmolu too
 # https://github.com/haskell/cabal/issues/8614
 wasm32-wasi-cabal build exe:fourmolu-wasm "${ARGS[@]}"
+
 mkdir -p "${HERE}/dist/"
-cp "$(listbin fourmolu-wasm)" "${HERE}/dist/"
+
+# pre-initialize wasm
+wizer \
+    --allow-wasi --wasm-bulk-memory true \
+    "$(listbin fourmolu-wasm)" -o "${HERE}/dist/fourmolu-wasm.wasm" \
+    --mapdir /::../../extract-hackage-info
+
+# TODO: use wasm-opt to optimize wasm binary for code size
 
 # symlink WASM output, for development
 ln -sf ../../fourmolu-wasm/dist/fourmolu-wasm.wasm ../site/static/

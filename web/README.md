@@ -15,6 +15,8 @@ This directory contains files that are served at `fourmolu.github.io`.
 
 1. Follow the steps at https://gitlab.haskell.org/ghc/ghc-wasm-meta to install GHC with the WASM backend
 
+1. Install [Wizer](https://github.com/bytecodealliance/wizer)
+
 1. `wasm32-wasi-cabal update`
 
 1. `web/fourmolu-wasm/build.sh`
