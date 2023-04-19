@@ -2,7 +2,7 @@
 
 > Current release: **v$version$**
 
-Fourmolu is a formatter for Haskell source code. It is a fork of [Ormolu](https://github.com/tweag/ormolu), with the intention to continue to merge upstream improvements. Try it out below!
+Fourmolu is a formatter for Haskell source code. It is a fork of [Ormolu](https://github.com/tweag/ormolu), with upstream improvements continually merged. Fourmolu can be seen as a less-opinionated version of Ormolu: Ormolu implements “one true formatting style”, whereas Fourmolu is configurable. Try it out below!
 
 <link rel="stylesheet" href="/static/demo.css" />
 <script src="/static/demo.js"></script>

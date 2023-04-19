@@ -8,6 +8,7 @@
 * [Installation](#installation)
 * [Building from source](#building-from-source)
 * [Usage](#usage)
+    * [Fourmolu Live](#fourmolu-live)
     * [Editor integration](#editor-integration)
     * [Language extensions, dependencies, and fixities](#language-extensions-dependencies-and-fixities)
     * [Magic comments](#magic-comments)
@@ -18,7 +19,7 @@
 * [Contributing](#contributing)
 * [License](#license)
 
-Fourmolu is a formatter for Haskell source code. It is a fork of [Ormolu](https://github.com/tweag/ormolu), with the intention to continue to merge upstream improvements.
+Fourmolu is a formatter for Haskell source code. It is a fork of [Ormolu](https://github.com/tweag/ormolu), with upstream improvements continually merged.
 
 We share all bar one of Ormolu's goals:
 
@@ -102,6 +103,10 @@ Fourmolu's output always uses LF line endings. In particular,
 when checking out a git repository without having set [`core.autocrlf`](
 https://www.git-scm.com/docs/git-config#Documentation/git-config.txt-coreautocrlf)
 to `false`.
+
+### Web app
+
+See https://fourmolu.github.io/ to try Fourmolu in your browser. This is re-deployed on every new commit to `main`, so will use the latest version of Fourmolu, potentially including unreleased changes.
 
 ### Editor integration
 
