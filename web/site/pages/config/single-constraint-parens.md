@@ -2,7 +2,7 @@
 
 $info$
 
-The `detect` option will keep parentheses if they already exist, but won't add parentheses if not.
+The `auto` option will keep parentheses if they already exist, but won't add parentheses if not.
 
 ## Examples
 
