@@ -69,14 +69,19 @@ function getOptionValue(el) {
       const parsers = el.dataset.parsers.split('|')
       for (const parser of parsers) {
         switch (parser) {
-          case 'string': return el.value
+          case 'string':
+            return el.value
           case 'number': {
             const val = Number(el.value)
             if (!isNaN(val)) {
               return val
             }
           }
-          case 'null': if (el.value === 'null') { return null }
+          case 'null': {
+            if (el.value === 'null') {
+              return null
+            }
+          }
         }
       }
       throw new Error(`Could not parse value: ${el.value}`)
