@@ -70,7 +70,12 @@ function getOptionValue(el) {
       for (const parser of parsers) {
         switch (parser) {
           case 'string': return el.value
-          case 'number': try { return Number(el.value) } catch (_) {}
+          case 'number': {
+            const val = Number(el.value)
+            if (!isNaN(val)) {
+              return val
+            }
+          }
           case 'null': if (el.value === 'null') { return null }
         }
       }
