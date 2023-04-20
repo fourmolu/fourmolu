@@ -8,7 +8,7 @@
 * [Installation](#installation)
 * [Building from source](#building-from-source)
 * [Usage](#usage)
-    * [Fourmolu Live](#fourmolu-live)
+    * [Web app](#web-app)
     * [Editor integration](#editor-integration)
     * [Language extensions, dependencies, and fixities](#language-extensions-dependencies-and-fixities)
     * [Magic comments](#magic-comments)
