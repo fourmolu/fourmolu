@@ -6,7 +6,13 @@ const _worker = new Worker('/static/worker.js')
 // that only one thread is sending input + waiting for output at a time
 let _controller = new Promise((resolve) => {
   // wait for initial message indicating worker is ready
-  _worker.onmessage = () => resolve()
+  _worker.onmessage = () => {
+    // format what's already in the text box
+    runDemo()
+
+    // start allowing format requests
+    resolve()
+  }
 })
 function callWorker(message) {
   const promise = _controller.then(() =>
@@ -129,6 +135,31 @@ function main() {
   demo.input.addEventListener('input', runDemo)
   demo.printerOpts.forEach((el) => el.addEventListener('input', runDemo))
   demo.options.forEach((el) => el.addEventListener('input', runDemo))
+
+  // initialize the demo with some code
+  demo.input.value = `
+    {-# LANGUAGE UnicodeSyntax #-}
+    -- | This is the
+    -- person module.
+    module Person (Person(Person,
+    name),
+    loadPerson)where
+    import Control.Monad
+        (void,unless,when)
+    data Person = Person
+      {name::String,
+       age::Int}
+    loadPerson ::
+        (MonadIO m)
+        => Int -> m ()
+    loadPerson id = runQuery queryText [SqlInt id]
+      >>= toPerson
+      where queryText = "SELECT * FROM person WHERE id = ?"
+            toPerson rows =
+                case rows of
+                  [ [ SqlString name, SqlInt age ] ] -> pure Person { .. }
+                  _-> let s = "Invalid result: "++show rows in logAndFail s
+  `.replace(/^[ ]{4}/gm, '').trim()
 }
 
 document.addEventListener('DOMContentLoaded', main)
