@@ -100,6 +100,12 @@ async function runDemo() {
   const printerOpts = getOptionMap(demo.printerOpts)
   const options = getOptionMap(demo.options)
 
+  const outputTextboxOriginal = demo.output.querySelector('pre')
+  const [scrollTopOriginal, scrollLeftOriginal] =
+    outputTextboxOriginal
+      ? [outputTextboxOriginal.scrollTop, outputTextboxOriginal.scrollLeft]
+      : [0, 0]
+
   const {
     formatError,
     outputHTML,
@@ -123,6 +129,11 @@ async function runDemo() {
     // always remove the `error` class, if it was set
     demo.output.classList.remove('error')
     demo.output.innerHTML = outputHTML
+
+    // reset scrollbars
+    const outputTextboxNew = demo.output.querySelector('pre')
+    outputTextboxNew.scrollTop = scrollTopOriginal
+    outputTextboxNew.scrollLeft = scrollLeftOriginal
   }
 
   demo.ast.input.innerText = inputAST
@@ -160,6 +171,7 @@ function main() {
                   [ [ SqlString name, SqlInt age ] ] -> pure Person { .. }
                   _-> let s = "Invalid result: "++show rows in logAndFail s
   `.replace(/^[ ]{4}/gm, '').trim()
+  demo.input.setSelectionRange(0, 0) // move cursor to beginning
 }
 
 document.addEventListener('DOMContentLoaded', main)
