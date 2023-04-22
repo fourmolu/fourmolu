@@ -174,7 +174,11 @@ getOptionDemoWidget option@ConfigData.Option {..}
                 (renderParsers parsers),
               concat
                 [ printf "<option %s>%s</option>" selected v
-                  | v <- adtOptionsHtml,
+                  | opt <- adtOptions,
+                    let v =
+                          case opt of
+                            ConfigData.ADTOptionLiteral s -> s
+                            ConfigData.ADTOptionDescription s -> s,
                     let selected = if v == inputDefault then "selected" else "" :: String
                 ],
               printf "</select>"
@@ -197,14 +201,14 @@ getConfigOptionContext option@ConfigData.Option {..} =
         ]
   ]
   where
-    ConfigData.ADTSchema {adtOptionsHtml} = getOptionSchema option
+    ConfigData.ADTSchema {adtOptions} = getOptionSchema option
     schema =
       if type_ `Map.member` fieldTypesMap
         then
           ( "Options",
             unlines . wrap ["<ul>"] ["</ul>"] $
-              [ printf "<li>%s</li>" opt
-                | opt <- adtOptionsHtml
+              [ printf "<li>%s</li>" (renderOptionHTML opt)
+                | opt <- adtOptions
               ]
           )
         else
@@ -221,6 +225,9 @@ getConfigOptionContext option@ConfigData.Option {..} =
           | (label, val) <- rows
         ]
     wrap pre post xs = pre <> xs <> post
+    renderOptionHTML = \case
+      ConfigData.ADTOptionLiteral s -> "<code>" <> s <> "</code>"
+      ConfigData.ADTOptionDescription s -> s
 
 makeSidebar :: PageSidebar -> Context String
 makeSidebar PageSidebar {..} =
