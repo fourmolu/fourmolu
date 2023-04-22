@@ -6,7 +6,13 @@ const _worker = new Worker('/static/worker.js')
 // that only one thread is sending input + waiting for output at a time
 let _controller = new Promise((resolve) => {
   // wait for initial message indicating worker is ready
-  _worker.onmessage = () => resolve()
+  _worker.onmessage = () => {
+    // format what's already in the text box
+    runDemo()
+
+    // start allowing format requests
+    resolve()
+  }
 })
 function callWorker(message) {
   const promise = _controller.then(() =>
@@ -69,9 +75,19 @@ function getOptionValue(el) {
       const parsers = el.dataset.parsers.split('|')
       for (const parser of parsers) {
         switch (parser) {
-          case 'string': return el.value
-          case 'number': try { return Number(el.value) } catch (_) {}
-          case 'null': if (el.value === 'null') { return null }
+          case 'string':
+            return el.value
+          case 'number': {
+            const val = Number(el.value)
+            if (!isNaN(val)) {
+              return val
+            }
+          }
+          case 'null': {
+            if (el.value === 'null') {
+              return null
+            }
+          }
         }
       }
       throw new Error(`Could not parse value: ${el.value}`)
@@ -83,6 +99,12 @@ async function runDemo() {
   const input = demo.input.value
   const printerOpts = getOptionMap(demo.printerOpts)
   const options = getOptionMap(demo.options)
+
+  const outputTextboxOriginal = demo.output.querySelector('pre')
+  const [scrollTopOriginal, scrollLeftOriginal] =
+    outputTextboxOriginal
+      ? [outputTextboxOriginal.scrollTop, outputTextboxOriginal.scrollLeft]
+      : [0, 0]
 
   const {
     formatError,
@@ -107,6 +129,11 @@ async function runDemo() {
     // always remove the `error` class, if it was set
     demo.output.classList.remove('error')
     demo.output.innerHTML = outputHTML
+
+    // reset scrollbars
+    const outputTextboxNew = demo.output.querySelector('pre')
+    outputTextboxNew.scrollTop = scrollTopOriginal
+    outputTextboxNew.scrollLeft = scrollLeftOriginal
   }
 
   demo.ast.input.innerText = inputAST
@@ -119,6 +146,32 @@ function main() {
   demo.input.addEventListener('input', runDemo)
   demo.printerOpts.forEach((el) => el.addEventListener('input', runDemo))
   demo.options.forEach((el) => el.addEventListener('input', runDemo))
+
+  // initialize the demo with some code
+  demo.input.value = `
+    {-# LANGUAGE UnicodeSyntax #-}
+    -- | This is the
+    -- person module.
+    module Person (Person(Person,
+    name),
+    loadPerson)where
+    import Control.Monad
+        (void,unless,when)
+    data Person = Person
+      {name::String,
+       age::Int}
+    loadPerson ::
+        (MonadIO m)
+        => Int -> m ()
+    loadPerson id = runQuery queryText [SqlInt id]
+      >>= toPerson
+      where queryText = "SELECT * FROM person WHERE id = ?"
+            toPerson rows =
+                case rows of
+                  [ [ SqlString name, SqlInt age ] ] -> pure Person { .. }
+                  _-> let s = "Invalid result: "++show rows in logAndFail s
+  `.replace(/^[ ]{4}/gm, '').trim()
+  demo.input.setSelectionRange(0, 0) // move cursor to beginning
 }
 
 document.addEventListener('DOMContentLoaded', main)

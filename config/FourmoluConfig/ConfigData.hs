@@ -233,9 +233,15 @@ data FieldType
 
 -- | The definition of possible values in a data type.
 data ADTSchema = ADTSchema
-  { adtOptionsHtml :: [String],
+  { adtOptions :: [ADTSchemaOption],
     adtInputType :: ADTSchemaInputType
   }
+
+data ADTSchemaOption
+  = -- | A literal YAML value
+    ADTOptionLiteral String
+  | -- | A description of the option
+    ADTOptionDescription String
 
 data ADTSchemaInputType
   = ADTSchemaInputText [ADTSchemaInputParser]
@@ -281,12 +287,12 @@ allFieldTypes =
           ],
         adtSchema =
           ADTSchema
-            { adtOptionsHtml =
+            { adtOptions =
                 let printStyleOpts =
                       case filter ((== "HaddockPrintStyle") . fieldTypeName) allFieldTypes of
                         [FieldTypeEnum {enumOptions}] -> map snd enumOptions
                         _ -> error "Could not find HaddockPrintStyle option"
-                 in map (\s -> "<code>" <> s <> "</code>") $ "null" : printStyleOpts,
+                 in map ADTOptionLiteral $ "null" : printStyleOpts,
               adtInputType =
                 ADTSchemaInputDropdown
                   [ ADTSchemaInputParserNull,
@@ -357,7 +363,10 @@ allFieldTypes =
           ],
         adtSchema =
           ADTSchema
-            { adtOptionsHtml = ["<code>none</code>", "Any non-negative integer"],
+            { adtOptions =
+                [ ADTOptionLiteral "none",
+                  ADTOptionDescription "Any non-negative integer"
+                ],
               adtInputType =
                 ADTSchemaInputText
                   [ ADTSchemaInputParserNumber,

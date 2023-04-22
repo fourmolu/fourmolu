@@ -19,24 +19,24 @@ getOptionSchema Option {type_ = ty} =
   case ty of
     "Int" ->
       ADTSchema
-        { adtOptionsHtml = ["Any integer"],
+        { adtOptions = [ADTOptionDescription "Any integer"],
           adtInputType = ADTSchemaInputNumber
         }
     "Bool" ->
       ADTSchema
-        { adtOptionsHtml = ["Any boolean"],
+        { adtOptions = [ADTOptionDescription "Any boolean"],
           adtInputType = ADTSchemaInputCheckbox
         }
     "String" ->
       ADTSchema
-        { adtOptionsHtml = ["Any string"],
+        { adtOptions = [ADTOptionDescription "Any string"],
           adtInputType = ADTSchemaInputText [ADTSchemaInputParserString]
         }
     _ | Just fieldType <- Map.lookup ty fieldTypesMap ->
       case fieldType of
         FieldTypeEnum {enumOptions} ->
           ADTSchema
-            { adtOptionsHtml = map (\(_, s) -> "<code>" <> s <> "</code>") enumOptions,
+            { adtOptions = map (ADTOptionLiteral . snd) enumOptions,
               adtInputType = ADTSchemaInputDropdown [ADTSchemaInputParserString]
             }
         FieldTypeADT {adtSchema} -> adtSchema
