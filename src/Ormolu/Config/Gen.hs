@@ -69,6 +69,8 @@ data PrinterOpts f =
       poUnicode :: f Unicode
     , -- | Give the programmer more choice on where to insert blank lines
       poRespectful :: f Bool
+    , -- | Do not insert a space in the 'monkey-head' section (:[])
+      poMonkeyHead :: f Bool
     }
   deriving (Generic)
 
@@ -90,6 +92,7 @@ emptyPrinterOpts =
     , poSingleConstraintParens = Nothing
     , poUnicode = Nothing
     , poRespectful = Nothing
+    , poMonkeyHead = Nothing
     }
 
 defaultPrinterOpts :: PrinterOpts Identity
@@ -110,6 +113,7 @@ defaultPrinterOpts =
     , poSingleConstraintParens = pure ConstraintAlways
     , poUnicode = pure UnicodeNever
     , poRespectful = pure True
+    , poMonkeyHead = pure False
     }
 
 -- | Fill the field values that are 'Nothing' in the first argument
@@ -137,6 +141,7 @@ fillMissingPrinterOpts p1 p2 =
     , poSingleConstraintParens = maybe (poSingleConstraintParens p2) pure (poSingleConstraintParens p1)
     , poUnicode = maybe (poUnicode p2) pure (poUnicode p1)
     , poRespectful = maybe (poRespectful p2) pure (poRespectful p1)
+    , poMonkeyHead = maybe (poMonkeyHead p2) pure (poMonkeyHead p1)
     }
 
 parsePrinterOptsCLI ::
@@ -205,6 +210,10 @@ parsePrinterOptsCLI f =
       "respectful"
       "Give the programmer more choice on where to insert blank lines (default: true)"
       "BOOL"
+    <*> f
+      "monkey-head"
+      "Do not insert a space in the 'monkey-head' section (:[]) (default: false)"
+      "BOOL"
 
 parsePrinterOptsJSON ::
   Applicative f =>
@@ -227,6 +236,7 @@ parsePrinterOptsJSON f =
     <*> f "single-constraint-parens"
     <*> f "unicode"
     <*> f "respectful"
+    <*> f "monkey-head"
 
 {---------- PrinterOpts field types ----------}
 
@@ -540,4 +550,7 @@ defaultPrinterOptsYaml =
     , ""
     , "# Fixity information for operators"
     , "fixities: []"
+    , ""
+    , "# Do not insert a space in the 'monkey-head' section (:[])"
+    , "monkey-head: false"
     ]

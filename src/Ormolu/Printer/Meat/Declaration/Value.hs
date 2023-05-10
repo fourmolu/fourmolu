@@ -696,10 +696,20 @@ p_hsExpr' s = \case
     located x p_hsExpr
     breakpoint
     inci (located op p_hsExpr)
-  SectionR _ op x -> do
-    located op p_hsExpr
-    breakpoint
-    inci (located x p_hsExpr)
+  SectionR _ op x ->
+    getPrinterOpt poMonkeyHead >>= \case
+      True
+        | HsVar _ op' <- unLoc op,
+          ":" <- getOpNameStr (unLoc op'),
+          HsVar _ x' <- unLoc x,
+          "[]" <- getOpNameStr (unLoc x') ->
+            do
+              located op p_hsExpr
+              located x p_hsExpr
+      _ -> do
+        located op p_hsExpr
+        breakpoint
+        inci (located x p_hsExpr)
   ExplicitTuple _ args boxity -> do
     let isSection = any isMissing args
         isMissing = \case
