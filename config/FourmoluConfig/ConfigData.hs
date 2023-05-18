@@ -208,6 +208,16 @@ allOptions =
         ormolu = HsList [],
         sinceVersion = "0.7.0.0",
         cliOverrides = emptyOverrides
+      },
+    Option
+      { name = "monkey-head",
+        fieldName = Just "poMonkeyHead",
+        description = "Do not insert a space in the 'monkey-head' section (:[])",
+        type_ = "Bool",
+        default_ = HsBool False,
+        ormolu = HsBool False,
+        sinceVersion = "0.12.1.0",
+        cliOverrides = emptyOverrides
       }
   ]
 

@@ -209,6 +209,14 @@ singleTests =
           showTestCase = show,
           testCaseSuffix = suffix1,
           checkIdempotence = True
+        },
+      TestGroup
+        { label = "monkey-head",
+          testCases = allOptions,
+          updateConfig = \monkeyHead opts -> opts {poMonkeyHead = pure monkeyHead},
+          showTestCase = show,
+          testCaseSuffix = suffix1,
+          checkIdempotence = True
         }
     ]
 
