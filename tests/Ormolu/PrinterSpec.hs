@@ -31,11 +31,7 @@ spec = do
       loadConfigFile "fourmolu.yaml" >>= \case
         ConfigLoaded _ cfg -> pure cfg
         result -> error $ "Could not load config file: " ++ show result
-  let fourmoluConfig =
-        FourmoluConfig
-          { cfgFilePrinterOpts = mempty,
-            cfgFileFixities = mempty
-          }
+  let fourmoluConfig = emptyConfig
 
   es <- runIO locateExamples
   sequence_ $
@@ -62,7 +58,11 @@ checkExample (cfg, label, suffix) srcPath' = it (fromRelFile srcPath' ++ " works
         defaultConfig
           { cfgPrinterOpts = fillMissingPrinterOpts (cfgFilePrinterOpts cfg) defaultPrinterOpts,
             cfgSourceType = detectSourceType inputPath,
-            cfgFixityOverrides = testsuiteFixities <> cfgFileFixities cfg,
+            cfgFixityOverrides =
+              FixityOverrides . mconcat . map unFixityOverrides $
+                [ testsuiteOverrides,
+                  cfgFileFixities cfg
+                ],
             cfgDependencies =
               Set.fromList
                 [ "base",
