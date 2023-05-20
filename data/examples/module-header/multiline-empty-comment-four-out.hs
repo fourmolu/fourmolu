@@ -1,0 +1,3 @@
+module Foo ( -- test
+
+) where
