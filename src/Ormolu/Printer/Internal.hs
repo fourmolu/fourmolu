@@ -412,10 +412,10 @@ inciBy step (R m) = R (local modRC m)
     roundDownToNearest r n = (n `div` r) * r
 
 -- | Like 'inci', but indents by the given fraction of a full step.
-inciByFrac :: Int -> R () -> R ()
+inciByFrac :: Rational -> R () -> R ()
 inciByFrac x m = do
   indentStep <- getPrinterOpt poIndentation
-  let step = indentStep `quot` x
+  let step = truncate $ fromIntegral indentStep * x
   inciBy step m
 
 -- | Increase indentation level by one indentation step for the inner
