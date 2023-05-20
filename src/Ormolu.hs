@@ -37,7 +37,6 @@ module Ormolu
     defaultFixityOverrides,
     ModuleReexports,
     defaultModuleReexports,
-    getDotOrmoluForSourceFile,
 
     -- * Working with exceptions
     OrmoluException (..),
@@ -67,7 +66,6 @@ import Ormolu.Parser.Result
 import Ormolu.Printer
 import Ormolu.Utils (showOutputable)
 import Ormolu.Utils.Cabal qualified as CabalUtils
-import Ormolu.Utils.Fixity (getDotOrmoluForSourceFile)
 import Ormolu.Utils.IO
 import System.FilePath
 

@@ -92,15 +92,15 @@ main = do
 
 -- | Build the full config, by adding 'PrinterOpts' from a file, if found.
 mkConfig :: FilePath -> Opts -> IO (Config RegionIndices)
-mkConfig path Opts {optQuiet, optConfig, optPrinterOpts = cliPrinterOpts} = do
-  mFourmoluConfig <-
+mkConfig path Opts {optQuiet, optConfig = cliConfig, optPrinterOpts = cliPrinterOpts} = do
+  fourmoluConfig <-
     loadConfigFile path >>= \case
       ConfigLoaded f cfg -> do
         unless optQuiet $
           hPutStrLn stderr $
             "Loaded config from: " <> f
         printDebug $ show cfg
-        return $ Just cfg
+        pure cfg
       ConfigParseError f e -> do
         hPutStrLn stderr $
           unlines
@@ -113,21 +113,26 @@ mkConfig path Opts {optQuiet, optConfig, optPrinterOpts = cliPrinterOpts} = do
           . unlines
           $ ("No " ++ show configFileName ++ " found in any of:")
             : map ("  " ++) searchDirs
-        return Nothing
-  let resolve f = maybe mempty f mFourmoluConfig
+        pure emptyConfig
   return $
-    optConfig
+    cliConfig
       { cfgPrinterOpts =
           fillMissingPrinterOpts cliPrinterOpts
-            . fillMissingPrinterOpts (resolve cfgFilePrinterOpts)
+            . fillMissingPrinterOpts (cfgFilePrinterOpts fourmoluConfig)
             $ defaultPrinterOpts,
         cfgFixityOverrides =
-          -- cfgFileFixities should go on the right so that command line
-          -- fixity overrides takes precedence.
-          cfgFixityOverrides optConfig <> resolve cfgFileFixities
+          FixityOverrides . mconcat . map unFixityOverrides $
+            [ cfgFixityOverrides cliConfig,
+              cfgFileFixities fourmoluConfig
+            ],
+        cfgModuleReexports =
+          ModuleReexports . mconcat . map unModuleReexports $
+            [ cfgModuleReexports cliConfig,
+              cfgFileReexports fourmoluConfig
+            ]
       }
   where
-    printDebug = when (cfgDebug optConfig) . hPutStrLn stderr
+    printDebug = when (cfgDebug cliConfig) . hPutStrLn stderr
 
 -- | Format a single input.
 formatOne ::
@@ -366,10 +371,7 @@ configFileOptsParser =
       [ long "no-cabal",
         help "Do not extract default-extensions and dependencies from .cabal files"
       ]
-    <*> (switch . mconcat)
-      [ long "no-dot-ormolu",
-        help "Do not look for .ormolu files"
-      ]
+    <*> pure True -- Fourmolu: Don't add the '--no-dot-ormolu' flag, hardcode to never looking for .ormolu files
     <*> (optional . strOption . mconcat)
       [ long "stdin-input-file",
         help "Path which will be used to find the .cabal file when using input from stdin"
@@ -402,7 +404,7 @@ configParser =
       [ long "reexport",
         short 'r',
         metavar "REEXPORT",
-        help "Module re-export that Ormolu should know about"
+        help "Module re-export that Fourmolu should know about"
       ]
     <*> (fmap Set.fromList . many . strOption . mconcat)
       [ long "package",

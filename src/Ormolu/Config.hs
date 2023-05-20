@@ -67,8 +67,8 @@ import GHC.Generics (Generic)
 import GHC.Types.SrcLoc qualified as GHC
 import Ormolu.Config.Gen
 import Ormolu.Fixity
-import Ormolu.Fixity.Parser (parseFixityDeclaration)
 import Ormolu.Terminal (ColorMode (..))
+import Ormolu.Utils.Fixity (parseFixityDeclarationStr, parseModuleReexportDeclarationStr)
 import System.Directory
   ( XdgDirectory (XdgConfig),
     findFile,
@@ -76,7 +76,6 @@ import System.Directory
     makeAbsolute,
   )
 import System.FilePath (splitPath, (</>))
-import Text.Megaparsec (errorBundlePretty)
 
 -- | Type of sources that can be formatted by Ormolu.
 data SourceType
@@ -217,7 +216,8 @@ deriving instance Show PrinterOptsTotal
 
 data FourmoluConfig = FourmoluConfig
   { cfgFilePrinterOpts :: PrinterOptsPartial,
-    cfgFileFixities :: FixityMap
+    cfgFileFixities :: FixityOverrides,
+    cfgFileReexports :: ModuleReexports
   }
   deriving (Eq, Show)
 
@@ -226,16 +226,22 @@ instance Aeson.FromJSON FourmoluConfig where
     cfgFilePrinterOpts <- Aeson.parseJSON (Aeson.Object o)
     rawFixities <- o .:? "fixities" .!= []
     cfgFileFixities <-
-      case mapM parseFixityDeclaration rawFixities of
-        Right fixities -> return . Map.fromList . concat $ fixities
-        Left e -> fail $ errorBundlePretty e
+      case mapM parseFixityDeclarationStr rawFixities of
+        Right fixities -> return . FixityOverrides . Map.fromList . concat $ fixities
+        Left e -> fail e
+    rawReexports <- o .:? "reexports" .!= []
+    cfgFileReexports <-
+      case mapM parseModuleReexportDeclarationStr rawReexports of
+        Right reexports -> return . ModuleReexports . Map.fromList $ reexports
+        Left e -> fail e
     return FourmoluConfig {..}
 
 emptyConfig :: FourmoluConfig
 emptyConfig =
   FourmoluConfig
     { cfgFilePrinterOpts = mempty,
-      cfgFileFixities = mempty
+      cfgFileFixities = FixityOverrides mempty,
+      cfgFileReexports = ModuleReexports mempty
     }
 
 -- | Read options from a config file, if found.

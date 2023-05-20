@@ -138,24 +138,22 @@ fixities:
 It uses exactly the same syntax as usual Haskell fixity declarations to make
 it easier for Haskellers to edit and maintain.
 
-As of Ormolu 0.7.0.0, `.ormolu` files can also contain instructions about
-module re-exports that Ormolu should be aware of. This might be desirable
-because at the moment Ormolu cannot know about all possible module
+`fourmolu.yaml` can also contain instructions about
+module re-exports that Fourmolu should be aware of. This might be desirable
+because at the moment Fourmolu cannot know about all possible module
 re-exports in the ecosystem and only few of them are actually important when
 it comes to fixity deduction. In 99% of cases the user won't have to do
 anything, especially since most common re-exports are already programmed
-into Ormolu. (You are welcome to open PRs to make Ormolu aware of more
+into Fourmolu. (You are welcome to open PRs to make Fourmolu aware of more
 re-exports by default.) However, when the fixity of an operator is not
-inferred correctly, making Ormolu aware of a re-export may come in handy.
+inferred correctly, making Fourmolu aware of a re-export may come in handy.
 Here is an example:
 
-```haskell
-module Control.Lens exports Control.Lens.At
-module Control.Lens exports Control.Lens.Lens
+```yaml
+reexports:
+  - module Control.Lens exports Control.Lens.At
+  - module Control.Lens exports Control.Lens.Lens
 ```
-
-Module re-export declarations can be mixed freely with fixity overrides, as
-long as each declaration is on its own line.
 
 Finally, all of the above-mentioned parameters can be controlled from the
 command line:

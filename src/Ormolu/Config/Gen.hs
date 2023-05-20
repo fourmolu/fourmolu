@@ -540,4 +540,7 @@ defaultPrinterOptsYaml =
     , ""
     , "# Fixity information for operators"
     , "fixities: []"
+    , ""
+    , "# Module reexports Fourmolu should know about"
+    , "reexports: []"
     ]

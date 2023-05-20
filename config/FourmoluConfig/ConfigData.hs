@@ -208,6 +208,16 @@ allOptions =
         ormolu = HsList [],
         sinceVersion = "0.7.0.0",
         cliOverrides = emptyOverrides
+      },
+    Option
+      { name = "reexports",
+        fieldName = Nothing,
+        description = "Module reexports Fourmolu should know about",
+        type_ = "[String]",
+        default_ = HsList [],
+        ormolu = HsList [],
+        sinceVersion = "unreleased",
+        cliOverrides = emptyOverrides
       }
   ]
 
