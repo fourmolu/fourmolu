@@ -54,39 +54,24 @@ main = do
           optSourceType
           cfg
 
-      getHaskellFiles input = do
-        isDir <- doesDirectoryExist input
-        if isDir
-          then filter (".hs" `isSuffixOf`) <$> listDirectoryRecursive input
-          else return [input] -- plain file
-      listDirectoryRecursive fp = fmap concat . mapM (go . (fp FP.</>)) =<< listDirectory fp
-        where
-          go child = do
-            isDir <- doesDirectoryExist child
-            if isDir
-              then listDirectoryRecursive child
-              else pure [child]
-
-      selectFailure = \case
-        ExitSuccess -> Nothing
-        ExitFailure n -> Just n
-
-      formatInputs inputs = do
-        files <- Set.toAscList . Set.fromList . concat <$> mapM getHaskellFiles inputs
-        errorCodes <- mapMaybe selectFailure <$> mapM (formatOne' . Just) files
-        return $
-          if null errorCodes
-            then ExitSuccess
-            else
-              ExitFailure $
-                if all (== 100) errorCodes
-                  then 100
-                  else 102
-
   exitCode <- case optInputFiles of
     [] -> formatOne' Nothing
     ["-"] -> formatOne' Nothing
-    xs -> formatInputs xs
+    inputs -> do
+      let selectFailure = \case
+            ExitSuccess -> Nothing
+            ExitFailure n -> Just n
+      files <- Set.toAscList . Set.fromList . concat <$> mapM getHaskellFiles inputs
+      errorCodes <-
+        mapMaybe selectFailure <$> mapM (formatOne' . Just) files
+      return $
+        if null errorCodes
+          then ExitSuccess
+          else
+            ExitFailure $
+              if all (== 100) errorCodes
+                then 100
+                else 102
 
   exitWith exitCode
 
@@ -96,22 +81,18 @@ mkConfig path Opts {optQuiet, optConfig = cliConfig, optPrinterOpts = cliPrinter
   fourmoluConfig <-
     loadConfigFile path >>= \case
       ConfigLoaded f cfg -> do
-        unless optQuiet $
-          hPutStrLn stderr $
-            "Loaded config from: " <> f
-        printDebug $ show cfg
+        outputInfo $ "Loaded config from: " <> f
+        outputDebug $ show cfg
         pure cfg
       ConfigParseError f e -> do
-        hPutStrLn stderr $
-          unlines
-            [ "Failed to load " <> f <> ":",
-              Yaml.prettyPrintParseException e
-            ]
+        outputError . unlines $
+          [ "Failed to load " <> f <> ":",
+            Yaml.prettyPrintParseException e
+          ]
         exitWith $ ExitFailure 400
       ConfigNotFound searchDirs -> do
-        printDebug
-          . unlines
-          $ ("No " ++ show configFileName ++ " found in any of:")
+        outputDebug . unlines $
+          ("No " ++ show configFileName ++ " found in any of:")
             : map ("  " ++) searchDirs
         pure emptyConfig
   return $
@@ -132,7 +113,25 @@ mkConfig path Opts {optQuiet, optConfig = cliConfig, optPrinterOpts = cliPrinter
             ]
       }
   where
-    printDebug = when (cfgDebug cliConfig) . hPutStrLn stderr
+    output = hPutStrLn stderr
+    outputError = output
+    outputInfo = unless optQuiet . output
+    outputDebug = when (cfgDebug cliConfig) . output
+
+getHaskellFiles :: FilePath -> IO [FilePath]
+getHaskellFiles input = do
+  isDir <- doesDirectoryExist input
+  if isDir
+    then filter (".hs" `isSuffixOf`) <$> listDirectoryRecursive input
+    else return [input] -- plain file
+  where
+    listDirectoryRecursive fp = fmap concat . mapM (go . (fp FP.</>)) =<< listDirectory fp
+      where
+        go child = do
+          isDir <- doesDirectoryExist child
+          if isDir
+            then listDirectoryRecursive child
+            else pure [child]
 
 -- | Format a single input.
 formatOne ::
