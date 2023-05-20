@@ -647,6 +647,19 @@ p_hsExpr' isApp s = \case
     -- one.
     case placement of
       Normal -> do
+        let indentArg =
+              -- Normally, inciApplicand handles the case of multiline
+              -- function application in a do-block, but in the specific
+              -- case of:
+              --
+              --   do f
+              --     a
+              --
+              -- we need to indent by exactly 2 spaces, to avoid going past
+              -- the start of the statement.
+              case unLoc func of
+                HsDo {} | isOneLineSpan (getLocA func) -> inciBy 2
+                _ -> inci
         ub <-
           getLayout <&> \case
             SingleLine -> useBraces
@@ -654,8 +667,8 @@ p_hsExpr' isApp s = \case
         ub $ do
           located func (p_hsExpr' Applicand s)
           breakpoint
-          inci $ sep breakpoint (located' p_hsExpr) initp
-        inci $ do
+          indentArg $ sep breakpoint (located' p_hsExpr) initp
+        indentArg $ do
           unless (null initp) breakpoint
           located lastp p_hsExpr
       Hanging -> do
