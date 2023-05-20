@@ -9,6 +9,7 @@ import Control.Monad
 import Data.List (isSuffixOf)
 import Data.Map qualified as Map
 import Data.Maybe (isJust)
+import Data.Set qualified as Set
 import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Text.IO qualified as T
@@ -42,13 +43,15 @@ spec = do
       <$> [(ormoluConfig, "ormolu", "-out"), (fourmoluConfig, "fourmolu", "-four-out")]
       <*> es
 
--- | Fixities that are to be used with the test examples.
-testsuiteFixities :: FixityMap
-testsuiteFixities =
-  Map.fromList
-    [ (".=", FixityInfo (Just InfixR) 8 8),
-      ("#", FixityInfo (Just InfixR) 5 5)
-    ]
+-- | Fixity overrides that are to be used with the test examples.
+testsuiteOverrides :: FixityOverrides
+testsuiteOverrides =
+  FixityOverrides
+    ( Map.fromList
+        [ (".=", FixityInfo InfixR 8),
+          ("#", FixityInfo InfixR 5)
+        ]
+    )
 
 -- | Check a single given example.
 checkExample :: (FourmoluConfig, String, String) -> Path Rel File -> Spec
@@ -59,7 +62,14 @@ checkExample (cfg, label, suffix) srcPath' = it (fromRelFile srcPath' ++ " works
         defaultConfig
           { cfgPrinterOpts = fillMissingPrinterOpts (cfgFilePrinterOpts cfg) defaultPrinterOpts,
             cfgSourceType = detectSourceType inputPath,
-            cfgFixityOverrides = testsuiteFixities <> cfgFileFixities cfg
+            cfgFixityOverrides = testsuiteFixities <> cfgFileFixities cfg,
+            cfgDependencies =
+              Set.fromList
+                [ "base",
+                  "esqueleto",
+                  "lens",
+                  "servant"
+                ]
           }
   expectedOutputPath <- deriveOutput srcPath suffix
   -- 1. Given input snippet of source code parse it and pretty print it.

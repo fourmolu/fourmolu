@@ -1,3 +1,5 @@
+import Control.Lens
+
 lenses = Just $ M.fromList
   $ "type"       .= ("user.connection" :: Text)
   # "connection" .= uc

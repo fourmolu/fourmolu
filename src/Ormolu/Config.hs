@@ -66,7 +66,7 @@ import Distribution.Types.PackageName (PackageName)
 import GHC.Generics (Generic)
 import GHC.Types.SrcLoc qualified as GHC
 import Ormolu.Config.Gen
-import Ormolu.Fixity (FixityMap)
+import Ormolu.Fixity
 import Ormolu.Fixity.Parser (parseFixityDeclaration)
 import Ormolu.Terminal (ColorMode (..))
 import System.Directory
@@ -91,7 +91,9 @@ data Config region = Config
   { -- | Dynamic options to pass to GHC parser
     cfgDynOptions :: ![DynOption],
     -- | Fixity overrides
-    cfgFixityOverrides :: FixityMap,
+    cfgFixityOverrides :: !FixityOverrides,
+    -- | Module reexports to take into account when doing fixity resolution
+    cfgModuleReexports :: !ModuleReexports,
     -- | Known dependencies, if any
     cfgDependencies :: !(Set PackageName),
     -- | Do formatting faster but without automatic detection of defects
@@ -134,7 +136,8 @@ defaultConfig :: Config RegionIndices
 defaultConfig =
   Config
     { cfgDynOptions = [],
-      cfgFixityOverrides = Map.empty,
+      cfgFixityOverrides = defaultFixityOverrides,
+      cfgModuleReexports = defaultModuleReexports,
       cfgDependencies = Set.empty,
       cfgUnsafe = False,
       cfgDebug = False,
