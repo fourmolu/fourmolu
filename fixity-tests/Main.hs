@@ -24,9 +24,12 @@ main = hspec $
               then
                 unlines
                   [ rootConfig,
+                    -- add information in the original `fixity-tests/.ormolu` file
                     "fixities:",
                     "- 'infixr 8 .='",
-                    "- 'infixr 5 #'"
+                    "- 'infixr 5 #, :>'",
+                    "reexports:",
+                    "- 'module Foo exports Control.Lens'"
                   ]
               else rootConfig
 
@@ -59,14 +62,14 @@ tests =
     Test
       { testLabel = "File #0 works with manual fixity info",
         testInputFileName = "test-0-input.hs",
-        testArgs = ["--fixity", "infixr 8 .="],
+        testArgs = ["--fixity", "infixr 8 .=", "--fixity", "infixr 5 :>"],
         testUseConfig = False,
         testExpectedFileName = "test-0-with-fixity-info-expected.hs"
       },
     Test
       { testLabel = "File #0 works with fixity info from config",
         testInputFileName = "test-0-input.hs",
-        testArgs = [],
+        testArgs = ["--package", "base"],
         testUseConfig = True,
         testExpectedFileName = "test-0-with-fixity-info-expected.hs"
       },
@@ -87,8 +90,36 @@ tests =
     Test
       { testLabel = "File #1 works with fixity info from config",
         testInputFileName = "test-1-input.hs",
-        testArgs = [],
+        testArgs = ["--package", "base"],
         testUseConfig = True,
         testExpectedFileName = "test-1-with-fixity-info-expected.hs"
+      },
+    Test
+      { testLabel = "File #1 works with weird fixity info overwrite",
+        testInputFileName = "test-1-input.hs",
+        testArgs = ["--package", "base", "--fixity", "infixr 5 $"],
+        testUseConfig = True,
+        testExpectedFileName = "test-1-with-fixity-info-weird-overwrite-expected.hs"
+      },
+    Test
+      { testLabel = "File #2 works with no extra info",
+        testInputFileName = "test-2-input.hs",
+        testArgs = ["--package", "base", "--package", "lens"],
+        testUseConfig = False,
+        testExpectedFileName = "test-2-no-extra-info-expected.hs"
+      },
+    Test
+      { testLabel = "File #2 works with manual reexport info",
+        testInputFileName = "test-2-input.hs",
+        testArgs = ["--package", "base", "--package", "lens", "--reexport", "module Foo exports Control.Lens"],
+        testUseConfig = False,
+        testExpectedFileName = "test-2-with-reexports-expected.hs"
+      },
+    Test
+      { testLabel = "File #2 works with fixity info from config",
+        testInputFileName = "test-2-input.hs",
+        testArgs = ["--package", "base", "--package", "lens"],
+        testUseConfig = True,
+        testExpectedFileName = "test-2-with-reexports-expected.hs"
       }
   ]

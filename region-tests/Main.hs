@@ -2,6 +2,8 @@
 
 import Control.Monad (forM_)
 import IntegrationUtils (getFourmoluExe, readProcess)
+import System.Directory (copyFile)
+import System.IO.Temp (withSystemTempDirectory)
 import Test.Hspec
 
 main :: IO ()
@@ -9,11 +11,18 @@ main = hspec $
   describe "region-tests" . beforeAll getFourmoluExe $
     forM_ tests $ \Test {..} ->
       specify testLabel $ \fourmoluExe -> do
-        actual <-
-          readProcess fourmoluExe $
-            ["region-tests/src.hs", "--check-idempotence"] ++ testArgs
-        expected <- readFile $ "region-tests/" ++ testExpectedFileName
-        actual `shouldBe` expected
+        withSystemTempDirectory "region-test-dir" $ \tmpdir -> do
+          let configFile = tmpdir ++ "/fourmolu.yaml"
+              srcFile = tmpdir ++ "/input.hs"
+
+          copyFile "region-tests/src.hs" srcFile
+          copyFile "fourmolu.yaml" configFile
+
+          actual <-
+            readProcess fourmoluExe $
+              [srcFile, "--check-idempotence"] ++ testArgs
+          expected <- readFile $ "region-tests/" ++ testExpectedFileName
+          actual `shouldBe` expected
 
 data Test = Test
   { testLabel :: String,
@@ -30,7 +39,7 @@ tests =
       },
     Test
       { testLabel = "Works with explicit arguments",
-        testArgs = ["--start-line", "1", "--end-line", "18"],
+        testArgs = ["--start-line", "1", "--end-line", "23"],
         testExpectedFileName = "expected-result-all.hs"
       },
     Test
@@ -40,27 +49,27 @@ tests =
       },
     Test
       { testLabel = "Works with only --end-line",
-        testArgs = ["--end-line", "18"],
+        testArgs = ["--end-line", "23"],
         testExpectedFileName = "expected-result-all.hs"
       },
     Test
-      { testLabel = "Works with lines 6-7",
-        testArgs = ["--start-line", "6", "--end-line", "7"],
-        testExpectedFileName = "expected-result-6-7.hs"
+      { testLabel = "Works with lines 8-9",
+        testArgs = ["--start-line", "8", "--end-line", "9"],
+        testExpectedFileName = "expected-result-8-9.hs"
       },
     Test
-      { testLabel = "Works with lines 6-8",
-        testArgs = ["--start-line", "6", "--end-line", "8"],
-        testExpectedFileName = "expected-result-6-8.hs"
+      { testLabel = "Works with lines 8-10",
+        testArgs = ["--start-line", "8", "--end-line", "10"],
+        testExpectedFileName = "expected-result-8-10.hs"
       },
     Test
-      { testLabel = "Works with lines 9-12",
-        testArgs = ["--start-line", "9", "--end-line", "12"],
-        testExpectedFileName = "expected-result-9-12.hs"
+      { testLabel = "Works with lines 11-14",
+        testArgs = ["--start-line", "11", "--end-line", "14"],
+        testExpectedFileName = "expected-result-11-14.hs"
       },
     Test
-      { testLabel = "Works with lines 17-18",
-        testArgs = ["--start-line", "17", "--end-line", "18"],
-        testExpectedFileName = "expected-result-17-18.hs"
+      { testLabel = "Works with lines 19-23",
+        testArgs = ["--start-line", "19", "--end-line", "23"],
+        testExpectedFileName = "expected-result-19-23.hs"
       }
   ]
