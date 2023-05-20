@@ -28,6 +28,8 @@ executable fourmolu-wasm
         , aeson
         , base
         , bytestring
+        , Cabal-syntax
+        , containers
         , deepseq
         , fourmolu
         , ghc-lib-parser
