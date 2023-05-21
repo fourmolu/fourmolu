@@ -132,7 +132,7 @@ getPageInfo = \case
 
 getOptionDemoWidget :: ConfigData.Option -> Maybe String
 getOptionDemoWidget option@ConfigData.Option {..}
-  | name == "fixities" = Nothing
+  | name `elem` ["fixities", "reexports"] = Nothing
   | otherwise =
       Just . concat $
         [ printf "<label>",
@@ -197,7 +197,7 @@ getConfigOptionContext option@ConfigData.Option {..} =
           schema,
           ("Default", printf "<code>%s</code>" $ hs2yaml type_ default_),
           ("Ormolu", printf "<code>%s</code>" $ hs2yaml type_ ormolu),
-          ("Since", "v" <> sinceVersion)
+          ("Since", maybe "<i>Unreleased</i>" ("v" <>) sinceVersion)
         ]
   ]
   where

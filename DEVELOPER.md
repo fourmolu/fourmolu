@@ -45,7 +45,7 @@ This is optional, but is run in CI regardless.
 Considering configurability is the raison d'être of Fourmolu, you're probably making a change that involves adding a new configuration option. Ideally, you've already opened an issue asking for thoughts on the new configuration. Assuming you've already done all that, here's a checklist to follow to ensure you've touched all the right places:
 
 1. Add the configuration option to `config/FourmoluConfig/ConfigData.hs`
-    * Set `since` to `unreleased`
+    * Set `sinceVersion` to `Nothing`
 
 1. Regenerate files with `config/generate.sh`
 
@@ -107,7 +107,7 @@ To release a new version, do the following workflow:
             * Regenerate with `config/generate.sh`
         * Ensure the `PrinterOptsSpec.hs` tests are also in the same order as the options
 
-    1. Set the `since` version for any options marked as `unreleased` in `ConfigData.hs`
+    1. Update any `sinceVersion` set to `Nothing` in `ConfigData.hs`
 
     1. Audit `web/site/` docs
 
