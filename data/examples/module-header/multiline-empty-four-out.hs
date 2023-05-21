@@ -1,2 +1,3 @@
 module Foo (
-    ) where
+
+) where

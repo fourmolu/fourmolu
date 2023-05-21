@@ -1,3 +1,5 @@
+{- FOURMOLU_DISABLE -} -- https://github.com/tweag/ormolu/issues/1032
+
 {-# LANGUAGE RecordWildCards #-}
 
 import qualified Data.Map as Map

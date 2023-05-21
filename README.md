@@ -115,13 +115,14 @@ Fourmolu can be integrated with your editor via the [Haskell Language Server](ht
 ### Language extensions, dependencies, and fixities
 
 Fourmolu automatically locates the Cabal file that corresponds to a given
-source code file. When input comes from stdin, one can pass
-`--stdin-input-file` which will give Fourmolu the location of the Haskell
-source file that should be used as the starting point for searching for a
-suitable Cabal file. Cabal files are used to extract both default extensions
+source code file. Cabal files are used to extract both default extensions
 and dependencies. Default extensions directly affect behavior of the GHC
 parser, while dependencies are used to figure out fixities of operators that
-appear in the source code. Fixities can also be overridden with the `fixities` configuration option in `fourmolu.yaml`, e.g.
+appear in the source code. Fixities can also be overridden via the `fixities` configuration option in `fourmolu.yaml`. When the input comes from
+stdin, one can pass `--stdin-input-file` which will give Fourmolu the location
+that should be used as the starting point for searching for `.cabal` files.
+
+Here is an example of the `fixities` configuration:
 
 ```yaml
 fixities:
@@ -137,12 +138,30 @@ fixities:
 It uses exactly the same syntax as usual Haskell fixity declarations to make
 it easier for Haskellers to edit and maintain.
 
-Besides, all of the above-mentioned parameters can be controlled from the
+`fourmolu.yaml` can also contain instructions about
+module re-exports that Fourmolu should be aware of. This might be desirable
+because at the moment Fourmolu cannot know about all possible module
+re-exports in the ecosystem and only few of them are actually important when
+it comes to fixity deduction. In 99% of cases the user won't have to do
+anything, especially since most common re-exports are already programmed
+into Fourmolu. (You are welcome to open PRs to make Fourmolu aware of more
+re-exports by default.) However, when the fixity of an operator is not
+inferred correctly, making Fourmolu aware of a re-export may come in handy.
+Here is an example:
+
+```yaml
+reexports:
+  - module Control.Lens exports Control.Lens.At
+  - module Control.Lens exports Control.Lens.Lens
+```
+
+Finally, all of the above-mentioned parameters can be controlled from the
 command line:
 
 * Language extensions can be specified with the `-o` or `--ghc-opt` flag.
 * Dependencies can be specified with the `-p` or `--package` flag.
 * Fixities can be specified with the `-f` or `--fixity` flag.
+* Re-exports can be specified with the `-r` or `--reexport` flag.
 
 Searching for `.cabal` files can be disabled by passing
 `--no-cabal`.

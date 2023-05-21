@@ -18,12 +18,10 @@ module Ormolu.Printer.Internal
     newline,
     declNewline,
     askSourceType,
-    askFixityOverrides,
-    askFixityMap,
+    askModuleFixityMap,
     inci,
     inciBy,
     inciByFrac,
-    inciHalf,
     sitcc,
     sitccIfTrailing,
     Layout (..),
@@ -44,6 +42,7 @@ module Ormolu.Printer.Internal
     nextEltSpan,
     popComment,
     getEnclosingSpan,
+    getEnclosingSpanWhere,
     withEnclosingSpan,
     thisLineSpans,
 
@@ -65,6 +64,7 @@ import Control.Monad.State.Strict
 import Data.Bool (bool)
 import Data.Coerce
 import Data.Functor.Identity (runIdentity)
+import Data.List (find)
 import Data.Maybe (listToMaybe)
 import Data.Text (Text)
 import Data.Text qualified as T
@@ -76,7 +76,7 @@ import GHC.LanguageExtensions.Type
 import GHC.Types.SrcLoc
 import GHC.Utils.Outputable (Outputable)
 import Ormolu.Config
-import Ormolu.Fixity (FixityMap, LazyFixityMap)
+import Ormolu.Fixity (ModuleFixityMap)
 import Ormolu.Parser.CommentStream
 import Ormolu.Printer.SpanStream
 import Ormolu.Utils (showOutputable)
@@ -106,12 +106,8 @@ data RC = RC
     rcExtensions :: EnumSet Extension,
     -- | Whether the source is a signature or a regular module
     rcSourceType :: SourceType,
-    -- | Fixity map overrides, kept separately because if we parametrized
-    -- 'Ormolu.Fixity.buildFixityMap' by fixity overrides it would break
-    -- memoization
-    rcFixityOverrides :: FixityMap,
-    -- | Fixity map for operators
-    rcFixityMap :: LazyFixityMap
+    -- | Module fixity map
+    rcModuleFixityMap :: ModuleFixityMap
   }
 
 -- | State context of 'R'.
@@ -180,13 +176,11 @@ runR ::
   SourceType ->
   -- | Enabled extensions
   EnumSet Extension ->
-  -- | Fixity overrides
-  FixityMap ->
-  -- | Fixity map
-  LazyFixityMap ->
+  -- | Module fixity map
+  ModuleFixityMap ->
   -- | Resulting rendition
   Text
-runR (R m) sstream cstream printerOpts sourceType extensions fixityOverrides fixityMap =
+runR (R m) sstream cstream printerOpts sourceType extensions moduleFixityMap =
   TL.toStrict . toLazyText . scBuilder $ execState (runReaderT m rc) sc
   where
     rc =
@@ -198,8 +192,7 @@ runR (R m) sstream cstream printerOpts sourceType extensions fixityOverrides fix
           rcPrinterOpts = printerOpts,
           rcExtensions = extensions,
           rcSourceType = sourceType,
-          rcFixityOverrides = fixityOverrides,
-          rcFixityMap = fixityMap
+          rcModuleFixityMap = moduleFixityMap
         }
     sc =
       SC
@@ -404,13 +397,9 @@ newlineRawN n = R . modify $ \sc ->
 askSourceType :: R SourceType
 askSourceType = R (asks rcSourceType)
 
--- | Retrieve fixity overrides map.
-askFixityOverrides :: R FixityMap
-askFixityOverrides = R (asks rcFixityOverrides)
-
--- | Retrieve the lazy fixity map.
-askFixityMap :: R LazyFixityMap
-askFixityMap = R (asks rcFixityMap)
+-- | Retrieve the module fixity map.
+askModuleFixityMap :: R ModuleFixityMap
+askModuleFixityMap = R (asks rcModuleFixityMap)
 
 -- | Like 'inci', but indents by exactly the given number of steps.
 inciBy :: Int -> R () -> R ()
@@ -423,10 +412,10 @@ inciBy step (R m) = R (local modRC m)
     roundDownToNearest r n = (n `div` r) * r
 
 -- | Like 'inci', but indents by the given fraction of a full step.
-inciByFrac :: Int -> R () -> R ()
+inciByFrac :: Rational -> R () -> R ()
 inciByFrac x m = do
   indentStep <- getPrinterOpt poIndentation
-  let step = indentStep `quot` x
+  let step = truncate $ fromIntegral indentStep * x
   inciBy step m
 
 -- | Increase indentation level by one indentation step for the inner
@@ -436,11 +425,6 @@ inciByFrac x m = do
 -- effect, but with multi-line layout correct indentation levels matter.
 inci :: R () -> R ()
 inci = inciByFrac 1
-
--- | In rare cases, we have to indent by a positive amount smaller
--- than 'indentStep'.
-inciHalf :: R () -> R ()
-inciHalf = inciByFrac 2
 
 -- | Set indentation level for the inner computation equal to current
 -- column. This makes sure that the entire inner block is uniformly
@@ -534,31 +518,27 @@ nextEltSpan = listToMaybe . coerce <$> R (gets scSpanStream)
 -- | Pop a 'Comment' from the 'CommentStream' if given predicate is
 -- satisfied and there are comments in the stream.
 popComment ::
-  (RealLocated Comment -> Bool) ->
-  R (Maybe (RealLocated Comment))
+  (LComment -> Bool) ->
+  R (Maybe LComment)
 popComment f = R $ do
   CommentStream cstream <- gets scCommentStream
   case cstream of
-    [] -> return Nothing
-    (x : xs) ->
-      if f x
-        then
-          Just x
-            <$ modify
-              ( \sc ->
-                  sc
-                    { scCommentStream = CommentStream xs
-                    }
-              )
-        else return Nothing
+    (x : xs) | f x -> do
+      modify $ \sc -> sc {scCommentStream = CommentStream xs}
+      return $ Just x
+    _ -> return Nothing
+
+-- | Get the immediately enclosing 'RealSrcSpan'.
+getEnclosingSpan :: R (Maybe RealSrcSpan)
+getEnclosingSpan = getEnclosingSpanWhere (const True)
 
 -- | Get the first enclosing 'RealSrcSpan' that satisfies given predicate.
-getEnclosingSpan ::
+getEnclosingSpanWhere ::
   -- | Predicate to use
   (RealSrcSpan -> Bool) ->
   R (Maybe RealSrcSpan)
-getEnclosingSpan f =
-  listToMaybe . filter f <$> R (asks rcEnclosingSpans)
+getEnclosingSpanWhere f =
+  find f <$> R (asks rcEnclosingSpans)
 
 -- | Set 'RealSrcSpan' of enclosing span for the given computation.
 withEnclosingSpan :: RealSrcSpan -> R () -> R ()

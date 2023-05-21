@@ -28,9 +28,9 @@ import Ormolu.Printer.Meat.Pragma
 -- signature).
 p_hsModule ::
   -- | Stack header
-  Maybe (RealLocated Comment) ->
+  Maybe LComment ->
   -- | Pragmas and the associated comments
-  [([RealLocated Comment], Pragma)] ->
+  [([LComment], Pragma)] ->
   -- | AST to print
   HsModule GhcPs ->
   R ()
@@ -90,7 +90,7 @@ p_hsModuleHeader HsModule {hsmodExt = XModulePs {..}, ..} moduleName = do
     Nothing -> return ()
     Just l -> do
       breakpointBeforeExportList
-      located l $ \exports -> do
+      encloseLocated l $ \exports -> do
         inci (p_hsmodExports exports)
 
   breakpointBeforeWhere

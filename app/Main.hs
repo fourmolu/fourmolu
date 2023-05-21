@@ -11,22 +11,24 @@ import Control.Exception (throwIO)
 import Control.Monad
 import Data.Bool (bool)
 import Data.List (intercalate, isSuffixOf, sort)
+import Data.List.NonEmpty (NonEmpty)
 import Data.Map.Strict qualified as Map
 import Data.Maybe (fromMaybe, mapMaybe, maybeToList)
 import Data.Set qualified as Set
 import Data.Text.IO qualified as TIO
 import Data.Version (showVersion)
 import Data.Yaml qualified as Yaml
+import Distribution.ModuleName (ModuleName)
 import Language.Haskell.TH.Env (envQ)
 import Options.Applicative
 import Ormolu
 import Ormolu.Config
 import Ormolu.Diff.Text (diffText, printTextDiff)
-import Ormolu.Fixity (FixityInfo, OpName)
+import Ormolu.Fixity
 import Ormolu.Parser (manualExts)
 import Ormolu.Terminal
 import Ormolu.Utils (showOutputable)
-import Ormolu.Utils.Fixity (parseFixityDeclarationStr)
+import Ormolu.Utils.Fixity
 import Ormolu.Utils.IO
 import Paths_fourmolu (version)
 import System.Directory
@@ -47,90 +49,94 @@ main = do
 
   let formatOne' =
         formatOne
-          optCabal
+          optConfigFileOpts
           optMode
           optSourceType
           cfg
 
-      getHaskellFiles input = do
-        isDir <- doesDirectoryExist input
-        if isDir
-          then filter (".hs" `isSuffixOf`) <$> listDirectoryRecursive input
-          else return [input] -- plain file
-      listDirectoryRecursive fp = fmap concat . mapM (go . (fp FP.</>)) =<< listDirectory fp
-        where
-          go child = do
-            isDir <- doesDirectoryExist child
-            if isDir
-              then listDirectoryRecursive child
-              else pure [child]
-
-      selectFailure = \case
-        ExitSuccess -> Nothing
-        ExitFailure n -> Just n
-
-      formatInputs inputs = do
-        files <- Set.toAscList . Set.fromList . concat <$> mapM getHaskellFiles inputs
-        errorCodes <- mapMaybe selectFailure <$> mapM (formatOne' . Just) files
-        return $
-          if null errorCodes
-            then ExitSuccess
-            else
-              ExitFailure $
-                if all (== 100) errorCodes
-                  then 100
-                  else 102
-
   exitCode <- case optInputFiles of
     [] -> formatOne' Nothing
     ["-"] -> formatOne' Nothing
-    xs -> formatInputs xs
+    inputs -> do
+      let selectFailure = \case
+            ExitSuccess -> Nothing
+            ExitFailure n -> Just n
+      files <- Set.toAscList . Set.fromList . concat <$> mapM getHaskellFiles inputs
+      errorCodes <-
+        mapMaybe selectFailure <$> mapM (formatOne' . Just) files
+      return $
+        if null errorCodes
+          then ExitSuccess
+          else
+            ExitFailure $
+              if all (== 100) errorCodes
+                then 100
+                else 102
 
   exitWith exitCode
 
 -- | Build the full config, by adding 'PrinterOpts' from a file, if found.
 mkConfig :: FilePath -> Opts -> IO (Config RegionIndices)
-mkConfig path Opts {optQuiet, optConfig, optPrinterOpts = cliPrinterOpts} = do
-  mFourmoluConfig <-
+mkConfig path Opts {optQuiet, optConfig = cliConfig, optPrinterOpts = cliPrinterOpts} = do
+  fourmoluConfig <-
     loadConfigFile path >>= \case
       ConfigLoaded f cfg -> do
-        unless optQuiet $
-          hPutStrLn stderr $
-            "Loaded config from: " <> f
-        printDebug $ show cfg
-        return $ Just cfg
+        outputInfo $ "Loaded config from: " <> f
+        outputDebug $ show cfg
+        pure cfg
       ConfigParseError f e -> do
-        hPutStrLn stderr $
-          unlines
-            [ "Failed to load " <> f <> ":",
-              Yaml.prettyPrintParseException e
-            ]
+        outputError . unlines $
+          [ "Failed to load " <> f <> ":",
+            Yaml.prettyPrintParseException e
+          ]
         exitWith $ ExitFailure 400
       ConfigNotFound searchDirs -> do
-        printDebug
-          . unlines
-          $ ("No " ++ show configFileName ++ " found in any of:")
+        outputDebug . unlines $
+          ("No " ++ show configFileName ++ " found in any of:")
             : map ("  " ++) searchDirs
-        return Nothing
-  let resolve f = maybe mempty f mFourmoluConfig
+        pure emptyConfig
   return $
-    optConfig
+    cliConfig
       { cfgPrinterOpts =
           fillMissingPrinterOpts cliPrinterOpts
-            . fillMissingPrinterOpts (resolve cfgFilePrinterOpts)
+            . fillMissingPrinterOpts (cfgFilePrinterOpts fourmoluConfig)
             $ defaultPrinterOpts,
         cfgFixityOverrides =
-          -- cfgFileFixities should go on the right so that command line
-          -- fixity overrides takes precedence.
-          cfgFixityOverrides optConfig <> resolve cfgFileFixities
+          FixityOverrides . mconcat . map unFixityOverrides $
+            [ cfgFixityOverrides cliConfig,
+              cfgFileFixities fourmoluConfig
+            ],
+        cfgModuleReexports =
+          ModuleReexports . mconcat . map unModuleReexports $
+            [ cfgModuleReexports cliConfig,
+              cfgFileReexports fourmoluConfig
+            ]
       }
   where
-    printDebug = when (cfgDebug optConfig) . hPutStrLn stderr
+    output = hPutStrLn stderr
+    outputError = output
+    outputInfo = unless optQuiet . output
+    outputDebug = when (cfgDebug cliConfig) . output
+
+getHaskellFiles :: FilePath -> IO [FilePath]
+getHaskellFiles input = do
+  isDir <- doesDirectoryExist input
+  if isDir
+    then filter (".hs" `isSuffixOf`) <$> listDirectoryRecursive input
+    else return [input] -- plain file
+  where
+    listDirectoryRecursive fp = fmap concat . mapM (go . (fp FP.</>)) =<< listDirectory fp
+      where
+        go child = do
+          isDir <- doesDirectoryExist child
+          if isDir
+            then listDirectoryRecursive child
+            else pure [child]
 
 -- | Format a single input.
 formatOne ::
   -- | How to use .cabal files
-  CabalOpts ->
+  ConfigFileOpts ->
   -- | Mode of operation
   Mode ->
   -- | The 'SourceType' requested by the user
@@ -140,7 +146,7 @@ formatOne ::
   -- | File to format or stdin as 'Nothing'
   Maybe FilePath ->
   IO ExitCode
-formatOne CabalOpts {..} mode reqSourceType rawConfig mpath =
+formatOne ConfigFileOpts {..} mode reqSourceType rawConfig mpath =
   withPrettyOrmoluExceptions (cfgColorMode rawConfig) $ do
     let getCabalInfoForSourceFile' sourceFile = do
           cabalSearchResult <- getCabalInfoForSourceFile sourceFile
@@ -162,21 +168,24 @@ formatOne CabalOpts {..} mode reqSourceType rawConfig mpath =
                     <> sourceFile
               return (Just cabalInfo)
             CabalFound cabalInfo -> return (Just cabalInfo)
+        getDotOrmoluForSourceFile' sourceFile = do
+          if optDoNotUseDotOrmolu
+            then return Nothing
+            else Just <$> getDotOrmoluForSourceFile sourceFile
     case FP.normalise <$> mpath of
       -- input source = STDIN
       Nothing -> do
-        resultConfig <-
-          ( if optDoNotUseCabal
-              then pure Nothing
-              else case optStdinInputFile of
-                Just stdinInputFile ->
-                  getCabalInfoForSourceFile' stdinInputFile
-                Nothing -> throwIO OrmoluMissingStdinInputFile
-            )
-            >>= patchConfig Nothing
+        mcabalInfo <- case (optStdinInputFile, optDoNotUseCabal) of
+          (_, True) -> return Nothing
+          (Nothing, False) -> throwIO OrmoluMissingStdinInputFile
+          (Just inputFile, False) -> getCabalInfoForSourceFile' inputFile
+        mdotOrmolu <- case optStdinInputFile of
+          Nothing -> return Nothing
+          Just inputFile -> getDotOrmoluForSourceFile' inputFile
+        config <- patchConfig Nothing mcabalInfo mdotOrmolu
         case mode of
           Stdout -> do
-            ormoluStdin resultConfig >>= TIO.putStr
+            ormoluStdin config >>= TIO.putStr
             return ExitSuccess
           InPlace -> do
             hPutStrLn
@@ -189,25 +198,29 @@ formatOne CabalOpts {..} mode reqSourceType rawConfig mpath =
             originalInput <- getContentsUtf8
             let stdinRepr = "<stdin>"
             formattedInput <-
-              ormolu resultConfig stdinRepr originalInput
+              ormolu config stdinRepr originalInput
             handleDiff originalInput formattedInput stdinRepr
       -- input source = a file
       Just inputFile -> do
-        resultConfig <-
-          ( if optDoNotUseCabal
-              then pure Nothing
-              else getCabalInfoForSourceFile' inputFile
-            )
-            >>= patchConfig (Just (detectSourceType inputFile))
+        mcabalInfo <-
+          if optDoNotUseCabal
+            then return Nothing
+            else getCabalInfoForSourceFile' inputFile
+        mdotOrmolu <- getDotOrmoluForSourceFile' inputFile
+        config <-
+          patchConfig
+            (Just (detectSourceType inputFile))
+            mcabalInfo
+            mdotOrmolu
         case mode of
           Stdout -> do
-            ormoluFile resultConfig inputFile >>= TIO.putStr
+            ormoluFile config inputFile >>= TIO.putStr
             return ExitSuccess
           InPlace -> do
             -- ormoluFile is not used because we need originalInput
             originalInput <- readFileUtf8 inputFile
             formattedInput <-
-              ormolu resultConfig inputFile originalInput
+              ormolu config inputFile originalInput
             when (formattedInput /= originalInput) $
               writeFileUtf8 inputFile formattedInput
             return ExitSuccess
@@ -215,16 +228,23 @@ formatOne CabalOpts {..} mode reqSourceType rawConfig mpath =
             -- ormoluFile is not used because we need originalInput
             originalInput <- readFileUtf8 inputFile
             formattedInput <-
-              ormolu resultConfig inputFile originalInput
+              ormolu config inputFile originalInput
             handleDiff originalInput formattedInput inputFile
   where
-    patchConfig mdetectedSourceType mcabalInfo = do
+    patchConfig mdetectedSourceType mcabalInfo mdotOrmolu = do
       let sourceType =
             fromMaybe
               ModuleSource
               (reqSourceType <|> mdetectedSourceType)
-      mfixityOverrides <- traverse getFixityOverridesForSourceFile mcabalInfo
-      return (refineConfig sourceType mcabalInfo mfixityOverrides rawConfig)
+      let mfixityOverrides = fst <$> mdotOrmolu
+          mmoduleReexports = snd <$> mdotOrmolu
+      return $
+        refineConfig
+          sourceType
+          mcabalInfo
+          mfixityOverrides
+          mmoduleReexports
+          rawConfig
     handleDiff originalInput formattedInput fileRepr =
       case diffText originalInput formattedInput fileRepr of
         Nothing -> return ExitSuccess
@@ -248,8 +268,8 @@ data Opts = Opts
     optConfig :: !(Config RegionIndices),
     -- | Fourmolu 'PrinterOpts',
     optPrinterOpts :: PrinterOptsPartial,
-    -- | Options related to info extracted from .cabal files
-    optCabal :: CabalOpts,
+    -- | Options related to info extracted from files
+    optConfigFileOpts :: ConfigFileOpts,
     -- | Source type option, where 'Nothing' means autodetection
     optSourceType :: !(Maybe SourceType),
     -- | Haskell source files to format or stdin (when the list is empty)
@@ -267,10 +287,12 @@ data Mode
     Check
   deriving (Eq, Show, Bounded, Enum)
 
--- | Configuration related to .cabal files.
-data CabalOpts = CabalOpts
+-- | Options related to configuration stored in the file system.
+data ConfigFileOpts = ConfigFileOpts
   { -- | DO NOT extract default-extensions and dependencies from .cabal files
     optDoNotUseCabal :: Bool,
+    -- | DO NOT look for @.ormolu@ files
+    optDoNotUseDotOrmolu :: Bool,
     -- | Optional path to a file which will be used to find a .cabal file
     -- when using input from stdin
     optStdinInputFile :: Maybe FilePath
@@ -334,20 +356,21 @@ optsParser =
       ]
     <*> configParser
     <*> printerOptsParser
-    <*> cabalOptsParser
+    <*> configFileOptsParser
     <*> sourceTypeParser
     <*> (many . strArgument . mconcat)
       [ metavar "FILE",
         help "Haskell source files to format or stdin (the default)"
       ]
 
-cabalOptsParser :: Parser CabalOpts
-cabalOptsParser =
-  CabalOpts
+configFileOptsParser :: Parser ConfigFileOpts
+configFileOptsParser =
+  ConfigFileOpts
     <$> (switch . mconcat)
       [ long "no-cabal",
         help "Do not extract default-extensions and dependencies from .cabal files"
       ]
+    <*> pure True -- Fourmolu: Don't add the '--no-dot-ormolu' flag, hardcode to never looking for .ormolu files
     <*> (optional . strOption . mconcat)
       [ long "stdin-input-file",
         help "Path which will be used to find the .cabal file when using input from stdin"
@@ -362,7 +385,7 @@ configParser =
         metavar "OPT",
         help "GHC options to enable (e.g. language extensions)"
       ]
-    <*> ( fmap (Map.fromListWith (<>) . mconcat)
+    <*> ( fmap (FixityOverrides . Map.fromList . mconcat)
             . many
             . option parseFixityDeclaration
             . mconcat
@@ -371,6 +394,16 @@ configParser =
         short 'f',
         metavar "FIXITY",
         help "Fixity declaration to use (an override)"
+      ]
+    <*> ( fmap (ModuleReexports . Map.fromListWith (<>) . mconcat . pure)
+            . many
+            . option parseModuleReexportDeclaration
+            . mconcat
+        )
+      [ long "reexport",
+        short 'r',
+        metavar "REEXPORT",
+        help "Module re-export that Fourmolu should know about"
       ]
     <*> (fmap Set.fromList . many . strOption . mconcat)
       [ long "package",
@@ -452,6 +485,10 @@ parseMode = eitherReader $ \case
 -- | Parse a fixity declaration.
 parseFixityDeclaration :: ReadM [(OpName, FixityInfo)]
 parseFixityDeclaration = eitherReader parseFixityDeclarationStr
+
+-- | Parse a module reexport declaration.
+parseModuleReexportDeclaration :: ReadM (ModuleName, NonEmpty ModuleName)
+parseModuleReexportDeclaration = eitherReader parseModuleReexportDeclarationStr
 
 -- | Parse 'ColorMode'.
 parseColorMode :: ReadM ColorMode

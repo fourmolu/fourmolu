@@ -228,7 +228,7 @@ p_hsDoc' poHStyle hstyle needsNewline (L l str) = do
       -- It's often the case that the comment itself doesn't have a span
       -- attached to it and instead its location can be obtained from
       -- nearest enclosing span.
-      UnhelpfulSpan _ -> getEnclosingSpan (const True)
+      UnhelpfulSpan _ -> getEnclosingSpan
       RealSrcSpan spn _ -> pure $ Just spn
 
 p_sourceText :: SourceText -> R ()

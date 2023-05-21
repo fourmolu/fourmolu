@@ -24,7 +24,8 @@ import Ormolu.Config (poIndentation)
 import Ormolu.Printer.Combinators
 import Ormolu.Printer.Meat.Common (p_rdrName)
 import Ormolu.Printer.Meat.Declaration.Value
-  ( cmdTopPlacement,
+  ( IsApplicand (..),
+    cmdTopPlacement,
     exprPlacement,
     p_hsCmdTop,
     p_hsExpr,
@@ -92,7 +93,7 @@ p_exprOpTree ::
   -- operator fixity
   OpTree (LHsExpr GhcPs) (OpInfo (LHsExpr GhcPs)) ->
   R ()
-p_exprOpTree s (OpNode x) = located x (p_hsExpr' s)
+p_exprOpTree s (OpNode x) = located x (p_hsExpr' NotApplicand s)
 p_exprOpTree s t@(OpBranches exprs ops) = do
   let firstExpr = head exprs
       otherExprs = tail exprs
@@ -115,7 +116,7 @@ p_exprOpTree s t@(OpBranches exprs ops) = do
       couldBeTrailing (prevExpr, opi) =
         -- An operator with fixity InfixR 0, like seq, $, and $ variants,
         -- is required
-        isHardSplitterOp (opiFix opi)
+        isHardSplitterOp (opiFixityApproximation opi)
           -- the LHS must be single-line
           && isOneLineSpan (opTreeLoc prevExpr)
           -- can only happen when a breakpoint would have been added anyway

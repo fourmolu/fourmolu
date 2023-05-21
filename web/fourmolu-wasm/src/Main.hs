@@ -13,9 +13,13 @@ import Data.ByteString.Unsafe
   ( unsafePackCStringLen,
     unsafeUseAsCStringLen,
   )
+import Data.Map qualified as Map
 import Data.Maybe (fromMaybe)
+import Data.Set (Set)
+import Data.Set qualified as Set
 import Data.Text (Text)
 import Data.Text qualified as Text
+import Distribution.Types.PackageName (PackageName)
 import Foreign (Ptr)
 import Foreign qualified
 import Foreign.C.Types (CChar)
@@ -29,7 +33,6 @@ import Ormolu.Config (PrinterOptsPartial)
 import Ormolu.Config qualified as Config
 import Ormolu.Exception (printOrmoluException)
 import Ormolu.Fixity qualified as Fixity
-import Ormolu.Fixity.Internal (LazyFixityMap (..))
 import Ormolu.Parser (parseModule)
 import Ormolu.Parser.Result (ParseResult (..), SourceSnippet (..))
 import Ormolu.Terminal (runTermPure)
@@ -81,7 +84,7 @@ runFourmolu inputPtr inputLen = do
 -- See comments in Ormolu.Fixity
 evaluateFixityInfo :: IO ()
 evaluateFixityInfo =
-  void . evaluate $ force (Fixity.packageToOps, Fixity.packageToPopularity)
+  void . evaluate $ force (Fixity.hackageInfo, demoDependencies)
 
 {----- StringWithLen -----}
 
@@ -184,15 +187,17 @@ format Input {..} = do
         { Config.cfgPrinterOpts = Config.fillMissingPrinterOpts printerOpts Config.defaultPrinterOpts,
           Config.cfgCheckIdempotence = checkIdempotence,
           Config.cfgUnsafe = unsafeMode,
-          Config.cfgSourceType = if formatBackpack then Config.SignatureSource else Config.ModuleSource
+          Config.cfgSourceType = if formatBackpack then Config.SignatureSource else Config.ModuleSource,
+          Config.cfgDependencies = demoDependencies
         }
 
 prettyAST :: Config.Config Config.RegionIndices -> Text -> IO Text
 prettyAST config text = do
+  let fixityInfo = Fixity.packageFixityMap Fixity.defaultDependencies
   (_, snippets) <-
     parseModule
       (Config.regionIndicesToDeltas (length $ Text.lines text) <$> config)
-      (LazyFixityMap [])
+      fixityInfo
       "<interactive>"
       text
   pure $ either (const "") (Text.unlines . map showSnippet) snippets
@@ -204,3 +209,18 @@ prettyAST config text = do
           . GHC.showSDocUnsafe
           . GHC.showAstData GHC.NoBlankSrcSpan GHC.NoBlankEpAnnotations
           $ prParsedSource
+
+-- | We want to make as many packages as possible available by default, so we
+-- only exclude packages that contain modules with the same name as in certain
+-- "priority" packages, in order to avoid imprecise fixities.
+demoDependencies :: Set PackageName
+demoDependencies = Map.keysSet $ Map.filterWithKey nonConflicting hackageInfo
+  where
+    Fixity.HackageInfo hackageInfo = Fixity.hackageInfo
+    priorityPkgs = Set.fromList ["base", "lens"]
+    priorityModules =
+      Set.unions . fmap Map.keysSet $
+        Map.restrictKeys hackageInfo priorityPkgs
+    nonConflicting pkgName modulesToInfo =
+      pkgName `Set.member` priorityPkgs
+        || Map.keysSet modulesToInfo `Set.disjoint` priorityModules

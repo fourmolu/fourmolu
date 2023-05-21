@@ -66,9 +66,9 @@ import Distribution.Types.PackageName (PackageName)
 import GHC.Generics (Generic)
 import GHC.Types.SrcLoc qualified as GHC
 import Ormolu.Config.Gen
-import Ormolu.Fixity (FixityMap)
-import Ormolu.Fixity.Parser (parseFixityDeclaration)
+import Ormolu.Fixity
 import Ormolu.Terminal (ColorMode (..))
+import Ormolu.Utils.Fixity (parseFixityDeclarationStr, parseModuleReexportDeclarationStr)
 import System.Directory
   ( XdgDirectory (XdgConfig),
     findFile,
@@ -76,7 +76,6 @@ import System.Directory
     makeAbsolute,
   )
 import System.FilePath (splitPath, (</>))
-import Text.Megaparsec (errorBundlePretty)
 
 -- | Type of sources that can be formatted by Ormolu.
 data SourceType
@@ -91,7 +90,9 @@ data Config region = Config
   { -- | Dynamic options to pass to GHC parser
     cfgDynOptions :: ![DynOption],
     -- | Fixity overrides
-    cfgFixityOverrides :: FixityMap,
+    cfgFixityOverrides :: !FixityOverrides,
+    -- | Module reexports to take into account when doing fixity resolution
+    cfgModuleReexports :: !ModuleReexports,
     -- | Known dependencies, if any
     cfgDependencies :: !(Set PackageName),
     -- | Do formatting faster but without automatic detection of defects
@@ -134,7 +135,8 @@ defaultConfig :: Config RegionIndices
 defaultConfig =
   Config
     { cfgDynOptions = [],
-      cfgFixityOverrides = Map.empty,
+      cfgFixityOverrides = defaultFixityOverrides,
+      cfgModuleReexports = defaultModuleReexports,
       cfgDependencies = Set.empty,
       cfgUnsafe = False,
       cfgDebug = False,
@@ -214,7 +216,8 @@ deriving instance Show PrinterOptsTotal
 
 data FourmoluConfig = FourmoluConfig
   { cfgFilePrinterOpts :: PrinterOptsPartial,
-    cfgFileFixities :: FixityMap
+    cfgFileFixities :: FixityOverrides,
+    cfgFileReexports :: ModuleReexports
   }
   deriving (Eq, Show)
 
@@ -223,16 +226,22 @@ instance Aeson.FromJSON FourmoluConfig where
     cfgFilePrinterOpts <- Aeson.parseJSON (Aeson.Object o)
     rawFixities <- o .:? "fixities" .!= []
     cfgFileFixities <-
-      case mapM parseFixityDeclaration rawFixities of
-        Right fixities -> return . Map.fromList . concat $ fixities
-        Left e -> fail $ errorBundlePretty e
+      case mapM parseFixityDeclarationStr rawFixities of
+        Right fixities -> return . FixityOverrides . Map.fromList . concat $ fixities
+        Left e -> fail e
+    rawReexports <- o .:? "reexports" .!= []
+    cfgFileReexports <-
+      case mapM parseModuleReexportDeclarationStr rawReexports of
+        Right reexports -> return . ModuleReexports . Map.fromList $ reexports
+        Left e -> fail e
     return FourmoluConfig {..}
 
 emptyConfig :: FourmoluConfig
 emptyConfig =
   FourmoluConfig
     { cfgFilePrinterOpts = mempty,
-      cfgFileFixities = mempty
+      cfgFileFixities = FixityOverrides mempty,
+      cfgFileReexports = ModuleReexports mempty
     }
 
 -- | Read options from a config file, if found.
