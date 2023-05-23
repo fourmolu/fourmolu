@@ -5,7 +5,7 @@ Configuration options may be specified in either a `fourmolu.yaml` file or via c
 A configuration file with the default values filled in can be generated with:
 
 ```console
-$$ fourmolu --default-config > fourmolu.yaml
+$$ fourmolu --print-defaults > fourmolu.yaml
 ```
 
 For example, the `indentation` option may be specified in `fourmolu.yaml` as:
