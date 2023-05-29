@@ -125,7 +125,11 @@ getHaskellFiles input = do
     then filter (".hs" `isSuffixOf`) <$> listDirectoryRecursive input
     else return [input] -- plain file
   where
-    listDirectoryRecursive fp = fmap concat . mapM (go . (fp FP.</>)) =<< listDirectory fp
+    listDirectoryRecursive fp
+      -- automatically ignore files in certain hardcoded directories
+      -- TODO: make configurable?
+      | FP.takeFileName fp `elem` [".stack-work", "dist", "dist-newstyle"] = pure []
+      | otherwise = fmap concat . mapM (go . (fp FP.</>)) =<< listDirectory fp
       where
         go child = do
           isDir <- doesDirectoryExist child
