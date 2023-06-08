@@ -1,7 +1,7 @@
 module Ormolu.Integration.CLIOptionsSpec (spec) where
 
 import Data.List (isPrefixOf)
-import IntegrationUtils (getFourmoluExe, readProcess)
+import Ormolu.Integration.Utils (getFourmoluExe, readProcess)
 import System.FilePath ((</>))
 import System.IO.Temp (withSystemTempDirectory)
 import Test.Hspec

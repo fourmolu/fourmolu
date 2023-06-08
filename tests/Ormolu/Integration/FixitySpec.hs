@@ -5,7 +5,7 @@
 module Ormolu.Integration.FixitySpec (spec) where
 
 import Control.Monad (forM_)
-import IntegrationUtils (getFourmoluExe, readProcess)
+import Ormolu.Integration.Utils (getFourmoluExe, readProcess)
 import System.Directory (copyFile)
 import System.IO.Temp (withSystemTempDirectory)
 import Test.Hspec
