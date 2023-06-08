@@ -1,5 +1,3 @@
-{- FOURMOLU_DISABLE -} -- https://github.com/tweag/ormolu/issues/1032
-
 {-# LANGUAGE RecordWildCards #-}
 
 import Control.Monad (forM_)
