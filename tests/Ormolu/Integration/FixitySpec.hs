@@ -1,5 +1,3 @@
-{- FOURMOLU_DISABLE -} -- https://github.com/tweag/ormolu/issues/1032
-
 {-# LANGUAGE RecordWildCards #-}
 
 module Ormolu.Integration.FixitySpec (spec) where
