@@ -216,7 +216,7 @@ allOptions =
         type_ = "[String]",
         default_ = HsList [],
         ormolu = HsList [],
-        sinceVersion = Nothing,
+        sinceVersion = Just "0.13.0.0",
         cliOverrides = emptyOverrides
       }
   ]
