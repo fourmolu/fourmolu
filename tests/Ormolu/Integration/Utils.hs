@@ -1,4 +1,4 @@
-module IntegrationUtils
+module Ormolu.Integration.Utils
   ( getFourmoluExe,
     readProcess,
   )

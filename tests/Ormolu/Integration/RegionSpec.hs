@@ -1,13 +1,17 @@
 {-# LANGUAGE RecordWildCards #-}
 
+module Ormolu.Integration.RegionSpec (spec) where
+
 import Control.Monad (forM_)
-import IntegrationUtils (getFourmoluExe, readProcess)
+import Ormolu.Integration.Utils (getFourmoluExe, readProcess)
 import System.Directory (copyFile)
 import System.IO.Temp (withSystemTempDirectory)
 import Test.Hspec
 
-main :: IO ()
-main = hspec $
+-- | Tests for the `region-tests/` directory Ormolu implemented, converted
+-- from nix tests to hspec tests.
+spec :: Spec
+spec =
   describe "region-tests" . beforeAll getFourmoluExe $
     forM_ tests $ \Test {..} ->
       specify testLabel $ \fourmoluExe -> do

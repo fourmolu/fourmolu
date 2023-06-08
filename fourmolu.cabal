@@ -168,16 +168,7 @@ executable fourmolu
     else
         ghc-options: -O2 -Wall -rtsopts
 
-common integration-test-utils
-    build-tool-depends: fourmolu:fourmolu
-    hs-source-dirs: tests/utils/
-    other-modules: IntegrationUtils
-    build-depends:
-        directory >=1.3 && <1.4,
-        process >=1.6 && <2.0
-
 test-suite tests
-    import: integration-test-utils
     type:               exitcode-stdio-1.0
     main-is:            Spec.hs
     build-tool-depends: hspec-discover:hspec-discover >=2.0 && <3.0
@@ -213,49 +204,22 @@ test-suite tests
 
     -- specific to fourmolu tests
     other-modules:
-        Ormolu.Config.OptionsSpec
         Ormolu.Config.PrinterOptsSpec
+        Ormolu.Integration.CLIOptionsSpec
+        Ormolu.Integration.FixitySpec
+        Ormolu.Integration.RegionSpec
+        Ormolu.Integration.Utils
     build-depends:
         Diff >=0.3 && <0.5,
         pretty >=1.0 && <2.0,
+        process >=1.6 && <2.0,
         fourmolu
+    build-tool-depends: fourmolu:fourmolu
 
     if flag(dev)
         ghc-options:
             -Wall -Werror -Wredundant-constraints -Wpartial-fields
             -Wunused-packages
 
-    else
-        ghc-options: -O2 -Wall
-
-test-suite region-tests
-    import: integration-test-utils
-    type:               exitcode-stdio-1.0
-    main-is:            Main.hs
-    hs-source-dirs:     region-tests
-    default-language:   Haskell2010
-    build-depends:
-        base >=4.14 && <5.0,
-        hspec >=2.0 && <3.0,
-        temporary >=1.3 && <1.4
-
-    if flag(dev)
-        ghc-options: -Wall -Werror
-    else
-        ghc-options: -O2 -Wall
-
-test-suite fixity-tests
-    import: integration-test-utils
-    type:               exitcode-stdio-1.0
-    main-is:            Main.hs
-    hs-source-dirs:     fixity-tests
-    default-language:   Haskell2010
-    build-depends:
-        base >=4.14 && <5.0,
-        hspec >=2.0 && <3.0,
-        temporary >=1.3 && <1.4
-
-    if flag(dev)
-        ghc-options: -Wall -Werror
     else
         ghc-options: -O2 -Wall

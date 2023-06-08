@@ -162,7 +162,7 @@ Fourmolu aims to continue merging upstream changes in Ormolu. Whenever Ormolu ma
     * `expected-failures/`
 
 * If any of the `default.nix` files are changed, manually verify that all end-to-end tests are accounted for. After doing so, `git rm` each of them.
-    * For example, `./region-tests/` is one directory of tests, which is captured in the `fourmolu:region-tests` test suite, where every test in `region-tests/default.nix` has been ported into the Haskell test suite.
+    * For example, `./region-tests/` is one directory of tests, which is captured in the `Ormolu.Integration.RegionSpec` test suite, where every test in `region-tests/default.nix` has been ported into the Haskell test suite.
 
 * Any Ormolu additions to `CHANGELOG.md` should NOT be kept, but instead be added to a new file in `changelog.d/` (e.g. named `ormolu-X.Y.Z`). See `changelog.d/README.md` for more details.
 

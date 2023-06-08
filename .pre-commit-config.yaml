@@ -8,8 +8,8 @@ repos:
         files: '\.(hs|hs-boot)$'
         exclude: |
           (?x)^(
-            region-tests/(?!Main.hs)
-            | fixity-tests/(?!Main.hs)
+            region-tests/
+            | fixity-tests/
             | data/examples/
             | data/fourmolu/
             | data/diff-tests/
