@@ -206,6 +206,7 @@ test-suite tests
     other-modules:
         Ormolu.Config.PrinterOptsSpec
         Ormolu.Integration.CLIOptionsSpec
+        Ormolu.Integration.CLISpec
         Ormolu.Integration.FixitySpec
         Ormolu.Integration.RegionSpec
         Ormolu.Integration.Utils
