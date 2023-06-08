@@ -213,8 +213,8 @@ test-suite tests
 
     -- specific to fourmolu tests
     other-modules:
-        Ormolu.Config.OptionsSpec
         Ormolu.Config.PrinterOptsSpec
+        Ormolu.Integration.CLIOptionsSpec
     build-depends:
         Diff >=0.3 && <0.5,
         pretty >=1.0 && <2.0,

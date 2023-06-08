@@ -1,4 +1,4 @@
-module Ormolu.Config.OptionsSpec (spec) where
+module Ormolu.Integration.CLIOptionsSpec (spec) where
 
 import Data.List (isPrefixOf)
 import IntegrationUtils (getFourmoluExe, readProcess)
