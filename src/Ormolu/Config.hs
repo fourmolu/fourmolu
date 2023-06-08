@@ -20,6 +20,7 @@ module Ormolu.Config
     RegionDeltas (..),
     SourceType (..),
     defaultConfig,
+    overapproximatedDependencies,
     regionIndicesToDeltas,
     DynOption (..),
     dynOptionToLocatedStr,
@@ -150,6 +151,21 @@ defaultConfig =
           },
       cfgPrinterOpts = defaultPrinterOpts
     }
+
+-- | Return all dependencies of the module. This includes both the declared
+-- dependencies of the component we are working with and all potential
+-- module re-export targets.
+overapproximatedDependencies :: Config region -> Set PackageName
+overapproximatedDependencies Config {..} =
+  Set.union cfgDependencies potentialReexportTargets
+  where
+    potentialReexportTargets =
+      Set.fromList
+        . concatMap toTargetPackages
+        $ Map.elems (unModuleReexports cfgModuleReexports)
+    toTargetPackages = concatMap $ \case
+      (Nothing, _) -> []
+      (Just x, _) -> [x]
 
 -- | Convert 'RegionIndices' into 'RegionDeltas'.
 regionIndicesToDeltas ::

@@ -67,6 +67,7 @@ checkExample (cfg, label, suffix) srcPath' = it (fromRelFile srcPath' ++ " works
               Set.fromList
                 [ "base",
                   "esqueleto",
+                  "hspec",
                   "lens",
                   "servant"
                 ]

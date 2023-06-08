@@ -112,6 +112,10 @@ See https://fourmolu.github.io/ to try Fourmolu in your browser. This is re-depl
 
 Fourmolu can be integrated with your editor via the [Haskell Language Server](https://haskell-language-server.readthedocs.io/en/latest/index.html). Just set `haskell.formattingProvider` to `fourmolu` ([instructions](https://haskell-language-server.readthedocs.io/en/latest/configuration.html#language-specific-server-options)).
 
+### GitHub actions
+
+[`run-fourmolu`][https://github.com/haskell-actions/run-fourmolu] is the recommended way to ensure that a project is formatted with Fourmolu.
+
 ### Language extensions, dependencies, and fixities
 
 Fourmolu automatically locates the Cabal file that corresponds to a given
@@ -152,8 +156,10 @@ Here is an example:
 ```yaml
 reexports:
   - module Control.Lens exports Control.Lens.At
-  - module Control.Lens exports Control.Lens.Lens
+  - module Control.Lens exports "lens" Control.Lens.Lens
 ```
+
+Explicit package names are allowed in re-export declarations (see the example above).
 
 Finally, all of the above-mentioned parameters can be controlled from the
 command line:

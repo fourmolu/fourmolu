@@ -19,6 +19,7 @@ import Data.Text.IO qualified as TIO
 import Data.Version (showVersion)
 import Data.Yaml qualified as Yaml
 import Distribution.ModuleName (ModuleName)
+import Distribution.Types.PackageName (PackageName)
 import Language.Haskell.TH.Env (envQ)
 import Options.Applicative
 import Ormolu
@@ -487,7 +488,8 @@ parseFixityDeclaration :: ReadM [(OpName, FixityInfo)]
 parseFixityDeclaration = eitherReader parseFixityDeclarationStr
 
 -- | Parse a module reexport declaration.
-parseModuleReexportDeclaration :: ReadM (ModuleName, NonEmpty ModuleName)
+parseModuleReexportDeclaration ::
+  ReadM (ModuleName, NonEmpty (Maybe PackageName, ModuleName))
 parseModuleReexportDeclaration = eitherReader parseModuleReexportDeclarationStr
 
 -- | Parse 'ColorMode'.

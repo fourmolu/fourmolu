@@ -52,7 +52,7 @@ spec = do
       mentioned `shouldBe` False
       unPackageName ciPackageName `shouldBe` "fourmolu"
       ciDynOpts `shouldBe` []
-      Set.map unPackageName ciDependencies `shouldBe` Set.empty
+      Set.map unPackageName ciDependencies `shouldBe` Set.fromList ["base"]
       ciCabalFilePath `shouldSatisfy` isAbsolute
       makeRelativeToCurrentDirectory ciCabalFilePath `shouldReturn` "fourmolu.cabal"
     it "handles `hs-source-dirs: .`" $ do
