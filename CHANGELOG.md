@@ -1,3 +1,59 @@
+## Fourmolu 0.13.0.0
+
+* Automatically ignore files in Cabal/Stack directories when recursively finding files to format.
+
+### Upstream changes:
+
+#### Ormolu 0.7.1.0
+
+* Include `base` fixity information when formatting a Haskell file that's
+  not mentioned in an existing cabal file. [Issue
+  1032](https://github.com/tweag/ormolu/issues/1032)
+
+* Update `displayException` for `OrmoluException` to pretty print the
+  exception. [PR 1031](https://github.com/tweag/ormolu/pull/1031).
+
+* Ormolu is now aware of more common module re-exports by default.
+
+* Support explicit mention of target package name in module re-exports. Even
+  if the exported package is not specified as a direct dependency of the
+  component being formatted it will still be taken into account correctly.
+  [Issue 1037](https://github.com/tweag/ormolu/issues/1037).
+
+* Ormolu no longer fails when CPP directly follows the import section (a
+  regression introduced in 0.7.0.0). [Issue
+  1040](https://github.com/tweag/ormolu/issues/1040).
+
+#### Ormolu 0.7.0.0
+
+* Inference of operator fixity information is now more precise and takes
+  into account the import section of the module being formatted. [Issue
+  892](https://github.com/tweag/ormolu/issues/892) and [issue
+  929](https://github.com/tweag/ormolu/issues/929).
+
+* Ormolu can now be made aware of module re-exports through ~~either special
+  declarations in `.ormolu` files~~ the `reexports` configuration option (see the readme for a description of the
+  syntax), or on the command line with the `--reexport`/`-r` option. [Issue
+  1017](https://github.com/tweag/ormolu/issues/1017).
+
+* ~~Ormolu now looks for `.ormolu` files independently of `.cabal` files. This
+  means that it is now possible to have one `.ormolu` file for multiple
+  Cabal packages. [Issue 1019](https://github.com/tweag/ormolu/issues/1019).~~
+
+* Consistently format `do` blocks/`case`s/`MultiWayIf`s with 4 spaces if and
+  only if they occur as the applicand. [Issue
+  1002](https://github.com/tweag/ormolu/issues/1002) and [issue
+  730](https://github.com/tweag/ormolu/issues/730).
+
+* Support the (deprecated) `DatatypeContexts` extension to avoid surprises.
+  [Issue 1012](https://github.com/tweag/ormolu/issues/1012).
+
+* Don't let comments escape from empty export lists. [Issue
+  906](https://github.com/tweag/ormolu/issues/906).
+
+* Format `\cases` with multiple patterns across multiple lines correctly. [Issue
+  1025](https://github.com/tweag/ormolu/issues/1025).
+
 ## Fourmolu 0.12.0.0
 
 * Add `single-constraint-parens` option for controlling parenthesis around constraints in type
