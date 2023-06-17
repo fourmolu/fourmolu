@@ -10,6 +10,7 @@ Fourmolu is a formatter for Haskell source code. It is a fork of [Ormolu](https:
     <button id="demo-ast-modal-toggle" type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#demo-ast-modal">
         Show internal parse result
     </button>
+    <aside id="demo-warnings"></aside>
     <div id="demo-app">
         <textarea id="demo-app-input" autocomplete="off" autofocus></textarea>
         <div id="demo-app-output"></div>

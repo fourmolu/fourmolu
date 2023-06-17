@@ -48,6 +48,7 @@ function getDemoElements() {
     printerOpts: document.querySelectorAll('.demo-printerOpt'),
     options: document.querySelectorAll('.demo-config-option'),
     output: document.querySelector('#demo-app-output'),
+    warnings: document.querySelector('#demo-warnings'),
     ast: {
       input: document.querySelector('#demo-app-input-ast'),
       output: document.querySelector('#demo-app-output-ast'),
@@ -94,11 +95,44 @@ function getOptionValue(el) {
   }
 }
 
+function createElement(tag, children = [], options = {}) {
+  const elem = document.createElement(tag)
+
+  elem.append(...children)
+
+  if (options.classes) {
+    elem.classList.add(...options.classes)
+  }
+
+  return elem
+}
+
+function refreshWarnings(demo, printerOpts, options) {
+  const warnings = []
+  if (printerOpts['column-limit'] != 'none' && options.checkIdempotence) {
+    warnings.push('Setting column limit may break idempotence!')
+  }
+
+  const nodes =
+    warnings.length === 0
+      ? []
+      : [
+        createElement(
+          'ul',
+          warnings.map(warning => createElement('li', [warning])),
+          { classes: ['alert', 'alert-warning'] },
+        )
+      ]
+  demo.warnings.replaceChildren(...nodes)
+}
+
 async function runDemo() {
   const demo = getDemoElements()
   const input = demo.input.value
   const printerOpts = getOptionMap(demo.printerOpts)
   const options = getOptionMap(demo.options)
+
+  refreshWarnings(demo, printerOpts, options)
 
   const outputTextboxOriginal = demo.output.querySelector('pre')
   const [scrollTopOriginal, scrollLeftOriginal] =
