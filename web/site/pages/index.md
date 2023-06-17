@@ -15,19 +15,29 @@ Fourmolu is a formatter for Haskell source code. It is a fork of [Ormolu](https:
         <div id="demo-app-output"></div>
     </div>
     <div id="demo-options">
-        $for(demoOptions)$ $widget$ $endfor$
-        <label>
-            Check idempotence
-            <input class="demo-config-option" name="checkIdempotence" type="checkbox" checked />
-        </label>
-        <label>
-            Unsafe mode
-            <input class="demo-config-option" name="unsafeMode" type="checkbox" />
-        </label>
-        <label>
-            Format as backpack signature
-            <input class="demo-config-option" name="formatBackpack" type="checkbox" />
-        </label>
+        <section>
+            <h2>Formatting options</h2>
+            <div class="widgets">
+                $for(demoOptions)$ $widget$ $endfor$
+            </div>
+        </section>
+        <section>
+            <h2>Program options</h2>
+            <div class="widgets">
+                <label>
+                    Check idempotence
+                    <input class="demo-config-option" name="checkIdempotence" type="checkbox" checked />
+                </label>
+                <label>
+                    Unsafe mode
+                    <input class="demo-config-option" name="unsafeMode" type="checkbox" />
+                </label>
+                <label>
+                    Format as backpack signature
+                    <input class="demo-config-option" name="formatBackpack" type="checkbox" />
+                </label>
+            </div>
+        </section>
     </div>
     <div id="demo-ast-modal" class="modal fade" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-xl">
