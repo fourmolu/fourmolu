@@ -26,7 +26,15 @@ jobs:
           cd "$(mktemp -d)"
           curl -L https://gitlab.haskell.org/ghc/ghc-wasm-meta/-/archive/master/ghc-wasm-meta-master.tar.gz \
             | tar xz --strip-components=1
+
+          # Don't run 'wasm32-wasi-cabal update'
+          sed -i 's|"$PREFIX/wasm32-wasi-cabal/bin/wasm32-wasi-cabal" update||' setup.sh
+
           ./setup.sh
+
+          # Don't use custom cabal configuration
+          rm ~/.ghc-wasm/.cabal/config
+
           ~/.ghc-wasm/add_to_github_path.sh
       -
         run: wasm32-wasi-cabal update

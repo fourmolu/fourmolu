@@ -2,7 +2,9 @@
 
 $info$
 
-If set to a number, fourmolu will try to break up lines longer than that many characters. This may break idempotence.
+If set to a number, fourmolu will try to break up lines longer than that many characters.
+
+**WARNING**: Setting this option may break idempotence.
 
 ## Examples
 

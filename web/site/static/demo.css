@@ -69,9 +69,12 @@
 #demo-options {
     margin: 1em 0;
     user-select: none;
+
+    display: grid;
+    grid-auto-flow: row;
 }
 
-#demo-options {
+#demo-options section .widgets {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     grid-gap: 5px;

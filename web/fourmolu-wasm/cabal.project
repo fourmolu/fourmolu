@@ -1,9 +1,5 @@
 packages: . ../..
 
-index-state:
-  , hackage.haskell.org 2023-03-16T09:32:28Z
-  , head.hackage 2023-02-16T05:32:02Z
-
 -- https://github.com/haskell/unix/issues/271#issuecomment-1407975043
 constraints: unix installed
 
