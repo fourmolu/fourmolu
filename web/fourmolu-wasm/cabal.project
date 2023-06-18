@@ -1,25 +1,13 @@
 packages: . ../..
 
--- https://github.com/haskell/unix/issues/271#issuecomment-1407975043
-constraints: unix installed
+active-repositories: hackage.haskell.org
+index-state: 2023-06-18T08:31:33Z
 
 package fourmolu
   flags: -internal-bundle-fixities
 
 package ghc-lib-parser
   flags: -threaded-rts
-
--- https://github.com/amesgen/stuff/commit/7745cda8368298589fd70f34463c24dcaa6145ea
-source-repository-package
-  type: git
-  location: https://github.com/amesgen/stuff
-  tag: 6cd8d7efd9704d3a3384eb91b4fe9d9912b52739
-  subdir: ghc-lib-parser-9.6.1.20230312-wasm
-
-source-repository-package
-  type: git
-  location: https://github.com/mrkkrp/ghc-syntax-highlighter
-  tag: a1cec672630a1ee067add2b585b1a87637d93f84
 
 source-repository-package
   type: git
