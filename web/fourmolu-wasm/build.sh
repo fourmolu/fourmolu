@@ -18,7 +18,7 @@ listbin() {
 
 # can't do cabal install because it'll build fourmolu too
 # https://github.com/haskell/cabal/issues/8614
-wasm32-wasi-cabal build exe:fourmolu-wasm "${ARGS[@]}"
+wasm32-wasi-cabal v2-build exe:fourmolu-wasm "${ARGS[@]}"
 
 mkdir -p "${HERE}/dist/"
 
