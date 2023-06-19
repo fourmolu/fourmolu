@@ -83,7 +83,7 @@ mkConfig path Opts {optQuiet, optConfig = cliConfig, optPrinterOpts = cliPrinter
     loadConfigFile path >>= \case
       ConfigLoaded f cfg -> do
         outputInfo $ "Loaded config from: " <> f
-        outputDebug $ show cfg
+        outputDebug $ unwords ["*** CONFIG FILE ***", show cfg]
         pure cfg
       ConfigParseError f e -> do
         outputError . unlines $
