@@ -41,8 +41,3 @@ docker run --rm -it \
 wasm32-wasi-cabal update
 /src/web/fourmolu-wasm/build.sh
 ```
-
-### Troubleshooting
-
-* `SIMD support is not enabled`
-    * This is a known bug on aarch64: https://gitlab.haskell.org/ghc/ghc/-/issues/23410
