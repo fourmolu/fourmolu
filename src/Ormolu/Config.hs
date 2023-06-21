@@ -248,7 +248,7 @@ instance Aeson.FromJSON FourmoluConfig where
     rawReexports <- o .:? "reexports" .!= []
     cfgFileReexports <-
       case mapM parseModuleReexportDeclarationStr rawReexports of
-        Right reexports -> return . ModuleReexports . Map.fromList $ reexports
+        Right reexports -> return . ModuleReexports . Map.fromListWith (<>) $ reexports
         Left e -> fail e
     return FourmoluConfig {..}
 

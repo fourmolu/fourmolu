@@ -205,15 +205,18 @@ test-suite tests
     -- specific to fourmolu tests
     other-modules:
         Ormolu.Config.PrinterOptsSpec
+        Ormolu.ConfigSpec
         Ormolu.Integration.CLIOptionsSpec
         Ormolu.Integration.CLISpec
         Ormolu.Integration.FixitySpec
         Ormolu.Integration.RegionSpec
         Ormolu.Integration.Utils
     build-depends:
+        bytestring,
         Diff >=0.3 && <0.5,
         pretty >=1.0 && <2.0,
         process >=1.6 && <2.0,
+        yaml,
         fourmolu
     build-tool-depends: fourmolu:fourmolu
 
