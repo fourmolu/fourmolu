@@ -44,7 +44,7 @@ spec = do
       mentioned `shouldBe` True
       unPackageName ciPackageName `shouldBe` "fourmolu"
       ciDynOpts `shouldBe` [DynOption "-XGHC2021"]
-      Set.map unPackageName ciDependencies `shouldBe` Set.fromList ["Cabal-syntax", "Diff", "QuickCheck", "base", "containers", "directory", "filepath", "ghc-lib-parser", "hspec", "hspec-megaparsec", "fourmolu", "megaparsec", "path", "path-io", "pretty", "process", "temporary", "text"]
+      Set.map unPackageName ciDependencies `shouldBe` Set.fromList ["Cabal-syntax", "Diff", "QuickCheck", "base", "bytestring", "containers", "directory", "filepath", "ghc-lib-parser", "hspec", "hspec-megaparsec", "fourmolu", "megaparsec", "path", "path-io", "pretty", "process", "temporary", "text", "yaml"]
       ciCabalFilePath `shouldSatisfy` isAbsolute
       makeRelativeToCurrentDirectory ciCabalFilePath `shouldReturn` "fourmolu.cabal"
     it "handles correctly files that are not mentioned in fourmolu.cabal" $ do
