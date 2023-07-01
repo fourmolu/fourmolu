@@ -1,4 +1,4 @@
-resolver: nightly-2023-04-03
+resolver: lts-21.0
 
 extra-deps:
   - Cabal-syntax-3.10.1.0
