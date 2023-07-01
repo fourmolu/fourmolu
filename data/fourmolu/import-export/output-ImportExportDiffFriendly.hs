@@ -31,3 +31,11 @@ import qualified MegaModule as M (
     (<<<),
     (>>>),
  )
+
+{- // -}
+
+-- https://github.com/fourmolu/fourmolu/issues/341
+module Foo (
+    -- | asdf
+    singleExport,
+) where

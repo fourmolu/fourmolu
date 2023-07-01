@@ -10,6 +10,7 @@ module Ormolu.Printer.Meat.ImportExport
 where
 
 import Control.Monad
+import Data.List (inits)
 import Data.Text qualified as T
 import GHC.Hs
 import GHC.LanguageExtensions.Type
@@ -26,8 +27,8 @@ p_hsmodExports xs =
     layout <- getLayout
     sep
       breakpoint
-      (\(p, l) -> sitcc (located l (p_lie layout p)))
-      (attachRelativePos' xs)
+      (\(isAllPrevDoc, p, l) -> sitcc (located l (p_lie layout isAllPrevDoc p)))
+      (withAllPrevDoc $ attachRelativePos xs)
 
 p_hsmodImport :: ImportDecl GhcPs -> R ()
 p_hsmodImport ImportDecl {..} = do
@@ -70,12 +71,12 @@ p_hsmodImport ImportDecl {..} = do
           layout <- getLayout
           sep
             breakpoint
-            (\(p, l) -> sitcc (located l (p_lie layout p)))
+            (\(p, l) -> sitcc (located l (p_lie layout False p)))
             (attachRelativePos xs)
     newline
 
-p_lie :: Layout -> RelativePos -> IE GhcPs -> R ()
-p_lie encLayout relativePos = \case
+p_lie :: Layout -> Bool -> RelativePos -> IE GhcPs -> R ()
+p_lie encLayout isAllPrevDoc relativePos = \case
   IEVar NoExtField l1 ->
     withComma $
       located l1 p_ieWrappedName
@@ -106,7 +107,6 @@ p_lie encLayout relativePos = \case
       FirstPos -> return ()
       MiddlePos -> newline
       LastPos -> newline
-      FirstAfterDocPos -> newline
     indentDoc $ p_hsDoc (Asterisk n) False str
   IEDoc NoExtField str ->
     indentDoc $
@@ -122,14 +122,13 @@ p_lie encLayout relativePos = \case
             FirstPos -> m >> comma
             MiddlePos -> m >> comma
             LastPos -> void m
-            FirstAfterDocPos -> m >> comma
         MultiLine -> do
           commaStyle <- getCommaStyle
           case commaStyle of
             Leading ->
               case relativePos of
                 FirstPos -> m
-                FirstAfterDocPos -> inciBy 2 m
+                _ | isAllPrevDoc -> inciBy 2 m
                 SinglePos -> m
                 _ -> comma >> space >> m
             Trailing -> m >> comma
@@ -145,30 +144,18 @@ p_lie encLayout relativePos = \case
 
 ----------------------------------------------------------------------------
 
--- | Unlike the version in `Ormolu.Utils`, this version handles explicitly leading export documentation
-attachRelativePos' :: [LIE GhcPs] -> [(RelativePos, LIE GhcPs)]
-attachRelativePos' = \case
-  [] -> []
-  [x] -> [(SinglePos, x)]
-  -- Check if leading export is a Doc
-  (x@(L _ IEDoc {}) : xs) -> (FirstPos, x) : markDoc xs
-  (x@(L _ IEGroup {}) : xs) -> (FirstPos, x) : markDoc xs
-  (x@(L _ IEDocNamed {}) : xs) -> (FirstPos, x) : markDoc xs
-  (x : xs) -> (FirstPos, x) : markLast xs
+-- | Annotate each element with a Bool indicating if all preceding elements are
+-- documentation elements.
+withAllPrevDoc :: [(RelativePos, LIE GhcPs)] -> [(Bool, RelativePos, LIE GhcPs)]
+withAllPrevDoc xs = zipWith go (inits xs) xs
   where
-    -- Mark leading documentation, making sure the first export gets assigned
-    -- a `FirstPos`
-    markDoc [] = []
-    markDoc [x] = [(LastPos, x)]
-    markDoc (x@(L _ IEDoc {}) : xs) = (FirstAfterDocPos, x) : markDoc xs
-    markDoc (x@(L _ IEGroup {}) : xs) = (FirstAfterDocPos, x) : markDoc xs
-    markDoc (x@(L _ IEDocNamed {}) : xs) = (FirstAfterDocPos, x) : markDoc xs
-    -- First export after a Doc gets assigned a `FirstPos`
-    markDoc (x : xs) = (FirstAfterDocPos, x) : markLast xs
+    go prevElems (p, l) = (all (isDoc . snd) prevElems, p, l)
 
-    markLast [] = []
-    markLast [x] = [(LastPos, x)]
-    markLast (x : xs) = (MiddlePos, x) : markLast xs
+    isDoc = \case
+      L _ IEDoc {} -> True
+      L _ IEGroup {} -> True
+      L _ IEDocNamed {} -> True
+      _ -> False
 
 -- | Surround given entity by parentheses @(@ and @)@.
 parens' :: Bool -> R () -> R ()

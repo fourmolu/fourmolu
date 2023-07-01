@@ -119,7 +119,7 @@ spec =
         },
       TestGroup
         { label = "import-export",
-          isMulti = False,
+          isMulti = True,
           testCases = allOptions,
           updateConfig = \commaStyle opts ->
             opts {poImportExportStyle = pure commaStyle},
