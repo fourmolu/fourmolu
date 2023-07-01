@@ -10,34 +10,6 @@ on:
         value: ${{ jobs.build_prod.outputs.version }}
 
 jobs:
-  stack_test:
-    strategy:
-      matrix:
-        stack_yaml:
-          - stack-ghc-9.2.yaml
-          - stack-ghc-9.4.yaml
-          - stack-ghc-9.6.yaml
-          # technically redundant, since this should be a symlink,
-          # but just to be extra sure
-          - stack.yaml
-
-    name: 'stack_test: ${{ matrix.stack_yaml }}'
-    runs-on: ubuntu-latest
-    env:
-      STACK_YAML: ${{ matrix.stack_yaml }}
-
-    steps:
-      -
-        uses: actions/checkout@v3
-      -
-        uses: actions/cache@v3
-        with:
-          path: ~/.stack
-          key: ${{ runner.os }}-stack_test-${{ matrix.stack_yaml }}-${{ hashFiles(matrix.stack_yaml, 'fourmolu.cabal') }}
-      -
-        # use development mode, to enable -Werror
-        run: stack test --flag fourmolu:dev
-
   check_generated_files:
     runs-on: ubuntu-latest
     steps:
@@ -96,14 +68,14 @@ jobs:
       -
         run: cabal test
 
-  os_test:
+  stack_test:
     strategy:
       matrix:
         os:
           - ubuntu-latest
           - macos-latest
 
-    name: 'os_test: ${{ matrix.os }}'
+    name: 'stack_test: ${{ matrix.os }}'
     runs-on: ${{ matrix.os }}
     steps:
       -
@@ -112,7 +84,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.stack
-          key: ${{ runner.os }}-os_test-${{ hashFiles('stack.yaml', 'fourmolu.cabal') }}
+          key: ${{ runner.os }}-stack_test-${{ hashFiles('stack.yaml', 'fourmolu.cabal') }}
       -
         run: stack test --fast
 
