@@ -209,6 +209,7 @@ normalizeModule Config {..} hsmod =
     patchContext :: LHsContext GhcPs -> LHsContext GhcPs
     patchContext = fmap $ \case
       [x@(L _ (HsParTy _ inner))]
+        | L _ HsForAllTy {} <- inner -> [x]
         | ConstraintNever <- constraintParens -> [inner]
         | otherwise -> [x]
       [x@(L lx _)]
