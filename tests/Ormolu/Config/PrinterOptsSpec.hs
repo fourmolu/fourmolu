@@ -14,7 +14,6 @@ import Control.Exception (catch)
 import Control.Monad (forM_, when)
 import Data.Algorithm.DiffContext (getContextDiff, prettyContextDiff)
 import Data.Char (isSpace)
-import Data.List.NonEmpty qualified as NE
 import Data.Maybe (isJust)
 import Data.Text (Text)
 import Data.Text qualified as T
@@ -299,10 +298,19 @@ suffix1 :: (Show a) => a -> String
 suffix1 a1 = suffixWith [show a1]
 
 overSectionsM :: (Monad m) => Text -> (Text -> m Text) -> Text -> m Text
-overSectionsM delim f =
-  fmap T.concat
-    . mapM (\(s, isDelim) -> if isDelim then pure s else f s)
-    . splitOnDelim delim
+overSectionsM delim f = go . T.lines
+  where
+    go inputLines =
+      case break (== delim) inputLines of
+        (section, []) -> f $ T.unlines section
+        (pre, _ : post) -> do
+          let (section, delimPre) = spanEnd (T.all isSpace) pre
+              (delimPost, rest) = span (T.all isSpace) post
+
+          resultPre <- f $ T.unlines section
+          let delimLines = T.unlines $ concat [delimPre, [delim], delimPost]
+          resultPost <- go rest
+          pure $ resultPre <> delimLines <> resultPost
 
 getFileContents :: Path b File -> IO (Maybe Text)
 getFileContents path = do
@@ -338,38 +346,7 @@ shouldRegenerateOutput =
 
 {--- Utilities ---}
 
--- | Group delimiter (including surrounding whitespace) and non-delimiter lines
--- and annotate lines with a Bool indicating if the group is a delimiter group
--- or not.
-splitOnDelim :: Text -> Text -> [(Text, Bool)]
-splitOnDelim delim =
-  map (\(lineGroup, delimType) -> (T.unlines lineGroup, isDelim delimType))
-    . collapseSpaces NonDelim
-    . collapseSpaces Delim
-    . groupWith toLineType
-    . T.lines
-  where
-    toLineType line
-      | T.all isSpace line = Space
-      | line == delim = Delim
-      | otherwise = NonDelim
-
-    collapseSpaces delimType = \case
-      (xs, Space) : (ys, ysType) : rest | ysType == delimType -> collapseSpaces delimType $ (xs ++ ys, delimType) : rest
-      (xs, xsType) : (ys, Space) : rest | xsType == delimType -> collapseSpaces delimType $ (xs ++ ys, delimType) : rest
-      x : rest -> x : collapseSpaces delimType rest
-      [] -> []
-
-    isDelim = \case
-      Delim -> True
-      NonDelim -> False
-      Space -> error "isDelim called on Space, but all Spaces should've been eliminated at this point"
-
-    -- Like 'NE.groupWith', except annotates group with comparator
-    groupWith :: (Eq b) => (a -> b) -> [a] -> [([a], b)]
-    groupWith f =
-      let liftComparator xs = (map fst $ NE.toList xs, snd $ NE.head xs)
-       in map liftComparator . NE.groupWith snd . map (\a -> (a, f a))
-
-data LineType = Space | Delim | NonDelim
-  deriving (Eq)
+spanEnd :: (a -> Bool) -> [a] -> ([a], [a])
+spanEnd f xs =
+  let xs' = reverse xs
+   in (reverse $ dropWhile f xs', reverse $ takeWhile f xs')
