@@ -71,10 +71,18 @@ jobs:
         with:
           ghc-version: ${{ matrix.ghc_version }}
       -
+        name: cabal configure
+        run:
+          cabal configure
+            --enable-tests
+            --test-show-details=streaming
+            --flag dev
+      -
         run: cabal update
       -
         run: cabal freeze
       -
+        name: Invalidate cache every month
         run: echo "CURR_MONTH=$(date +%B)" | tee -a "$GITHUB_ENV"
       -
         uses: actions/cache@v3
