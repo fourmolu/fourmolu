@@ -208,16 +208,15 @@ normalizeModule Config {..} hsmod =
       a -> a
     patchContext :: LHsContext GhcPs -> LHsContext GhcPs
     patchContext = fmap $ \case
-      [x@(L _ (HsParTy _ t))] -> unwrapParens x t
-      [x@(L _ _)] -> wrapParens x
+      [x@(L _ (HsParTy _ inner))]
+        | L _ HsForAllTy {} <- inner -> [x]
+        | ConstraintNever <- constraintParens -> [inner]
+        | otherwise -> [x]
+      [x@(L lx _)]
+        | ConstraintAlways <- constraintParens -> [L lx (HsParTy EpAnnNotUsed x)]
+        | otherwise -> [x]
       xs -> xs
     constraintParens = runIdentity (poSingleConstraintParens cfgPrinterOpts)
-    unwrapParens outer inner = case constraintParens of
-      ConstraintNever -> [inner]
-      _ -> [outer]
-    wrapParens x@(L lx _) = case constraintParens of
-      ConstraintAlways -> [L lx (HsParTy EpAnnNotUsed x)]
-      _ -> [x]
 
 -- | Enable all language extensions that we think should be enabled by
 -- default for ease of use.
