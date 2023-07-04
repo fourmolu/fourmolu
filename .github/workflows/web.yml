@@ -38,7 +38,7 @@ jobs:
       -
         uses: actions/cache@v3
         with:
-          # https://gitlab.haskell.org/ghc/ghc-wasm-meta/-/blob/master/setup.sh#L134
+          # https://gitlab.haskell.org/ghc/ghc-wasm-meta/-/blob/56d8e171e3dc6acb63c2d10fbbd6f226d8126683/setup.sh#L147
           path: ~/.ghc-wasm/.cabal
           key: ${{ runner.os }}-fourmolu_wasm-cache-${{ env.CURR_MONTH }}-${{ hashFiles('web/fourmolu-wasm/cabal.project.freeze') }}
           restore-keys: |
@@ -86,8 +86,7 @@ jobs:
       -
         uses: actions/cache@v3
         with:
-          # https://gitlab.haskell.org/ghc/ghc-wasm-meta/-/blob/master/setup.sh#L134
-          path: ~/.ghc-wasm/.cabal
+          path: ~/.cabal
           key: ${{ runner.os }}-hakyll-cache-${{ env.CURR_MONTH }}-${{ hashFiles('web/site/cabal.project.freeze') }}
           restore-keys: |
                ${{ runner.os }}-hakyll-cache-${{ env.CURR_MONTH }}-

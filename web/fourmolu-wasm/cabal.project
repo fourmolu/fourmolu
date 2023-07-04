@@ -1,8 +1,5 @@
 packages: . ../..
 
-active-repositories: hackage.haskell.org
-index-state: 2023-06-18T08:31:33Z
-
 package fourmolu
   flags: -internal-bundle-fixities
 
@@ -13,3 +10,9 @@ source-repository-package
   type: git
   location: https://github.com/brandonchinn178/ghc-syntax-highlighter-themed
   tag: 8cf22afcbb91352c98347b576dd5b4b958cad121
+
+-- https://gitlab.haskell.org/ghc/head.hackage/-/issues/87#note_510680
+source-repository-package
+  type: git
+  location: https://github.com/haskell-compat/th-compat
+  tag: f84ab927ba95dc8136767c1d4bfa8c319c0e650c
