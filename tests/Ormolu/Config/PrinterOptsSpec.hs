@@ -14,7 +14,6 @@ import Control.Exception (catch)
 import Control.Monad (forM_, when)
 import Data.Algorithm.DiffContext (getContextDiff, prettyContextDiff)
 import Data.Char (isSpace)
-import Data.List.NonEmpty qualified as NE
 import Data.Maybe (isJust)
 import Data.Text (Text)
 import Data.Text qualified as T
@@ -54,6 +53,10 @@ import Text.Printf (printf)
 data TestGroup = forall a.
   TestGroup
   { label :: String,
+    -- | When True, takes input from 'input-multi.hs' instead of 'input.hs', where sections
+    -- delimited by `{- // -}` will be formatted as separate Haskell files. Useful for testing
+    -- combinations of module headers, which is normally only allowed once.
+    isMulti :: Bool,
     testCases :: [a],
     updateConfig :: a -> PrinterOptsTotal -> PrinterOptsTotal,
     showTestCase :: a -> String,
@@ -61,21 +64,14 @@ data TestGroup = forall a.
     checkIdempotence :: Bool
   }
 
-spec :: Spec
-spec =
-  sequence_
-    [ singleTests,
-      multiTests
-    ]
-
 -- Tests where each test group is a directory with an `input.hs` file and multiple `output-*.hs`
 -- files that could be regenerated with ORMOLU_REGENERATE_EXAMPLES.
-singleTests :: Spec
-singleTests =
-  mapM_
-    (runTestGroup False)
+spec :: Spec
+spec =
+  mapM_ runTestGroup $
     [ TestGroup
         { label = "indentation",
+          isMulti = False,
           testCases = (,) <$> [2, 3, 4] <*> allOptions,
           updateConfig = \(indent, indentWheres) opts ->
             opts
@@ -90,6 +86,7 @@ singleTests =
         },
       TestGroup
         { label = "column-limit",
+          isMulti = False,
           testCases = [NoLimit, ColumnLimit 80, ColumnLimit 100],
           updateConfig = \columnLimit opts -> opts {poColumnLimit = pure columnLimit},
           showTestCase = show,
@@ -103,6 +100,7 @@ singleTests =
         },
       TestGroup
         { label = "function-arrows",
+          isMulti = False,
           testCases = allOptions,
           updateConfig = \functionArrows opts ->
             opts {poFunctionArrows = pure functionArrows},
@@ -112,6 +110,7 @@ singleTests =
         },
       TestGroup
         { label = "comma-style",
+          isMulti = False,
           testCases = allOptions,
           updateConfig = \commaStyle opts -> opts {poCommaStyle = pure commaStyle},
           showTestCase = show,
@@ -120,6 +119,7 @@ singleTests =
         },
       TestGroup
         { label = "import-export",
+          isMulti = True,
           testCases = allOptions,
           updateConfig = \commaStyle opts ->
             opts {poImportExportStyle = pure commaStyle},
@@ -129,6 +129,7 @@ singleTests =
         },
       TestGroup
         { label = "record-brace-space",
+          isMulti = False,
           testCases = allOptions,
           updateConfig = \recordBraceSpace opts -> opts {poRecordBraceSpace = pure recordBraceSpace},
           showTestCase = show,
@@ -137,6 +138,7 @@ singleTests =
         },
       TestGroup
         { label = "newlines-between-decls",
+          isMulti = False,
           testCases = (,) <$> [0, 1, 2] <*> allOptions,
           updateConfig = \(newlines, respectful) opts ->
             opts
@@ -151,6 +153,7 @@ singleTests =
         },
       TestGroup
         { label = "haddock-style",
+          isMulti = False,
           testCases = (,) <$> allOptions <*> (PrintStyleInherit : map PrintStyleOverride allOptions),
           updateConfig = \(haddockStyle, haddockStyleModule) opts ->
             opts
@@ -173,6 +176,7 @@ singleTests =
         },
       TestGroup
         { label = "let-style",
+          isMulti = False,
           testCases = (,,) <$> allOptions <*> allOptions <*> [2, 4],
           updateConfig = \(letStyle, inStyle, indent) opts ->
             opts
@@ -188,6 +192,7 @@ singleTests =
         },
       TestGroup
         { label = "single-constraint-parens",
+          isMulti = False,
           testCases = allOptions,
           updateConfig = \parens opts -> opts {poSingleConstraintParens = pure parens},
           showTestCase = show,
@@ -196,6 +201,7 @@ singleTests =
         },
       TestGroup
         { label = "unicode-syntax",
+          isMulti = False,
           testCases = allOptions,
           updateConfig = \unicodePreference options -> options {poUnicode = pure unicodePreference},
           showTestCase = show,
@@ -204,23 +210,16 @@ singleTests =
         },
       TestGroup
         { label = "respectful",
+          isMulti = False,
           testCases = allOptions,
           updateConfig = \respectful opts -> opts {poRespectful = pure respectful},
           showTestCase = show,
           testCaseSuffix = suffix1,
           checkIdempotence = True
-        }
-    ]
-
--- Same as 'singleTests', except with input taken from 'input-multi.hs', where sections
--- delimited by `{- // -}` will be formatted as separate Haskell files. Useful for testing
--- combinations of module headers, which is normally only allowed once.
-multiTests :: Spec
-multiTests =
-  mapM_
-    (runTestGroup True)
-    [ TestGroup
+        },
+      TestGroup
         { label = "respectful-module-where",
+          isMulti = True,
           testCases = (,) <$> allOptions <*> allOptions,
           updateConfig = \(respectful, importExportStyle) opts ->
             opts
@@ -235,8 +234,8 @@ multiTests =
         }
     ]
 
-runTestGroup :: Bool -> TestGroup -> Spec
-runTestGroup isMulti TestGroup {..} =
+runTestGroup :: TestGroup -> Spec
+runTestGroup TestGroup {..} =
   describe label $
     forM_ testCases $ \testCase ->
       it ("generates the correct output for: " ++ showTestCase testCase) $ do
@@ -299,10 +298,19 @@ suffix1 :: (Show a) => a -> String
 suffix1 a1 = suffixWith [show a1]
 
 overSectionsM :: (Monad m) => Text -> (Text -> m Text) -> Text -> m Text
-overSectionsM delim f =
-  fmap T.concat
-    . mapM (\(s, isDelim) -> if isDelim then pure s else f s)
-    . splitOnDelim delim
+overSectionsM delim f = go . T.lines
+  where
+    go inputLines =
+      case break (== delim) inputLines of
+        (section, []) -> f $ T.unlines section
+        (pre, _ : post) -> do
+          let (section, delimPre) = spanEnd (T.all isSpace) pre
+              (delimPost, rest) = span (T.all isSpace) post
+
+          resultPre <- f $ T.unlines section
+          let delimLines = T.unlines $ concat [delimPre, [delim], delimPost]
+          resultPost <- go rest
+          pure $ resultPre <> delimLines <> resultPost
 
 getFileContents :: Path b File -> IO (Maybe Text)
 getFileContents path = do
@@ -338,38 +346,7 @@ shouldRegenerateOutput =
 
 {--- Utilities ---}
 
--- | Group delimiter (including surrounding whitespace) and non-delimiter lines
--- and annotate lines with a Bool indicating if the group is a delimiter group
--- or not.
-splitOnDelim :: Text -> Text -> [(Text, Bool)]
-splitOnDelim delim =
-  map (\(lineGroup, delimType) -> (T.unlines lineGroup, isDelim delimType))
-    . collapseSpaces NonDelim
-    . collapseSpaces Delim
-    . groupWith toLineType
-    . T.lines
-  where
-    toLineType line
-      | T.all isSpace line = Space
-      | line == delim = Delim
-      | otherwise = NonDelim
-
-    collapseSpaces delimType = \case
-      (xs, Space) : (ys, ysType) : rest | ysType == delimType -> collapseSpaces delimType $ (xs ++ ys, delimType) : rest
-      (xs, xsType) : (ys, Space) : rest | xsType == delimType -> collapseSpaces delimType $ (xs ++ ys, delimType) : rest
-      x : rest -> x : collapseSpaces delimType rest
-      [] -> []
-
-    isDelim = \case
-      Delim -> True
-      NonDelim -> False
-      Space -> error "isDelim called on Space, but all Spaces should've been eliminated at this point"
-
-    -- Like 'NE.groupWith', except annotates group with comparator
-    groupWith :: (Eq b) => (a -> b) -> [a] -> [([a], b)]
-    groupWith f =
-      let liftComparator xs = (map fst $ NE.toList xs, snd $ NE.head xs)
-       in map liftComparator . NE.groupWith snd . map (\a -> (a, f a))
-
-data LineType = Space | Delim | NonDelim
-  deriving (Eq)
+spanEnd :: (a -> Bool) -> [a] -> ([a], [a])
+spanEnd f xs =
+  let xs' = reverse xs
+   in (reverse $ dropWhile f xs', reverse $ takeWhile f xs')

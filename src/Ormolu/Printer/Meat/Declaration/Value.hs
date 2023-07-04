@@ -528,7 +528,6 @@ p_hsLocalBinds = \case
           FirstPos -> br
           MiddlePos -> br
           LastPos -> id
-          FirstAfterDocPos -> br
         p_item' (p, item) =
           positionToBracing p $
             withSpacing (either p_valDecl p_sigDecl) item
