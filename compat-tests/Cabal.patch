@@ -1,0 +1,357 @@
+diff --git a/Cabal/src/Distribution/Backpack/MixLink.hs b/Cabal/src/Distribution/Backpack/MixLink.hs
+index b358612b2..3e4cc8d7c 100644
+--- a/Cabal/src/Distribution/Backpack/MixLink.hs
++++ b/Cabal/src/Distribution/Backpack/MixLink.hs
+@@ -61,11 +61,11 @@ linkProvision mod_name ret@(prov : provs) (req : reqs) = do
+           text "Ambiguous module"
+             <+> quotes (pretty mod_name)
+             $$ text "It could refer to"
+-            <+> ( text "  "
+-                    <+> (quotes (pretty mod) $$ in_scope_by (getSource prov))
+-                    $$ text "or"
+-                    <+> (quotes (pretty mod') $$ in_scope_by (getSource prov'))
+-                )
++              <+> ( text "  "
++                      <+> (quotes (pretty mod) $$ in_scope_by (getSource prov))
++                      $$ text "or"
++                        <+> (quotes (pretty mod') $$ in_scope_by (getSource prov'))
++                  )
+             $$ link_doc
+   mod <- convertModuleU (unWithSource prov)
+   req_mod <- convertModuleU (unWithSource req)
+@@ -78,7 +78,7 @@ linkProvision mod_name ret@(prov : provs) (req : reqs) = do
+               <+> quotes (pretty mod_name)
+               <+> in_scope_by (getSource req)
+               $$ text "with locally defined module"
+-              <+> in_scope_by (getSource prov)
++                <+> in_scope_by (getSource prov)
+               $$ text "as this would create a cyclic dependency, which GHC does not support."
+               $$ text "Try moving this module to a separate library, e.g.,"
+               $$ text "create a new stanza: library 'sublib'."
+@@ -96,7 +96,7 @@ linkProvision mod_name ret@(prov : provs) (req : reqs) = do
+             ( text "Expected:"
+                 <+> pretty mod
+                 $$ text "Actual:  "
+-                <+> pretty req_mod
++                  <+> pretty req_mod
+             )
+           $$ parens
+             ( text "This can occur if an exposed module of"
+@@ -144,7 +144,7 @@ unifyUnitId uid1_u uid2_u
+                   ( text "   "
+                       <+> pretty u1
+                       $$ text "and"
+-                      <+> pretty u2
++                        <+> pretty u2
+                   )
+         (UnitIdThunkU uid1, UnitIdU _ cid2 insts2) ->
+           unifyThunkWith cid2 insts2 uid2_u uid1 uid1_u
+@@ -185,7 +185,7 @@ unifyInner cid1 insts1 uid1_u cid2 insts2 uid2_u = do
+         ( text "   "
+             <+> pretty cid1
+             $$ text "and"
+-            <+> pretty cid2
++              <+> pretty cid2
+         )
+   -- The KEY STEP which makes this a Huet-style unification
+   -- algorithm.  (Also a payoff of using union-find.)
+@@ -213,7 +213,7 @@ unifyModule mod1_u mod2_u
+                 text "   "
+                   <+> pretty mod_name1
+                   $$ text "and"
+-                  <+> pretty mod_name2
++                    <+> pretty mod_name2
+           -- NB: this is not actually necessary (because we'll
+           -- detect loops eventually in 'unifyUnitId'), but it
+           -- seems harmless enough
+diff --git a/Cabal/src/Distribution/Backpack/UnifyM.hs b/Cabal/src/Distribution/Backpack/UnifyM.hs
+index 6e0f00d9f..010bffcda 100644
+--- a/Cabal/src/Distribution/Backpack/UnifyM.hs
++++ b/Cabal/src/Distribution/Backpack/UnifyM.hs
+@@ -422,7 +422,7 @@ failWithMutuallyRecursiveUnitsError required_mod_name mod_names =
+         text "Cannot instantiate requirement"
+           <+> quotes required_mod_name
+           $$ text "Ensure \"build-depends:\" doesn't include any library with signatures:"
+-          <+> sigsList
++            <+> sigsList
+           $$ text "as this creates a cyclic dependency, which GHC does not support."
+ 
+ -- Helper functions
+@@ -532,7 +532,7 @@ convertInclude
+             text "Conflicting renamings of requirement"
+               <+> quotes (pretty k)
+               $$ text "Renamed to: "
+-              <+> vcat (map pretty (v : vs))
++                <+> vcat (map pretty (v : vs))
+           return v
+ 
+     let req_rename_fn k = case Map.lookup k req_rename of
+diff --git a/Cabal/src/Distribution/Simple/GHC.hs b/Cabal/src/Distribution/Simple/GHC.hs
+index f01d096e4..cd2c614cf 100644
+--- a/Cabal/src/Distribution/Simple/GHC.hs
++++ b/Cabal/src/Distribution/Simple/GHC.hs
+@@ -2501,47 +2501,47 @@ installLib verbosity lbi targetDir dynlibTargetDir _builtDir pkg lib clbi = do
+       whenGHCi $ installOrdinary builtDir targetDir ghciProfLibName
+     whenShared $
+       if
+-          -- The behavior for "extra-bundled-libraries" changed in version 2.5.0.
+-          -- See ghc issue #15837 and Cabal PR #5855.
+-          | specVersion pkg < CabalSpecV3_0 -> do
+-              sequence_
+-                [ installShared
+-                  builtDir
+-                  dynlibTargetDir
+-                  (mkGenericSharedLibName platform compiler_id (l ++ f))
+-                | l <- getHSLibraryName uid : extraBundledLibs (libBuildInfo lib)
+-                , f <- "" : extraDynLibFlavours (libBuildInfo lib)
+-                ]
+-          | otherwise -> do
+-              sequence_
+-                [ installShared
+-                  builtDir
+-                  dynlibTargetDir
+-                  ( mkGenericSharedLibName
+-                      platform
+-                      compiler_id
+-                      (getHSLibraryName uid ++ f)
+-                  )
+-                | f <- "" : extraDynLibFlavours (libBuildInfo lib)
+-                ]
+-              sequence_
+-                [ do
+-                  files <- getDirectoryContents builtDir
+-                  let l' =
+-                        mkGenericSharedBundledLibName
+-                          platform
+-                          compiler_id
+-                          l
+-                  forM_ files $ \file ->
+-                    when (l' `isPrefixOf` file) $ do
+-                      isFile <- doesFileExist (builtDir </> file)
+-                      when isFile $ do
+-                        installShared
+-                          builtDir
+-                          dynlibTargetDir
+-                          file
+-                | l <- extraBundledLibs (libBuildInfo lib)
+-                ]
++        -- The behavior for "extra-bundled-libraries" changed in version 2.5.0.
++        -- See ghc issue #15837 and Cabal PR #5855.
++        | specVersion pkg < CabalSpecV3_0 -> do
++            sequence_
++              [ installShared
++                builtDir
++                dynlibTargetDir
++                (mkGenericSharedLibName platform compiler_id (l ++ f))
++              | l <- getHSLibraryName uid : extraBundledLibs (libBuildInfo lib)
++              , f <- "" : extraDynLibFlavours (libBuildInfo lib)
++              ]
++        | otherwise -> do
++            sequence_
++              [ installShared
++                builtDir
++                dynlibTargetDir
++                ( mkGenericSharedLibName
++                    platform
++                    compiler_id
++                    (getHSLibraryName uid ++ f)
++                )
++              | f <- "" : extraDynLibFlavours (libBuildInfo lib)
++              ]
++            sequence_
++              [ do
++                files <- getDirectoryContents builtDir
++                let l' =
++                      mkGenericSharedBundledLibName
++                        platform
++                        compiler_id
++                        l
++                forM_ files $ \file ->
++                  when (l' `isPrefixOf` file) $ do
++                    isFile <- doesFileExist (builtDir </> file)
++                    when isFile $ do
++                      installShared
++                        builtDir
++                        dynlibTargetDir
++                        file
++              | l <- extraBundledLibs (libBuildInfo lib)
++              ]
+   where
+     builtDir = componentBuildDir lbi clbi
+ 
+diff --git a/cabal-install/src/Distribution/Client/CmdHaddockProject.hs b/cabal-install/src/Distribution/Client/CmdHaddockProject.hs
+index d63e890a3..28b7f43e3 100644
+--- a/cabal-install/src/Distribution/Client/CmdHaddockProject.hs
++++ b/cabal-install/src/Distribution/Client/CmdHaddockProject.hs
+@@ -289,7 +289,7 @@ haddockProjectAction flags _extraArgs globalFlags = do
+                     interfacePath =
+                       destDir
+                         </> packageName
+-                        <.> "haddock"
++                          <.> "haddock"
+                 a <- doesDirectoryExist docDir
+                 case a of
+                   True ->
+@@ -325,7 +325,7 @@ haddockProjectAction flags _extraArgs globalFlags = do
+                     interfacePath =
+                       destDir
+                         </> packageName
+-                        <.> "haddock"
++                          <.> "haddock"
+                 a <- doesDirectoryExist docDir
+                 case a of
+                   True ->
+diff --git a/cabal-install/src/Distribution/Client/CmdInstall.hs b/cabal-install/src/Distribution/Client/CmdInstall.hs
+index 46ce2cd6e..5e889146d 100644
+--- a/cabal-install/src/Distribution/Client/CmdInstall.hs
++++ b/cabal-install/src/Distribution/Client/CmdInstall.hs
+@@ -1201,7 +1201,7 @@ getLocalEnv :: FilePath -> Platform -> Version -> FilePath
+ getLocalEnv dir platform compilerVersion =
+   dir
+     </> ".ghc.environment."
+-    <> ghcPlatformAndVersionString platform compilerVersion
++      <> ghcPlatformAndVersionString platform compilerVersion
+ 
+ getPackageDbStack
+   :: CompilerId
+diff --git a/cabal-install/src/Distribution/Client/CmdSdist.hs b/cabal-install/src/Distribution/Client/CmdSdist.hs
+index cd5946641..ef87ab3df 100644
+--- a/cabal-install/src/Distribution/Client/CmdSdist.hs
++++ b/cabal-install/src/Distribution/Client/CmdSdist.hs
+@@ -240,9 +240,9 @@ sdistAction (pf@ProjectFlags{..}, SdistFlags{..}) targetStrings globalFlags = do
+   let format :: OutputFormat
+       format =
+         if
+-            | listSources, nulSeparated -> SourceList '\0'
+-            | listSources -> SourceList '\n'
+-            | otherwise -> TarGzArchive
++          | listSources, nulSeparated -> SourceList '\0'
++          | listSources -> SourceList '\n'
++          | otherwise -> TarGzArchive
+ 
+       ext = case format of
+         SourceList _ -> "list"
+diff --git a/cabal-install/src/Distribution/Client/FetchUtils.hs b/cabal-install/src/Distribution/Client/FetchUtils.hs
+index 2ad9ea2c2..16468a2bf 100644
+--- a/cabal-install/src/Distribution/Client/FetchUtils.hs
++++ b/cabal-install/src/Distribution/Client/FetchUtils.hs
+@@ -368,7 +368,7 @@ packageFile :: Repo -> PackageId -> FilePath
+ packageFile repo pkgid =
+   packageDir repo pkgid
+     </> prettyShow pkgid
+-    <.> "tar.gz"
++      <.> "tar.gz"
+ 
+ -- | Generate the full path to the directory where the local cached copy of
+ -- the tarball for a given @PackageIdentifier@ is stored.
+diff --git a/cabal-install/src/Distribution/Client/Init/Interactive/Command.hs b/cabal-install/src/Distribution/Client/Init/Interactive/Command.hs
+index 2fab0db25..ad222a02e 100644
+--- a/cabal-install/src/Distribution/Client/Init/Interactive/Command.hs
++++ b/cabal-install/src/Distribution/Client/Init/Interactive/Command.hs
+@@ -459,10 +459,10 @@ languagePrompt flags pkgType = getLanguage flags $ do
+       True
+ 
+   if
+-      | l == h2010 -> return Haskell2010
+-      | l == h98 -> return Haskell98
+-      | l == ghc2021 -> return GHC2021
+-      | otherwise -> return $ UnknownLanguage l
++    | l == h2010 -> return Haskell2010
++    | l == h98 -> return Haskell98
++    | l == ghc2021 -> return GHC2021
++    | otherwise -> return $ UnknownLanguage l
+ 
+ noCommentsPrompt :: Interactive m => InitFlags -> m Bool
+ noCommentsPrompt flags = getNoComments flags $ do
+diff --git a/cabal-install/src/Distribution/Client/Install.hs b/cabal-install/src/Distribution/Client/Install.hs
+index 93ad8e5ae..1c7b38c2c 100644
+--- a/cabal-install/src/Distribution/Client/Install.hs
++++ b/cabal-install/src/Distribution/Client/Install.hs
+@@ -1760,7 +1760,7 @@ installLocalTarballPackage
+             descFilePath =
+               absUnpackedPath
+                 </> prettyShow (packageName pkgid)
+-                <.> "cabal"
++                  <.> "cabal"
+         info verbosity $
+           "Extracting "
+             ++ tarballPath
+@@ -1857,7 +1857,7 @@ installUnpackedPackage
+         let descFilePath =
+               fromMaybe "." workingDir
+                 </> prettyShow (packageName pkgid)
+-                <.> "cabal"
++                  <.> "cabal"
+         info verbosity $
+           "Updating "
+             ++ prettyShow (packageName pkgid) <.> "cabal"
+diff --git a/cabal-install/src/Distribution/Client/List.hs b/cabal-install/src/Distribution/Client/List.hs
+index ef9285bf3..6b53cd797 100644
+--- a/cabal-install/src/Distribution/Client/List.hs
++++ b/cabal-install/src/Distribution/Client/List.hs
+@@ -463,9 +463,9 @@ showPackageDetailedInfo pkginfo =
+   renderStyle (style{lineLength = 80, ribbonsPerLine = 1}) $
+     char '*'
+       <+> pretty (pkgName pkginfo)
+-        <<>> maybe Disp.empty (\v -> char '-' Disp.<> pretty v) (selectedVersion pkginfo)
++      <<>> maybe Disp.empty (\v -> char '-' Disp.<> pretty v) (selectedVersion pkginfo)
+       <+> text (replicate (16 - length (prettyShow (pkgName pkginfo))) ' ')
+-        <<>> parens pkgkind
++      <<>> parens pkgkind
+       $+$ ( nest 4 $
+               vcat
+                 [ entryST "Synopsis" synopsis hideIfNull reflowParagraphs
+diff --git a/cabal-install/src/Distribution/Client/ParseUtils.hs b/cabal-install/src/Distribution/Client/ParseUtils.hs
+index 44cdc4ccc..db2e782ca 100644
+--- a/cabal-install/src/Distribution/Client/ParseUtils.hs
++++ b/cabal-install/src/Distribution/Client/ParseUtils.hs
+@@ -211,8 +211,8 @@ ppField name mdef cur
+         ( \def ->
+             Disp.text "--"
+               <+> Disp.text name
+-                Disp.<> Disp.colon
+-              <+> def
++              Disp.<> Disp.colon
++                <+> def
+         )
+         mdef
+   | otherwise = Disp.text name Disp.<> Disp.colon <+> cur
+diff --git a/cabal-install/src/Distribution/Client/ProjectBuilding.hs b/cabal-install/src/Distribution/Client/ProjectBuilding.hs
+index f915af127..4bd1e60b4 100644
+--- a/cabal-install/src/Distribution/Client/ProjectBuilding.hs
++++ b/cabal-install/src/Distribution/Client/ProjectBuilding.hs
+@@ -1083,7 +1083,7 @@ unpackPackageTarball verbosity tarball parentdir pkgid pkgTextOverride =
+       parentdir
+         </> pkgsubdir
+         </> prettyShow pkgname
+-        <.> "cabal"
++          <.> "cabal"
+     pkgsubdir = prettyShow pkgid
+     pkgname = packageName pkgid
+ 
+diff --git a/cabal-install/src/Distribution/Client/ProjectConfig.hs b/cabal-install/src/Distribution/Client/ProjectConfig.hs
+index 2a0f82215..1dbf98003 100644
+--- a/cabal-install/src/Distribution/Client/ProjectConfig.hs
++++ b/cabal-install/src/Distribution/Client/ProjectConfig.hs
+@@ -449,7 +449,7 @@ resolveBuildTimeSettings
+           cabalLogsDirectory
+             </> "$compiler"
+             </> "$libname"
+-            <.> "log"
++              <.> "log"
+       givenTemplate = flagToMaybe projectConfigLogFile
+ 
+       useDefaultTemplate
+diff --git a/cabal-install/src/Distribution/Client/ProjectPlanning.hs b/cabal-install/src/Distribution/Client/ProjectPlanning.hs
+index a67a66a0e..c37359f5d 100644
+--- a/cabal-install/src/Distribution/Client/ProjectPlanning.hs
++++ b/cabal-install/src/Distribution/Client/ProjectPlanning.hs
+@@ -1737,7 +1737,7 @@ elaborateInstallPlan
+               dieProgress $
+                 text "Internal libraries only supported with per-component builds."
+                   $$ text "Per-component builds were disabled because"
+-                  <+> fsep (punctuate comma reasons)
++                    <+> fsep (punctuate comma reasons)
+           -- TODO: Maybe exclude Backpack too
+ 
+           elab0 = elaborateSolverToCommon spkg
