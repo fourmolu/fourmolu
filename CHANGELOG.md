@@ -1,3 +1,9 @@
+## Fourmolu 0.13.1.0
+
+* Fix `single-constraint-parens: never` with `QuantifiedConstraints` ([#340](https://github.com/fourmolu/fourmolu/issues/340))
+* Fix issue with single documented export + `import-export-style: leading` ([#341](https://github.com/fourmolu/fourmolu/issues/341))
+* Fix reexports configuration not allowing repeated modules ([#336](https://github.com/fourmolu/fourmolu/issues/336))
+
 ## Fourmolu 0.13.0.0
 
 * Automatically ignore files in Cabal/Stack directories when recursively finding files to format.
