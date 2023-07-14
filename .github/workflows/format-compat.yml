@@ -16,6 +16,9 @@ jobs:
           - name: Cabal
             repo: haskell/cabal
             check: fourmolu -m check Cabal Cabal-syntax cabal-install
+          - name: Swarm
+            repo: swarm-game/swarm
+            check: fourmolu -m check src app test
 
     name: 'format_compat: ${{ matrix.name }}'
     runs-on: ubuntu-latest
