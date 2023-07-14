@@ -20,3 +20,7 @@ jobs:
             - [ ] A file has been added to `changelog.d/`
             - [ ] Docs have been updated in `web/site/pages/config/`
             - [ ] Tests have been added
+            - [ ] Patch files in `compat-tests/` either:
+                1. Have NOT been changed, or
+                2. Modifies `fourmolu.yaml` with an appropriate option to keep the same formatting, or
+                3. Modifies Haskell files with new formatting (ONLY as a last resort)

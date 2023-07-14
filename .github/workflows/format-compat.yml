@@ -1,0 +1,67 @@
+name: Backwards compatible formatting
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: '0 0 * * *' # nightly
+
+jobs:
+  format_compat:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Cabal
+            repo: haskell/cabal
+            check: fourmolu -m check Cabal Cabal-syntax cabal-install
+
+    name: 'format_compat: ${{ matrix.name }}'
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Check out Fourmolu
+        uses: actions/checkout@v3
+        with:
+          path: fourmolu
+      -
+        uses: actions/cache@v3
+        with:
+          path: ~/.stack
+          key: ${{ runner.os }}-format_compat-${{ hashFiles('fourmolu/stack.yaml', 'fourmolu/fourmolu.cabal') }}
+      -
+        name: Install fourmolu
+        working-directory: fourmolu
+        run: |
+          stack install fourmolu:exe:fourmolu
+          echo "${HOME}/.local/bin" >> "${GITHUB_PATH}"
+      -
+        name: Check out ${{ matrix.name }}
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ matrix.repo }}
+          path: target
+      -
+        name: Add formatting patch
+        working-directory: target
+        run: |
+          PATCH=../fourmolu/compat-tests/${{ matrix.name }}.patch
+          if [[ -f "${PATCH}" ]]; then
+            git apply "${PATCH}"
+          fi
+      -
+        name: Run fourmolu
+        working-directory: target
+        run: ${{ matrix.check }}
+      -
+        if: always()
+        name: Generate patch
+        working-directory: target
+        run: git diff > ${{ matrix.name }}.patch
+      -
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.name }}-compat-patch
+          path: target/${{ matrix.name }}.patch
