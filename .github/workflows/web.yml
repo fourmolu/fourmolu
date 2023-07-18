@@ -39,7 +39,7 @@ jobs:
         uses: actions/cache@v3
         with:
           # https://gitlab.haskell.org/ghc/ghc-wasm-meta/-/blob/56d8e171e3dc6acb63c2d10fbbd6f226d8126683/setup.sh#L147
-          path: ~/.ghc-wasm/.cabal
+          path: ~/.ghc-wasm/.cabal/store
           key: ${{ runner.os }}-fourmolu_wasm-cache-${{ env.CURR_MONTH }}-${{ hashFiles('web/fourmolu-wasm/cabal.project.freeze') }}
           restore-keys: |
                ${{ runner.os }}-fourmolu_wasm-cache-${{ env.CURR_MONTH }}-
