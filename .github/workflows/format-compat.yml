@@ -13,12 +13,18 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: Cabal
+          -
+            name: cabal
             repo: haskell/cabal
-            check: fourmolu -m check Cabal Cabal-syntax cabal-install
-          - name: Swarm
+            # TODO: pin this to the next released version of Cabal that uses fourmolu
+            ref: 439d68efb74bd8f1c2215301d214d9459acdfa63
+            cmd: fourmolu -i Cabal Cabal-syntax cabal-install
+          -
+            name: swarm
             repo: swarm-game/swarm
-            check: fourmolu -m check src app test
+            # TODO: pin this to the next released version of swarm that is upgraded to fourmolu 0.13
+            ref: 485e6ace1f9d4860416667568f24929d357a0680
+            cmd: fourmolu -i src app test
 
     name: 'format_compat: ${{ matrix.name }}'
     runs-on: ubuntu-latest
@@ -37,34 +43,27 @@ jobs:
         name: Install fourmolu
         working-directory: fourmolu
         run: |
-          stack install fourmolu:exe:fourmolu
+          stack install
           echo "${HOME}/.local/bin" >> "${GITHUB_PATH}"
       -
-        name: Check out ${{ matrix.name }}
+        name: Check out ${{ matrix.repo }}
         uses: actions/checkout@v3
         with:
           repository: ${{ matrix.repo }}
-          path: target
-      -
-        name: Add formatting patch
-        working-directory: target
-        run: |
-          PATCH=../fourmolu/compat-tests/${{ matrix.name }}.patch
-          if [[ -f "${PATCH}" ]]; then
-            git apply "${PATCH}"
-          fi
+          ref: ${{ matrix.ref }}
+          path: target/
       -
         name: Run fourmolu
         working-directory: target
-        run: ${{ matrix.check }}
+        run: |
+          ${{ matrix.cmd }}
+          git diff > ${{ matrix.name }}.diff
       -
-        if: always()
-        name: Generate patch
-        working-directory: target
-        run: git diff > ${{ matrix.name }}.patch
+        name: Compare diff
+        run: diff -u fourmolu/compat-tests/${{ matrix.name }}.diff target/${{ matrix.name }}.diff
       -
         if: always()
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.name }}-compat-patch
-          path: target/${{ matrix.name }}.patch
+          name: ${{ matrix.name }}-compat-diff
+          path: target/${{ matrix.name }}.diff

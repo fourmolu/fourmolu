@@ -1,5 +1,5 @@
 diff --git a/Cabal/src/Distribution/Backpack/MixLink.hs b/Cabal/src/Distribution/Backpack/MixLink.hs
-index b358612b2..3e4cc8d7c 100644
+index b358612..3e4cc8d 100644
 --- a/Cabal/src/Distribution/Backpack/MixLink.hs
 +++ b/Cabal/src/Distribution/Backpack/MixLink.hs
 @@ -61,11 +61,11 @@ linkProvision mod_name ret@(prov : provs) (req : reqs) = do
@@ -65,7 +65,7 @@ index b358612b2..3e4cc8d7c 100644
            -- detect loops eventually in 'unifyUnitId'), but it
            -- seems harmless enough
 diff --git a/Cabal/src/Distribution/Backpack/UnifyM.hs b/Cabal/src/Distribution/Backpack/UnifyM.hs
-index 6e0f00d9f..010bffcda 100644
+index 6e0f00d..010bffc 100644
 --- a/Cabal/src/Distribution/Backpack/UnifyM.hs
 +++ b/Cabal/src/Distribution/Backpack/UnifyM.hs
 @@ -422,7 +422,7 @@ failWithMutuallyRecursiveUnitsError required_mod_name mod_names =
@@ -87,7 +87,7 @@ index 6e0f00d9f..010bffcda 100644
  
      let req_rename_fn k = case Map.lookup k req_rename of
 diff --git a/Cabal/src/Distribution/Simple/GHC.hs b/Cabal/src/Distribution/Simple/GHC.hs
-index f01d096e4..cd2c614cf 100644
+index f01d096..cd2c614 100644
 --- a/Cabal/src/Distribution/Simple/GHC.hs
 +++ b/Cabal/src/Distribution/Simple/GHC.hs
 @@ -2501,47 +2501,47 @@ installLib verbosity lbi targetDir dynlibTargetDir _builtDir pkg lib clbi = do
@@ -180,7 +180,7 @@ index f01d096e4..cd2c614cf 100644
      builtDir = componentBuildDir lbi clbi
  
 diff --git a/cabal-install/src/Distribution/Client/CmdHaddockProject.hs b/cabal-install/src/Distribution/Client/CmdHaddockProject.hs
-index d63e890a3..28b7f43e3 100644
+index d63e890..28b7f43 100644
 --- a/cabal-install/src/Distribution/Client/CmdHaddockProject.hs
 +++ b/cabal-install/src/Distribution/Client/CmdHaddockProject.hs
 @@ -289,7 +289,7 @@ haddockProjectAction flags _extraArgs globalFlags = do
@@ -202,7 +202,7 @@ index d63e890a3..28b7f43e3 100644
                  case a of
                    True ->
 diff --git a/cabal-install/src/Distribution/Client/CmdInstall.hs b/cabal-install/src/Distribution/Client/CmdInstall.hs
-index 46ce2cd6e..5e889146d 100644
+index 46ce2cd..5e88914 100644
 --- a/cabal-install/src/Distribution/Client/CmdInstall.hs
 +++ b/cabal-install/src/Distribution/Client/CmdInstall.hs
 @@ -1201,7 +1201,7 @@ getLocalEnv :: FilePath -> Platform -> Version -> FilePath
@@ -215,7 +215,7 @@ index 46ce2cd6e..5e889146d 100644
  getPackageDbStack
    :: CompilerId
 diff --git a/cabal-install/src/Distribution/Client/CmdSdist.hs b/cabal-install/src/Distribution/Client/CmdSdist.hs
-index cd5946641..ef87ab3df 100644
+index cd59466..ef87ab3 100644
 --- a/cabal-install/src/Distribution/Client/CmdSdist.hs
 +++ b/cabal-install/src/Distribution/Client/CmdSdist.hs
 @@ -240,9 +240,9 @@ sdistAction (pf@ProjectFlags{..}, SdistFlags{..}) targetStrings globalFlags = do
@@ -232,7 +232,7 @@ index cd5946641..ef87ab3df 100644
        ext = case format of
          SourceList _ -> "list"
 diff --git a/cabal-install/src/Distribution/Client/FetchUtils.hs b/cabal-install/src/Distribution/Client/FetchUtils.hs
-index 2ad9ea2c2..16468a2bf 100644
+index 2ad9ea2..16468a2 100644
 --- a/cabal-install/src/Distribution/Client/FetchUtils.hs
 +++ b/cabal-install/src/Distribution/Client/FetchUtils.hs
 @@ -368,7 +368,7 @@ packageFile :: Repo -> PackageId -> FilePath
@@ -245,7 +245,7 @@ index 2ad9ea2c2..16468a2bf 100644
  -- | Generate the full path to the directory where the local cached copy of
  -- the tarball for a given @PackageIdentifier@ is stored.
 diff --git a/cabal-install/src/Distribution/Client/Init/Interactive/Command.hs b/cabal-install/src/Distribution/Client/Init/Interactive/Command.hs
-index 2fab0db25..ad222a02e 100644
+index 2fab0db..ad222a0 100644
 --- a/cabal-install/src/Distribution/Client/Init/Interactive/Command.hs
 +++ b/cabal-install/src/Distribution/Client/Init/Interactive/Command.hs
 @@ -459,10 +459,10 @@ languagePrompt flags pkgType = getLanguage flags $ do
@@ -264,7 +264,7 @@ index 2fab0db25..ad222a02e 100644
  noCommentsPrompt :: Interactive m => InitFlags -> m Bool
  noCommentsPrompt flags = getNoComments flags $ do
 diff --git a/cabal-install/src/Distribution/Client/Install.hs b/cabal-install/src/Distribution/Client/Install.hs
-index 93ad8e5ae..1c7b38c2c 100644
+index 93ad8e5..1c7b38c 100644
 --- a/cabal-install/src/Distribution/Client/Install.hs
 +++ b/cabal-install/src/Distribution/Client/Install.hs
 @@ -1760,7 +1760,7 @@ installLocalTarballPackage
@@ -286,7 +286,7 @@ index 93ad8e5ae..1c7b38c2c 100644
            "Updating "
              ++ prettyShow (packageName pkgid) <.> "cabal"
 diff --git a/cabal-install/src/Distribution/Client/List.hs b/cabal-install/src/Distribution/Client/List.hs
-index ef9285bf3..6b53cd797 100644
+index ef9285b..6b53cd7 100644
 --- a/cabal-install/src/Distribution/Client/List.hs
 +++ b/cabal-install/src/Distribution/Client/List.hs
 @@ -463,9 +463,9 @@ showPackageDetailedInfo pkginfo =
@@ -302,7 +302,7 @@ index ef9285bf3..6b53cd797 100644
                vcat
                  [ entryST "Synopsis" synopsis hideIfNull reflowParagraphs
 diff --git a/cabal-install/src/Distribution/Client/ParseUtils.hs b/cabal-install/src/Distribution/Client/ParseUtils.hs
-index 44cdc4ccc..db2e782ca 100644
+index 44cdc4c..db2e782 100644
 --- a/cabal-install/src/Distribution/Client/ParseUtils.hs
 +++ b/cabal-install/src/Distribution/Client/ParseUtils.hs
 @@ -211,8 +211,8 @@ ppField name mdef cur
@@ -317,7 +317,7 @@ index 44cdc4ccc..db2e782ca 100644
          mdef
    | otherwise = Disp.text name Disp.<> Disp.colon <+> cur
 diff --git a/cabal-install/src/Distribution/Client/ProjectBuilding.hs b/cabal-install/src/Distribution/Client/ProjectBuilding.hs
-index f915af127..4bd1e60b4 100644
+index f915af1..4bd1e60 100644
 --- a/cabal-install/src/Distribution/Client/ProjectBuilding.hs
 +++ b/cabal-install/src/Distribution/Client/ProjectBuilding.hs
 @@ -1083,7 +1083,7 @@ unpackPackageTarball verbosity tarball parentdir pkgid pkgTextOverride =
@@ -330,7 +330,7 @@ index f915af127..4bd1e60b4 100644
      pkgname = packageName pkgid
  
 diff --git a/cabal-install/src/Distribution/Client/ProjectConfig.hs b/cabal-install/src/Distribution/Client/ProjectConfig.hs
-index 2a0f82215..1dbf98003 100644
+index 2a0f822..1dbf980 100644
 --- a/cabal-install/src/Distribution/Client/ProjectConfig.hs
 +++ b/cabal-install/src/Distribution/Client/ProjectConfig.hs
 @@ -449,7 +449,7 @@ resolveBuildTimeSettings
@@ -343,7 +343,7 @@ index 2a0f82215..1dbf98003 100644
  
        useDefaultTemplate
 diff --git a/cabal-install/src/Distribution/Client/ProjectPlanning.hs b/cabal-install/src/Distribution/Client/ProjectPlanning.hs
-index a67a66a0e..c37359f5d 100644
+index a67a66a..c37359f 100644
 --- a/cabal-install/src/Distribution/Client/ProjectPlanning.hs
 +++ b/cabal-install/src/Distribution/Client/ProjectPlanning.hs
 @@ -1737,7 +1737,7 @@ elaborateInstallPlan
