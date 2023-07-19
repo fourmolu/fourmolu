@@ -86,8 +86,8 @@ Or find all files in a project with `git ls-files`:
 
 ```bash
 $ fourmolu --mode inplace $(git ls-files '*.hs')
-# Or to avoid hitting command line length limits:
-$ git ls-files -z '*.hs' | xargs -0 fourmolu --mode inplace
+# Or to avoid hitting command line length limits and enable parallelism (12-way here):
+$ git ls-files -z '*.hs' | xargs -P 12 -0 fourmolu --mode inplace
 ```
 
 To check if files are already formatted (useful on CI):
