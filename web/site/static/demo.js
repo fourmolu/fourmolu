@@ -49,6 +49,10 @@ function getDemoElements() {
     options: document.querySelectorAll('.demo-config-option'),
     output: document.querySelector('#demo-app-output'),
     warnings: document.querySelector('#demo-warnings'),
+    copyConfig: {
+      button: document.querySelector('#demo-copy-config'),
+      toast: document.querySelector('#demo-toast-copy-config'),
+    },
     ast: {
       input: document.querySelector('#demo-app-input-ast'),
       output: document.querySelector('#demo-app-output-ast'),
@@ -174,12 +178,27 @@ async function runDemo() {
   demo.ast.output.innerText = outputAST
 }
 
+function copyConfig() {
+  const demo = getDemoElements()
+  const printerOpts = getOptionMap(demo.printerOpts)
+
+  const config = [
+    '# Generated from web app, for more information, see: https://fourmolu.github.io/config/',
+    Object.entries(printerOpts).map(([k, v]) => `${k}: ${v}`).join('\n'),
+  ].join('\n')
+  navigator.clipboard.writeText(config)
+
+  // Show confirmation message
+  bootstrap.Toast.getOrCreateInstance(demo.copyConfig.toast).show()
+}
+
 function main() {
   const demo = getDemoElements()
 
   demo.input.addEventListener('input', runDemo)
   demo.printerOpts.forEach((el) => el.addEventListener('input', runDemo))
   demo.options.forEach((el) => el.addEventListener('input', runDemo))
+  demo.copyConfig.button.addEventListener('click', copyConfig)
 
   // initialize the demo with some code
   demo.input.value = `

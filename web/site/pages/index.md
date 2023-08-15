@@ -7,9 +7,14 @@ Fourmolu is a formatter for Haskell source code. It is a fork of [Ormolu](https:
 <link rel="stylesheet" href="/static/demo.css" />
 <script src="/static/demo.js"></script>
 <div id="demo">
-    <button id="demo-ast-modal-toggle" type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#demo-ast-modal">
-        Show internal parse result
-    </button>
+    <div id="demo-buttons">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#demo-ast-modal">
+            Show internal parse result
+        </button>
+        <button id="demo-copy-config" type="button" class="btn btn-primary">
+            Copy configuration
+        </button>
+    </div>
     <aside id="demo-warnings"></aside>
     <div id="demo-app">
         <textarea id="demo-app-input" autocomplete="off" autofocus></textarea>
@@ -52,6 +57,16 @@ Fourmolu is a formatter for Haskell source code. It is a fork of [Ormolu](https:
                     <pre id="demo-app-input-ast">&nbsp;</pre>
                     <pre id="demo-app-output-ast">&nbsp;</pre>
                 </div>
+            </div>
+        </div>
+    </div>
+    <div class="toast-container position-fixed top-0 end-0 p-3">
+        <div id="demo-toast-copy-config" class="toast text-bg-secondary" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    Configuration successfully copied!
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
             </div>
         </div>
     </div>
