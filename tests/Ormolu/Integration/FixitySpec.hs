@@ -21,25 +21,22 @@ spec =
 
           copyFile ("fixity-tests/" ++ testInputFileName) srcFile
 
-          -- extend fourmolu.yaml to keep same formatting as Ormolu
-          rootConfig <- readFile "fourmolu.yaml"
           writeFile configFile $
             if testUseConfig
               then
                 unlines
-                  [ rootConfig,
-                    -- add information in the original `fixity-tests/.ormolu` file
+                  [ -- add information in the original `fixity-tests/.ormolu` file
                     "fixities:",
                     "- 'infixr 8 .='",
                     "- 'infixr 5 #, :>'",
                     "reexports:",
                     "- 'module Foo exports Control.Lens'"
                   ]
-              else rootConfig
+              else "{}"
 
           actual <-
             readProcess fourmoluExe . concat $
-              [ [srcFile, "--check-idempotence"],
+              [ [srcFile, "--preset=ormolu", "--check-idempotence"],
                 testArgs,
                 if testUseConfig then [] else ["--no-cabal"]
               ]
