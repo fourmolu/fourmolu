@@ -31,7 +31,7 @@ spec = do
       loadConfigFile "fourmolu.yaml" >>= \case
         ConfigLoaded _ cfg -> pure cfg
         result -> error $ "Could not load config file: " ++ show result
-  let ormoluPrinterOpts = resolvePrinterOpts [cfgFilePrinterOpts ormoluConfig]
+  let ormoluPrinterOpts = resolvePrinterOpts [] [cfgFilePrinterOpts ormoluConfig]
 
   es <- runIO locateExamples
   sequence_ $

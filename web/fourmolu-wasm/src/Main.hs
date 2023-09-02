@@ -184,7 +184,7 @@ format Input {..} = do
     config =
       -- TODO: add fixities?
       Config.defaultConfig
-        { Config.cfgPrinterOpts = Config.resolvePrinterOpts [printerOpts],
+        { Config.cfgPrinterOpts = Config.resolvePrinterOpts [] [printerOpts],
           Config.cfgCheckIdempotence = checkIdempotence,
           Config.cfgUnsafe = unsafeMode,
           Config.cfgSourceType = if formatBackpack then Config.SignatureSource else Config.ModuleSource,

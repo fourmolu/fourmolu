@@ -100,6 +100,9 @@ mkConfig path Opts {optQuiet, optConfig = cliConfig, optFourmoluOpts} = do
     cliConfig
       { cfgPrinterOpts =
           resolvePrinterOpts
+            [ cliConfigPreset,
+              cfgFilePreset fourmoluConfig
+            ]
             [ cliPrinterOpts,
               cfgFilePrinterOpts fourmoluConfig
             ],
@@ -116,7 +119,8 @@ mkConfig path Opts {optQuiet, optConfig = cliConfig, optFourmoluOpts} = do
       }
   where
     FourmoluOpts
-      { optPrinterOpts = cliPrinterOpts
+      { optPrinterOpts = cliPrinterOpts,
+        optConfigPreset = cliConfigPreset
       } = optFourmoluOpts
 
     output = hPutStrLn stderr
@@ -287,7 +291,8 @@ data Opts = Opts
   }
 
 data FourmoluOpts = FourmoluOpts
-  { optPrinterOpts :: PrinterOptsPartial
+  { optPrinterOpts :: PrinterOptsPartial,
+    optConfigPreset :: Maybe ConfigPreset
   }
 
 -- | Mode of operation.

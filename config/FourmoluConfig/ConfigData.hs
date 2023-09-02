@@ -50,6 +50,16 @@ data HaskellValue
 allOptions :: [Option]
 allOptions =
   [ Option
+      { name = "preset",
+        type_ = "ConfigPreset",
+        description = "Preset to use as the base configuration",
+        fieldName = Nothing,
+        default_ = HsExpr "FourmoluPreset",
+        ormolu = HsExpr "FourmoluPreset",
+        sinceVersion = Nothing,
+        cliOverrides = emptyOverrides
+      },
+    Option
       { name = "indentation",
         fieldName = Just "poIndentation",
         description = "Number of spaces per indentation step",
@@ -267,6 +277,13 @@ data ADTSchemaInputParser
 allFieldTypes :: [FieldType]
 allFieldTypes =
   [ FieldTypeEnum
+      { fieldTypeName = "ConfigPreset",
+        enumOptions =
+          [ ("FourmoluPreset", "fourmolu"),
+            ("OrmoluPreset", "ormolu")
+          ]
+      },
+    FieldTypeEnum
       { fieldTypeName = "CommaStyle",
         enumOptions =
           [ ("Leading", "leading"),

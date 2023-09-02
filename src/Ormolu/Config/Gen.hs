@@ -8,6 +8,7 @@
 
 module Ormolu.Config.Gen
   ( PrinterOpts (..)
+  , ConfigPreset (..)
   , CommaStyle (..)
   , FunctionArrowsStyle (..)
   , HaddockPrintStyle (..)
@@ -20,6 +21,7 @@ module Ormolu.Config.Gen
   , ColumnLimit (..)
   , emptyPrinterOpts
   , defaultPrinterOpts
+  , ormoluPrinterOpts
   , defaultPrinterOptsYaml
   , fillMissingPrinterOpts
   , parseFourmoluOptsCLI
@@ -112,6 +114,26 @@ defaultPrinterOpts =
     , poRespectful = pure True
     }
 
+ormoluPrinterOpts :: PrinterOpts Identity
+ormoluPrinterOpts =
+  PrinterOpts
+    { poIndentation = pure 2
+    , poColumnLimit = pure NoLimit
+    , poFunctionArrows = pure TrailingArrows
+    , poCommaStyle = pure Trailing
+    , poImportExportStyle = pure ImportExportTrailing
+    , poIndentWheres = pure True
+    , poRecordBraceSpace = pure True
+    , poNewlinesBetweenDecls = pure 1
+    , poHaddockStyle = pure HaddockSingleLine
+    , poHaddockStyleModule = pure PrintStyleInherit
+    , poLetStyle = pure LetInline
+    , poInStyle = pure InRightAlign
+    , poSingleConstraintParens = pure ConstraintAlways
+    , poUnicode = pure UnicodeNever
+    , poRespectful = pure False
+    }
+
 -- | Fill the field values that are 'Nothing' in the first argument
 -- with the values of the corresponding fields of the second argument.
 fillMissingPrinterOpts ::
@@ -141,12 +163,13 @@ fillMissingPrinterOpts p1 p2 =
 
 parseFourmoluOptsCLI ::
   Applicative f =>
-  (PrinterOpts Maybe -> a) ->
+  (PrinterOpts Maybe -> Maybe ConfigPreset -> a) ->
   (forall opt. FourmoluConfigType opt => String -> String -> String -> f (Maybe opt)) ->
   f a
 parseFourmoluOptsCLI toResult mkOption =
   toResult
     <$> parsePrinterOptsCLI
+    <*> parsePresetOptCLI
   where
     parsePrinterOptsCLI =
       pure PrinterOpts
@@ -210,6 +233,11 @@ parseFourmoluOptsCLI toResult mkOption =
           "respectful"
           "Give the programmer more choice on where to insert blank lines (default: true)"
           "BOOL"
+    parsePresetOptCLI =
+      mkOption
+        "preset"
+        "Preset to use as the base configuration (choices: \"fourmolu\" or \"ormolu\") (default: fourmolu)"
+        "OPTION"
 
 parsePrinterOptsJSON ::
   Applicative f =>
@@ -251,6 +279,11 @@ instance FourmoluConfigType Bool where
           [ "unknown value: " <> show s,
             "Valid values are: \"false\" or \"true\""
           ]
+
+data ConfigPreset
+  = FourmoluPreset
+  | OrmoluPreset
+  deriving (Eq, Show, Enum, Bounded)
 
 data CommaStyle
   = Leading
@@ -309,6 +342,23 @@ data ColumnLimit
   = NoLimit
   | ColumnLimit Int
   deriving (Eq, Show)
+
+instance Aeson.FromJSON ConfigPreset where
+  parseJSON =
+    Aeson.withText "ConfigPreset" $ \s ->
+      either Aeson.parseFail pure $
+        parseFourmoluConfigType (Text.unpack s)
+
+instance FourmoluConfigType ConfigPreset where
+  parseFourmoluConfigType s =
+    case s of
+      "fourmolu" -> Right FourmoluPreset
+      "ormolu" -> Right OrmoluPreset
+      _ ->
+        Left . unlines $
+          [ "unknown value: " <> show s
+          , "Valid values are: \"fourmolu\" or \"ormolu\""
+          ]
 
 instance Aeson.FromJSON CommaStyle where
   parseJSON =
@@ -498,7 +548,10 @@ instance FourmoluConfigType ColumnLimit where
 defaultPrinterOptsYaml :: String
 defaultPrinterOptsYaml =
   unlines
-    [ "# Number of spaces per indentation step"
+    [ "# Preset to use as the base configuration (choices: fourmolu or ormolu)"
+    , "preset: fourmolu"
+    , ""
+    , "# Number of spaces per indentation step"
     , "indentation: 4"
     , ""
     , "# Max line length for automatic line breaking"

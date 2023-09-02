@@ -14,6 +14,12 @@ import FourmoluConfig.ConfigData
 fieldTypesMap :: Map String FieldType
 fieldTypesMap = Map.fromList [(fieldTypeName fieldType, fieldType) | fieldType <- allFieldTypes]
 
+getOption :: String -> Option
+getOption n =
+  case filter ((== n) . name) allOptions of
+    [opt] -> opt
+    _ -> error $ "Could not find option named: " ++ n
+
 getOptionSchema :: Option -> ADTSchema
 getOptionSchema Option {type_ = ty} =
   case ty of

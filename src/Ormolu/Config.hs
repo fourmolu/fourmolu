@@ -33,6 +33,7 @@ module Ormolu.Config
     defaultPrinterOptsYaml,
     fillMissingPrinterOpts,
     resolvePrinterOpts,
+    ConfigPreset (..),
     CommaStyle (..),
     FunctionArrowsStyle (..),
     HaddockPrintStyle (..),
@@ -54,12 +55,14 @@ module Ormolu.Config
   )
 where
 
+import Control.Applicative (asum)
 import Control.Monad (forM)
 import Data.Aeson ((.!=), (.:?))
 import Data.Aeson qualified as Aeson
 import Data.Aeson.Types qualified as Aeson
 import Data.Functor.Identity (Identity (..))
 import Data.Map.Strict qualified as Map
+import Data.Maybe (fromMaybe)
 import Data.Set (Set)
 import Data.Set qualified as Set
 import Data.String (fromString)
@@ -228,15 +231,22 @@ deriving instance Eq PrinterOptsTotal
 
 deriving instance Show PrinterOptsTotal
 
--- | Apply the given configuration in order (later options override earlier).
-resolvePrinterOpts :: [PrinterOptsPartial] -> PrinterOptsTotal
-resolvePrinterOpts = foldr fillMissingPrinterOpts defaultPrinterOpts
+-- | Apply the given configuration in order (later options override earlier),
+-- and fill in options from the preset.
+resolvePrinterOpts :: [Maybe ConfigPreset] -> [PrinterOptsPartial] -> PrinterOptsTotal
+resolvePrinterOpts presets partialOpts =
+  let opts = foldr fillMissingPrinterOpts mempty partialOpts
+   in fillMissingPrinterOpts opts $
+        case fromMaybe FourmoluPreset $ asum presets of
+          FourmoluPreset -> defaultPrinterOpts
+          OrmoluPreset -> ormoluPrinterOpts
 
 ----------------------------------------------------------------------------
 -- Loading Fourmolu configuration
 
 data FourmoluConfig = FourmoluConfig
   { cfgFilePrinterOpts :: PrinterOptsPartial,
+    cfgFilePreset :: Maybe ConfigPreset,
     cfgFileFixities :: FixityOverrides,
     cfgFileReexports :: ModuleReexports
   }
@@ -245,6 +255,7 @@ data FourmoluConfig = FourmoluConfig
 instance Aeson.FromJSON FourmoluConfig where
   parseJSON = Aeson.withObject "FourmoluConfig" $ \o -> do
     cfgFilePrinterOpts <- Aeson.parseJSON (Aeson.Object o)
+    cfgFilePreset <- o .:? "preset"
     rawFixities <- o .:? "fixities" .!= []
     cfgFileFixities <-
       case mapM parseFixityDeclarationStr rawFixities of
@@ -261,6 +272,7 @@ emptyConfig :: FourmoluConfig
 emptyConfig =
   FourmoluConfig
     { cfgFilePrinterOpts = mempty,
+      cfgFilePreset = Nothing,
       cfgFileFixities = FixityOverrides mempty,
       cfgFileReexports = ModuleReexports mempty
     }

@@ -27,6 +27,7 @@ configGenHs =
       unlines_ $ map (printf "  , %s (..)" . fieldTypeName) allFieldTypes,
       "  , emptyPrinterOpts",
       "  , defaultPrinterOpts",
+      "  , ormoluPrinterOpts",
       "  , defaultPrinterOptsYaml",
       "  , fillMissingPrinterOpts",
       "  , parseFourmoluOptsCLI",
@@ -57,10 +58,9 @@ configGenHs =
       indent . mkPrinterOpts $ \(fieldName', _) ->
         fieldName' <> " = Nothing",
       "",
-      "defaultPrinterOpts :: PrinterOpts Identity",
-      "defaultPrinterOpts =",
-      indent . mkPrinterOpts $ \(fieldName', Option {default_}) ->
-        fieldName' <> " = pure " <> renderHs default_,
+      mkPresetOpts "defaultPrinterOpts" default_,
+      "",
+      mkPresetOpts "ormoluPrinterOpts" ormolu,
       "",
       "-- | Fill the field values that are 'Nothing' in the first argument",
       "-- with the values of the corresponding fields of the second argument.",
@@ -76,12 +76,13 @@ configGenHs =
       "",
       "parseFourmoluOptsCLI ::",
       "  Applicative f =>",
-      "  (PrinterOpts Maybe -> a) ->",
+      "  (PrinterOpts Maybe -> Maybe ConfigPreset -> a) ->",
       "  (forall opt. FourmoluConfigType opt => String -> String -> String -> f (Maybe opt)) ->",
       "  f a",
       "parseFourmoluOptsCLI toResult mkOption =",
       "  toResult",
       "    <$> parsePrinterOptsCLI",
+      "    <*> parsePresetOptCLI",
       "  where",
       "    parsePrinterOptsCLI =",
       "      pure PrinterOpts",
@@ -96,6 +97,14 @@ configGenHs =
             ]
           | option@Option {name, fieldName = Just _} <- allOptions
         ],
+      "    parsePresetOptCLI =",
+      "      mkOption",
+      indent' 4 . unlines_ $
+        let option = getOption "preset"
+         in [ quote (name option),
+              quote (getCLIHelp option),
+              quote (getCLIPlaceholder option)
+            ],
       "",
       "parsePrinterOptsJSON ::",
       "  Applicative f =>",
@@ -204,6 +213,14 @@ configGenHs =
               | (isFirst, con) <- withFirst cons,
                 let delim = if isFirst then '=' else '|'
             ]
+
+    mkPresetOpts name getPresetVal =
+      unlines_
+        [ name <> " :: PrinterOpts Identity",
+          name <> " =",
+          indent . mkPrinterOpts $ \(fieldName', opt) ->
+            fieldName' <> " = pure " <> renderHs (getPresetVal opt)
+        ]
 
     renderEnumOptions enumOptions =
       renderList [printf "\\\"%s\\\"" opt | (_, opt) <- enumOptions]
