@@ -238,7 +238,7 @@ data FieldType
         -- | Implementation of `Aeson.parseJSON`
         adtParseJSON :: String,
         -- | Implementation of `String -> Either String a`
-        adtParsePrinterOptType :: String
+        adtParseFourmoluConfigType :: String
       }
 
 -- | The definition of possible values in a data type.
@@ -317,11 +317,11 @@ allFieldTypes =
               "  Aeson.String \"\" -> pure PrintStyleInherit",
               "  _ -> PrintStyleOverride <$> Aeson.parseJSON v"
             ],
-        adtParsePrinterOptType =
+        adtParseFourmoluConfigType =
           unlines
             [ "\\s -> case s of",
               "  \"\" -> pure PrintStyleInherit",
-              "  _ -> PrintStyleOverride <$> parsePrinterOptType s"
+              "  _ -> PrintStyleOverride <$> parseFourmoluConfigType s"
             ]
       },
     FieldTypeEnum
@@ -398,7 +398,7 @@ allFieldTypes =
               "         \"Valid values are: \\\"none\\\", or an integer\"",
               "       ]"
             ],
-        adtParsePrinterOptType =
+        adtParseFourmoluConfigType =
           unlines
             [ "\\s ->",
               "  case s of",

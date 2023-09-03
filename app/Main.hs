@@ -478,7 +478,7 @@ fourmoluOptsParser :: Parser FourmoluOpts
 fourmoluOptsParser = parseFourmoluOptsCLI FourmoluOpts mkOption
   where
     mkOption name helpText placeholder =
-      option (Just <$> eitherReader parsePrinterOptType) . mconcat $
+      option (Just <$> eitherReader parseFourmoluConfigType) . mconcat $
         [ long name,
           help helpText,
           metavar placeholder,

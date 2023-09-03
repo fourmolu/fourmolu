@@ -24,7 +24,7 @@ module Ormolu.Config.Gen
   , fillMissingPrinterOpts
   , parseFourmoluOptsCLI
   , parsePrinterOptsJSON
-  , parsePrinterOptType
+  , parseFourmoluConfigType
   )
 where
 
@@ -142,7 +142,7 @@ fillMissingPrinterOpts p1 p2 =
 parseFourmoluOptsCLI ::
   Applicative f =>
   (PrinterOpts Maybe -> a) ->
-  (forall opt. PrinterOptsFieldType opt => String -> String -> String -> f (Maybe opt)) ->
+  (forall opt. FourmoluConfigType opt => String -> String -> String -> f (Maybe opt)) ->
   f a
 parseFourmoluOptsCLI toResult mkOption =
   toResult
@@ -213,7 +213,7 @@ parseFourmoluOptsCLI toResult mkOption =
 
 parsePrinterOptsJSON ::
   Applicative f =>
-  (forall a. PrinterOptsFieldType a => String -> f (Maybe a)) ->
+  (forall a. FourmoluConfigType a => String -> f (Maybe a)) ->
   f (PrinterOpts Maybe)
 parsePrinterOptsJSON f =
   pure PrinterOpts
@@ -235,14 +235,14 @@ parsePrinterOptsJSON f =
 
 {---------- PrinterOpts field types ----------}
 
-class Aeson.FromJSON a => PrinterOptsFieldType a where
-  parsePrinterOptType :: String -> Either String a
+class Aeson.FromJSON a => FourmoluConfigType a where
+  parseFourmoluConfigType :: String -> Either String a
 
-instance PrinterOptsFieldType Int where
-  parsePrinterOptType = readEither
+instance FourmoluConfigType Int where
+  parseFourmoluConfigType = readEither
 
-instance PrinterOptsFieldType Bool where
-  parsePrinterOptType s =
+instance FourmoluConfigType Bool where
+  parseFourmoluConfigType s =
     case s of
       "false" -> Right False
       "true" -> Right True
@@ -314,10 +314,10 @@ instance Aeson.FromJSON CommaStyle where
   parseJSON =
     Aeson.withText "CommaStyle" $ \s ->
       either Aeson.parseFail pure $
-        parsePrinterOptType (Text.unpack s)
+        parseFourmoluConfigType (Text.unpack s)
 
-instance PrinterOptsFieldType CommaStyle where
-  parsePrinterOptType s =
+instance FourmoluConfigType CommaStyle where
+  parseFourmoluConfigType s =
     case s of
       "leading" -> Right Leading
       "trailing" -> Right Trailing
@@ -331,10 +331,10 @@ instance Aeson.FromJSON FunctionArrowsStyle where
   parseJSON =
     Aeson.withText "FunctionArrowsStyle" $ \s ->
       either Aeson.parseFail pure $
-        parsePrinterOptType (Text.unpack s)
+        parseFourmoluConfigType (Text.unpack s)
 
-instance PrinterOptsFieldType FunctionArrowsStyle where
-  parsePrinterOptType s =
+instance FourmoluConfigType FunctionArrowsStyle where
+  parseFourmoluConfigType s =
     case s of
       "trailing" -> Right TrailingArrows
       "leading" -> Right LeadingArrows
@@ -349,10 +349,10 @@ instance Aeson.FromJSON HaddockPrintStyle where
   parseJSON =
     Aeson.withText "HaddockPrintStyle" $ \s ->
       either Aeson.parseFail pure $
-        parsePrinterOptType (Text.unpack s)
+        parseFourmoluConfigType (Text.unpack s)
 
-instance PrinterOptsFieldType HaddockPrintStyle where
-  parsePrinterOptType s =
+instance FourmoluConfigType HaddockPrintStyle where
+  parseFourmoluConfigType s =
     case s of
       "single-line" -> Right HaddockSingleLine
       "multi-line" -> Right HaddockMultiLine
@@ -370,20 +370,20 @@ instance Aeson.FromJSON HaddockPrintStyleModule where
       Aeson.String "" -> pure PrintStyleInherit
       _ -> PrintStyleOverride <$> Aeson.parseJSON v
 
-instance PrinterOptsFieldType HaddockPrintStyleModule where
-  parsePrinterOptType =
+instance FourmoluConfigType HaddockPrintStyleModule where
+  parseFourmoluConfigType =
     \s -> case s of
       "" -> pure PrintStyleInherit
-      _ -> PrintStyleOverride <$> parsePrinterOptType s
+      _ -> PrintStyleOverride <$> parseFourmoluConfigType s
 
 instance Aeson.FromJSON ImportExportStyle where
   parseJSON =
     Aeson.withText "ImportExportStyle" $ \s ->
       either Aeson.parseFail pure $
-        parsePrinterOptType (Text.unpack s)
+        parseFourmoluConfigType (Text.unpack s)
 
-instance PrinterOptsFieldType ImportExportStyle where
-  parsePrinterOptType s =
+instance FourmoluConfigType ImportExportStyle where
+  parseFourmoluConfigType s =
     case s of
       "leading" -> Right ImportExportLeading
       "trailing" -> Right ImportExportTrailing
@@ -398,10 +398,10 @@ instance Aeson.FromJSON LetStyle where
   parseJSON =
     Aeson.withText "LetStyle" $ \s ->
       either Aeson.parseFail pure $
-        parsePrinterOptType (Text.unpack s)
+        parseFourmoluConfigType (Text.unpack s)
 
-instance PrinterOptsFieldType LetStyle where
-  parsePrinterOptType s =
+instance FourmoluConfigType LetStyle where
+  parseFourmoluConfigType s =
     case s of
       "auto" -> Right LetAuto
       "inline" -> Right LetInline
@@ -417,10 +417,10 @@ instance Aeson.FromJSON InStyle where
   parseJSON =
     Aeson.withText "InStyle" $ \s ->
       either Aeson.parseFail pure $
-        parsePrinterOptType (Text.unpack s)
+        parseFourmoluConfigType (Text.unpack s)
 
-instance PrinterOptsFieldType InStyle where
-  parsePrinterOptType s =
+instance FourmoluConfigType InStyle where
+  parseFourmoluConfigType s =
     case s of
       "left-align" -> Right InLeftAlign
       "right-align" -> Right InRightAlign
@@ -435,10 +435,10 @@ instance Aeson.FromJSON Unicode where
   parseJSON =
     Aeson.withText "Unicode" $ \s ->
       either Aeson.parseFail pure $
-        parsePrinterOptType (Text.unpack s)
+        parseFourmoluConfigType (Text.unpack s)
 
-instance PrinterOptsFieldType Unicode where
-  parsePrinterOptType s =
+instance FourmoluConfigType Unicode where
+  parseFourmoluConfigType s =
     case s of
       "detect" -> Right UnicodeDetect
       "always" -> Right UnicodeAlways
@@ -453,10 +453,10 @@ instance Aeson.FromJSON SingleConstraintParens where
   parseJSON =
     Aeson.withText "SingleConstraintParens" $ \s ->
       either Aeson.parseFail pure $
-        parsePrinterOptType (Text.unpack s)
+        parseFourmoluConfigType (Text.unpack s)
 
-instance PrinterOptsFieldType SingleConstraintParens where
-  parsePrinterOptType s =
+instance FourmoluConfigType SingleConstraintParens where
+  parseFourmoluConfigType s =
     case s of
       "auto" -> Right ConstraintAuto
       "always" -> Right ConstraintAlways
@@ -481,8 +481,8 @@ instance Aeson.FromJSON ColumnLimit where
              "Valid values are: \"none\", or an integer"
            ]
 
-instance PrinterOptsFieldType ColumnLimit where
-  parsePrinterOptType =
+instance FourmoluConfigType ColumnLimit where
+  parseFourmoluConfigType =
     \s ->
       case s of
         "none" -> Right NoLimit
