@@ -193,20 +193,20 @@ getConfigOptionContext :: ConfigData.Option -> [Context a]
 getConfigOptionContext option@ConfigData.Option {..} =
   [ constField "info" . concat $
       [ wrap' "<table id=\"config-info\">" "</table>" . wrap "tbody" . concat $
-        [ wrap "tr" . concat $
-            [ wrap "th" label,
-              wrap "td" val
-            ]
-          | Just (label, val) <-
-              [ Just ("Description", description),
-                Just schema,
-                case fieldName of
-                  Just _ -> Nothing
-                  Nothing ->
-                    Just ("Default", wrap "code" $ hs2yaml type_ default_),
-                Just ("Since", maybe "<i>Unreleased</i>" ("v" <>) sinceVersion)
+          [ wrap "tr" . concat $
+              [ wrap "th" label,
+                wrap "td" val
               ]
-        ],
+            | Just (label, val) <-
+                [ Just ("Description", description),
+                  Just schema,
+                  case fieldName of
+                    Just _ -> Nothing
+                    Nothing ->
+                      Just ("Default", wrap "code" $ hs2yaml type_ default_),
+                  Just ("Since", maybe "<i>Unreleased</i>" ("v" <>) sinceVersion)
+                ]
+          ],
         case fieldName of
           Just _ ->
             wrap "table" . wrap "tbody" . concat $
