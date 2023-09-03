@@ -10,12 +10,12 @@ module FourmoluConfig.ConfigData where
 data Option = Option
   { -- | Name of key in config file + flag in CLI
     name :: String,
-    -- | Name of PrinterOpts field (or Nothing if config is not in PrinterOpts)
-    fieldName :: Maybe String,
-    -- | Description of option in Haddocks + CLI
-    description :: String,
     -- | The Haskell type of the option
     type_ :: String,
+    -- | Description of option in Haddocks + CLI
+    description :: String,
+    -- | Name of PrinterOpts field (or Nothing if config is not in PrinterOpts)
+    fieldName :: Maybe String,
     -- | The option to use as the Fourmolu default
     default_ :: HaskellValue,
     -- | The option that mimics Ormolu's formatting
@@ -61,9 +61,9 @@ allOptions =
       },
     Option
       { name = "indentation",
-        fieldName = Just "poIndentation",
-        description = "Number of spaces per indentation step",
         type_ = "Int",
+        description = "Number of spaces per indentation step",
+        fieldName = Just "poIndentation",
         default_ = HsInt 4,
         ormolu = HsInt 2,
         sinceVersion = Just "0.1.0.0",
@@ -71,9 +71,9 @@ allOptions =
       },
     Option
       { name = "column-limit",
-        fieldName = Just "poColumnLimit",
-        description = "Max line length for automatic line breaking",
         type_ = "ColumnLimit",
+        description = "Max line length for automatic line breaking",
+        fieldName = Just "poColumnLimit",
         default_ = HsExpr "NoLimit",
         ormolu = HsExpr "NoLimit",
         sinceVersion = Just "0.12.0.0",
@@ -81,9 +81,9 @@ allOptions =
       },
     Option
       { name = "function-arrows",
-        fieldName = Just "poFunctionArrows",
-        description = "Styling of arrows in type signatures",
         type_ = "FunctionArrowsStyle",
+        description = "Styling of arrows in type signatures",
+        fieldName = Just "poFunctionArrows",
         default_ = HsExpr "TrailingArrows",
         ormolu = HsExpr "TrailingArrows",
         sinceVersion = Just "0.8.2.0",
@@ -91,9 +91,9 @@ allOptions =
       },
     Option
       { name = "comma-style",
-        fieldName = Just "poCommaStyle",
-        description = "How to place commas in multi-line lists, records, etc.",
         type_ = "CommaStyle",
+        description = "How to place commas in multi-line lists, records, etc.",
+        fieldName = Just "poCommaStyle",
         default_ = HsExpr "Leading",
         ormolu = HsExpr "Trailing",
         sinceVersion = Just "0.2.0.0",
@@ -101,9 +101,9 @@ allOptions =
       },
     Option
       { name = "import-export-style",
-        fieldName = Just "poImportExportStyle",
-        description = "Styling of import/export lists",
         type_ = "ImportExportStyle",
+        description = "Styling of import/export lists",
+        fieldName = Just "poImportExportStyle",
         default_ = HsExpr "ImportExportDiffFriendly",
         ormolu = HsExpr "ImportExportTrailing",
         sinceVersion = Just "0.8.0.0",
@@ -111,9 +111,9 @@ allOptions =
       },
     Option
       { name = "indent-wheres",
-        fieldName = Just "poIndentWheres",
-        description = "Whether to full-indent or half-indent 'where' bindings past the preceding body",
         type_ = "Bool",
+        description = "Whether to full-indent or half-indent 'where' bindings past the preceding body",
+        fieldName = Just "poIndentWheres",
         default_ = HsBool False,
         ormolu = HsBool True,
         sinceVersion = Just "0.2.0.0",
@@ -121,9 +121,9 @@ allOptions =
       },
     Option
       { name = "record-brace-space",
-        fieldName = Just "poRecordBraceSpace",
-        description = "Whether to leave a space before an opening record brace",
         type_ = "Bool",
+        description = "Whether to leave a space before an opening record brace",
+        fieldName = Just "poRecordBraceSpace",
         default_ = HsBool False,
         ormolu = HsBool True,
         sinceVersion = Just "0.2.0.0",
@@ -131,9 +131,9 @@ allOptions =
       },
     Option
       { name = "newlines-between-decls",
-        fieldName = Just "poNewlinesBetweenDecls",
-        description = "Number of spaces between top-level declarations",
         type_ = "Int",
+        description = "Number of spaces between top-level declarations",
+        fieldName = Just "poNewlinesBetweenDecls",
         default_ = HsInt 1,
         ormolu = HsInt 1,
         sinceVersion = Just "0.3.0.0",
@@ -141,9 +141,9 @@ allOptions =
       },
     Option
       { name = "haddock-style",
-        fieldName = Just "poHaddockStyle",
-        description = "How to print Haddock comments",
         type_ = "HaddockPrintStyle",
+        description = "How to print Haddock comments",
+        fieldName = Just "poHaddockStyle",
         default_ = HsExpr "HaddockMultiLine",
         ormolu = HsExpr "HaddockSingleLine",
         sinceVersion = Just "0.2.0.0",
@@ -151,9 +151,9 @@ allOptions =
       },
     Option
       { name = "haddock-style-module",
-        fieldName = Just "poHaddockStyleModule",
-        description = "How to print module docstring",
         type_ = "HaddockPrintStyleModule",
+        description = "How to print module docstring",
+        fieldName = Just "poHaddockStyleModule",
         default_ = HsExpr "PrintStyleInherit",
         ormolu = HsExpr "PrintStyleInherit",
         sinceVersion = Just "0.10.0.0",
@@ -161,9 +161,9 @@ allOptions =
       },
     Option
       { name = "let-style",
-        fieldName = Just "poLetStyle",
-        description = "Styling of let blocks",
         type_ = "LetStyle",
+        description = "Styling of let blocks",
+        fieldName = Just "poLetStyle",
         default_ = HsExpr "LetAuto",
         ormolu = HsExpr "LetInline",
         sinceVersion = Just "0.9.0.0",
@@ -171,9 +171,9 @@ allOptions =
       },
     Option
       { name = "in-style",
-        fieldName = Just "poInStyle",
-        description = "How to align the 'in' keyword with respect to the 'let' keyword",
         type_ = "InStyle",
+        description = "How to align the 'in' keyword with respect to the 'let' keyword",
+        fieldName = Just "poInStyle",
         default_ = HsExpr "InRightAlign",
         ormolu = HsExpr "InRightAlign",
         sinceVersion = Just "0.9.0.0",
@@ -181,9 +181,9 @@ allOptions =
       },
     Option
       { name = "single-constraint-parens",
-        fieldName = Just "poSingleConstraintParens",
-        description = "Whether to put parentheses around a single constraint",
         type_ = "SingleConstraintParens",
+        description = "Whether to put parentheses around a single constraint",
+        fieldName = Just "poSingleConstraintParens",
         default_ = HsExpr "ConstraintAlways",
         ormolu = HsExpr "ConstraintAlways",
         sinceVersion = Just "0.12.0.0",
@@ -191,9 +191,9 @@ allOptions =
       },
     Option
       { name = "unicode",
-        fieldName = Just "poUnicode",
-        description = "Output Unicode syntax",
         type_ = "Unicode",
+        description = "Output Unicode syntax",
+        fieldName = Just "poUnicode",
         default_ = HsExpr "UnicodeNever",
         ormolu = HsExpr "UnicodeNever",
         sinceVersion = Just "0.9.0.0",
@@ -201,9 +201,9 @@ allOptions =
       },
     Option
       { name = "respectful",
-        fieldName = Just "poRespectful",
-        description = "Give the programmer more choice on where to insert blank lines",
         type_ = "Bool",
+        description = "Give the programmer more choice on where to insert blank lines",
+        fieldName = Just "poRespectful",
         default_ = HsBool True,
         ormolu = HsBool False,
         sinceVersion = Just "0.2.0.0",
@@ -211,9 +211,9 @@ allOptions =
       },
     Option
       { name = "fixities",
-        fieldName = Nothing,
-        description = "Fixity information for operators",
         type_ = "[String]",
+        description = "Fixity information for operators",
+        fieldName = Nothing,
         default_ = HsList [],
         ormolu = HsList [],
         sinceVersion = Just "0.7.0.0",
@@ -221,9 +221,9 @@ allOptions =
       },
     Option
       { name = "reexports",
-        fieldName = Nothing,
-        description = "Module reexports Fourmolu should know about",
         type_ = "[String]",
+        description = "Module reexports Fourmolu should know about",
+        fieldName = Nothing,
         default_ = HsList [],
         ormolu = HsList [],
         sinceVersion = Just "0.13.0.0",
