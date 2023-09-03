@@ -191,20 +191,40 @@ getOptionDemoWidget option@ConfigData.Option {..}
 
 getConfigOptionContext :: ConfigData.Option -> [Context a]
 getConfigOptionContext option@ConfigData.Option {..} =
-  [ constField "info" $
-      wrap' "<table id=\"config-info\">" "</table>" . wrap "tbody" . concat $
+  [ constField "info" . concat $
+      [ wrap' "<table id=\"config-info\">" "</table>" . wrap "tbody" . concat $
         [ wrap "tr" . concat $
             [ wrap "th" label,
               wrap "td" val
             ]
-          | (label, val) <-
-              [ ("Description", description),
-                schema,
-                ("Default", wrap "code" $ hs2yaml type_ default_),
-                ("Ormolu", wrap "code" $ hs2yaml type_ ormolu),
-                ("Since", maybe "<i>Unreleased</i>" ("v" <>) sinceVersion)
+          | Just (label, val) <-
+              [ Just ("Description", description),
+                Just schema,
+                case fieldName of
+                  Just _ -> Nothing
+                  Nothing ->
+                    Just ("Default", wrap "code" $ hs2yaml type_ default_),
+                Just ("Since", maybe "<i>Unreleased</i>" ("v" <>) sinceVersion)
               ]
-        ]
+        ],
+        case fieldName of
+          Just _ ->
+            wrap "table" . wrap "tbody" . concat $
+              [ wrap "tr" $
+                  "<th colspan=\"2\" style=\"text-align: center;\">Presets</th>",
+                concat
+                  [ wrap "tr" . concat $
+                      [ wrap "td" . wrap "code" $ presetName,
+                        wrap "td" . wrap "code" $ hs2yaml type_ val
+                      ]
+                    | (presetName, val) <-
+                        [ ("fourmolu", default_),
+                          ("ormolu", ormolu)
+                        ]
+                  ]
+              ]
+          Nothing -> mempty
+      ]
   ]
   where
     ConfigData.ADTSchema {adtOptions} = getOptionSchema option

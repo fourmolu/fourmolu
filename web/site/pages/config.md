@@ -2,7 +2,7 @@
 
 Configuration options may be specified in either a `fourmolu.yaml` file or via command-line options. Fourmolu looks for a `fourmolu.yaml` file in all parents of the current directory, followed by [the XDG config directory](https://hackage.haskell.org/package/directory/docs/System-Directory.html#v:XdgConfig).
 
-A configuration file with the default values filled in can be generated with:
+A configuration file with the default Fourmolu options can be generated with:
 
 ```console
 $$ fourmolu --print-defaults > fourmolu.yaml
