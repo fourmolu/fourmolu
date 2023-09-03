@@ -192,7 +192,7 @@ getOptionDemoWidget option@ConfigData.Option {..}
 getConfigOptionContext :: ConfigData.Option -> [Context a]
 getConfigOptionContext option@ConfigData.Option {..} =
   [ constField "info" $
-      wrap "table" . wrap "tbody" . concat $
+      wrap' "<table id=\"config-info\">" "</table>" . wrap "tbody" . concat $
         [ wrap "tr" . concat $
             [ wrap "th" label,
               wrap "td" val
@@ -224,7 +224,8 @@ getConfigOptionContext option@ConfigData.Option {..} =
     renderOptionHTML = \case
       ConfigData.ADTOptionLiteral s -> wrap "code" s
       ConfigData.ADTOptionDescription s -> s
-    wrap tag s = printf "<%s>%s</%s>" (tag :: String) (s :: String) tag
+    wrap tag = wrap' (printf "<%s>" (tag :: String)) (printf "</%s>" tag)
+    wrap' pre post s = pre <> s <> post
 
 makeSidebar :: PageSidebar -> Context String
 makeSidebar PageSidebar {..} =

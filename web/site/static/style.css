@@ -12,6 +12,10 @@ main {
     margin-bottom: 0;
 }
 
+#config-info ul {
+    padding-left: 1em;
+}
+
 /* Reset some github-markdown that interferes with other styles */
 
 .markdown-body nav ul {
