@@ -31,12 +31,12 @@ spec = do
       loadConfigFile "fourmolu.yaml" >>= \case
         ConfigLoaded _ cfg -> pure cfg
         result -> error $ "Could not load config file: " ++ show result
-  let fourmoluConfig = emptyConfig
+  let ormoluPrinterOpts = fillMissingPrinterOpts (cfgFilePrinterOpts ormoluConfig) defaultPrinterOpts
 
   es <- runIO locateExamples
   sequence_ $
     checkExample
-      <$> [(ormoluConfig, "ormolu", "-out"), (fourmoluConfig, "fourmolu", "-four-out")]
+      <$> [(ormoluPrinterOpts, "ormolu", "-out"), (defaultPrinterOpts, "fourmolu", "-four-out")]
       <*> es
 
 -- | Fixity overrides that are to be used with the test examples.
@@ -50,19 +50,15 @@ testsuiteOverrides =
     )
 
 -- | Check a single given example.
-checkExample :: (FourmoluConfig, String, String) -> Path Rel File -> Spec
-checkExample (cfg, label, suffix) srcPath' = it (fromRelFile srcPath' ++ " works (" ++ label ++ ")") . withNiceExceptions $ do
+checkExample :: (PrinterOptsTotal, String, String) -> Path Rel File -> Spec
+checkExample (printerOpts, label, suffix) srcPath' = it (fromRelFile srcPath' ++ " works (" ++ label ++ ")") . withNiceExceptions $ do
   let srcPath = examplesDir </> srcPath'
       inputPath = fromRelFile srcPath
       config =
         defaultConfig
-          { cfgPrinterOpts = fillMissingPrinterOpts (cfgFilePrinterOpts cfg) defaultPrinterOpts,
+          { cfgPrinterOpts = printerOpts,
             cfgSourceType = detectSourceType inputPath,
-            cfgFixityOverrides =
-              FixityOverrides . mconcat . map unFixityOverrides $
-                [ testsuiteOverrides,
-                  cfgFileFixities cfg
-                ],
+            cfgFixityOverrides = testsuiteOverrides,
             cfgDependencies =
               Set.fromList
                 [ "base",
