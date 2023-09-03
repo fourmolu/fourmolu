@@ -10,3 +10,9 @@ source-repository-package
   type: git
   location: https://github.com/brandonchinn178/ghc-syntax-highlighter-themed
   tag: 8cf22afcbb91352c98347b576dd5b4b958cad121
+
+-- https://github.com/haskell/aeson/pull/1055
+source-repository-package
+  type: git
+  location: https://github.com/TeofilC/aeson
+  tag: 2ff1736de826d1800e0139d4f79ec2b6986469f6
