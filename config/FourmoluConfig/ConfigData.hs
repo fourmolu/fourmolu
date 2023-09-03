@@ -352,8 +352,8 @@ data FieldType
         adtSchema :: ADTSchema,
         -- | Mapping from Haskell expression (in `HsExpr`) to string representation
         adtRender :: [(String, String)],
-        -- | Implementation of `Aeson.parseJSON`
-        adtParseJSON :: String,
+        -- | Implementation of `Aeson.parseJSON`, defaults to reusing parseFourmoluConfigType.
+        adtParseJSON :: Maybe String,
         -- | Implementation of `String -> Either String a`
         adtParseFourmoluConfigType :: String
       }
@@ -435,7 +435,7 @@ allFieldTypes =
             },
         adtRender = [("PrintStyleInherit", "null")],
         adtParseJSON =
-          unlines
+          Just . unlines $
             [ "\\v -> case v of",
               "  Aeson.Null -> pure PrintStyleInherit",
               "  Aeson.String \"\" -> pure PrintStyleInherit",
@@ -509,7 +509,7 @@ allFieldTypes =
             },
         adtRender = [("NoLimit", "none")],
         adtParseJSON =
-          unlines
+          Just . unlines $
             [ "\\case",
               "   Aeson.String \"none\" ->",
               "     pure NoLimit",

@@ -153,14 +153,31 @@ configGenHs =
       unlines_
         [ unlines_ $
             case fieldType of
-              FieldTypeEnum {..} ->
-                [ printf "instance Aeson.FromJSON %s where" fieldTypeName,
+              FieldTypeADT {adtParseJSON = Just customParse} ->
+                [ printf "instance Aeson.FromJSON %s where" name,
                   printf "  parseJSON =",
-                  printf "    Aeson.withText \"%s\" $ \\s ->" fieldTypeName,
+                  indent' 2 customParse,
+                  printf ""
+                ]
+              _ ->
+                [ printf "instance Aeson.FromJSON %s where" name,
+                  printf "  parseJSON =",
+                  printf "    Aeson.withText \"%s\" $ \\s ->" name,
                   printf "      either Aeson.parseFail pure $",
                   printf "        parseFourmoluConfigType (Text.unpack s)",
-                  printf "",
-                  printf "instance FourmoluConfigType %s where" fieldTypeName,
+                  printf ""
+                ]
+          | fieldType <- allFieldTypes,
+            let name =
+                  case fieldType of
+                    FieldTypeEnum {..} -> fieldTypeName
+                    FieldTypeADT {..} -> fieldTypeName
+        ],
+      unlines_
+        [ unlines_ $
+            case fieldType of
+              FieldTypeEnum {..} ->
+                [ printf "instance FourmoluConfigType %s where" fieldTypeName,
                   printf "  parseFourmoluConfigType s =",
                   printf "    case s of",
                   unlines_
@@ -175,11 +192,7 @@ configGenHs =
                   printf ""
                 ]
               FieldTypeADT {..} ->
-                [ printf "instance Aeson.FromJSON %s where" fieldTypeName,
-                  printf "  parseJSON =",
-                  indent' 2 adtParseJSON,
-                  printf "",
-                  printf "instance FourmoluConfigType %s where" fieldTypeName,
+                [ printf "instance FourmoluConfigType %s where" fieldTypeName,
                   printf "  parseFourmoluConfigType =",
                   indent' 2 adtParseFourmoluConfigType,
                   printf ""

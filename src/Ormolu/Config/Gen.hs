@@ -349,33 +349,11 @@ instance Aeson.FromJSON ConfigPreset where
       either Aeson.parseFail pure $
         parseFourmoluConfigType (Text.unpack s)
 
-instance FourmoluConfigType ConfigPreset where
-  parseFourmoluConfigType s =
-    case s of
-      "fourmolu" -> Right FourmoluPreset
-      "ormolu" -> Right OrmoluPreset
-      _ ->
-        Left . unlines $
-          [ "unknown value: " <> show s
-          , "Valid values are: \"fourmolu\" or \"ormolu\""
-          ]
-
 instance Aeson.FromJSON CommaStyle where
   parseJSON =
     Aeson.withText "CommaStyle" $ \s ->
       either Aeson.parseFail pure $
         parseFourmoluConfigType (Text.unpack s)
-
-instance FourmoluConfigType CommaStyle where
-  parseFourmoluConfigType s =
-    case s of
-      "leading" -> Right Leading
-      "trailing" -> Right Trailing
-      _ ->
-        Left . unlines $
-          [ "unknown value: " <> show s
-          , "Valid values are: \"leading\" or \"trailing\""
-          ]
 
 instance Aeson.FromJSON FunctionArrowsStyle where
   parseJSON =
@@ -383,35 +361,11 @@ instance Aeson.FromJSON FunctionArrowsStyle where
       either Aeson.parseFail pure $
         parseFourmoluConfigType (Text.unpack s)
 
-instance FourmoluConfigType FunctionArrowsStyle where
-  parseFourmoluConfigType s =
-    case s of
-      "trailing" -> Right TrailingArrows
-      "leading" -> Right LeadingArrows
-      "leading-args" -> Right LeadingArgsArrows
-      _ ->
-        Left . unlines $
-          [ "unknown value: " <> show s
-          , "Valid values are: \"trailing\", \"leading\", or \"leading-args\""
-          ]
-
 instance Aeson.FromJSON HaddockPrintStyle where
   parseJSON =
     Aeson.withText "HaddockPrintStyle" $ \s ->
       either Aeson.parseFail pure $
         parseFourmoluConfigType (Text.unpack s)
-
-instance FourmoluConfigType HaddockPrintStyle where
-  parseFourmoluConfigType s =
-    case s of
-      "single-line" -> Right HaddockSingleLine
-      "multi-line" -> Right HaddockMultiLine
-      "multi-line-compact" -> Right HaddockMultiLineCompact
-      _ ->
-        Left . unlines $
-          [ "unknown value: " <> show s
-          , "Valid values are: \"single-line\", \"multi-line\", or \"multi-line-compact\""
-          ]
 
 instance Aeson.FromJSON HaddockPrintStyleModule where
   parseJSON =
@@ -420,29 +374,11 @@ instance Aeson.FromJSON HaddockPrintStyleModule where
       Aeson.String "" -> pure PrintStyleInherit
       _ -> PrintStyleOverride <$> Aeson.parseJSON v
 
-instance FourmoluConfigType HaddockPrintStyleModule where
-  parseFourmoluConfigType =
-    \s -> case s of
-      "" -> pure PrintStyleInherit
-      _ -> PrintStyleOverride <$> parseFourmoluConfigType s
-
 instance Aeson.FromJSON ImportExportStyle where
   parseJSON =
     Aeson.withText "ImportExportStyle" $ \s ->
       either Aeson.parseFail pure $
         parseFourmoluConfigType (Text.unpack s)
-
-instance FourmoluConfigType ImportExportStyle where
-  parseFourmoluConfigType s =
-    case s of
-      "leading" -> Right ImportExportLeading
-      "trailing" -> Right ImportExportTrailing
-      "diff-friendly" -> Right ImportExportDiffFriendly
-      _ ->
-        Left . unlines $
-          [ "unknown value: " <> show s
-          , "Valid values are: \"leading\", \"trailing\", or \"diff-friendly\""
-          ]
 
 instance Aeson.FromJSON LetStyle where
   parseJSON =
@@ -450,36 +386,11 @@ instance Aeson.FromJSON LetStyle where
       either Aeson.parseFail pure $
         parseFourmoluConfigType (Text.unpack s)
 
-instance FourmoluConfigType LetStyle where
-  parseFourmoluConfigType s =
-    case s of
-      "auto" -> Right LetAuto
-      "inline" -> Right LetInline
-      "newline" -> Right LetNewline
-      "mixed" -> Right LetMixed
-      _ ->
-        Left . unlines $
-          [ "unknown value: " <> show s
-          , "Valid values are: \"auto\", \"inline\", \"newline\", or \"mixed\""
-          ]
-
 instance Aeson.FromJSON InStyle where
   parseJSON =
     Aeson.withText "InStyle" $ \s ->
       either Aeson.parseFail pure $
         parseFourmoluConfigType (Text.unpack s)
-
-instance FourmoluConfigType InStyle where
-  parseFourmoluConfigType s =
-    case s of
-      "left-align" -> Right InLeftAlign
-      "right-align" -> Right InRightAlign
-      "no-space" -> Right InNoSpace
-      _ ->
-        Left . unlines $
-          [ "unknown value: " <> show s
-          , "Valid values are: \"left-align\", \"right-align\", or \"no-space\""
-          ]
 
 instance Aeson.FromJSON Unicode where
   parseJSON =
@@ -487,35 +398,11 @@ instance Aeson.FromJSON Unicode where
       either Aeson.parseFail pure $
         parseFourmoluConfigType (Text.unpack s)
 
-instance FourmoluConfigType Unicode where
-  parseFourmoluConfigType s =
-    case s of
-      "detect" -> Right UnicodeDetect
-      "always" -> Right UnicodeAlways
-      "never" -> Right UnicodeNever
-      _ ->
-        Left . unlines $
-          [ "unknown value: " <> show s
-          , "Valid values are: \"detect\", \"always\", or \"never\""
-          ]
-
 instance Aeson.FromJSON SingleConstraintParens where
   parseJSON =
     Aeson.withText "SingleConstraintParens" $ \s ->
       either Aeson.parseFail pure $
         parseFourmoluConfigType (Text.unpack s)
-
-instance FourmoluConfigType SingleConstraintParens where
-  parseFourmoluConfigType s =
-    case s of
-      "auto" -> Right ConstraintAuto
-      "always" -> Right ConstraintAlways
-      "never" -> Right ConstraintNever
-      _ ->
-        Left . unlines $
-          [ "unknown value: " <> show s
-          , "Valid values are: \"auto\", \"always\", or \"never\""
-          ]
 
 instance Aeson.FromJSON ColumnLimit where
   parseJSON =
@@ -530,6 +417,119 @@ instance Aeson.FromJSON ColumnLimit where
            [ "unknown value: " <> show s,
              "Valid values are: \"none\", or an integer"
            ]
+
+instance FourmoluConfigType ConfigPreset where
+  parseFourmoluConfigType s =
+    case s of
+      "fourmolu" -> Right FourmoluPreset
+      "ormolu" -> Right OrmoluPreset
+      _ ->
+        Left . unlines $
+          [ "unknown value: " <> show s
+          , "Valid values are: \"fourmolu\" or \"ormolu\""
+          ]
+
+instance FourmoluConfigType CommaStyle where
+  parseFourmoluConfigType s =
+    case s of
+      "leading" -> Right Leading
+      "trailing" -> Right Trailing
+      _ ->
+        Left . unlines $
+          [ "unknown value: " <> show s
+          , "Valid values are: \"leading\" or \"trailing\""
+          ]
+
+instance FourmoluConfigType FunctionArrowsStyle where
+  parseFourmoluConfigType s =
+    case s of
+      "trailing" -> Right TrailingArrows
+      "leading" -> Right LeadingArrows
+      "leading-args" -> Right LeadingArgsArrows
+      _ ->
+        Left . unlines $
+          [ "unknown value: " <> show s
+          , "Valid values are: \"trailing\", \"leading\", or \"leading-args\""
+          ]
+
+instance FourmoluConfigType HaddockPrintStyle where
+  parseFourmoluConfigType s =
+    case s of
+      "single-line" -> Right HaddockSingleLine
+      "multi-line" -> Right HaddockMultiLine
+      "multi-line-compact" -> Right HaddockMultiLineCompact
+      _ ->
+        Left . unlines $
+          [ "unknown value: " <> show s
+          , "Valid values are: \"single-line\", \"multi-line\", or \"multi-line-compact\""
+          ]
+
+instance FourmoluConfigType HaddockPrintStyleModule where
+  parseFourmoluConfigType =
+    \s -> case s of
+      "" -> pure PrintStyleInherit
+      _ -> PrintStyleOverride <$> parseFourmoluConfigType s
+
+instance FourmoluConfigType ImportExportStyle where
+  parseFourmoluConfigType s =
+    case s of
+      "leading" -> Right ImportExportLeading
+      "trailing" -> Right ImportExportTrailing
+      "diff-friendly" -> Right ImportExportDiffFriendly
+      _ ->
+        Left . unlines $
+          [ "unknown value: " <> show s
+          , "Valid values are: \"leading\", \"trailing\", or \"diff-friendly\""
+          ]
+
+instance FourmoluConfigType LetStyle where
+  parseFourmoluConfigType s =
+    case s of
+      "auto" -> Right LetAuto
+      "inline" -> Right LetInline
+      "newline" -> Right LetNewline
+      "mixed" -> Right LetMixed
+      _ ->
+        Left . unlines $
+          [ "unknown value: " <> show s
+          , "Valid values are: \"auto\", \"inline\", \"newline\", or \"mixed\""
+          ]
+
+instance FourmoluConfigType InStyle where
+  parseFourmoluConfigType s =
+    case s of
+      "left-align" -> Right InLeftAlign
+      "right-align" -> Right InRightAlign
+      "no-space" -> Right InNoSpace
+      _ ->
+        Left . unlines $
+          [ "unknown value: " <> show s
+          , "Valid values are: \"left-align\", \"right-align\", or \"no-space\""
+          ]
+
+instance FourmoluConfigType Unicode where
+  parseFourmoluConfigType s =
+    case s of
+      "detect" -> Right UnicodeDetect
+      "always" -> Right UnicodeAlways
+      "never" -> Right UnicodeNever
+      _ ->
+        Left . unlines $
+          [ "unknown value: " <> show s
+          , "Valid values are: \"detect\", \"always\", or \"never\""
+          ]
+
+instance FourmoluConfigType SingleConstraintParens where
+  parseFourmoluConfigType s =
+    case s of
+      "auto" -> Right ConstraintAuto
+      "always" -> Right ConstraintAlways
+      "never" -> Right ConstraintNever
+      _ ->
+        Left . unlines $
+          [ "unknown value: " <> show s
+          , "Valid values are: \"auto\", \"always\", or \"never\""
+          ]
 
 instance FourmoluConfigType ColumnLimit where
   parseFourmoluConfigType =
