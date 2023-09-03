@@ -30,6 +30,7 @@ module Ormolu.Config
     PrinterOptsPartial,
     PrinterOptsTotal,
     defaultPrinterOpts,
+    ormoluPrinterOpts,
     defaultPrinterOptsYaml,
     fillMissingPrinterOpts,
     resolvePrinterOpts,
