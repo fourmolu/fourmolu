@@ -17,15 +17,15 @@ spec = do
     it "resolves options with presets" $ do
       let cfg = mempty {poCommaStyle = pure Leading}
 
-      let fourmoluPreset = resolvePrinterOpts [Just FourmoluPreset] [cfg]
+      fourmoluPreset <- resolvePrinterOpts [Just FourmoluPreset] [cfg]
       poIndentation fourmoluPreset `shouldBe` pure 4
       poCommaStyle fourmoluPreset `shouldBe` pure Leading
 
-      let ormoluPreset = resolvePrinterOpts [Just OrmoluPreset] [cfg]
+      ormoluPreset <- resolvePrinterOpts [Just OrmoluPreset] [cfg]
       poIndentation ormoluPreset `shouldBe` pure 2
       poCommaStyle ormoluPreset `shouldBe` pure Leading
 
-      let noPreset = resolvePrinterOpts [Nothing] [cfg]
+      noPreset <- resolvePrinterOpts [Nothing] [cfg]
       noPreset `shouldBe` fourmoluPreset
 
     it "parses multiple reexports from same module" $ do

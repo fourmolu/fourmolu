@@ -293,9 +293,10 @@ replaceFourmoluExamples =
         outputs <-
           forM (withFirst tabs) $ \(isFirst, (label, key, printerOpts)) -> do
             let isActive = isFirst
+            printerOptsResolved <- Fourmolu.resolvePrinterOpts [] [printerOpts]
             let config =
                   Fourmolu.defaultConfig
-                    { Fourmolu.cfgPrinterOpts = Fourmolu.resolvePrinterOpts [] [printerOpts]
+                    { Fourmolu.cfgPrinterOpts = printerOptsResolved
                     }
             output <- Fourmolu.ormolu config "<fourmolu-web>" input
             pure (isActive, label, key, output)

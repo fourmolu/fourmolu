@@ -51,7 +51,7 @@ spec =
       -- Only check prefix of the output, so we don't have to update the test with every new option added
       let cfgPrefix =
             unlines
-              [ "# Preset to use as the base configuration (choices: fourmolu or ormolu)",
+              [ "# Preset to use as the base configuration",
                 "preset: fourmolu"
               ]
       stdOutput `shouldSatisfy` (cfgPrefix `isPrefixOf`)

@@ -36,6 +36,8 @@ import Data.Functor.Identity (Identity)
 import Data.Scientific (floatingOrInteger)
 import qualified Data.Text as Text
 import GHC.Generics (Generic)
+import Network.URI (URI)
+import qualified Network.URI as URI
 import Text.Read (readEither, readMaybe)
 
 -- | Options controlling formatting output.
@@ -236,7 +238,7 @@ parseFourmoluOptsCLI toResult mkOption =
     parsePresetOptCLI =
       mkOption
         "preset"
-        "Preset to use as the base configuration (choices: \"fourmolu\" or \"ormolu\") (default: fourmolu)"
+        "Preset to use as the base configuration (default: fourmolu)"
         "OPTION"
 
 parsePrinterOptsJSON ::
@@ -283,7 +285,8 @@ instance FourmoluConfigType Bool where
 data ConfigPreset
   = FourmoluPreset
   | OrmoluPreset
-  deriving (Eq, Show, Enum, Bounded)
+  | ImportPreset URI
+  deriving (Eq, Show)
 
 data CommaStyle
   = Leading
@@ -419,15 +422,12 @@ instance Aeson.FromJSON ColumnLimit where
            ]
 
 instance FourmoluConfigType ConfigPreset where
-  parseFourmoluConfigType s =
-    case s of
-      "fourmolu" -> Right FourmoluPreset
-      "ormolu" -> Right OrmoluPreset
-      _ ->
-        Left . unlines $
-          [ "unknown value: " <> show s
-          , "Valid values are: \"fourmolu\" or \"ormolu\""
-          ]
+  parseFourmoluConfigType =
+    \s -> case s of
+      "fourmolu" -> pure FourmoluPreset
+      "ormolu" -> pure OrmoluPreset
+      _ | Just uri <- URI.parseURI s -> pure $ ImportPreset uri
+      _ -> Left $ "Unknown preset: " <> s
 
 instance FourmoluConfigType CommaStyle where
   parseFourmoluConfigType s =
@@ -548,7 +548,7 @@ instance FourmoluConfigType ColumnLimit where
 defaultPrinterOptsYaml :: String
 defaultPrinterOptsYaml =
   unlines
-    [ "# Preset to use as the base configuration (choices: fourmolu or ormolu)"
+    [ "# Preset to use as the base configuration"
     , "preset: fourmolu"
     , ""
     , "# Number of spaces per indentation step"

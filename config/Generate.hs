@@ -41,6 +41,8 @@ configGenHs =
       "import Data.Scientific (floatingOrInteger)",
       "import qualified Data.Text as Text",
       "import GHC.Generics (Generic)",
+      "import Network.URI (URI)",
+      "import qualified Network.URI as URI",
       "import Text.Read (readEither, readMaybe)",
       "",
       "-- | Options controlling formatting output.",

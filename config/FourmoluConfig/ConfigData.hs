@@ -383,12 +383,32 @@ data ADTSchemaInputParser
 
 allFieldTypes :: [FieldType]
 allFieldTypes =
-  [ FieldTypeEnum
+  [ FieldTypeADT
       { fieldTypeName = "ConfigPreset",
-        enumOptions =
-          [ ("FourmoluPreset", "fourmolu"),
-            ("OrmoluPreset", "ormolu")
-          ]
+        adtConstructors =
+          [ "FourmoluPreset",
+            "OrmoluPreset",
+            "ImportPreset URI"
+          ],
+        adtSchema =
+          ADTSchema
+            { adtOptions =
+                [ ADTOptionLiteral "fourmolu",
+                  ADTOptionLiteral "ormolu",
+                  ADTOptionDescription "A URL pointing to a Fourmolu configuration file"
+                ],
+              adtInputType = ADTSchemaInputText [ADTSchemaInputParserString]
+            },
+        adtRender = [("FourmoluPreset", "fourmolu")],
+        adtParseJSON = Nothing,
+        adtParseFourmoluConfigType =
+          unlines
+            [ "\\s -> case s of",
+              "  \"fourmolu\" -> pure FourmoluPreset",
+              "  \"ormolu\" -> pure OrmoluPreset",
+              "  _ | Just uri <- URI.parseURI s -> pure $ ImportPreset uri",
+              "  _ -> Left $ \"Unknown preset: \" <> s"
+            ]
       },
     FieldTypeEnum
       { fieldTypeName = "CommaStyle",

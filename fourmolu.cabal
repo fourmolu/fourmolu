@@ -125,6 +125,9 @@ library
         text >=2.0 && <3.0,
         -- fourmolu-only deps
         aeson >=1.0 && <3.0,
+        http-client >= 0.5.12 && <1,
+        http-client-tls <1,
+        network-uri >= 2.6 && <3,
         scientific >=0.3.2 && <1,
         yaml >=0.11.6.0 && <1
 
@@ -209,6 +212,7 @@ test-suite tests
         Ormolu.Integration.CLIOptionsSpec
         Ormolu.Integration.CLISpec
         Ormolu.Integration.FixitySpec
+        Ormolu.Integration.PresetsSpec
         Ormolu.Integration.RegionSpec
         Ormolu.Integration.Utils
     build-depends:

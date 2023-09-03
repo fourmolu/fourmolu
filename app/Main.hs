@@ -96,16 +96,19 @@ mkConfig path Opts {optQuiet, optConfig = cliConfig, optFourmoluOpts} = do
           ("No " ++ show configFileName ++ " found in any of:")
             : map ("  " ++) searchDirs
         pure emptyConfig
+
+  printerOpts <-
+    resolvePrinterOpts
+      [ cliConfigPreset,
+        cfgFilePreset fourmoluConfig
+      ]
+      [ cliPrinterOpts,
+        cfgFilePrinterOpts fourmoluConfig
+      ]
+
   return $
     cliConfig
-      { cfgPrinterOpts =
-          resolvePrinterOpts
-            [ cliConfigPreset,
-              cfgFilePreset fourmoluConfig
-            ]
-            [ cliPrinterOpts,
-              cfgFilePrinterOpts fourmoluConfig
-            ],
+      { cfgPrinterOpts = printerOpts,
         cfgFixityOverrides =
           FixityOverrides . mconcat . map unFixityOverrides $
             [ cfgFixityOverrides cliConfig,

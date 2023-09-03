@@ -16,7 +16,7 @@ indentation: 2
 
 or on the command line as `--indentation 2` or `--indentation=2`.
 
-Every option also has a setting that matches Ormolu's formatting.
+Every option also has a setting that matches Ormolu's formatting; see the `preset` option for more details.
 
 ## Available options
 

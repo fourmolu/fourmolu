@@ -168,6 +168,17 @@ data Output = Output
 
 format :: Input -> IO Output
 format Input {..} = do
+  printerOptsResolved <- Config.resolvePrinterOpts [] [printerOpts]
+  let config =
+        -- TODO: add fixities?
+        Config.defaultConfig
+          { Config.cfgPrinterOpts = printerOptsResolved,
+            Config.cfgCheckIdempotence = checkIdempotence,
+            Config.cfgUnsafe = unsafeMode,
+            Config.cfgSourceType = if formatBackpack then Config.SignatureSource else Config.ModuleSource,
+            Config.cfgDependencies = demoDependencies
+          }
+
   (outputText, formatError) <-
     try (ormolu config "<interactive>" inputText) >>= \case
       Right outputText -> pure (outputText, Nothing)
@@ -180,16 +191,6 @@ format Input {..} = do
   inputAST <- prettyAST config inputText
   outputAST <- prettyAST config outputText
   pure Output {..}
-  where
-    config =
-      -- TODO: add fixities?
-      Config.defaultConfig
-        { Config.cfgPrinterOpts = Config.resolvePrinterOpts [] [printerOpts],
-          Config.cfgCheckIdempotence = checkIdempotence,
-          Config.cfgUnsafe = unsafeMode,
-          Config.cfgSourceType = if formatBackpack then Config.SignatureSource else Config.ModuleSource,
-          Config.cfgDependencies = demoDependencies
-        }
 
 prettyAST :: Config.Config Config.RegionIndices -> Text -> IO Text
 prettyAST config text = do
