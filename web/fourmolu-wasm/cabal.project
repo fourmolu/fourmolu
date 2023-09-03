@@ -1,7 +1,7 @@
 packages: . ../..
 
 package fourmolu
-  flags: -internal-bundle-fixities
+  flags: -internal-bundle-fixities -enable-import-preset
 
 package ghc-lib-parser
   flags: -threaded-rts

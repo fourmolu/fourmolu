@@ -44,6 +44,10 @@ flag internal-bundle-fixities
 
     manual:      True
 
+flag enable-import-preset
+    description: Enable importing preset from a URL
+    manual: True
+
 library
     exposed-modules:
         Ormolu
@@ -125,8 +129,6 @@ library
         text >=2.0 && <3.0,
         -- fourmolu-only deps
         aeson >=1.0 && <3.0,
-        http-client >= 0.5.12 && <1,
-        http-client-tls <1,
         network-uri >= 2.6 && <3,
         scientific >=0.3.2 && <1,
         yaml >=0.11.6.0 && <1
@@ -141,6 +143,12 @@ library
 
     if flag(internal-bundle-fixities)
         cpp-options: -DBUNDLE_FIXITIES
+
+    if flag(enable-import-preset)
+        cpp-options: -DENABLE_IMPORT_PRESET
+        build-depends:
+            http-client >= 0.5.12 && <1,
+            http-client-tls <1
 
 executable fourmolu
     main-is:          Main.hs

@@ -1,4 +1,5 @@
 {-# LANGUAGE ApplicativeDo #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
@@ -63,7 +64,6 @@ import Data.Aeson ((.!=), (.:?))
 import Data.Aeson qualified as Aeson
 import Data.Aeson.Types qualified as Aeson
 import Data.ByteString qualified as ByteString
-import Data.ByteString.Lazy qualified as ByteStringL
 import Data.Char (isAlphaNum)
 import Data.Functor.Identity (Identity (..))
 import Data.Map.Strict qualified as Map
@@ -75,8 +75,6 @@ import Data.Yaml qualified as Yaml
 import Distribution.Types.PackageName (PackageName)
 import GHC.Generics (Generic)
 import GHC.Types.SrcLoc qualified as GHC
-import Network.HTTP.Client qualified as HTTP
-import Network.HTTP.Client.TLS qualified as HTTP
 import Ormolu.Config.Gen
 import Ormolu.Fixity
 import Ormolu.Terminal (ColorMode (..))
@@ -90,6 +88,12 @@ import System.Directory
     makeAbsolute,
   )
 import System.FilePath (splitPath, (</>))
+
+#if ENABLE_IMPORT_PRESET
+import Data.ByteString.Lazy qualified as ByteStringL
+import Network.HTTP.Client qualified as HTTP
+import Network.HTTP.Client.TLS qualified as HTTP
+#endif
 
 -- | Type of sources that can be formatted by Ormolu.
 data SourceType
@@ -273,11 +277,15 @@ resolvePrinterOpts presets partialOpts = do
           ByteString.writeFile file bs
           pure bs
 
+#if ENABLE_IMPORT_PRESET
     fetchURI uri = do
       manager <- HTTP.newManager HTTP.tlsManagerSettings
       req <- HTTP.requestFromURI uri
       resp <- HTTP.httpLbs req manager
       pure . ByteStringL.toStrict . HTTP.responseBody $ resp
+#else
+    fetchURI _ = error "Importing preset from URL is disabled"
+#endif
 
 ----------------------------------------------------------------------------
 -- Loading Fourmolu configuration
