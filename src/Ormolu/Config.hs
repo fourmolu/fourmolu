@@ -32,6 +32,7 @@ module Ormolu.Config
     defaultPrinterOpts,
     defaultPrinterOptsYaml,
     fillMissingPrinterOpts,
+    resolvePrinterOpts,
     CommaStyle (..),
     FunctionArrowsStyle (..),
     HaddockPrintStyle (..),
@@ -226,6 +227,10 @@ type PrinterOptsTotal = PrinterOpts Identity
 deriving instance Eq PrinterOptsTotal
 
 deriving instance Show PrinterOptsTotal
+
+-- | Apply the given configuration in order (later options override earlier).
+resolvePrinterOpts :: [PrinterOptsPartial] -> PrinterOptsTotal
+resolvePrinterOpts = foldr fillMissingPrinterOpts defaultPrinterOpts
 
 ----------------------------------------------------------------------------
 -- Loading Fourmolu configuration

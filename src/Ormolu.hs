@@ -25,7 +25,7 @@ module Ormolu
     loadConfigFile,
     ConfigFileLoadResult (..),
     configFileName,
-    fillMissingPrinterOpts,
+    resolvePrinterOpts,
 
     -- * Cabal info
     CabalUtils.CabalSearchResult (..),

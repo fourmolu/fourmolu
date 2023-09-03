@@ -273,10 +273,7 @@ replaceFourmoluExamples =
             let isActive = isFirst
             let config =
                   Fourmolu.defaultConfig
-                    { Fourmolu.cfgPrinterOpts =
-                        Fourmolu.fillMissingPrinterOpts
-                          printerOpts
-                          Fourmolu.defaultPrinterOpts
+                    { Fourmolu.cfgPrinterOpts = Fourmolu.resolvePrinterOpts [printerOpts]
                     }
             output <- Fourmolu.ormolu config "<fourmolu-web>" input
             pure (isActive, label, key, output)

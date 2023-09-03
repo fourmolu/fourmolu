@@ -99,9 +99,10 @@ mkConfig path Opts {optQuiet, optConfig = cliConfig, optPrinterOpts = cliPrinter
   return $
     cliConfig
       { cfgPrinterOpts =
-          fillMissingPrinterOpts cliPrinterOpts
-            . fillMissingPrinterOpts (cfgFilePrinterOpts fourmoluConfig)
-            $ defaultPrinterOpts,
+          resolvePrinterOpts
+            [ cliPrinterOpts,
+              cfgFilePrinterOpts fourmoluConfig
+            ],
         cfgFixityOverrides =
           FixityOverrides . mconcat . map unFixityOverrides $
             [ cfgFixityOverrides cliConfig,
