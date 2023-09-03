@@ -22,7 +22,7 @@ module Ormolu.Config.Gen
   , defaultPrinterOpts
   , defaultPrinterOptsYaml
   , fillMissingPrinterOpts
-  , parsePrinterOptsCLI
+  , parseFourmoluOptsCLI
   , parsePrinterOptsJSON
   , parsePrinterOptType
   )
@@ -139,72 +139,77 @@ fillMissingPrinterOpts p1 p2 =
     , poRespectful = maybe (poRespectful p2) pure (poRespectful p1)
     }
 
-parsePrinterOptsCLI ::
+parseFourmoluOptsCLI ::
   Applicative f =>
-  (forall a. PrinterOptsFieldType a => String -> String -> String -> f (Maybe a)) ->
-  f (PrinterOpts Maybe)
-parsePrinterOptsCLI f =
-  pure PrinterOpts
-    <*> f
-      "indentation"
-      "Number of spaces per indentation step (default: 4)"
-      "INT"
-    <*> f
-      "column-limit"
-      "Max line length for automatic line breaking (default: none)"
-      "OPTION"
-    <*> f
-      "function-arrows"
-      "Styling of arrows in type signatures (choices: \"trailing\", \"leading\", or \"leading-args\") (default: trailing)"
-      "OPTION"
-    <*> f
-      "comma-style"
-      "How to place commas in multi-line lists, records, etc. (choices: \"leading\" or \"trailing\") (default: leading)"
-      "OPTION"
-    <*> f
-      "import-export-style"
-      "Styling of import/export lists (choices: \"leading\", \"trailing\", or \"diff-friendly\") (default: diff-friendly)"
-      "OPTION"
-    <*> f
-      "indent-wheres"
-      "Whether to full-indent or half-indent 'where' bindings past the preceding body (default: false)"
-      "BOOL"
-    <*> f
-      "record-brace-space"
-      "Whether to leave a space before an opening record brace (default: false)"
-      "BOOL"
-    <*> f
-      "newlines-between-decls"
-      "Number of spaces between top-level declarations (default: 1)"
-      "INT"
-    <*> f
-      "haddock-style"
-      "How to print Haddock comments (choices: \"single-line\", \"multi-line\", or \"multi-line-compact\") (default: multi-line)"
-      "OPTION"
-    <*> f
-      "haddock-style-module"
-      "How to print module docstring (default: same as 'haddock-style')"
-      "OPTION"
-    <*> f
-      "let-style"
-      "Styling of let blocks (choices: \"auto\", \"inline\", \"newline\", or \"mixed\") (default: auto)"
-      "OPTION"
-    <*> f
-      "in-style"
-      "How to align the 'in' keyword with respect to the 'let' keyword (choices: \"left-align\", \"right-align\", or \"no-space\") (default: right-align)"
-      "OPTION"
-    <*> f
-      "single-constraint-parens"
-      "Whether to put parentheses around a single constraint (choices: \"auto\", \"always\", or \"never\") (default: always)"
-      "OPTION"
-    <*> f
-      "unicode"
-      "Output Unicode syntax (choices: \"detect\", \"always\", or \"never\") (default: never)"
-      "OPTION"
-    <*> f
-      "respectful"
-      "Give the programmer more choice on where to insert blank lines (default: true)"
-      "BOOL"
+  (PrinterOpts Maybe -> a) ->
+  (forall opt. PrinterOptsFieldType opt => String -> String -> String -> f (Maybe opt)) ->
+  f a
+parseFourmoluOptsCLI toResult mkOption =
+  toResult
+    <$> parsePrinterOptsCLI
+  where
+    parsePrinterOptsCLI =
+      pure PrinterOpts
+        <*> mkOption
+          "indentation"
+          "Number of spaces per indentation step (default: 4)"
+          "INT"
+        <*> mkOption
+          "column-limit"
+          "Max line length for automatic line breaking (default: none)"
+          "OPTION"
+        <*> mkOption
+          "function-arrows"
+          "Styling of arrows in type signatures (choices: \"trailing\", \"leading\", or \"leading-args\") (default: trailing)"
+          "OPTION"
+        <*> mkOption
+          "comma-style"
+          "How to place commas in multi-line lists, records, etc. (choices: \"leading\" or \"trailing\") (default: leading)"
+          "OPTION"
+        <*> mkOption
+          "import-export-style"
+          "Styling of import/export lists (choices: \"leading\", \"trailing\", or \"diff-friendly\") (default: diff-friendly)"
+          "OPTION"
+        <*> mkOption
+          "indent-wheres"
+          "Whether to full-indent or half-indent 'where' bindings past the preceding body (default: false)"
+          "BOOL"
+        <*> mkOption
+          "record-brace-space"
+          "Whether to leave a space before an opening record brace (default: false)"
+          "BOOL"
+        <*> mkOption
+          "newlines-between-decls"
+          "Number of spaces between top-level declarations (default: 1)"
+          "INT"
+        <*> mkOption
+          "haddock-style"
+          "How to print Haddock comments (choices: \"single-line\", \"multi-line\", or \"multi-line-compact\") (default: multi-line)"
+          "OPTION"
+        <*> mkOption
+          "haddock-style-module"
+          "How to print module docstring (default: same as 'haddock-style')"
+          "OPTION"
+        <*> mkOption
+          "let-style"
+          "Styling of let blocks (choices: \"auto\", \"inline\", \"newline\", or \"mixed\") (default: auto)"
+          "OPTION"
+        <*> mkOption
+          "in-style"
+          "How to align the 'in' keyword with respect to the 'let' keyword (choices: \"left-align\", \"right-align\", or \"no-space\") (default: right-align)"
+          "OPTION"
+        <*> mkOption
+          "single-constraint-parens"
+          "Whether to put parentheses around a single constraint (choices: \"auto\", \"always\", or \"never\") (default: always)"
+          "OPTION"
+        <*> mkOption
+          "unicode"
+          "Output Unicode syntax (choices: \"detect\", \"always\", or \"never\") (default: never)"
+          "OPTION"
+        <*> mkOption
+          "respectful"
+          "Give the programmer more choice on where to insert blank lines (default: true)"
+          "BOOL"
 
 parsePrinterOptsJSON ::
   Applicative f =>

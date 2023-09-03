@@ -42,7 +42,7 @@ module Ormolu.Config
     InStyle (..),
     Unicode (..),
     ColumnLimit (..),
-    parsePrinterOptsCLI,
+    parseFourmoluOptsCLI,
     parsePrinterOptType,
 
     -- ** Loading Fourmolu configuration

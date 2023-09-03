@@ -78,7 +78,7 @@ main = do
 
 -- | Build the full config, by adding 'PrinterOpts' from a file, if found.
 mkConfig :: FilePath -> Opts -> IO (Config RegionIndices)
-mkConfig path Opts {optQuiet, optConfig = cliConfig, optPrinterOpts = cliPrinterOpts} = do
+mkConfig path Opts {optQuiet, optConfig = cliConfig, optFourmoluOpts} = do
   fourmoluConfig <-
     loadConfigFile path >>= \case
       ConfigLoaded f cfg -> do
@@ -115,6 +115,10 @@ mkConfig path Opts {optQuiet, optConfig = cliConfig, optPrinterOpts = cliPrinter
             ]
       }
   where
+    FourmoluOpts
+      { optPrinterOpts = cliPrinterOpts
+      } = optFourmoluOpts
+
     output = hPutStrLn stderr
     outputError = output
     outputInfo = unless optQuiet . output
@@ -272,14 +276,18 @@ data Opts = Opts
     optQuiet :: !Bool,
     -- | Ormolu 'Config'
     optConfig :: !(Config RegionIndices),
-    -- | Fourmolu 'PrinterOpts',
-    optPrinterOpts :: PrinterOptsPartial,
+    -- | Fourmolu-specific options
+    optFourmoluOpts :: FourmoluOpts,
     -- | Options related to info extracted from files
     optConfigFileOpts :: ConfigFileOpts,
     -- | Source type option, where 'Nothing' means autodetection
     optSourceType :: !(Maybe SourceType),
     -- | Haskell source files to format or stdin (when the list is empty)
     optInputFiles :: ![FilePath]
+  }
+
+data FourmoluOpts = FourmoluOpts
+  { optPrinterOpts :: PrinterOptsPartial
   }
 
 -- | Mode of operation.
@@ -361,7 +369,7 @@ optsParser =
         help "Make output quieter"
       ]
     <*> configParser
-    <*> printerOptsParser
+    <*> fourmoluOptsParser
     <*> configFileOptsParser
     <*> sourceTypeParser
     <*> (many . strArgument . mconcat)
@@ -466,8 +474,8 @@ sourceTypeParser =
       help "Set the type of source; TYPE can be 'module', 'sig', or 'auto' (the default)"
     ]
 
-printerOptsParser :: Parser PrinterOptsPartial
-printerOptsParser = parsePrinterOptsCLI mkOption
+fourmoluOptsParser :: Parser FourmoluOpts
+fourmoluOptsParser = parseFourmoluOptsCLI FourmoluOpts mkOption
   where
     mkOption name helpText placeholder =
       option (Just <$> eitherReader parsePrinterOptType) . mconcat $

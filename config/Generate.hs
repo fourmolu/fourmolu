@@ -29,7 +29,7 @@ configGenHs =
       "  , defaultPrinterOpts",
       "  , defaultPrinterOptsYaml",
       "  , fillMissingPrinterOpts",
-      "  , parsePrinterOptsCLI",
+      "  , parseFourmoluOptsCLI",
       "  , parsePrinterOptsJSON",
       "  , parsePrinterOptType",
       "  )",
@@ -74,15 +74,20 @@ configGenHs =
       indent . mkPrinterOpts $ \(fieldName', _) ->
         printf "%s = maybe (%s p2) pure (%s p1)" fieldName' fieldName' fieldName',
       "",
-      "parsePrinterOptsCLI ::",
+      "parseFourmoluOptsCLI ::",
       "  Applicative f =>",
-      "  (forall a. PrinterOptsFieldType a => String -> String -> String -> f (Maybe a)) ->",
-      "  f (PrinterOpts Maybe)",
-      "parsePrinterOptsCLI f =",
-      "  pure PrinterOpts",
-      indent' 2 . unlines_ $
+      "  (PrinterOpts Maybe -> a) ->",
+      "  (forall opt. PrinterOptsFieldType opt => String -> String -> String -> f (Maybe opt)) ->",
+      "  f a",
+      "parseFourmoluOptsCLI toResult mkOption =",
+      "  toResult",
+      "    <$> parsePrinterOptsCLI",
+      "  where",
+      "    parsePrinterOptsCLI =",
+      "      pure PrinterOpts",
+      indent' 4 . unlines_ $
         [ unlines_
-            [ "<*> f",
+            [ "<*> mkOption",
               indent . unlines_ $
                 [ quote name,
                   quote (getCLIHelp option),
