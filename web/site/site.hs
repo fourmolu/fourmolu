@@ -137,54 +137,54 @@ getOptionDemoWidget option@ConfigData.Option {..} =
     ConfigData.PrinterOptsOption {presets} ->
       let defaultVal = ConfigData.presetFourmolu presets
        in Just . concat $
-        [ printf "<label>",
-          printf "  <code>%s</code>" name,
-          optionDemoInput defaultVal,
-          printf "</label>"
-        ]
+            [ printf "<label>",
+              printf "  <code>%s</code>" name,
+              optionDemoInput defaultVal,
+              printf "</label>"
+            ]
   where
     ConfigData.ADTSchema {..} = getOptionSchema option
     inputClass = "demo-printerOpt" :: String
     optionDemoInput defaultVal =
       let inputDefault = hs2yaml type_ defaultVal
        in case adtInputType of
-        ConfigData.ADTSchemaInputText parsers ->
-          printf
-            "<input class='%s' name='%s' type='text' value='%s' data-parsers='%s' />"
-            inputClass
-            name
-            inputDefault
-            (renderParsers parsers)
-        ConfigData.ADTSchemaInputNumber ->
-          printf
-            "<input class='%s' name='%s' type='number' value='%s' />"
-            inputClass
-            name
-            inputDefault
-        ConfigData.ADTSchemaInputCheckbox ->
-          printf
-            "<input class='%s' name='%s' type='checkbox' %s />"
-            inputClass
-            name
-            (if defaultVal == ConfigData.HsBool True then "checked" else "" :: String)
-        ConfigData.ADTSchemaInputDropdown parsers ->
-          concat
-            [ printf
-                "<select class='%s' name='%s' data-parsers='%s'>"
+            ConfigData.ADTSchemaInputText parsers ->
+              printf
+                "<input class='%s' name='%s' type='text' value='%s' data-parsers='%s' />"
                 inputClass
                 name
-                (renderParsers parsers),
+                inputDefault
+                (renderParsers parsers)
+            ConfigData.ADTSchemaInputNumber ->
+              printf
+                "<input class='%s' name='%s' type='number' value='%s' />"
+                inputClass
+                name
+                inputDefault
+            ConfigData.ADTSchemaInputCheckbox ->
+              printf
+                "<input class='%s' name='%s' type='checkbox' %s />"
+                inputClass
+                name
+                (if defaultVal == ConfigData.HsBool True then "checked" else "" :: String)
+            ConfigData.ADTSchemaInputDropdown parsers ->
               concat
-                [ printf "<option %s>%s</option>" selected v
-                  | opt <- adtOptions,
-                    let v =
-                          case opt of
-                            ConfigData.ADTOptionLiteral s -> s
-                            ConfigData.ADTOptionDescription s -> s,
-                    let selected = if v == inputDefault then "selected" else "" :: String
-                ],
-              printf "</select>"
-            ]
+                [ printf
+                    "<select class='%s' name='%s' data-parsers='%s'>"
+                    inputClass
+                    name
+                    (renderParsers parsers),
+                  concat
+                    [ printf "<option %s>%s</option>" selected v
+                      | opt <- adtOptions,
+                        let v =
+                              case opt of
+                                ConfigData.ADTOptionLiteral s -> s
+                                ConfigData.ADTOptionDescription s -> s,
+                        let selected = if v == inputDefault then "selected" else "" :: String
+                    ],
+                  printf "</select>"
+                ]
     renderParsers parsers =
       intercalate ("|" :: String) . flip map parsers $ \case
         ConfigData.ADTSchemaInputParserString -> "string"
