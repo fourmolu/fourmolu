@@ -56,6 +56,14 @@ renderHs = \case
   HsBool v -> show v
   HsList vs -> "[" <> intercalate ", " (map renderHs vs) <> "]"
 
+-- | Render the default value as YAML.
+defaultYaml :: Option -> String
+defaultYaml Option {info, type_} =
+  hs2yaml type_ $
+    case info of
+      PrinterOptsOption {presets} -> presetFourmolu presets
+      ConfigOption {optionDefault} -> optionDefault
+
 -- | Render a HaskellValue for YAML.
 hs2yaml :: String -> HaskellValue -> String
 hs2yaml hsType = \case

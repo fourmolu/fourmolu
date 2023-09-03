@@ -131,21 +131,23 @@ getPageInfo = \case
         ]
 
 getOptionDemoWidget :: ConfigData.Option -> Maybe String
-getOptionDemoWidget option@ConfigData.Option {..}
-  | name `elem` ["fixities", "reexports"] = Nothing
-  | otherwise =
-      Just . concat $
+getOptionDemoWidget option@ConfigData.Option {..} =
+  case info of
+    ConfigData.ConfigOption {} -> Nothing
+    ConfigData.PrinterOptsOption {presets} ->
+      let defaultVal = ConfigData.presetFourmolu presets
+       in Just . concat $
         [ printf "<label>",
           printf "  <code>%s</code>" name,
-          optionDemoInput,
+          optionDemoInput defaultVal,
           printf "</label>"
         ]
   where
     ConfigData.ADTSchema {..} = getOptionSchema option
-    inputDefault = hs2yaml type_ default_
     inputClass = "demo-printerOpt" :: String
-    optionDemoInput =
-      case adtInputType of
+    optionDemoInput defaultVal =
+      let inputDefault = hs2yaml type_ defaultVal
+       in case adtInputType of
         ConfigData.ADTSchemaInputText parsers ->
           printf
             "<input class='%s' name='%s' type='text' value='%s' data-parsers='%s' />"
@@ -164,7 +166,7 @@ getOptionDemoWidget option@ConfigData.Option {..}
             "<input class='%s' name='%s' type='checkbox' %s />"
             inputClass
             name
-            (if default_ == ConfigData.HsBool True then "checked" else "" :: String)
+            (if defaultVal == ConfigData.HsBool True then "checked" else "" :: String)
         ConfigData.ADTSchemaInputDropdown parsers ->
           concat
             [ printf
@@ -200,15 +202,15 @@ getConfigOptionContext option@ConfigData.Option {..} =
             | Just (label, val) <-
                 [ Just ("Description", description),
                   Just schema,
-                  case fieldName of
-                    Just _ -> Nothing
-                    Nothing ->
-                      Just ("Default", wrap "code" $ hs2yaml type_ default_),
+                  case info of
+                    ConfigData.PrinterOptsOption {} -> Nothing
+                    ConfigData.ConfigOption {optionDefault} ->
+                      Just ("Default", wrap "code" $ hs2yaml type_ optionDefault),
                   Just ("Since", maybe "<i>Unreleased</i>" ("v" <>) sinceVersion)
                 ]
           ],
-        case fieldName of
-          Just _ ->
+        case info of
+          ConfigData.PrinterOptsOption {presets = ConfigData.PresetOptions {..}} ->
             wrap "table" . wrap "tbody" . concat $
               [ wrap "tr" $
                   "<th colspan=\"2\" style=\"text-align: center;\">Presets</th>",
@@ -218,12 +220,12 @@ getConfigOptionContext option@ConfigData.Option {..} =
                         wrap "td" . wrap "code" $ hs2yaml type_ val
                       ]
                     | (presetName, val) <-
-                        [ ("fourmolu", default_),
-                          ("ormolu", ormolu)
+                        [ ("fourmolu", presetFourmolu),
+                          ("ormolu", presetOrmolu)
                         ]
                   ]
               ]
-          Nothing -> mempty
+          ConfigData.ConfigOption {} -> mempty
       ]
   ]
   where

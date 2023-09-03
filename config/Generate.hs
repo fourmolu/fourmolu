@@ -1,7 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
 
 import qualified Data.Map as Map
-import Data.Maybe (fromMaybe, mapMaybe)
+import Data.Maybe (fromMaybe)
 import FourmoluConfig.ConfigData
 import FourmoluConfig.GenerateUtils
 import Text.Printf (printf)
@@ -45,21 +45,21 @@ configGenHs =
       "",
       "-- | Options controlling formatting output.",
       "data PrinterOpts f =",
-      indent . mkPrinterOpts $ \(fieldName', Option {..}) ->
+      indent . mkPrinterOpts $ \(fieldName, _, Option {..}) ->
         unlines_
           [ printf "-- | %s" description,
-            printf "  %s :: f %s" fieldName' type_
+            printf "  %s :: f %s" fieldName type_
           ],
       "  deriving (Generic)",
       "",
       "emptyPrinterOpts :: PrinterOpts Maybe",
       "emptyPrinterOpts =",
-      indent . mkPrinterOpts $ \(fieldName', _) ->
-        fieldName' <> " = Nothing",
+      indent . mkPrinterOpts $ \(fieldName, _, _) ->
+        fieldName <> " = Nothing",
       "",
-      mkPresetOpts "defaultPrinterOpts" default_,
+      mkPresetOpts "defaultPrinterOpts" presetFourmolu,
       "",
-      mkPresetOpts "ormoluPrinterOpts" ormolu,
+      mkPresetOpts "ormoluPrinterOpts" presetOrmolu,
       "",
       "-- | Fill the field values that are 'Nothing' in the first argument",
       "-- with the values of the corresponding fields of the second argument.",
@@ -70,8 +70,8 @@ configGenHs =
       "  PrinterOpts f ->",
       "  PrinterOpts f",
       "fillMissingPrinterOpts p1 p2 =",
-      indent . mkPrinterOpts $ \(fieldName', _) ->
-        printf "%s = maybe (%s p2) pure (%s p1)" fieldName' fieldName' fieldName',
+      indent . mkPrinterOpts $ \(fieldName, _, _) ->
+        printf "%s = maybe (%s p2) pure (%s p1)" fieldName fieldName fieldName,
       "",
       "parseFourmoluOptsCLI ::",
       "  Applicative f =>",
@@ -94,7 +94,7 @@ configGenHs =
                   quote (getCLIPlaceholder option)
                 ]
             ]
-          | option@Option {name, fieldName = Just _} <- allOptions
+          | option@Option {name, info = PrinterOptsOption {}} <- allOptions
         ],
       "    parsePresetOptCLI =",
       "      mkOption",
@@ -113,7 +113,7 @@ configGenHs =
       "  pure PrinterOpts",
       indent' 2 . unlines_ $
         [ "<*> f " <> quote name
-          | Option {name, fieldName = Just _} <- allOptions
+          | Option {name, info = PrinterOptsOption {}} <- allOptions
         ],
       "",
       "{---------- PrinterOpts field types ----------}",
@@ -192,9 +192,12 @@ configGenHs =
       indent' 2 (renderMultiLineStringList fourmoluYamlFourmoluStyle)
     ]
   where
-    mkPrinterOpts :: ((String, Option) -> String) -> String
+    mkPrinterOpts :: ((String, PresetOptions, Option) -> String) -> String
     mkPrinterOpts f =
-      let fieldOptions = mapMaybe (\o -> (,o) <$> fieldName o) allOptions
+      let fieldOptions =
+            [ (fieldName, presets, o)
+              | o@Option {info = PrinterOptsOption {..}} <- allOptions
+            ]
        in unlines_
             [ "PrinterOpts",
               indent . unlines_ $
@@ -213,12 +216,12 @@ configGenHs =
                 let delim = if isFirst then '=' else '|'
             ]
 
-    mkPresetOpts name getPresetVal =
+    mkPresetOpts name getPreset =
       unlines_
         [ name <> " :: PrinterOpts Identity",
           name <> " =",
-          indent . mkPrinterOpts $ \(fieldName', opt) ->
-            fieldName' <> " = pure " <> renderHs (getPresetVal opt)
+          indent . mkPrinterOpts $ \(fieldName, presets, _) ->
+            fieldName <> " = pure " <> renderHs (getPreset presets)
         ]
 
     renderEnumOptions enumOptions =
@@ -227,7 +230,7 @@ configGenHs =
     renderMultiLineStringList =
       unlines . (++ ["]"]) . zipWith (\c str -> c : ' ' : show str) ('[' : repeat ',') . lines
 
-    getCLIHelp Option {..} =
+    getCLIHelp option@Option {..} =
       let help = fromMaybe description (cliHelp cliOverrides)
           choicesText =
             case type_ `Map.lookup` fieldTypesMap of
@@ -236,7 +239,7 @@ configGenHs =
               _ -> ""
           defaultText =
             printf " (default: %s)" $
-              fromMaybe (hs2yaml type_ default_) (cliDefault cliOverrides)
+              fromMaybe (defaultYaml option) (cliDefault cliOverrides)
        in concat [help, choicesText, defaultText]
 
     getCLIPlaceholder Option {..}
@@ -250,7 +253,7 @@ fourmoluYamlFourmoluStyle :: String
 fourmoluYamlFourmoluStyle = unlines_ config
   where
     config =
-      [ printf "# %s\n%s: %s\n" (getComment opt) name (hs2yaml type_ default_)
+      [ printf "# %s\n%s: %s\n" (getComment opt) name (defaultYaml opt)
         | opt@Option {..} <- allOptions
       ]
 
