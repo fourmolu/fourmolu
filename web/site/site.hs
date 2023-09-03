@@ -192,12 +192,18 @@ getOptionDemoWidget option@ConfigData.Option {..}
 getConfigOptionContext :: ConfigData.Option -> [Context a]
 getConfigOptionContext option@ConfigData.Option {..} =
   [ constField "info" $
-      mkTable
-        [ ("Description", description),
-          schema,
-          ("Default", printf "<code>%s</code>" $ hs2yaml type_ default_),
-          ("Ormolu", printf "<code>%s</code>" $ hs2yaml type_ ormolu),
-          ("Since", maybe "<i>Unreleased</i>" ("v" <>) sinceVersion)
+      wrap "table" . wrap "tbody" . concat $
+        [ wrap "tr" . concat $
+            [ wrap "th" label,
+              wrap "td" val
+            ]
+          | (label, val) <-
+              [ ("Description", description),
+                schema,
+                ("Default", wrap "code" $ hs2yaml type_ default_),
+                ("Ormolu", wrap "code" $ hs2yaml type_ ormolu),
+                ("Since", maybe "<i>Unreleased</i>" ("v" <>) sinceVersion)
+              ]
         ]
   ]
   where
@@ -206,28 +212,19 @@ getConfigOptionContext option@ConfigData.Option {..} =
       if type_ `Map.member` fieldTypesMap
         then
           ( "Options",
-            unlines . wrap ["<ul>"] ["</ul>"] $
-              [ printf "<li>%s</li>" (renderOptionHTML opt)
+            wrap "ul" . concat $
+              [ wrap "li" (renderOptionHTML opt)
                 | opt <- adtOptions
               ]
           )
         else
           ( "Type",
-            printf "<code>%s</code>" type_
+            wrap "code" type_
           )
-    mkTable rows =
-      unlines . wrap ["<table>", "<tbody>"] ["</tbody>", "</table>"] . concat $
-        [ [ "  <tr>",
-            "    <th>" <> label <> "</th>",
-            "    <td>" <> val <> "</td>",
-            "  </tr>"
-          ]
-          | (label, val) <- rows
-        ]
-    wrap pre post xs = pre <> xs <> post
     renderOptionHTML = \case
-      ConfigData.ADTOptionLiteral s -> "<code>" <> s <> "</code>"
+      ConfigData.ADTOptionLiteral s -> wrap "code" s
       ConfigData.ADTOptionDescription s -> s
+    wrap tag s = printf "<%s>%s</%s>" (tag :: String) (s :: String) tag
 
 makeSidebar :: PageSidebar -> Context String
 makeSidebar PageSidebar {..} =
