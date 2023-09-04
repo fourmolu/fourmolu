@@ -26,11 +26,12 @@ jobs:
           cd "$(mktemp -d)"
           curl -L https://gitlab.haskell.org/ghc/ghc-wasm-meta/-/archive/master/ghc-wasm-meta-master.tar.gz \
             | tar xz --strip-components=1
-          ./setup.sh
+          FLAVOUR=9.8 ./setup.sh
           ~/.ghc-wasm/add_to_github_path.sh
       -
+        # TODO: remove when packages have updated for GHC 9.8
         # https://gitlab.haskell.org/ghc/head.hackage/-/blob/90570e1c4606c1d7d3d41797ec1b32d1b984067b/ci/MakeConstraints.hs#L40-49
-        name: Use allow-newer for HEAD.hackage
+        name: Allow packages to use GHC 9.8
         run:
           cabal configure
             --allow-newer=base
@@ -45,6 +46,7 @@ jobs:
             --allow-newer=Cabal
             --allow-newer=deepseq
             --allow-newer=text
+            --allow-newer=aeson:th-abstraction
       -
         run: wasm32-wasi-cabal update
       -
