@@ -125,6 +125,8 @@ To release a new version, do the following workflow:
 
 1. If this is a new major version, update HLS to use it ([example](https://github.com/haskell/haskell-language-server/commit/052aa9073fc051f4ac24ec158cf940cbec1682cb)). It's rare that we'll be changing our API in a way that requires actual code changes.
 
+1. Publicize on Reddit (https://reddit.com/r/haskell) and Discourse (https://discourse.haskell.org)
+
 ## Merging upstream
 
 Fourmolu aims to continue merging upstream changes in Ormolu. Whenever Ormolu makes a new release (ideally within a week), the following steps should be run to merge the changes into Fourmolu.
