@@ -18,12 +18,12 @@ jobs:
             repo: haskell/cabal
             # TODO: pin this to the next released version of Cabal that uses fourmolu
             ref: 439d68efb74bd8f1c2215301d214d9459acdfa63
-            cmd: fourmolu -i Cabal Cabal-syntax cabal-install
+            cmd: fourmolu -m check Cabal Cabal-syntax cabal-install
           -
             name: swarm
             repo: swarm-game/swarm
             ref: 0.4.0.0
-            cmd: fourmolu -i src app test
+            cmd: fourmolu -m check src app test
 
     name: 'format_compat: ${{ matrix.name }}'
     runs-on: ubuntu-latest
@@ -55,11 +55,8 @@ jobs:
         name: Run fourmolu
         working-directory: target
         run: |
+          git apply --allow-empty ../fourmolu/compat-tests/${{ matrix.name }}.diff
           ${{ matrix.cmd }}
-          git diff > ${{ matrix.name }}.diff
-      -
-        name: Compare diff
-        run: diff -u fourmolu/compat-tests/${{ matrix.name }}.diff target/${{ matrix.name }}.diff
       -
         if: always()
         uses: actions/upload-artifact@v3
