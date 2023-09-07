@@ -22,8 +22,7 @@ jobs:
           -
             name: swarm
             repo: swarm-game/swarm
-            # TODO: pin this to the next released version of swarm that is upgraded to fourmolu 0.13
-            ref: 485e6ace1f9d4860416667568f24929d357a0680
+            ref: 0.4.0.0
             cmd: fourmolu -i src app test
 
     name: 'format_compat: ${{ matrix.name }}'
