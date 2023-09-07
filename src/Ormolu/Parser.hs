@@ -179,7 +179,7 @@ parseModuleSnippet config@Config {..} modFixityMap dynFlags path rawInput = lift
 normalizeModule :: Config RegionDeltas -> HsModule GhcPs -> HsModule GhcPs
 normalizeModule Config {..} hsmod =
   everywhere
-    (extT (mkT dropBlankTypeHaddocks) patchContext)
+    (mkT dropBlankTypeHaddocks `extT` dropBlankDataDeclHaddocks `extT` patchContext)
     hsmod
       { hsmodImports =
           hsmodImports hsmod,
@@ -206,6 +206,13 @@ normalizeModule Config {..} hsmod =
       L _ (HsDocTy _ ty s) :: LHsType GhcPs
         | isBlankDocString s -> ty
       a -> a
+    dropBlankDataDeclHaddocks = \case
+      ConDeclGADT {con_doc = Just s, ..} :: ConDecl GhcPs
+        | isBlankDocString s -> ConDeclGADT {con_doc = Nothing, ..}
+      ConDeclH98 {con_doc = Just s, ..} :: ConDecl GhcPs
+        | isBlankDocString s -> ConDeclH98 {con_doc = Nothing, ..}
+      a -> a
+
     patchContext :: LHsContext GhcPs -> LHsContext GhcPs
     patchContext = fmap $ \case
       [x@(L _ (HsParTy _ inner))]

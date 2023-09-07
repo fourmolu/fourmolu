@@ -7,7 +7,7 @@ maintainer:
     Matt Parsons <parsonsmatt@gmail.com>
     George Thomas <georgefsthomas@gmail.com>
     Brandon Chinn <brandonchinn178@gmail.com>
-tested-with:        ghc ==9.2.7 ghc ==9.4.4 ghc ==9.6.1
+tested-with:        ghc ==9.2.8 ghc ==9.4.5 ghc ==9.6.2
 homepage:           https://github.com/fourmolu/fourmolu
 bug-reports:        https://github.com/fourmolu/fourmolu/issues
 synopsis:           A formatter for Haskell source code
@@ -112,7 +112,7 @@ library
         array >=0.5 && <0.6,
         base >=4.14 && <5.0,
         binary >=0.8 && <0.9,
-        bytestring >=0.2 && <0.12,
+        bytestring >=0.2 && <0.13,
         containers >=0.5 && <0.7,
         deepseq >=1.4 && <1.6,
         directory ^>=1.3,
