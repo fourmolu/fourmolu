@@ -355,3 +355,16 @@ index a67a66a..c37359f 100644
            -- TODO: Maybe exclude Backpack too
  
            elab0 = elaborateSolverToCommon spkg
+diff --git a/cabal-install/src/Distribution/Client/Utils.hs b/cabal-install/src/Distribution/Client/Utils.hs
+index f7a51bf..3dac605 100644
+--- a/cabal-install/src/Distribution/Client/Utils.hs
++++ b/cabal-install/src/Distribution/Client/Utils.hs
+@@ -510,7 +510,7 @@ concatMapM :: Monad m => (a -> m [b]) -> [a] -> m [b]
+ {-# INLINE concatMapM #-}
+ concatMapM op = foldr f (pure [])
+   where
+-    f x xs = do x' <- op x; if null x' then xs else do { xs' <- xs; pure $ x' ++ xs' }
++    f x xs = do x' <- op x; if null x' then xs else do xs' <- xs; pure $ x' ++ xs'
+ 
+ -- | From Control.Monad.Extra
+ --   https://hackage.haskell.org/package/extra-1.7.9
