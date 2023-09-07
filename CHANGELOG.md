@@ -1,3 +1,25 @@
+## Fourmolu 0.14.0.0
+
+* Provide `resolvePrinterOpts` instead of `fillMissingPrinterOpts`
+
+* Format configuration better in `--debug` output
+
+### Upstream changes:
+
+#### Ormolu 0.7.2.0
+
+* Preserve necessary braces for final function arguments. [Issue
+  1044](https://github.com/tweag/ormolu/issues/1044).
+
+* Put `"this"` `PackageImports` at the end. [Issue
+  1048](https://github.com/tweag/ormolu/issues/1048).
+
+* Format parenthesized operators starting with a `#` correctly in the presence
+  of `UnboxedSums`. [Issue 1062](https://github.com/tweag/ormolu/issues/1062).
+
+* Fix false positives in AST diffing related to empty Haddock comments in data
+  declarations. [Issue 1065](https://github.com/tweag/ormolu/issues/1065).
+
 ## Fourmolu 0.13.1.0
 
 * Fix `single-constraint-parens: never` with `QuantifiedConstraints` ([#340](https://github.com/fourmolu/fourmolu/issues/340))
