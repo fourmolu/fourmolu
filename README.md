@@ -237,8 +237,6 @@ It follows [PVP](https://pvp.haskell.org/) starting from the version
   works only in simple cases when CPP conditionals surround top-level
   declarations. See the [CPP](https://github.com/tweag/ormolu/blob/master/DESIGN.md#cpp) section in the design notes for a
   discussion of the dangers.
-* Input modules should be parsable by Haddock, which is a bit stricter
-  criterion than just being valid Haskell modules.
 * Various minor idempotence issues, most of them are related to comments or column limits.
 * Fourmolu is in a fairly early stage of development. The implementation should be as stable as Ormolu, as it only makes minimal changes, and is extensively tested. But the default configuration style may change in some minor ways in the near future, as we make more options available. It will always be possible to replicate the old default behaviour with a suitable `fourmolu.yaml`.
 
