@@ -17,6 +17,7 @@ jobs:
       -
         name: Install preprocessors
         run: |
+          cd ~
           cabal update
           cabal install --overwrite-policy=always alex happy
           echo ~/.cabal/bin >> "${GITHUB_PATH}"
@@ -28,25 +29,6 @@ jobs:
             | tar xz --strip-components=1
           FLAVOUR=9.8 ./setup.sh
           ~/.ghc-wasm/add_to_github_path.sh
-      -
-        # TODO: remove when packages have updated for GHC 9.8
-        # https://gitlab.haskell.org/ghc/head.hackage/-/blob/90570e1c4606c1d7d3d41797ec1b32d1b984067b/ci/MakeConstraints.hs#L40-49
-        name: Allow packages to use GHC 9.8
-        run:
-          cabal configure
-            --allow-newer=base
-            --allow-newer=template-haskell
-            --allow-newer=ghc
-            --allow-newer=ghc-prim
-            --allow-newer=integer-gmp
-            --allow-newer=ghc-bignum
-            --allow-newer=time
-            --allow-newer=binary
-            --allow-newer=bytestring
-            --allow-newer=Cabal
-            --allow-newer=deepseq
-            --allow-newer=text
-            --allow-newer=aeson:th-abstraction
       -
         run: wasm32-wasi-cabal update
       -
