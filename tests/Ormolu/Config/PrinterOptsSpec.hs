@@ -86,7 +86,7 @@ spec =
         },
       TestGroup
         { label = "column-limit",
-          isMulti = False,
+          isMulti = True,
           testCases = [NoLimit, ColumnLimit 80, ColumnLimit 100],
           updateConfig = \columnLimit opts -> opts {poColumnLimit = pure columnLimit},
           showTestCase = show,

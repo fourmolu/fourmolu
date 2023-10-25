@@ -92,3 +92,17 @@ testFund =
         abcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcde
         $ do
             result <- aRandomResult
+
+{- // -}
+
+{----- BlockArguments (https://github.com/fourmolu/fourmolu/issues/377) -----}
+{-# LANGUAGE BlockArguments #-}
+
+putThen :: String -> IO a -> IO a
+putThen s action =
+    putStrLn s >> action
+
+main :: IO ()
+main = do
+    putThen "012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789" do
+        putStrLn ""

@@ -32,6 +32,7 @@ module Ormolu.Printer.Combinators
     located',
     switchLayout,
     switchLayoutNoLimit,
+    spansLayout,
     Layout (..),
     vlayout,
     getLayout,
@@ -97,7 +98,7 @@ import Data.List (intersperse)
 import Data.Text (Text)
 import GHC.Data.Strict qualified as Strict
 import GHC.LanguageExtensions.Type
-import GHC.Types.SrcLoc
+import GHC.Types.SrcLoc hiding (spans)
 import Ormolu.Config
 import Ormolu.Printer.Comments
 import Ormolu.Printer.Internal
@@ -162,11 +163,6 @@ located' ::
   R ()
 located' = flip located
 
-switchLayout' :: R ColumnLimit -> [SrcSpan] -> R () -> R ()
-switchLayout' getColLimit spans' r = do
-  columnLimit <- getColLimit
-  enterLayout (spansLayout columnLimit spans') r
-
 -- | Set layout according to combination of given 'SrcSpan's for a given.
 -- Use this only when you need to set layout based on e.g. combined span of
 -- several elements when there is no corresponding 'Located' wrapper
@@ -179,18 +175,25 @@ switchLayout ::
   -- | Computation to run with changed layout
   R () ->
   R ()
-switchLayout = switchLayout' (getPrinterOpt poColumnLimit)
+switchLayout spans r = do
+  layout <- spansLayout spans
+  enterLayout layout r
 
 -- | Same as 'switchLayout', except disregards the column limit.
 --
 -- It should be used for the argument list in function definitions because
 -- the column limit can't be enforced there without changing the AST.
 switchLayoutNoLimit :: [SrcSpan] -> R () -> R ()
-switchLayoutNoLimit = switchLayout' (pure NoLimit)
+switchLayoutNoLimit spans = enterLayout (spansLayoutWithLimit NoLimit spans)
 
 -- | Which layout combined spans result in?
-spansLayout :: ColumnLimit -> [SrcSpan] -> Layout
-spansLayout colLimit = \case
+spansLayout :: [SrcSpan] -> R Layout
+spansLayout spans = do
+  colLimit <- getPrinterOpt poColumnLimit
+  pure $ spansLayoutWithLimit colLimit spans
+
+spansLayoutWithLimit :: ColumnLimit -> [SrcSpan] -> Layout
+spansLayoutWithLimit colLimit = \case
   [] -> SingleLine
   (x : xs) ->
     let combinedSpan = foldr combineSrcSpans x xs
