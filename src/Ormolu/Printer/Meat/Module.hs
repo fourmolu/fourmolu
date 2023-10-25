@@ -70,7 +70,7 @@ p_hsModuleHeader HsModule {hsmodExt = XModulePs {..}, ..} moduleName = do
 
   forM_ hsmodDeprecMessage $ \w -> do
     breakpoint
-    located' p_moduleWarning w
+    located' p_warningTxt w
 
   isRespectful <- getPrinterOpt poRespectful
   isDiffFriendly <- (== ImportExportDiffFriendly) <$> getPrinterOpt poImportExportStyle
