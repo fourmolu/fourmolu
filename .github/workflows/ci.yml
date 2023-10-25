@@ -25,9 +25,9 @@ jobs:
     strategy:
       matrix:
         ghc_version:
-          - '9.2'
           - '9.4'
           - '9.6'
+          - '9.8'
 
     name: 'cabal_test: ghc-${{ matrix.ghc_version }}'
     runs-on: ubuntu-latest
@@ -35,7 +35,7 @@ jobs:
       -
         uses: actions/checkout@v4
       -
-        uses: haskell/actions/setup@v2
+        uses: haskell-actions/setup@v2
         with:
           ghc-version: ${{ matrix.ghc_version }}
       -
