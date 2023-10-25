@@ -162,54 +162,48 @@ located' ::
   R ()
 located' = flip located
 
+switchLayout' :: R ColumnLimit -> [SrcSpan] -> R () -> R ()
+switchLayout' getColLimit spans' r = do
+  columnLimit <- getColLimit
+  enterLayout (spansLayout columnLimit spans') r
+
 -- | Set layout according to combination of given 'SrcSpan's for a given.
 -- Use this only when you need to set layout based on e.g. combined span of
 -- several elements when there is no corresponding 'Located' wrapper
 -- provided by GHC AST. It is relatively rare that this one is needed.
 --
 -- Given empty list this function will set layout to single line.
-switchLayout' ::
-  -- | Should enforce column limit, if one is set
-  Bool ->
+switchLayout ::
   -- | Span that controls layout
   [SrcSpan] ->
   -- | Computation to run with changed layout
   R () ->
   R ()
-switchLayout' useColLimit spans' r = do
-  columnLimit <-
-    if useColLimit then getPrinterOpt poColumnLimit else pure NoLimit
-  enterLayout (spansLayout columnLimit spans') r
+switchLayout = switchLayout' (getPrinterOpt poColumnLimit)
 
-switchLayout :: [SrcSpan] -> R () -> R ()
-switchLayout = switchLayout' True
-
--- | Switch layout version that disregards the column limit.
+-- | Same as 'switchLayout', except disregards the column limit.
+--
 -- It should be used for the argument list in function definitions because
 -- the column limit can't be enforced there without changing the AST.
 switchLayoutNoLimit :: [SrcSpan] -> R () -> R ()
-switchLayoutNoLimit = switchLayout' False
+switchLayoutNoLimit = switchLayout' (pure NoLimit)
 
 -- | Which layout combined spans result in?
 spansLayout :: ColumnLimit -> [SrcSpan] -> Layout
 spansLayout colLimit = \case
   [] -> SingleLine
   (x : xs) ->
-    if isOneLineSpan combinedSpan && not (shouldBreakSingleLine combinedSpan)
-      then SingleLine
-      else MultiLine
-    where
-      combinedSpan = foldr combineSrcSpans x xs
-
-      shouldBreakSingleLine :: SrcSpan -> Bool
-      shouldBreakSingleLine (RealSrcSpan rs _) =
-        case colLimit of
-          ColumnLimit maxLineLength ->
-            spanLineLength > fromIntegral maxLineLength
-          NoLimit -> False
-        where
-          spanLineLength = srcSpanEndCol rs - srcSpanStartCol rs
-      shouldBreakSingleLine _ = False
+    let combinedSpan = foldr combineSrcSpans x xs
+     in if isOneLineSpan combinedSpan && not (shouldBreakSingleLine combinedSpan)
+          then SingleLine
+          else MultiLine
+  where
+    shouldBreakSingleLine srcSpan =
+      case (srcSpan, colLimit) of
+        (RealSrcSpan rs _, ColumnLimit maxLineLength) ->
+          let spanLineLength = srcSpanEndCol rs - srcSpanStartCol rs
+           in spanLineLength > fromIntegral maxLineLength
+        _ -> False
 
 -- | Insert a space if enclosing layout is single-line, or newline if it's
 -- multiline.
