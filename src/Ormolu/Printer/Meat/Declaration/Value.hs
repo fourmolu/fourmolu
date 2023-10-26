@@ -644,12 +644,11 @@ p_hsExpr' isApp s = \case
         initSpan =
           combineSrcSpans' $
             getLocA f :| [(srcLocSpan . srcSpanStart . getLocA) lastp]
-        -- Hang the last argument only if the initial arguments span one
-        -- line.
-        placement =
-          if isOneLineSpan initSpan
-            then exprPlacement (unLoc lastp)
-            else Normal
+    -- Hang the last argument only if the initial arguments span one line.
+    placement <-
+      spansLayout [initSpan] <&> \case
+        SingleLine -> exprPlacement (unLoc lastp)
+        MultiLine -> Normal
     -- If the last argument is not hanging, just separate every argument as
     -- usual. If it is hanging, print the initial arguments and hang the
     -- last one. Also, use braces around the every argument except the last

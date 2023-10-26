@@ -1,5 +1,3 @@
-module ColumnLimitTest where
-
 -- Less than 80 characters
 import Data.List (head, isPrefixOf, tail)
 
@@ -27,9 +25,9 @@ data SecondDataType = SecondDataType
 
 data DataTypeWithAVeryLongName = DataTypeWithAVeryLongName String String String String String
 
--- Long function signatures
-
 -- For reference, this line had exactly 80 characters -------------------------|
+
+{----- Long function signatures -----}
 
 longFunction0 :: String -> String -> String -> Maybe Int -> Maybe Int -> Maybe Int -> String -> [String]
 longFunction0 veryLongArg1 a b c d e f = ["a list", "of strings", "that will break the", "column limit"]
@@ -66,7 +64,7 @@ longFunction3 veryLongArg1 veryLongArg2 veryLongArg3 veryLongArg4 veryLongArgume
 
 -- For reference, this line had exactly 80 characters -------------------------|
 
--- ----------------  Known limitation: idempotence is broken ----------------
+{-----  Known limitation: idempotence is broken -----}
 
 -- With the column-limit option set, fourmolu will not be idempotent in some
 -- cases. An example can be seen below, where the long line ends with a `do`.
@@ -94,3 +92,17 @@ testFund =
         abcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcde
         $ do
             result <- aRandomResult
+
+{- // -}
+
+{----- BlockArguments (https://github.com/fourmolu/fourmolu/issues/377) -----}
+{-# LANGUAGE BlockArguments #-}
+
+putThen :: String -> IO a -> IO a
+putThen s action =
+    putStrLn s >> action
+
+main :: IO ()
+main = do
+    putThen "012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789" do
+        putStrLn ""

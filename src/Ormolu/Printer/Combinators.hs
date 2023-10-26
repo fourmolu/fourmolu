@@ -32,6 +32,7 @@ module Ormolu.Printer.Combinators
     located',
     switchLayout,
     switchLayoutNoLimit,
+    spansLayout,
     Layout (..),
     vlayout,
     getLayout,
@@ -97,7 +98,7 @@ import Data.List (intersperse)
 import Data.Text (Text)
 import GHC.Data.Strict qualified as Strict
 import GHC.LanguageExtensions.Type
-import GHC.Types.SrcLoc
+import GHC.Types.SrcLoc hiding (spans)
 import Ormolu.Config
 import Ormolu.Printer.Comments
 import Ormolu.Printer.Internal
@@ -168,48 +169,44 @@ located' = flip located
 -- provided by GHC AST. It is relatively rare that this one is needed.
 --
 -- Given empty list this function will set layout to single line.
-switchLayout' ::
-  -- | Should enforce column limit, if one is set
-  Bool ->
+switchLayout ::
   -- | Span that controls layout
   [SrcSpan] ->
   -- | Computation to run with changed layout
   R () ->
   R ()
-switchLayout' useColLimit spans' r = do
-  columnLimit <-
-    if useColLimit then getPrinterOpt poColumnLimit else pure NoLimit
-  enterLayout (spansLayout columnLimit spans') r
+switchLayout spans r = do
+  layout <- spansLayout spans
+  enterLayout layout r
 
-switchLayout :: [SrcSpan] -> R () -> R ()
-switchLayout = switchLayout' True
-
--- | Switch layout version that disregards the column limit.
+-- | Same as 'switchLayout', except disregards the column limit.
+--
 -- It should be used for the argument list in function definitions because
 -- the column limit can't be enforced there without changing the AST.
 switchLayoutNoLimit :: [SrcSpan] -> R () -> R ()
-switchLayoutNoLimit = switchLayout' False
+switchLayoutNoLimit spans = enterLayout (spansLayoutWithLimit NoLimit spans)
 
 -- | Which layout combined spans result in?
-spansLayout :: ColumnLimit -> [SrcSpan] -> Layout
-spansLayout colLimit = \case
+spansLayout :: [SrcSpan] -> R Layout
+spansLayout spans = do
+  colLimit <- getPrinterOpt poColumnLimit
+  pure $ spansLayoutWithLimit colLimit spans
+
+spansLayoutWithLimit :: ColumnLimit -> [SrcSpan] -> Layout
+spansLayoutWithLimit colLimit = \case
   [] -> SingleLine
   (x : xs) ->
-    if isOneLineSpan combinedSpan && not (shouldBreakSingleLine combinedSpan)
-      then SingleLine
-      else MultiLine
-    where
-      combinedSpan = foldr combineSrcSpans x xs
-
-      shouldBreakSingleLine :: SrcSpan -> Bool
-      shouldBreakSingleLine (RealSrcSpan rs _) =
-        case colLimit of
-          ColumnLimit maxLineLength ->
-            spanLineLength > fromIntegral maxLineLength
-          NoLimit -> False
-        where
-          spanLineLength = srcSpanEndCol rs - srcSpanStartCol rs
-      shouldBreakSingleLine _ = False
+    let combinedSpan = foldr combineSrcSpans x xs
+     in if isOneLineSpan combinedSpan && not (shouldBreakSingleLine combinedSpan)
+          then SingleLine
+          else MultiLine
+  where
+    shouldBreakSingleLine srcSpan =
+      case (srcSpan, colLimit) of
+        (RealSrcSpan rs _, ColumnLimit maxLineLength) ->
+          let spanLineLength = srcSpanEndCol rs - srcSpanStartCol rs
+           in spanLineLength > fromIntegral maxLineLength
+        _ -> False
 
 -- | Insert a space if enclosing layout is single-line, or newline if it's
 -- multiline.
