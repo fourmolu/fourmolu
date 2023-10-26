@@ -10,6 +10,7 @@ module Ormolu.Printer.Meat.ImportExport
 where
 
 import Control.Monad
+import Data.Foldable (for_)
 import Data.List (inits)
 import Data.Text qualified as T
 import GHC.Hs
@@ -19,6 +20,7 @@ import GHC.Types.SrcLoc
 import Ormolu.Config
 import Ormolu.Printer.Combinators
 import Ormolu.Printer.Meat.Common
+import Ormolu.Printer.Meat.Declaration.Warning
 import Ormolu.Utils (RelativePos (..), attachRelativePos)
 
 p_hsmodExports :: [LIE GhcPs] -> R ()
@@ -77,7 +79,10 @@ p_hsmodImport ImportDecl {..} = do
 
 p_lie :: Layout -> Bool -> RelativePos -> IE GhcPs -> R ()
 p_lie encLayout isAllPrevDoc relativePos = \case
-  IEVar NoExtField l1 ->
+  IEVar mwarn l1 -> do
+    for_ mwarn $ \warnTxt -> do
+      located warnTxt p_warningTxt
+      breakpoint
     withComma $
       located l1 p_ieWrappedName
   IEThingAbs _ l1 ->

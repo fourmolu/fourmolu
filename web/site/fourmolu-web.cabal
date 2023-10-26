@@ -19,6 +19,6 @@ executable fourmolu-web
         , fourmolu
         , fourmolu-config
         , ghc-syntax-highlighter-themed
-        , hakyll == 4.15.*
+        , hakyll
         , process
         , text

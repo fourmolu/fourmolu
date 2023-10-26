@@ -34,6 +34,7 @@ import Data.Text (Text)
 import Data.Text qualified as Text
 import Data.Void
 import GHC.Data.Bag (bagToList)
+import GHC.Data.FastString
 import GHC.Data.Strict qualified as Strict
 import GHC.Hs
 import GHC.LanguageExtensions.Type (Extension (NegativeLiterals))
@@ -352,7 +353,7 @@ p_hsCmd' isApp s = \case
       inci (sequence_ (intersperse breakpoint (located' (p_hsCmdTop N) <$> cmds)))
   HsCmdArrForm _ form Infix _ [left, right] -> do
     modFixityMap <- askModuleFixityMap
-    let opTree = OpBranches [cmdOpTree left, cmdOpTree right] [form]
+    let opTree = BinaryOpBranches (cmdOpTree left) form (cmdOpTree right)
     p_cmdOpTree
       s
       (reassociateOpTree (getOpName . unLoc) modFixityMap opTree)
@@ -699,7 +700,7 @@ p_hsExpr' isApp s = \case
       located (hswc_body a) p_hsType
   OpApp _ x op y -> do
     modFixityMap <- askModuleFixityMap
-    let opTree = OpBranches [exprOpTree x, exprOpTree y] [op]
+    let opTree = BinaryOpBranches (exprOpTree x) op (exprOpTree y)
     p_exprOpTree
       s
       (reassociateOpTree (getOpName . unLoc) modFixityMap opTree)
@@ -812,11 +813,11 @@ p_hsExpr' isApp s = \case
               Ambiguous NoExtField n -> n
         p_recFields p_lbl =
           sep commaDel (sitcc . located' (p_hsFieldBind p_lbl))
-    inci . braces N $
-      either
-        (p_recFields p_updLbl)
-        (p_recFields $ located' $ coerce p_ldotFieldOccs)
-        rupd_flds
+    inci . braces N $ case rupd_flds of
+      RegularRecUpdFields {..} ->
+        p_recFields p_updLbl recUpdFields
+      OverloadedRecUpdFields {..} ->
+        p_recFields (located' (coerce p_ldotFieldOccs)) olRecUpdFields
   HsGetField {..} -> do
     located gf_expr p_hsExpr
     txt "."
@@ -1284,9 +1285,9 @@ p_hsQuote epAnn = \case
           _ -> False
 
 -- | Print the source text of a string literal while indenting gaps correctly.
-p_stringLit :: String -> R ()
+p_stringLit :: FastString -> R ()
 p_stringLit src =
-  let s = splitGaps src
+  let s = splitGaps (unpackFS src)
       singleLine =
         txt $ Text.pack (mconcat s)
       multiLine =
@@ -1321,11 +1322,7 @@ p_stringLit src =
     -- Attaches previous and next items to each list element
     zipPrevNext :: [a] -> [(Maybe a, a, Maybe a)]
     zipPrevNext xs =
-      let z =
-            zip
-              (zip (Nothing : map Just xs) xs)
-              (map Just (tail xs) ++ repeat Nothing)
-       in map (\((p, x), n) -> (p, x, n)) z
+      zip3 (Nothing : map Just xs) xs (map Just (drop 1 xs) ++ [Nothing])
     orig (_, x, _) = x
 
 ----------------------------------------------------------------------------

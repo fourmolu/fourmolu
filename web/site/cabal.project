@@ -4,23 +4,13 @@ packages:
   ../../config/
 
 allow-newer:
-  , hakyll:template-haskell
+  , hakyll:*
 
 package hakyll
   flags: -usePandoc +watchServer
 
 package cmark-gfm-simple
   flags: +ghc-syntax-highlighter
-
-source-repository-package
-  type: git
-  location: https://github.com/jaspervdj/hakyll
-  tag: 532eb3bed46e5e5cb2de9628b816346e402ad991
-
-source-repository-package
-  type: git
-  location: https://github.com/mrkkrp/ghc-syntax-highlighter
-  tag: a1cec672630a1ee067add2b585b1a87637d93f84
 
 source-repository-package
   type: git
