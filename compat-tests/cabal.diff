@@ -1,3 +1,29 @@
+diff --git a/Cabal-syntax/src/Distribution/Compat/Prelude.hs b/Cabal-syntax/src/Distribution/Compat/Prelude.hs
+index 3cbf3c1..4aa252c 100644
+--- a/Cabal-syntax/src/Distribution/Compat/Prelude.hs
++++ b/Cabal-syntax/src/Distribution/Compat/Prelude.hs
+@@ -22,7 +22,7 @@ module Distribution.Compat.Prelude
+ 
+   --
+   -- Prelude is re-exported, following is hidden:
+-      module BasePrelude
++    module BasePrelude
+ 
+     -- * Common type-classes
+   , Semigroup (..)
+diff --git a/Cabal-syntax/src/Distribution/PackageDescription.hs b/Cabal-syntax/src/Distribution/PackageDescription.hs
+index 47d4667..ffd1713 100644
+--- a/Cabal-syntax/src/Distribution/PackageDescription.hs
++++ b/Cabal-syntax/src/Distribution/PackageDescription.hs
+@@ -12,7 +12,7 @@
+ -- about @.cabal@ files.
+ module Distribution.PackageDescription
+   ( -- * PD and GPD
+-      module Distribution.Types.PackageDescription
++    module Distribution.Types.PackageDescription
+   , module Distribution.Types.GenericPackageDescription
+ 
+     -- * Components
 diff --git a/Cabal/src/Distribution/Backpack/MixLink.hs b/Cabal/src/Distribution/Backpack/MixLink.hs
 index b358612..3e4cc8d 100644
 --- a/Cabal/src/Distribution/Backpack/MixLink.hs
@@ -86,6 +112,19 @@ index 6e0f00d..010bffc 100644
            return v
  
      let req_rename_fn k = case Map.lookup k req_rename of
+diff --git a/Cabal/src/Distribution/Simple/Compiler.hs b/Cabal/src/Distribution/Simple/Compiler.hs
+index 074f2f3..0ac9d19 100644
+--- a/Cabal/src/Distribution/Simple/Compiler.hs
++++ b/Cabal/src/Distribution/Simple/Compiler.hs
+@@ -23,7 +23,7 @@
+ -- not yet fully support this latter feature.
+ module Distribution.Simple.Compiler
+   ( -- * Haskell implementations
+-      module Distribution.Compiler
++    module Distribution.Compiler
+   , Compiler (..)
+   , showCompilerId
+   , showCompilerIdWithAbi
 diff --git a/Cabal/src/Distribution/Simple/GHC.hs b/Cabal/src/Distribution/Simple/GHC.hs
 index f01d096..cd2c614 100644
 --- a/Cabal/src/Distribution/Simple/GHC.hs
