@@ -104,8 +104,9 @@ p_lie encLayout isAllPrevDoc relativePos = \case
           IEWildcard n ->
             let (before, after) = splitAt n names
              in before ++ [txt ".."] ++ after
-  IEModuleContents _ l1 -> withComma $ do
-    indentDoc $ located l1 p_hsmodName
+  IEModuleContents _ l1 ->
+    withComma $
+      located l1 p_hsmodName
   IEGroup NoExtField n str -> do
     case relativePos of
       SinglePos -> return ()

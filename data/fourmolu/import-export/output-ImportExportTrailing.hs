@@ -39,3 +39,14 @@ module Foo
     ( -- | asdf
       singleExport,
     ) where
+
+{- // -}
+
+-- https://github.com/fourmolu/fourmolu/issues/381
+module Foo
+    ( -- * Re-export of module
+      module X,
+
+      -- * Some other thing
+      Foo,
+    ) where
