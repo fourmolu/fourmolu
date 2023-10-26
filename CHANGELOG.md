@@ -1,3 +1,23 @@
+## Fourmolu 0.14.1.0
+
+* Fix `single-constraint-parens: never` for nested quantified constraints ([#374](https://github.com/fourmolu/fourmolu/issues/374))
+
+* Fix `column-limit` with `BlockArguments` ([#377](https://github.com/fourmolu/fourmolu/issues/377))
+
+* Fixed an issue where re-exporting a module with Haddock comments + `import-exports=leading` was indented too far ([#381](https://github.com/fourmolu/fourmolu/issues/381))
+
+### Upstream changes:
+
+#### Ormolu 0.7.3.0
+
+* Switched to `ghc-lib-parser-9.8`, with the following new syntactic features:
+  * `ExtendedLiterals`: `123#Int8` is a literal of type `Int8#`. (disabled by
+    default)
+  * `TypeAbstractions`: `@k`-binders in data type declarations (enabled by
+    default)
+  * GHC proposal [#134](https://github.com/ghc-proposals/ghc-proposals/blob/0b652bd70258e354dfe4a05940182007596f8bf7/proposals/0134-deprecating-exports-proposal.rst): deprecating/warning about exports
+  * GHC proposal [#541](https://github.com/ghc-proposals/ghc-proposals/blob/0b652bd70258e354dfe4a05940182007596f8bf7/proposals/0541-warning-pragmas-with-categories.rst): warning categories
+
 ## Fourmolu 0.14.0.0
 
 * Provide `resolvePrinterOpts` instead of `fillMissingPrinterOpts`
