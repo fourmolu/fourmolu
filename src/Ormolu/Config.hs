@@ -1,4 +1,5 @@
 {-# LANGUAGE ApplicativeDo #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
@@ -30,9 +31,11 @@ module Ormolu.Config
     PrinterOptsPartial,
     PrinterOptsTotal,
     defaultPrinterOpts,
+    ormoluPrinterOpts,
     defaultPrinterOptsYaml,
     fillMissingPrinterOpts,
     resolvePrinterOpts,
+    ConfigPreset (..),
     CommaStyle (..),
     FunctionArrowsStyle (..),
     HaddockPrintStyle (..),
@@ -42,8 +45,8 @@ module Ormolu.Config
     InStyle (..),
     Unicode (..),
     ColumnLimit (..),
-    parsePrinterOptsCLI,
-    parsePrinterOptType,
+    parseFourmoluOptsCLI,
+    parseFourmoluConfigType,
 
     -- ** Loading Fourmolu configuration
     loadConfigFile,
@@ -54,12 +57,17 @@ module Ormolu.Config
   )
 where
 
+import Control.Applicative (asum)
+import Control.Exception (throwIO)
 import Control.Monad (forM)
 import Data.Aeson ((.!=), (.:?))
 import Data.Aeson qualified as Aeson
 import Data.Aeson.Types qualified as Aeson
+import Data.ByteString qualified as ByteString
+import Data.Char (isAlphaNum)
 import Data.Functor.Identity (Identity (..))
 import Data.Map.Strict qualified as Map
+import Data.Maybe (fromMaybe)
 import Data.Set (Set)
 import Data.Set qualified as Set
 import Data.String (fromString)
@@ -72,12 +80,20 @@ import Ormolu.Fixity
 import Ormolu.Terminal (ColorMode (..))
 import Ormolu.Utils.Fixity (parseFixityDeclarationStr, parseModuleReexportDeclarationStr)
 import System.Directory
-  ( XdgDirectory (XdgConfig),
+  ( XdgDirectory (XdgCache, XdgConfig),
+    createDirectoryIfMissing,
+    doesFileExist,
     findFile,
     getXdgDirectory,
     makeAbsolute,
   )
 import System.FilePath (splitPath, (</>))
+
+#if ENABLE_IMPORT_PRESET
+import Data.ByteString.Lazy qualified as ByteStringL
+import Network.HTTP.Client qualified as HTTP
+import Network.HTTP.Client.TLS qualified as HTTP
+#endif
 
 -- | Type of sources that can be formatted by Ormolu.
 data SourceType
@@ -228,15 +244,55 @@ deriving instance Eq PrinterOptsTotal
 
 deriving instance Show PrinterOptsTotal
 
--- | Apply the given configuration in order (later options override earlier).
-resolvePrinterOpts :: [PrinterOptsPartial] -> PrinterOptsTotal
-resolvePrinterOpts = foldr fillMissingPrinterOpts defaultPrinterOpts
+-- | Apply the given configuration in order (later options override earlier),
+-- and fill in options from the preset.
+resolvePrinterOpts :: [Maybe ConfigPreset] -> [PrinterOptsPartial] -> IO PrinterOptsTotal
+resolvePrinterOpts presets partialOpts = do
+  presetOpts <-
+    case fromMaybe FourmoluPreset $ asum presets of
+      FourmoluPreset -> pure defaultPrinterOpts
+      OrmoluPreset -> pure ormoluPrinterOpts
+      ImportPreset uri -> do
+        -- cache config file to avoid making a network request every time
+        cfgBS <- withCache ("preset-" <> filter isAlphaNum (show uri)) $ fetchURI uri
+
+        -- TODO: have this throw a Fourmolu error with exit code 400?
+        cfg <- either throwIO pure $ Yaml.decodeEither' cfgBS
+
+        -- fill in missing options with fourmolu default, so that users don't break
+        -- when fourmolu adds new options, but owner of preset hasn't updated yet
+        pure $ fillMissingPrinterOpts cfg defaultPrinterOpts
+
+  let opts = foldr fillMissingPrinterOpts mempty partialOpts
+  pure $ fillMissingPrinterOpts opts presetOpts
+  where
+    withCache name action = do
+      dir <- getXdgDirectory XdgCache "fourmolu"
+      let file = dir </> name
+      doesFileExist file >>= \case
+        True -> ByteString.readFile file
+        False -> do
+          bs <- action
+          createDirectoryIfMissing True dir
+          ByteString.writeFile file bs
+          pure bs
+
+#if ENABLE_IMPORT_PRESET
+    fetchURI uri = do
+      manager <- HTTP.newManager HTTP.tlsManagerSettings
+      req <- HTTP.requestFromURI uri
+      resp <- HTTP.httpLbs req manager
+      pure . ByteStringL.toStrict . HTTP.responseBody $ resp
+#else
+    fetchURI _ = error "Importing preset from URL is disabled"
+#endif
 
 ----------------------------------------------------------------------------
 -- Loading Fourmolu configuration
 
 data FourmoluConfig = FourmoluConfig
   { cfgFilePrinterOpts :: PrinterOptsPartial,
+    cfgFilePreset :: Maybe ConfigPreset,
     cfgFileFixities :: FixityOverrides,
     cfgFileReexports :: ModuleReexports
   }
@@ -245,6 +301,7 @@ data FourmoluConfig = FourmoluConfig
 instance Aeson.FromJSON FourmoluConfig where
   parseJSON = Aeson.withObject "FourmoluConfig" $ \o -> do
     cfgFilePrinterOpts <- Aeson.parseJSON (Aeson.Object o)
+    cfgFilePreset <- o .:? "preset"
     rawFixities <- o .:? "fixities" .!= []
     cfgFileFixities <-
       case mapM parseFixityDeclarationStr rawFixities of
@@ -261,6 +318,7 @@ emptyConfig :: FourmoluConfig
 emptyConfig =
   FourmoluConfig
     { cfgFilePrinterOpts = mempty,
+      cfgFilePreset = Nothing,
       cfgFileFixities = FixityOverrides mempty,
       cfgFileReexports = ModuleReexports mempty
     }

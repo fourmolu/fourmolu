@@ -14,6 +14,12 @@ import FourmoluConfig.ConfigData
 fieldTypesMap :: Map String FieldType
 fieldTypesMap = Map.fromList [(fieldTypeName fieldType, fieldType) | fieldType <- allFieldTypes]
 
+getOption :: String -> Option
+getOption n =
+  case filter ((== n) . name) allOptions of
+    [opt] -> opt
+    _ -> error $ "Could not find option named: " ++ n
+
 getOptionSchema :: Option -> ADTSchema
 getOptionSchema Option {type_ = ty} =
   case ty of
@@ -49,6 +55,14 @@ renderHs = \case
   HsInt v -> show v
   HsBool v -> show v
   HsList vs -> "[" <> intercalate ", " (map renderHs vs) <> "]"
+
+-- | Render the default value as YAML.
+defaultYaml :: Option -> String
+defaultYaml Option {info, type_} =
+  hs2yaml type_ $
+    case info of
+      PrinterOptsOption {presets} -> presetFourmolu presets
+      ConfigOption {optionDefault} -> optionDefault
 
 -- | Render a HaskellValue for YAML.
 hs2yaml :: String -> HaskellValue -> String

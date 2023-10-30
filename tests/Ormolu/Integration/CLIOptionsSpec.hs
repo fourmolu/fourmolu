@@ -49,7 +49,12 @@ spec =
     it "prints defaults to stdout" $ \fourmoluExe -> do
       stdOutput <- readProcess fourmoluExe ["--print-defaults"]
       -- Only check prefix of the output, so we don't have to update the test with every new option added
-      stdOutput `shouldSatisfy` isPrefixOf "# Number of spaces per indentation step\nindentation: 4\n"
+      let cfgPrefix =
+            unlines
+              [ "# Preset to use as the base configuration",
+                "preset: fourmolu"
+              ]
+      stdOutput `shouldSatisfy` (cfgPrefix `isPrefixOf`)
   where
     withTempDir = withSystemTempDirectory "fourmolu-cli-options-test"
     indented2 =

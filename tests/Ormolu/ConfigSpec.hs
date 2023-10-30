@@ -7,13 +7,27 @@ import Data.ByteString.Char8 qualified as Char8
 import Data.List.NonEmpty qualified as NonEmpty
 import Data.Map qualified as Map
 import Data.Yaml qualified as Yaml
-import Ormolu.Config (FourmoluConfig (..))
+import Ormolu.Config
 import Ormolu.Fixity (ModuleReexports (..))
 import Test.Hspec
 
 spec :: Spec
 spec = do
   describe "FourmoluConfig" $ do
+    it "resolves options with presets" $ do
+      let cfg = mempty {poCommaStyle = pure Leading}
+
+      fourmoluPreset <- resolvePrinterOpts [Just FourmoluPreset] [cfg]
+      poIndentation fourmoluPreset `shouldBe` pure 4
+      poCommaStyle fourmoluPreset `shouldBe` pure Leading
+
+      ormoluPreset <- resolvePrinterOpts [Just OrmoluPreset] [cfg]
+      poIndentation ormoluPreset `shouldBe` pure 2
+      poCommaStyle ormoluPreset `shouldBe` pure Leading
+
+      noPreset <- resolvePrinterOpts [Nothing] [cfg]
+      noPreset `shouldBe` fourmoluPreset
+
     it "parses multiple reexports from same module" $ do
       config <-
         Yaml.decodeThrow . Char8.pack . unlines $

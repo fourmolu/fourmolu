@@ -25,14 +25,6 @@ import Test.Hspec
 
 spec :: Spec
 spec = do
-  -- Config for normal Ormolu output + default Fourmolu output
-  ormoluConfig <-
-    runIO $
-      loadConfigFile "fourmolu.yaml" >>= \case
-        ConfigLoaded _ cfg -> pure cfg
-        result -> error $ "Could not load config file: " ++ show result
-  let ormoluPrinterOpts = resolvePrinterOpts [cfgFilePrinterOpts ormoluConfig]
-
   es <- runIO locateExamples
   sequence_ $
     checkExample

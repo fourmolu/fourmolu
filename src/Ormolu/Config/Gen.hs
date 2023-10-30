@@ -8,6 +8,7 @@
 
 module Ormolu.Config.Gen
   ( PrinterOpts (..)
+  , ConfigPreset (..)
   , CommaStyle (..)
   , FunctionArrowsStyle (..)
   , HaddockPrintStyle (..)
@@ -20,11 +21,12 @@ module Ormolu.Config.Gen
   , ColumnLimit (..)
   , emptyPrinterOpts
   , defaultPrinterOpts
+  , ormoluPrinterOpts
   , defaultPrinterOptsYaml
   , fillMissingPrinterOpts
-  , parsePrinterOptsCLI
+  , parseFourmoluOptsCLI
   , parsePrinterOptsJSON
-  , parsePrinterOptType
+  , parseFourmoluConfigType
   )
 where
 
@@ -34,6 +36,8 @@ import Data.Functor.Identity (Identity)
 import Data.Scientific (floatingOrInteger)
 import qualified Data.Text as Text
 import GHC.Generics (Generic)
+import Network.URI (URI)
+import qualified Network.URI as URI
 import Text.Read (readEither, readMaybe)
 
 -- | Options controlling formatting output.
@@ -112,6 +116,26 @@ defaultPrinterOpts =
     , poRespectful = pure True
     }
 
+ormoluPrinterOpts :: PrinterOpts Identity
+ormoluPrinterOpts =
+  PrinterOpts
+    { poIndentation = pure 2
+    , poColumnLimit = pure NoLimit
+    , poFunctionArrows = pure TrailingArrows
+    , poCommaStyle = pure Trailing
+    , poImportExportStyle = pure ImportExportTrailing
+    , poIndentWheres = pure True
+    , poRecordBraceSpace = pure True
+    , poNewlinesBetweenDecls = pure 1
+    , poHaddockStyle = pure HaddockSingleLine
+    , poHaddockStyleModule = pure PrintStyleInherit
+    , poLetStyle = pure LetInline
+    , poInStyle = pure InRightAlign
+    , poSingleConstraintParens = pure ConstraintAlways
+    , poUnicode = pure UnicodeNever
+    , poRespectful = pure False
+    }
+
 -- | Fill the field values that are 'Nothing' in the first argument
 -- with the values of the corresponding fields of the second argument.
 fillMissingPrinterOpts ::
@@ -139,76 +163,87 @@ fillMissingPrinterOpts p1 p2 =
     , poRespectful = maybe (poRespectful p2) pure (poRespectful p1)
     }
 
-parsePrinterOptsCLI ::
+parseFourmoluOptsCLI ::
   Applicative f =>
-  (forall a. PrinterOptsFieldType a => String -> String -> String -> f (Maybe a)) ->
-  f (PrinterOpts Maybe)
-parsePrinterOptsCLI f =
-  pure PrinterOpts
-    <*> f
-      "indentation"
-      "Number of spaces per indentation step (default: 4)"
-      "INT"
-    <*> f
-      "column-limit"
-      "Max line length for automatic line breaking (default: none)"
-      "OPTION"
-    <*> f
-      "function-arrows"
-      "Styling of arrows in type signatures (choices: \"trailing\", \"leading\", or \"leading-args\") (default: trailing)"
-      "OPTION"
-    <*> f
-      "comma-style"
-      "How to place commas in multi-line lists, records, etc. (choices: \"leading\" or \"trailing\") (default: leading)"
-      "OPTION"
-    <*> f
-      "import-export-style"
-      "Styling of import/export lists (choices: \"leading\", \"trailing\", or \"diff-friendly\") (default: diff-friendly)"
-      "OPTION"
-    <*> f
-      "indent-wheres"
-      "Whether to full-indent or half-indent 'where' bindings past the preceding body (default: false)"
-      "BOOL"
-    <*> f
-      "record-brace-space"
-      "Whether to leave a space before an opening record brace (default: false)"
-      "BOOL"
-    <*> f
-      "newlines-between-decls"
-      "Number of spaces between top-level declarations (default: 1)"
-      "INT"
-    <*> f
-      "haddock-style"
-      "How to print Haddock comments (choices: \"single-line\", \"multi-line\", or \"multi-line-compact\") (default: multi-line)"
-      "OPTION"
-    <*> f
-      "haddock-style-module"
-      "How to print module docstring (default: same as 'haddock-style')"
-      "OPTION"
-    <*> f
-      "let-style"
-      "Styling of let blocks (choices: \"auto\", \"inline\", \"newline\", or \"mixed\") (default: auto)"
-      "OPTION"
-    <*> f
-      "in-style"
-      "How to align the 'in' keyword with respect to the 'let' keyword (choices: \"left-align\", \"right-align\", or \"no-space\") (default: right-align)"
-      "OPTION"
-    <*> f
-      "single-constraint-parens"
-      "Whether to put parentheses around a single constraint (choices: \"auto\", \"always\", or \"never\") (default: always)"
-      "OPTION"
-    <*> f
-      "unicode"
-      "Output Unicode syntax (choices: \"detect\", \"always\", or \"never\") (default: never)"
-      "OPTION"
-    <*> f
-      "respectful"
-      "Give the programmer more choice on where to insert blank lines (default: true)"
-      "BOOL"
+  (PrinterOpts Maybe -> Maybe ConfigPreset -> a) ->
+  (forall opt. FourmoluConfigType opt => String -> String -> String -> f (Maybe opt)) ->
+  f a
+parseFourmoluOptsCLI toResult mkOption =
+  toResult
+    <$> parsePrinterOptsCLI
+    <*> parsePresetOptCLI
+  where
+    parsePrinterOptsCLI =
+      pure PrinterOpts
+        <*> mkOption
+          "indentation"
+          "Number of spaces per indentation step (default: 4)"
+          "INT"
+        <*> mkOption
+          "column-limit"
+          "Max line length for automatic line breaking (default: none)"
+          "OPTION"
+        <*> mkOption
+          "function-arrows"
+          "Styling of arrows in type signatures (choices: \"trailing\", \"leading\", or \"leading-args\") (default: trailing)"
+          "OPTION"
+        <*> mkOption
+          "comma-style"
+          "How to place commas in multi-line lists, records, etc. (choices: \"leading\" or \"trailing\") (default: leading)"
+          "OPTION"
+        <*> mkOption
+          "import-export-style"
+          "Styling of import/export lists (choices: \"leading\", \"trailing\", or \"diff-friendly\") (default: diff-friendly)"
+          "OPTION"
+        <*> mkOption
+          "indent-wheres"
+          "Whether to full-indent or half-indent 'where' bindings past the preceding body (default: false)"
+          "BOOL"
+        <*> mkOption
+          "record-brace-space"
+          "Whether to leave a space before an opening record brace (default: false)"
+          "BOOL"
+        <*> mkOption
+          "newlines-between-decls"
+          "Number of spaces between top-level declarations (default: 1)"
+          "INT"
+        <*> mkOption
+          "haddock-style"
+          "How to print Haddock comments (choices: \"single-line\", \"multi-line\", or \"multi-line-compact\") (default: multi-line)"
+          "OPTION"
+        <*> mkOption
+          "haddock-style-module"
+          "How to print module docstring (default: same as 'haddock-style')"
+          "OPTION"
+        <*> mkOption
+          "let-style"
+          "Styling of let blocks (choices: \"auto\", \"inline\", \"newline\", or \"mixed\") (default: auto)"
+          "OPTION"
+        <*> mkOption
+          "in-style"
+          "How to align the 'in' keyword with respect to the 'let' keyword (choices: \"left-align\", \"right-align\", or \"no-space\") (default: right-align)"
+          "OPTION"
+        <*> mkOption
+          "single-constraint-parens"
+          "Whether to put parentheses around a single constraint (choices: \"auto\", \"always\", or \"never\") (default: always)"
+          "OPTION"
+        <*> mkOption
+          "unicode"
+          "Output Unicode syntax (choices: \"detect\", \"always\", or \"never\") (default: never)"
+          "OPTION"
+        <*> mkOption
+          "respectful"
+          "Give the programmer more choice on where to insert blank lines (default: true)"
+          "BOOL"
+    parsePresetOptCLI =
+      mkOption
+        "preset"
+        "Preset to use as the base configuration (default: fourmolu)"
+        "OPTION"
 
 parsePrinterOptsJSON ::
   Applicative f =>
-  (forall a. PrinterOptsFieldType a => String -> f (Maybe a)) ->
+  (forall a. FourmoluConfigType a => String -> f (Maybe a)) ->
   f (PrinterOpts Maybe)
 parsePrinterOptsJSON f =
   pure PrinterOpts
@@ -230,14 +265,14 @@ parsePrinterOptsJSON f =
 
 {---------- PrinterOpts field types ----------}
 
-class Aeson.FromJSON a => PrinterOptsFieldType a where
-  parsePrinterOptType :: String -> Either String a
+class Aeson.FromJSON a => FourmoluConfigType a where
+  parseFourmoluConfigType :: String -> Either String a
 
-instance PrinterOptsFieldType Int where
-  parsePrinterOptType = readEither
+instance FourmoluConfigType Int where
+  parseFourmoluConfigType = readEither
 
-instance PrinterOptsFieldType Bool where
-  parsePrinterOptType s =
+instance FourmoluConfigType Bool where
+  parseFourmoluConfigType s =
     case s of
       "false" -> Right False
       "true" -> Right True
@@ -246,6 +281,12 @@ instance PrinterOptsFieldType Bool where
           [ "unknown value: " <> show s,
             "Valid values are: \"false\" or \"true\""
           ]
+
+data ConfigPreset
+  = FourmoluPreset
+  | OrmoluPreset
+  | ImportPreset URI
+  deriving (Eq, Show)
 
 data CommaStyle
   = Leading
@@ -305,58 +346,29 @@ data ColumnLimit
   | ColumnLimit Int
   deriving (Eq, Show)
 
+instance Aeson.FromJSON ConfigPreset where
+  parseJSON =
+    Aeson.withText "ConfigPreset" $ \s ->
+      either Aeson.parseFail pure $
+        parseFourmoluConfigType (Text.unpack s)
+
 instance Aeson.FromJSON CommaStyle where
   parseJSON =
     Aeson.withText "CommaStyle" $ \s ->
       either Aeson.parseFail pure $
-        parsePrinterOptType (Text.unpack s)
-
-instance PrinterOptsFieldType CommaStyle where
-  parsePrinterOptType s =
-    case s of
-      "leading" -> Right Leading
-      "trailing" -> Right Trailing
-      _ ->
-        Left . unlines $
-          [ "unknown value: " <> show s
-          , "Valid values are: \"leading\" or \"trailing\""
-          ]
+        parseFourmoluConfigType (Text.unpack s)
 
 instance Aeson.FromJSON FunctionArrowsStyle where
   parseJSON =
     Aeson.withText "FunctionArrowsStyle" $ \s ->
       either Aeson.parseFail pure $
-        parsePrinterOptType (Text.unpack s)
-
-instance PrinterOptsFieldType FunctionArrowsStyle where
-  parsePrinterOptType s =
-    case s of
-      "trailing" -> Right TrailingArrows
-      "leading" -> Right LeadingArrows
-      "leading-args" -> Right LeadingArgsArrows
-      _ ->
-        Left . unlines $
-          [ "unknown value: " <> show s
-          , "Valid values are: \"trailing\", \"leading\", or \"leading-args\""
-          ]
+        parseFourmoluConfigType (Text.unpack s)
 
 instance Aeson.FromJSON HaddockPrintStyle where
   parseJSON =
     Aeson.withText "HaddockPrintStyle" $ \s ->
       either Aeson.parseFail pure $
-        parsePrinterOptType (Text.unpack s)
-
-instance PrinterOptsFieldType HaddockPrintStyle where
-  parsePrinterOptType s =
-    case s of
-      "single-line" -> Right HaddockSingleLine
-      "multi-line" -> Right HaddockMultiLine
-      "multi-line-compact" -> Right HaddockMultiLineCompact
-      _ ->
-        Left . unlines $
-          [ "unknown value: " <> show s
-          , "Valid values are: \"single-line\", \"multi-line\", or \"multi-line-compact\""
-          ]
+        parseFourmoluConfigType (Text.unpack s)
 
 instance Aeson.FromJSON HaddockPrintStyleModule where
   parseJSON =
@@ -365,102 +377,35 @@ instance Aeson.FromJSON HaddockPrintStyleModule where
       Aeson.String "" -> pure PrintStyleInherit
       _ -> PrintStyleOverride <$> Aeson.parseJSON v
 
-instance PrinterOptsFieldType HaddockPrintStyleModule where
-  parsePrinterOptType =
-    \s -> case s of
-      "" -> pure PrintStyleInherit
-      _ -> PrintStyleOverride <$> parsePrinterOptType s
-
 instance Aeson.FromJSON ImportExportStyle where
   parseJSON =
     Aeson.withText "ImportExportStyle" $ \s ->
       either Aeson.parseFail pure $
-        parsePrinterOptType (Text.unpack s)
-
-instance PrinterOptsFieldType ImportExportStyle where
-  parsePrinterOptType s =
-    case s of
-      "leading" -> Right ImportExportLeading
-      "trailing" -> Right ImportExportTrailing
-      "diff-friendly" -> Right ImportExportDiffFriendly
-      _ ->
-        Left . unlines $
-          [ "unknown value: " <> show s
-          , "Valid values are: \"leading\", \"trailing\", or \"diff-friendly\""
-          ]
+        parseFourmoluConfigType (Text.unpack s)
 
 instance Aeson.FromJSON LetStyle where
   parseJSON =
     Aeson.withText "LetStyle" $ \s ->
       either Aeson.parseFail pure $
-        parsePrinterOptType (Text.unpack s)
-
-instance PrinterOptsFieldType LetStyle where
-  parsePrinterOptType s =
-    case s of
-      "auto" -> Right LetAuto
-      "inline" -> Right LetInline
-      "newline" -> Right LetNewline
-      "mixed" -> Right LetMixed
-      _ ->
-        Left . unlines $
-          [ "unknown value: " <> show s
-          , "Valid values are: \"auto\", \"inline\", \"newline\", or \"mixed\""
-          ]
+        parseFourmoluConfigType (Text.unpack s)
 
 instance Aeson.FromJSON InStyle where
   parseJSON =
     Aeson.withText "InStyle" $ \s ->
       either Aeson.parseFail pure $
-        parsePrinterOptType (Text.unpack s)
-
-instance PrinterOptsFieldType InStyle where
-  parsePrinterOptType s =
-    case s of
-      "left-align" -> Right InLeftAlign
-      "right-align" -> Right InRightAlign
-      "no-space" -> Right InNoSpace
-      _ ->
-        Left . unlines $
-          [ "unknown value: " <> show s
-          , "Valid values are: \"left-align\", \"right-align\", or \"no-space\""
-          ]
+        parseFourmoluConfigType (Text.unpack s)
 
 instance Aeson.FromJSON Unicode where
   parseJSON =
     Aeson.withText "Unicode" $ \s ->
       either Aeson.parseFail pure $
-        parsePrinterOptType (Text.unpack s)
-
-instance PrinterOptsFieldType Unicode where
-  parsePrinterOptType s =
-    case s of
-      "detect" -> Right UnicodeDetect
-      "always" -> Right UnicodeAlways
-      "never" -> Right UnicodeNever
-      _ ->
-        Left . unlines $
-          [ "unknown value: " <> show s
-          , "Valid values are: \"detect\", \"always\", or \"never\""
-          ]
+        parseFourmoluConfigType (Text.unpack s)
 
 instance Aeson.FromJSON SingleConstraintParens where
   parseJSON =
     Aeson.withText "SingleConstraintParens" $ \s ->
       either Aeson.parseFail pure $
-        parsePrinterOptType (Text.unpack s)
-
-instance PrinterOptsFieldType SingleConstraintParens where
-  parsePrinterOptType s =
-    case s of
-      "auto" -> Right ConstraintAuto
-      "always" -> Right ConstraintAlways
-      "never" -> Right ConstraintNever
-      _ ->
-        Left . unlines $
-          [ "unknown value: " <> show s
-          , "Valid values are: \"auto\", \"always\", or \"never\""
-          ]
+        parseFourmoluConfigType (Text.unpack s)
 
 instance Aeson.FromJSON ColumnLimit where
   parseJSON =
@@ -476,8 +421,118 @@ instance Aeson.FromJSON ColumnLimit where
              "Valid values are: \"none\", or an integer"
            ]
 
-instance PrinterOptsFieldType ColumnLimit where
-  parsePrinterOptType =
+instance FourmoluConfigType ConfigPreset where
+  parseFourmoluConfigType =
+    \s -> case s of
+      "fourmolu" -> pure FourmoluPreset
+      "ormolu" -> pure OrmoluPreset
+      _ | Just uri <- URI.parseURI s -> pure $ ImportPreset uri
+      _ -> Left $ "Unknown preset: " <> s
+
+instance FourmoluConfigType CommaStyle where
+  parseFourmoluConfigType s =
+    case s of
+      "leading" -> Right Leading
+      "trailing" -> Right Trailing
+      _ ->
+        Left . unlines $
+          [ "unknown value: " <> show s
+          , "Valid values are: \"leading\" or \"trailing\""
+          ]
+
+instance FourmoluConfigType FunctionArrowsStyle where
+  parseFourmoluConfigType s =
+    case s of
+      "trailing" -> Right TrailingArrows
+      "leading" -> Right LeadingArrows
+      "leading-args" -> Right LeadingArgsArrows
+      _ ->
+        Left . unlines $
+          [ "unknown value: " <> show s
+          , "Valid values are: \"trailing\", \"leading\", or \"leading-args\""
+          ]
+
+instance FourmoluConfigType HaddockPrintStyle where
+  parseFourmoluConfigType s =
+    case s of
+      "single-line" -> Right HaddockSingleLine
+      "multi-line" -> Right HaddockMultiLine
+      "multi-line-compact" -> Right HaddockMultiLineCompact
+      _ ->
+        Left . unlines $
+          [ "unknown value: " <> show s
+          , "Valid values are: \"single-line\", \"multi-line\", or \"multi-line-compact\""
+          ]
+
+instance FourmoluConfigType HaddockPrintStyleModule where
+  parseFourmoluConfigType =
+    \s -> case s of
+      "" -> pure PrintStyleInherit
+      _ -> PrintStyleOverride <$> parseFourmoluConfigType s
+
+instance FourmoluConfigType ImportExportStyle where
+  parseFourmoluConfigType s =
+    case s of
+      "leading" -> Right ImportExportLeading
+      "trailing" -> Right ImportExportTrailing
+      "diff-friendly" -> Right ImportExportDiffFriendly
+      _ ->
+        Left . unlines $
+          [ "unknown value: " <> show s
+          , "Valid values are: \"leading\", \"trailing\", or \"diff-friendly\""
+          ]
+
+instance FourmoluConfigType LetStyle where
+  parseFourmoluConfigType s =
+    case s of
+      "auto" -> Right LetAuto
+      "inline" -> Right LetInline
+      "newline" -> Right LetNewline
+      "mixed" -> Right LetMixed
+      _ ->
+        Left . unlines $
+          [ "unknown value: " <> show s
+          , "Valid values are: \"auto\", \"inline\", \"newline\", or \"mixed\""
+          ]
+
+instance FourmoluConfigType InStyle where
+  parseFourmoluConfigType s =
+    case s of
+      "left-align" -> Right InLeftAlign
+      "right-align" -> Right InRightAlign
+      "no-space" -> Right InNoSpace
+      _ ->
+        Left . unlines $
+          [ "unknown value: " <> show s
+          , "Valid values are: \"left-align\", \"right-align\", or \"no-space\""
+          ]
+
+instance FourmoluConfigType Unicode where
+  parseFourmoluConfigType s =
+    case s of
+      "detect" -> Right UnicodeDetect
+      "always" -> Right UnicodeAlways
+      "never" -> Right UnicodeNever
+      _ ->
+        Left . unlines $
+          [ "unknown value: " <> show s
+          , "Valid values are: \"detect\", \"always\", or \"never\""
+          ]
+
+instance FourmoluConfigType SingleConstraintParens where
+  parseFourmoluConfigType s =
+    case s of
+      "auto" -> Right ConstraintAuto
+      "always" -> Right ConstraintAlways
+      "never" -> Right ConstraintNever
+      _ ->
+        Left . unlines $
+          [ "unknown value: " <> show s
+          , "Valid values are: \"auto\", \"always\", or \"never\""
+          ]
+
+instance FourmoluConfigType ColumnLimit where
+  parseFourmoluConfigType =
     \s ->
       case s of
         "none" -> Right NoLimit
@@ -493,7 +548,10 @@ instance PrinterOptsFieldType ColumnLimit where
 defaultPrinterOptsYaml :: String
 defaultPrinterOptsYaml =
   unlines
-    [ "# Number of spaces per indentation step"
+    [ "# Preset to use as the base configuration"
+    , "preset: fourmolu"
+    , ""
+    , "# Number of spaces per indentation step"
     , "indentation: 4"
     , ""
     , "# Max line length for automatic line breaking"

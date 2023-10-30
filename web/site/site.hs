@@ -131,58 +131,60 @@ getPageInfo = \case
         ]
 
 getOptionDemoWidget :: ConfigData.Option -> Maybe String
-getOptionDemoWidget option@ConfigData.Option {..}
-  | name `elem` ["fixities", "reexports"] = Nothing
-  | otherwise =
-      Just . concat $
-        [ printf "<label>",
-          printf "  <code>%s</code>" name,
-          optionDemoInput,
-          printf "</label>"
-        ]
+getOptionDemoWidget option@ConfigData.Option {..} =
+  case info of
+    ConfigData.ConfigOption {} -> Nothing
+    ConfigData.PrinterOptsOption {presets} ->
+      let defaultVal = ConfigData.presetFourmolu presets
+       in Just . concat $
+            [ printf "<label>",
+              printf "  <code>%s</code>" name,
+              optionDemoInput defaultVal,
+              printf "</label>"
+            ]
   where
     ConfigData.ADTSchema {..} = getOptionSchema option
-    inputDefault = hs2yaml type_ default_
     inputClass = "demo-printerOpt" :: String
-    optionDemoInput =
-      case adtInputType of
-        ConfigData.ADTSchemaInputText parsers ->
-          printf
-            "<input class='%s' name='%s' type='text' value='%s' data-parsers='%s' />"
-            inputClass
-            name
-            inputDefault
-            (renderParsers parsers)
-        ConfigData.ADTSchemaInputNumber ->
-          printf
-            "<input class='%s' name='%s' type='number' value='%s' />"
-            inputClass
-            name
-            inputDefault
-        ConfigData.ADTSchemaInputCheckbox ->
-          printf
-            "<input class='%s' name='%s' type='checkbox' %s />"
-            inputClass
-            name
-            (if default_ == ConfigData.HsBool True then "checked" else "" :: String)
-        ConfigData.ADTSchemaInputDropdown parsers ->
-          concat
-            [ printf
-                "<select class='%s' name='%s' data-parsers='%s'>"
+    optionDemoInput defaultVal =
+      let inputDefault = hs2yaml type_ defaultVal
+       in case adtInputType of
+            ConfigData.ADTSchemaInputText parsers ->
+              printf
+                "<input class='%s' name='%s' type='text' value='%s' data-parsers='%s' />"
                 inputClass
                 name
-                (renderParsers parsers),
+                inputDefault
+                (renderParsers parsers)
+            ConfigData.ADTSchemaInputNumber ->
+              printf
+                "<input class='%s' name='%s' type='number' value='%s' />"
+                inputClass
+                name
+                inputDefault
+            ConfigData.ADTSchemaInputCheckbox ->
+              printf
+                "<input class='%s' name='%s' type='checkbox' %s />"
+                inputClass
+                name
+                (if defaultVal == ConfigData.HsBool True then "checked" else "" :: String)
+            ConfigData.ADTSchemaInputDropdown parsers ->
               concat
-                [ printf "<option %s>%s</option>" selected v
-                  | opt <- adtOptions,
-                    let v =
-                          case opt of
-                            ConfigData.ADTOptionLiteral s -> s
-                            ConfigData.ADTOptionDescription s -> s,
-                    let selected = if v == inputDefault then "selected" else "" :: String
-                ],
-              printf "</select>"
-            ]
+                [ printf
+                    "<select class='%s' name='%s' data-parsers='%s'>"
+                    inputClass
+                    name
+                    (renderParsers parsers),
+                  concat
+                    [ printf "<option %s>%s</option>" selected v
+                      | opt <- adtOptions,
+                        let v =
+                              case opt of
+                                ConfigData.ADTOptionLiteral s -> s
+                                ConfigData.ADTOptionDescription s -> s,
+                        let selected = if v == inputDefault then "selected" else "" :: String
+                    ],
+                  printf "</select>"
+                ]
     renderParsers parsers =
       intercalate ("|" :: String) . flip map parsers $ \case
         ConfigData.ADTSchemaInputParserString -> "string"
@@ -191,20 +193,40 @@ getOptionDemoWidget option@ConfigData.Option {..}
 
 getConfigOptionContext :: ConfigData.Option -> [Context a]
 getConfigOptionContext option@ConfigData.Option {..} =
-  [ constField "info" $
-      wrap' "<table id=\"config-info\">" "</table>" . wrap "tbody" . concat $
-        [ wrap "tr" . concat $
-            [ wrap "th" label,
-              wrap "td" val
-            ]
-          | (label, val) <-
-              [ ("Description", description),
-                schema,
-                ("Default", wrap "code" $ hs2yaml type_ default_),
-                ("Ormolu", wrap "code" $ hs2yaml type_ ormolu),
-                ("Since", maybe "<i>Unreleased</i>" ("v" <>) sinceVersion)
+  [ constField "info" . concat $
+      [ wrap' "<table id=\"config-info\">" "</table>" . wrap "tbody" . concat $
+          [ wrap "tr" . concat $
+              [ wrap "th" label,
+                wrap "td" val
               ]
-        ]
+            | Just (label, val) <-
+                [ Just ("Description", description),
+                  Just schema,
+                  case info of
+                    ConfigData.PrinterOptsOption {} -> Nothing
+                    ConfigData.ConfigOption {optionDefault} ->
+                      Just ("Default", wrap "code" $ hs2yaml type_ optionDefault),
+                  Just ("Since", maybe "<i>Unreleased</i>" ("v" <>) sinceVersion)
+                ]
+          ],
+        case info of
+          ConfigData.PrinterOptsOption {presets = ConfigData.PresetOptions {..}} ->
+            wrap "table" . wrap "tbody" . concat $
+              [ wrap "tr" $
+                  "<th colspan=\"2\" style=\"text-align: center;\">Presets</th>",
+                concat
+                  [ wrap "tr" . concat $
+                      [ wrap "td" . wrap "code" $ presetName,
+                        wrap "td" . wrap "code" $ hs2yaml type_ val
+                      ]
+                    | (presetName, val) <-
+                        [ ("fourmolu", presetFourmolu),
+                          ("ormolu", presetOrmolu)
+                        ]
+                  ]
+              ]
+          ConfigData.ConfigOption {} -> mempty
+      ]
   ]
   where
     ConfigData.ADTSchema {adtOptions} = getOptionSchema option
@@ -271,9 +293,10 @@ replaceFourmoluExamples =
         outputs <-
           forM (withFirst tabs) $ \(isFirst, (label, key, printerOpts)) -> do
             let isActive = isFirst
+            printerOptsResolved <- Fourmolu.resolvePrinterOpts [] [printerOpts]
             let config =
                   Fourmolu.defaultConfig
-                    { Fourmolu.cfgPrinterOpts = Fourmolu.resolvePrinterOpts [printerOpts]
+                    { Fourmolu.cfgPrinterOpts = printerOptsResolved
                     }
             output <- Fourmolu.ormolu config "<fourmolu-web>" input
             pure (isActive, label, key, output)

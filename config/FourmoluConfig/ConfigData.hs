@@ -10,20 +10,34 @@ module FourmoluConfig.ConfigData where
 data Option = Option
   { -- | Name of key in config file + flag in CLI
     name :: String,
-    -- | Name of PrinterOpts field (or Nothing if config is not in PrinterOpts)
-    fieldName :: Maybe String,
-    -- | Description of option in Haddocks + CLI
-    description :: String,
     -- | The Haskell type of the option
     type_ :: String,
-    -- | The option to use as the Fourmolu default
-    default_ :: HaskellValue,
-    -- | The option that mimics Ormolu's formatting
-    ormolu :: HaskellValue,
+    -- | Description of option in Haddocks + CLI
+    description :: String,
+    -- | Information about the Option, depending on whether it's in PrinterOpts or not.
+    info :: OptionInfo,
     -- | The version the option was added in
     sinceVersion :: Maybe String,
     -- | Overriding CLI information
     cliOverrides :: CLIOverrides
+  }
+
+data OptionInfo
+  = PrinterOptsOption
+      { -- | Name of the field in the PrinterOpts data type.
+        fieldName :: String,
+        -- | Options to use for each preset.
+        presets :: PresetOptions
+      }
+  | ConfigOption
+      { optionDefault :: HaskellValue
+      }
+
+data PresetOptions = PresetOptions
+  { -- | The option for the Fourmolu preset
+    presetFourmolu :: HaskellValue,
+    -- | The option for the Ormolu preset
+    presetOrmolu :: HaskellValue
   }
 
 data CLIOverrides = CLIOverrides
@@ -50,172 +64,275 @@ data HaskellValue
 allOptions :: [Option]
 allOptions =
   [ Option
+      { name = "preset",
+        type_ = "ConfigPreset",
+        description = "Preset to use as the base configuration",
+        info =
+          ConfigOption
+            { optionDefault = HsExpr "FourmoluPreset"
+            },
+        sinceVersion = Nothing,
+        cliOverrides = emptyOverrides
+      },
+    Option
       { name = "indentation",
-        fieldName = Just "poIndentation",
-        description = "Number of spaces per indentation step",
         type_ = "Int",
-        default_ = HsInt 4,
-        ormolu = HsInt 2,
+        description = "Number of spaces per indentation step",
+        info =
+          PrinterOptsOption
+            { fieldName = "poIndentation",
+              presets =
+                PresetOptions
+                  { presetFourmolu = HsInt 4,
+                    presetOrmolu = HsInt 2
+                  }
+            },
         sinceVersion = Just "0.1.0.0",
         cliOverrides = emptyOverrides
       },
     Option
       { name = "column-limit",
-        fieldName = Just "poColumnLimit",
-        description = "Max line length for automatic line breaking",
         type_ = "ColumnLimit",
-        default_ = HsExpr "NoLimit",
-        ormolu = HsExpr "NoLimit",
+        description = "Max line length for automatic line breaking",
+        info =
+          PrinterOptsOption
+            { fieldName = "poColumnLimit",
+              presets =
+                PresetOptions
+                  { presetFourmolu = HsExpr "NoLimit",
+                    presetOrmolu = HsExpr "NoLimit"
+                  }
+            },
         sinceVersion = Just "0.12.0.0",
         cliOverrides = emptyOverrides
       },
     Option
       { name = "function-arrows",
-        fieldName = Just "poFunctionArrows",
-        description = "Styling of arrows in type signatures",
         type_ = "FunctionArrowsStyle",
-        default_ = HsExpr "TrailingArrows",
-        ormolu = HsExpr "TrailingArrows",
+        description = "Styling of arrows in type signatures",
+        info =
+          PrinterOptsOption
+            { fieldName = "poFunctionArrows",
+              presets =
+                PresetOptions
+                  { presetFourmolu = HsExpr "TrailingArrows",
+                    presetOrmolu = HsExpr "TrailingArrows"
+                  }
+            },
         sinceVersion = Just "0.8.2.0",
         cliOverrides = emptyOverrides
       },
     Option
       { name = "comma-style",
-        fieldName = Just "poCommaStyle",
-        description = "How to place commas in multi-line lists, records, etc.",
         type_ = "CommaStyle",
-        default_ = HsExpr "Leading",
-        ormolu = HsExpr "Trailing",
+        description = "How to place commas in multi-line lists, records, etc.",
+        info =
+          PrinterOptsOption
+            { fieldName = "poCommaStyle",
+              presets =
+                PresetOptions
+                  { presetFourmolu = HsExpr "Leading",
+                    presetOrmolu = HsExpr "Trailing"
+                  }
+            },
         sinceVersion = Just "0.2.0.0",
         cliOverrides = emptyOverrides
       },
     Option
       { name = "import-export-style",
-        fieldName = Just "poImportExportStyle",
-        description = "Styling of import/export lists",
         type_ = "ImportExportStyle",
-        default_ = HsExpr "ImportExportDiffFriendly",
-        ormolu = HsExpr "ImportExportTrailing",
+        description = "Styling of import/export lists",
+        info =
+          PrinterOptsOption
+            { fieldName = "poImportExportStyle",
+              presets =
+                PresetOptions
+                  { presetFourmolu = HsExpr "ImportExportDiffFriendly",
+                    presetOrmolu = HsExpr "ImportExportTrailing"
+                  }
+            },
         sinceVersion = Just "0.8.0.0",
         cliOverrides = emptyOverrides
       },
     Option
       { name = "indent-wheres",
-        fieldName = Just "poIndentWheres",
-        description = "Whether to full-indent or half-indent 'where' bindings past the preceding body",
         type_ = "Bool",
-        default_ = HsBool False,
-        ormolu = HsBool True,
+        description = "Whether to full-indent or half-indent 'where' bindings past the preceding body",
+        info =
+          PrinterOptsOption
+            { fieldName = "poIndentWheres",
+              presets =
+                PresetOptions
+                  { presetFourmolu = HsBool False,
+                    presetOrmolu = HsBool True
+                  }
+            },
         sinceVersion = Just "0.2.0.0",
         cliOverrides = emptyOverrides
       },
     Option
       { name = "record-brace-space",
-        fieldName = Just "poRecordBraceSpace",
-        description = "Whether to leave a space before an opening record brace",
         type_ = "Bool",
-        default_ = HsBool False,
-        ormolu = HsBool True,
+        description = "Whether to leave a space before an opening record brace",
+        info =
+          PrinterOptsOption
+            { fieldName = "poRecordBraceSpace",
+              presets =
+                PresetOptions
+                  { presetFourmolu = HsBool False,
+                    presetOrmolu = HsBool True
+                  }
+            },
         sinceVersion = Just "0.2.0.0",
         cliOverrides = emptyOverrides
       },
     Option
       { name = "newlines-between-decls",
-        fieldName = Just "poNewlinesBetweenDecls",
-        description = "Number of spaces between top-level declarations",
         type_ = "Int",
-        default_ = HsInt 1,
-        ormolu = HsInt 1,
+        description = "Number of spaces between top-level declarations",
+        info =
+          PrinterOptsOption
+            { fieldName = "poNewlinesBetweenDecls",
+              presets =
+                PresetOptions
+                  { presetFourmolu = HsInt 1,
+                    presetOrmolu = HsInt 1
+                  }
+            },
         sinceVersion = Just "0.3.0.0",
         cliOverrides = emptyOverrides
       },
     Option
       { name = "haddock-style",
-        fieldName = Just "poHaddockStyle",
-        description = "How to print Haddock comments",
         type_ = "HaddockPrintStyle",
-        default_ = HsExpr "HaddockMultiLine",
-        ormolu = HsExpr "HaddockSingleLine",
+        description = "How to print Haddock comments",
+        info =
+          PrinterOptsOption
+            { fieldName = "poHaddockStyle",
+              presets =
+                PresetOptions
+                  { presetFourmolu = HsExpr "HaddockMultiLine",
+                    presetOrmolu = HsExpr "HaddockSingleLine"
+                  }
+            },
         sinceVersion = Just "0.2.0.0",
         cliOverrides = emptyOverrides
       },
     Option
       { name = "haddock-style-module",
-        fieldName = Just "poHaddockStyleModule",
-        description = "How to print module docstring",
         type_ = "HaddockPrintStyleModule",
-        default_ = HsExpr "PrintStyleInherit",
-        ormolu = HsExpr "PrintStyleInherit",
+        description = "How to print module docstring",
+        info =
+          PrinterOptsOption
+            { fieldName = "poHaddockStyleModule",
+              presets =
+                PresetOptions
+                  { presetFourmolu = HsExpr "PrintStyleInherit",
+                    presetOrmolu = HsExpr "PrintStyleInherit"
+                  }
+            },
         sinceVersion = Just "0.10.0.0",
         cliOverrides = emptyOverrides {cliDefault = Just "same as 'haddock-style'"}
       },
     Option
       { name = "let-style",
-        fieldName = Just "poLetStyle",
-        description = "Styling of let blocks",
         type_ = "LetStyle",
-        default_ = HsExpr "LetAuto",
-        ormolu = HsExpr "LetInline",
+        description = "Styling of let blocks",
+        info =
+          PrinterOptsOption
+            { fieldName = "poLetStyle",
+              presets =
+                PresetOptions
+                  { presetFourmolu = HsExpr "LetAuto",
+                    presetOrmolu = HsExpr "LetInline"
+                  }
+            },
         sinceVersion = Just "0.9.0.0",
         cliOverrides = emptyOverrides
       },
     Option
       { name = "in-style",
-        fieldName = Just "poInStyle",
-        description = "How to align the 'in' keyword with respect to the 'let' keyword",
         type_ = "InStyle",
-        default_ = HsExpr "InRightAlign",
-        ormolu = HsExpr "InRightAlign",
+        description = "How to align the 'in' keyword with respect to the 'let' keyword",
+        info =
+          PrinterOptsOption
+            { fieldName = "poInStyle",
+              presets =
+                PresetOptions
+                  { presetFourmolu = HsExpr "InRightAlign",
+                    presetOrmolu = HsExpr "InRightAlign"
+                  }
+            },
         sinceVersion = Just "0.9.0.0",
         cliOverrides = emptyOverrides
       },
     Option
       { name = "single-constraint-parens",
-        fieldName = Just "poSingleConstraintParens",
-        description = "Whether to put parentheses around a single constraint",
         type_ = "SingleConstraintParens",
-        default_ = HsExpr "ConstraintAlways",
-        ormolu = HsExpr "ConstraintAlways",
+        description = "Whether to put parentheses around a single constraint",
+        info =
+          PrinterOptsOption
+            { fieldName = "poSingleConstraintParens",
+              presets =
+                PresetOptions
+                  { presetFourmolu = HsExpr "ConstraintAlways",
+                    presetOrmolu = HsExpr "ConstraintAlways"
+                  }
+            },
         sinceVersion = Just "0.12.0.0",
         cliOverrides = emptyOverrides
       },
     Option
       { name = "unicode",
-        fieldName = Just "poUnicode",
-        description = "Output Unicode syntax",
         type_ = "Unicode",
-        default_ = HsExpr "UnicodeNever",
-        ormolu = HsExpr "UnicodeNever",
+        description = "Output Unicode syntax",
+        info =
+          PrinterOptsOption
+            { fieldName = "poUnicode",
+              presets =
+                PresetOptions
+                  { presetFourmolu = HsExpr "UnicodeNever",
+                    presetOrmolu = HsExpr "UnicodeNever"
+                  }
+            },
         sinceVersion = Just "0.9.0.0",
         cliOverrides = emptyOverrides
       },
     Option
       { name = "respectful",
-        fieldName = Just "poRespectful",
-        description = "Give the programmer more choice on where to insert blank lines",
         type_ = "Bool",
-        default_ = HsBool True,
-        ormolu = HsBool False,
+        description = "Give the programmer more choice on where to insert blank lines",
+        info =
+          PrinterOptsOption
+            { fieldName = "poRespectful",
+              presets =
+                PresetOptions
+                  { presetFourmolu = HsBool True,
+                    presetOrmolu = HsBool False
+                  }
+            },
         sinceVersion = Just "0.2.0.0",
         cliOverrides = emptyOverrides
       },
     Option
       { name = "fixities",
-        fieldName = Nothing,
-        description = "Fixity information for operators",
         type_ = "[String]",
-        default_ = HsList [],
-        ormolu = HsList [],
+        description = "Fixity information for operators",
+        info =
+          ConfigOption
+            { optionDefault = HsList []
+            },
         sinceVersion = Just "0.7.0.0",
         cliOverrides = emptyOverrides
       },
     Option
       { name = "reexports",
-        fieldName = Nothing,
-        description = "Module reexports Fourmolu should know about",
         type_ = "[String]",
-        default_ = HsList [],
-        ormolu = HsList [],
+        description = "Module reexports Fourmolu should know about",
+        info =
+          ConfigOption
+            { optionDefault = HsList []
+            },
         sinceVersion = Just "0.13.0.0",
         cliOverrides = emptyOverrides
       }
@@ -235,10 +352,10 @@ data FieldType
         adtSchema :: ADTSchema,
         -- | Mapping from Haskell expression (in `HsExpr`) to string representation
         adtRender :: [(String, String)],
-        -- | Implementation of `Aeson.parseJSON`
-        adtParseJSON :: String,
+        -- | Implementation of `Aeson.parseJSON`, defaults to reusing parseFourmoluConfigType.
+        adtParseJSON :: Maybe String,
         -- | Implementation of `String -> Either String a`
-        adtParsePrinterOptType :: String
+        adtParseFourmoluConfigType :: String
       }
 
 -- | The definition of possible values in a data type.
@@ -266,7 +383,34 @@ data ADTSchemaInputParser
 
 allFieldTypes :: [FieldType]
 allFieldTypes =
-  [ FieldTypeEnum
+  [ FieldTypeADT
+      { fieldTypeName = "ConfigPreset",
+        adtConstructors =
+          [ "FourmoluPreset",
+            "OrmoluPreset",
+            "ImportPreset URI"
+          ],
+        adtSchema =
+          ADTSchema
+            { adtOptions =
+                [ ADTOptionLiteral "fourmolu",
+                  ADTOptionLiteral "ormolu",
+                  ADTOptionDescription "A URL pointing to a Fourmolu configuration file"
+                ],
+              adtInputType = ADTSchemaInputText [ADTSchemaInputParserString]
+            },
+        adtRender = [("FourmoluPreset", "fourmolu")],
+        adtParseJSON = Nothing,
+        adtParseFourmoluConfigType =
+          unlines
+            [ "\\s -> case s of",
+              "  \"fourmolu\" -> pure FourmoluPreset",
+              "  \"ormolu\" -> pure OrmoluPreset",
+              "  _ | Just uri <- URI.parseURI s -> pure $ ImportPreset uri",
+              "  _ -> Left $ \"Unknown preset: \" <> s"
+            ]
+      },
+    FieldTypeEnum
       { fieldTypeName = "CommaStyle",
         enumOptions =
           [ ("Leading", "leading"),
@@ -311,17 +455,17 @@ allFieldTypes =
             },
         adtRender = [("PrintStyleInherit", "null")],
         adtParseJSON =
-          unlines
+          Just . unlines $
             [ "\\v -> case v of",
               "  Aeson.Null -> pure PrintStyleInherit",
               "  Aeson.String \"\" -> pure PrintStyleInherit",
               "  _ -> PrintStyleOverride <$> Aeson.parseJSON v"
             ],
-        adtParsePrinterOptType =
+        adtParseFourmoluConfigType =
           unlines
             [ "\\s -> case s of",
               "  \"\" -> pure PrintStyleInherit",
-              "  _ -> PrintStyleOverride <$> parsePrinterOptType s"
+              "  _ -> PrintStyleOverride <$> parseFourmoluConfigType s"
             ]
       },
     FieldTypeEnum
@@ -385,7 +529,7 @@ allFieldTypes =
             },
         adtRender = [("NoLimit", "none")],
         adtParseJSON =
-          unlines
+          Just . unlines $
             [ "\\case",
               "   Aeson.String \"none\" ->",
               "     pure NoLimit",
@@ -398,7 +542,7 @@ allFieldTypes =
               "         \"Valid values are: \\\"none\\\", or an integer\"",
               "       ]"
             ],
-        adtParsePrinterOptType =
+        adtParseFourmoluConfigType =
           unlines
             [ "\\s ->",
               "  case s of",

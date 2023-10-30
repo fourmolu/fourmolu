@@ -20,7 +20,7 @@ The Fourmolu test suite contains the following types of tests:
 
 All of these tests can be run with `cabal test` or `stack test`.
 
-To regenerate the printer test outputs (`data/examples/**/*-four-out.hs`), set `ORMOLU_REGENERATE_EXAMPLES=1` in the environment before running `test`. Generally, this should not change any of the `*-out.hs` files, but it might change the `*-four-out.hs` files, if the setting in `defaultPrinterOpts` is different from the one in `fourmolu.yaml`
+To regenerate the printer test outputs (`data/examples/**/*-four-out.hs`), set `ORMOLU_REGENERATE_EXAMPLES=1` in the environment before running `test`. Generally, this should not change any of the `*-out.hs` files, but it might change the `*-four-out.hs` files, if the setting for the Fourmolu preset is different from the setting for the Ormolu preset.
 
 ### Running `fourmolu`
 

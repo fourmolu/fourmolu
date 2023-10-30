@@ -16,15 +16,13 @@ spec =
     forM_ tests $ \Test {..} ->
       specify testLabel $ \fourmoluExe -> do
         withSystemTempDirectory "region-test-dir" $ \tmpdir -> do
-          let configFile = tmpdir ++ "/fourmolu.yaml"
-              srcFile = tmpdir ++ "/input.hs"
+          let srcFile = tmpdir ++ "/input.hs"
 
           copyFile "region-tests/src.hs" srcFile
-          copyFile "fourmolu.yaml" configFile
 
           actual <-
             readProcess fourmoluExe $
-              [srcFile, "--check-idempotence"] ++ testArgs
+              [srcFile, "--preset=ormolu", "--check-idempotence"] ++ testArgs
           expected <- readFile $ "region-tests/" ++ testExpectedFileName
           actual `shouldBe` expected
 

@@ -1,7 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
 
 import qualified Data.Map as Map
-import Data.Maybe (fromMaybe, mapMaybe)
+import Data.Maybe (fromMaybe)
 import FourmoluConfig.ConfigData
 import FourmoluConfig.GenerateUtils
 import Text.Printf (printf)
@@ -9,7 +9,6 @@ import Text.Printf (printf)
 main :: IO ()
 main = do
   writeFile "../src/Ormolu/Config/Gen.hs" configGenHs
-  writeFile "../fourmolu.yaml" fourmoluYamlOrmoluStyle
 
 configGenHs :: String
 configGenHs =
@@ -27,11 +26,12 @@ configGenHs =
       unlines_ $ map (printf "  , %s (..)" . fieldTypeName) allFieldTypes,
       "  , emptyPrinterOpts",
       "  , defaultPrinterOpts",
+      "  , ormoluPrinterOpts",
       "  , defaultPrinterOptsYaml",
       "  , fillMissingPrinterOpts",
-      "  , parsePrinterOptsCLI",
+      "  , parseFourmoluOptsCLI",
       "  , parsePrinterOptsJSON",
-      "  , parsePrinterOptType",
+      "  , parseFourmoluConfigType",
       "  )",
       "where",
       "",
@@ -41,26 +41,27 @@ configGenHs =
       "import Data.Scientific (floatingOrInteger)",
       "import qualified Data.Text as Text",
       "import GHC.Generics (Generic)",
+      "import Network.URI (URI)",
+      "import qualified Network.URI as URI",
       "import Text.Read (readEither, readMaybe)",
       "",
       "-- | Options controlling formatting output.",
       "data PrinterOpts f =",
-      indent . mkPrinterOpts $ \(fieldName', Option {..}) ->
+      indent . mkPrinterOpts $ \(fieldName, _, Option {..}) ->
         unlines_
           [ printf "-- | %s" description,
-            printf "  %s :: f %s" fieldName' type_
+            printf "  %s :: f %s" fieldName type_
           ],
       "  deriving (Generic)",
       "",
       "emptyPrinterOpts :: PrinterOpts Maybe",
       "emptyPrinterOpts =",
-      indent . mkPrinterOpts $ \(fieldName', _) ->
-        fieldName' <> " = Nothing",
+      indent . mkPrinterOpts $ \(fieldName, _, _) ->
+        fieldName <> " = Nothing",
       "",
-      "defaultPrinterOpts :: PrinterOpts Identity",
-      "defaultPrinterOpts =",
-      indent . mkPrinterOpts $ \(fieldName', Option {default_}) ->
-        fieldName' <> " = pure " <> renderHs default_,
+      mkPresetOpts "defaultPrinterOpts" presetFourmolu,
+      "",
+      mkPresetOpts "ormoluPrinterOpts" presetOrmolu,
       "",
       "-- | Fill the field values that are 'Nothing' in the first argument",
       "-- with the values of the corresponding fields of the second argument.",
@@ -71,48 +72,62 @@ configGenHs =
       "  PrinterOpts f ->",
       "  PrinterOpts f",
       "fillMissingPrinterOpts p1 p2 =",
-      indent . mkPrinterOpts $ \(fieldName', _) ->
-        printf "%s = maybe (%s p2) pure (%s p1)" fieldName' fieldName' fieldName',
+      indent . mkPrinterOpts $ \(fieldName, _, _) ->
+        printf "%s = maybe (%s p2) pure (%s p1)" fieldName fieldName fieldName,
       "",
-      "parsePrinterOptsCLI ::",
+      "parseFourmoluOptsCLI ::",
       "  Applicative f =>",
-      "  (forall a. PrinterOptsFieldType a => String -> String -> String -> f (Maybe a)) ->",
-      "  f (PrinterOpts Maybe)",
-      "parsePrinterOptsCLI f =",
-      "  pure PrinterOpts",
-      indent' 2 . unlines_ $
+      "  (PrinterOpts Maybe -> Maybe ConfigPreset -> a) ->",
+      "  (forall opt. FourmoluConfigType opt => String -> String -> String -> f (Maybe opt)) ->",
+      "  f a",
+      "parseFourmoluOptsCLI toResult mkOption =",
+      "  toResult",
+      "    <$> parsePrinterOptsCLI",
+      "    <*> parsePresetOptCLI",
+      "  where",
+      "    parsePrinterOptsCLI =",
+      "      pure PrinterOpts",
+      indent' 4 . unlines_ $
         [ unlines_
-            [ "<*> f",
+            [ "<*> mkOption",
               indent . unlines_ $
                 [ quote name,
                   quote (getCLIHelp option),
                   quote (getCLIPlaceholder option)
                 ]
             ]
-          | option@Option {name, fieldName = Just _} <- allOptions
+          | option@Option {name, info = PrinterOptsOption {}} <- allOptions
         ],
+      "    parsePresetOptCLI =",
+      "      mkOption",
+      indent' 4 . unlines_ $
+        let option = getOption "preset"
+         in [ quote (name option),
+              quote (getCLIHelp option),
+              quote (getCLIPlaceholder option)
+            ],
       "",
       "parsePrinterOptsJSON ::",
       "  Applicative f =>",
-      "  (forall a. PrinterOptsFieldType a => String -> f (Maybe a)) ->",
+      "  (forall a. FourmoluConfigType a => String -> f (Maybe a)) ->",
       "  f (PrinterOpts Maybe)",
       "parsePrinterOptsJSON f =",
       "  pure PrinterOpts",
       indent' 2 . unlines_ $
         [ "<*> f " <> quote name
-          | Option {name, fieldName = Just _} <- allOptions
+          | Option {name, info = PrinterOptsOption {}} <- allOptions
         ],
       "",
       "{---------- PrinterOpts field types ----------}",
       "",
-      "class Aeson.FromJSON a => PrinterOptsFieldType a where",
-      "  parsePrinterOptType :: String -> Either String a",
+      "class Aeson.FromJSON a => FourmoluConfigType a where",
+      "  parseFourmoluConfigType :: String -> Either String a",
       "",
-      "instance PrinterOptsFieldType Int where",
-      "  parsePrinterOptType = readEither",
+      "instance FourmoluConfigType Int where",
+      "  parseFourmoluConfigType = readEither",
       "",
-      "instance PrinterOptsFieldType Bool where",
-      "  parsePrinterOptType s =",
+      "instance FourmoluConfigType Bool where",
+      "  parseFourmoluConfigType s =",
       "    case s of",
       "      \"false\" -> Right False",
       "      \"true\" -> Right True",
@@ -140,15 +155,32 @@ configGenHs =
       unlines_
         [ unlines_ $
             case fieldType of
-              FieldTypeEnum {..} ->
-                [ printf "instance Aeson.FromJSON %s where" fieldTypeName,
+              FieldTypeADT {adtParseJSON = Just customParse} ->
+                [ printf "instance Aeson.FromJSON %s where" name,
                   printf "  parseJSON =",
-                  printf "    Aeson.withText \"%s\" $ \\s ->" fieldTypeName,
+                  indent' 2 customParse,
+                  printf ""
+                ]
+              _ ->
+                [ printf "instance Aeson.FromJSON %s where" name,
+                  printf "  parseJSON =",
+                  printf "    Aeson.withText \"%s\" $ \\s ->" name,
                   printf "      either Aeson.parseFail pure $",
-                  printf "        parsePrinterOptType (Text.unpack s)",
-                  printf "",
-                  printf "instance PrinterOptsFieldType %s where" fieldTypeName,
-                  printf "  parsePrinterOptType s =",
+                  printf "        parseFourmoluConfigType (Text.unpack s)",
+                  printf ""
+                ]
+          | fieldType <- allFieldTypes,
+            let name =
+                  case fieldType of
+                    FieldTypeEnum {..} -> fieldTypeName
+                    FieldTypeADT {..} -> fieldTypeName
+        ],
+      unlines_
+        [ unlines_ $
+            case fieldType of
+              FieldTypeEnum {..} ->
+                [ printf "instance FourmoluConfigType %s where" fieldTypeName,
+                  printf "  parseFourmoluConfigType s =",
                   printf "    case s of",
                   unlines_
                     [ printf "      \"%s\" -> Right %s" val con
@@ -162,13 +194,9 @@ configGenHs =
                   printf ""
                 ]
               FieldTypeADT {..} ->
-                [ printf "instance Aeson.FromJSON %s where" fieldTypeName,
-                  printf "  parseJSON =",
-                  indent' 2 adtParseJSON,
-                  printf "",
-                  printf "instance PrinterOptsFieldType %s where" fieldTypeName,
-                  printf "  parsePrinterOptType =",
-                  indent' 2 adtParsePrinterOptType,
+                [ printf "instance FourmoluConfigType %s where" fieldTypeName,
+                  printf "  parseFourmoluConfigType =",
+                  indent' 2 adtParseFourmoluConfigType,
                   printf ""
                 ]
           | fieldType <- allFieldTypes
@@ -179,9 +207,12 @@ configGenHs =
       indent' 2 (renderMultiLineStringList fourmoluYamlFourmoluStyle)
     ]
   where
-    mkPrinterOpts :: ((String, Option) -> String) -> String
+    mkPrinterOpts :: ((String, PresetOptions, Option) -> String) -> String
     mkPrinterOpts f =
-      let fieldOptions = mapMaybe (\o -> (,o) <$> fieldName o) allOptions
+      let fieldOptions =
+            [ (fieldName, presets, o)
+              | o@Option {info = PrinterOptsOption {..}} <- allOptions
+            ]
        in unlines_
             [ "PrinterOpts",
               indent . unlines_ $
@@ -200,13 +231,21 @@ configGenHs =
                 let delim = if isFirst then '=' else '|'
             ]
 
+    mkPresetOpts name getPreset =
+      unlines_
+        [ name <> " :: PrinterOpts Identity",
+          name <> " =",
+          indent . mkPrinterOpts $ \(fieldName, presets, _) ->
+            fieldName <> " = pure " <> renderHs (getPreset presets)
+        ]
+
     renderEnumOptions enumOptions =
       renderList [printf "\\\"%s\\\"" opt | (_, opt) <- enumOptions]
 
     renderMultiLineStringList =
       unlines . (++ ["]"]) . zipWith (\c str -> c : ' ' : show str) ('[' : repeat ',') . lines
 
-    getCLIHelp Option {..} =
+    getCLIHelp option@Option {..} =
       let help = fromMaybe description (cliHelp cliOverrides)
           choicesText =
             case type_ `Map.lookup` fieldTypesMap of
@@ -215,7 +254,7 @@ configGenHs =
               _ -> ""
           defaultText =
             printf " (default: %s)" $
-              fromMaybe (hs2yaml type_ default_) (cliDefault cliOverrides)
+              fromMaybe (defaultYaml option) (cliDefault cliOverrides)
        in concat [help, choicesText, defaultText]
 
     getCLIPlaceholder Option {..}
@@ -224,26 +263,12 @@ configGenHs =
       | "Int" <- type_ = "INT"
       | otherwise = "OPTION"
 
--- | Fourmolu config with ormolu-style PrinterOpts used to format source code in fourmolu repository.
-fourmoluYamlOrmoluStyle :: String
-fourmoluYamlOrmoluStyle = unlines $ header <> config
-  where
-    header =
-      [ "# ----- DO NOT EDIT: This file is autogenerated ----- #",
-        "",
-        "# Options should imitate Ormolu's style"
-      ]
-    config =
-      [ printf "%s: %s" name (hs2yaml type_ ormolu)
-        | Option {..} <- allOptions
-      ]
-
 -- | Default fourmolu config that can be printed via `fourmolu --print-defaults`
 fourmoluYamlFourmoluStyle :: String
 fourmoluYamlFourmoluStyle = unlines_ config
   where
     config =
-      [ printf "# %s\n%s: %s\n" (getComment opt) name (hs2yaml type_ default_)
+      [ printf "# %s\n%s: %s\n" (getComment opt) name (defaultYaml opt)
         | opt@Option {..} <- allOptions
       ]
 
