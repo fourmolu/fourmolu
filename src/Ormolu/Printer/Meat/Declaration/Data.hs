@@ -231,15 +231,23 @@ p_hsDerivingClause ::
   HsDerivingClause GhcPs ->
   R ()
 p_hsDerivingClause HsDerivingClause {..} = do
+  singleDerivingParens <- getPrinterOpt poSingleDerivingParens
+
   txt "deriving"
   let derivingWhat = located deriv_clause_tys $ \case
-        DctSingle NoExtField sigTy -> parens N $ located sigTy p_hsSigType
-        DctMulti NoExtField sigTys ->
-          parens N $
-            sep
-              commaDel
-              (sitcc . located' p_hsSigType)
-              sigTys
+        DctSingle NoExtField sigTy
+          | DerivingAlways <- singleDerivingParens -> parens N $ located sigTy p_hsSigType
+          | otherwise -> located sigTy p_hsSigType
+        DctMulti NoExtField sigTys
+          | [sigTy] <- sigTys,
+            DerivingNever <- singleDerivingParens ->
+              located sigTy p_hsSigType
+          | otherwise ->
+              parens N $
+                sep
+                  commaDel
+                  (sitcc . located' p_hsSigType)
+                  sigTys
   space
   case deriv_clause_strategy of
     Nothing -> do

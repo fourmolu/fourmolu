@@ -18,6 +18,7 @@ module Ormolu.Config.Gen
   , Unicode (..)
   , SingleConstraintParens (..)
   , ColumnLimit (..)
+  , SingleDerivingParens (..)
   , emptyPrinterOpts
   , defaultPrinterOpts
   , defaultPrinterOptsYaml
@@ -69,6 +70,8 @@ data PrinterOpts f =
       poUnicode :: f Unicode
     , -- | Give the programmer more choice on where to insert blank lines
       poRespectful :: f Bool
+    , -- | Whether to put parentheses around a single deriving class
+      poSingleDerivingParens :: f SingleDerivingParens
     }
   deriving (Generic)
 
@@ -90,6 +93,7 @@ emptyPrinterOpts =
     , poSingleConstraintParens = Nothing
     , poUnicode = Nothing
     , poRespectful = Nothing
+    , poSingleDerivingParens = Nothing
     }
 
 defaultPrinterOpts :: PrinterOpts Identity
@@ -110,6 +114,7 @@ defaultPrinterOpts =
     , poSingleConstraintParens = pure ConstraintAlways
     , poUnicode = pure UnicodeNever
     , poRespectful = pure True
+    , poSingleDerivingParens = pure DerivingAlways
     }
 
 -- | Fill the field values that are 'Nothing' in the first argument
@@ -137,6 +142,7 @@ fillMissingPrinterOpts p1 p2 =
     , poSingleConstraintParens = maybe (poSingleConstraintParens p2) pure (poSingleConstraintParens p1)
     , poUnicode = maybe (poUnicode p2) pure (poUnicode p1)
     , poRespectful = maybe (poRespectful p2) pure (poRespectful p1)
+    , poSingleDerivingParens = maybe (poSingleDerivingParens p2) pure (poSingleDerivingParens p1)
     }
 
 parsePrinterOptsCLI ::
@@ -205,6 +211,10 @@ parsePrinterOptsCLI f =
       "respectful"
       "Give the programmer more choice on where to insert blank lines (default: true)"
       "BOOL"
+    <*> f
+      "single-deriving-parens"
+      "Whether to put parentheses around a single deriving class (choices: \"auto\", \"always\", or \"never\") (default: always)"
+      "OPTION"
 
 parsePrinterOptsJSON ::
   Applicative f =>
@@ -227,6 +237,7 @@ parsePrinterOptsJSON f =
     <*> f "single-constraint-parens"
     <*> f "unicode"
     <*> f "respectful"
+    <*> f "single-deriving-parens"
 
 {---------- PrinterOpts field types ----------}
 
@@ -304,6 +315,12 @@ data ColumnLimit
   = NoLimit
   | ColumnLimit Int
   deriving (Eq, Show)
+
+data SingleDerivingParens
+  = DerivingAuto
+  | DerivingAlways
+  | DerivingNever
+  deriving (Eq, Show, Enum, Bounded)
 
 instance Aeson.FromJSON CommaStyle where
   parseJSON =
@@ -490,6 +507,24 @@ instance PrinterOptsFieldType ColumnLimit where
               "Valid values are: \"none\", or an integer"
             ]
 
+instance Aeson.FromJSON SingleDerivingParens where
+  parseJSON =
+    Aeson.withText "SingleDerivingParens" $ \s ->
+      either Aeson.parseFail pure $
+        parsePrinterOptType (Text.unpack s)
+
+instance PrinterOptsFieldType SingleDerivingParens where
+  parsePrinterOptType s =
+    case s of
+      "auto" -> Right DerivingAuto
+      "always" -> Right DerivingAlways
+      "never" -> Right DerivingNever
+      _ ->
+        Left . unlines $
+          [ "unknown value: " <> show s
+          , "Valid values are: \"auto\", \"always\", or \"never\""
+          ]
+
 defaultPrinterOptsYaml :: String
 defaultPrinterOptsYaml =
   unlines
@@ -543,4 +578,7 @@ defaultPrinterOptsYaml =
     , ""
     , "# Module reexports Fourmolu should know about"
     , "reexports: []"
+    , ""
+    , "# Whether to put parentheses around a single deriving class (choices: auto, always, or never)"
+    , "single-deriving-parens: always"
     ]
