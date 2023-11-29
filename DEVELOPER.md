@@ -180,6 +180,6 @@ Fourmolu aims to continue merging upstream changes in Ormolu. Whenever Ormolu ma
 
 ## HLint
 
-Ormolu isn't HLint-clean, so Fourmolu can't be fully.
+Ormolu isn't HLint-clean, and making Fourmolu HLint-clean would increase the diff with Ormolu and make merge conflicts more likely, so we shouldn't make unnecessary changes to solve HLint warnings.
 
 If you're using HLS you may wish to disable HLint on this codebase entirely. In VSCode, for example, add `"haskell.plugin.hlint.diagnosticsOn": false` to `fourmolu/.vscode/settings.json`.
