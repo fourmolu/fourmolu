@@ -14,6 +14,16 @@ import FourmoluConfig.ConfigData
 fieldTypesMap :: Map String FieldType
 fieldTypesMap = Map.fromList [(fieldTypeName fieldType, fieldType) | fieldType <- allFieldTypes]
 
+getFieldType :: String -> FieldType
+getFieldType name =
+  case Map.lookup name fieldTypesMap of
+    Just ty -> ty
+    Nothing ->
+      error . unwords $
+        [ "Could not find field type '" <> name <> "'.",
+          "Did you add it to 'allFieldTypes' in ConfigData.hs?"
+        ]
+
 getOptionSchema :: Option -> ADTSchema
 getOptionSchema Option {type_ = ty} =
   case ty of
@@ -32,15 +42,14 @@ getOptionSchema Option {type_ = ty} =
         { adtOptions = [ADTOptionDescription "Any string"],
           adtInputType = ADTSchemaInputText [ADTSchemaInputParserString]
         }
-    _ | Just fieldType <- Map.lookup ty fieldTypesMap ->
-      case fieldType of
+    _ ->
+      case getFieldType ty of
         FieldTypeEnum {enumOptions} ->
           ADTSchema
             { adtOptions = map (ADTOptionLiteral . snd) enumOptions,
               adtInputType = ADTSchemaInputDropdown [ADTSchemaInputParserString]
             }
         FieldTypeADT {adtSchema} -> adtSchema
-    _ -> error $ "Cannot get schema for type: " ++ ty
 
 -- | Render a HaskellValue for Haskell.
 renderHs :: HaskellValue -> String
@@ -55,10 +64,9 @@ hs2yaml :: String -> HaskellValue -> String
 hs2yaml hsType = \case
   HsExpr v ->
     fromMaybe (error $ "Could not render " <> hsType <> " value: " <> v) $
-      case hsType `Map.lookup` fieldTypesMap of
-        Just FieldTypeEnum {enumOptions} -> v `lookup` enumOptions
-        Just FieldTypeADT {adtRender} -> v `lookup` adtRender
-        Nothing -> Nothing
+      case getFieldType hsType of
+        FieldTypeEnum {enumOptions} -> v `lookup` enumOptions
+        FieldTypeADT {adtRender} -> v `lookup` adtRender
   HsInt v -> show v
   HsBool v -> if v then "true" else "false"
   HsList vs ->
