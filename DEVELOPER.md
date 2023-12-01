@@ -46,6 +46,7 @@ Considering configurability is the raison d'être of Fourmolu, you're probably m
 
 1. Add the configuration option to `config/FourmoluConfig/ConfigData.hs`
     * Set `sinceVersion` to `Nothing`
+    * If the option requires a custom data type, add one to `allFieldTypes`
 
 1. Regenerate files with `config/generate.sh`
 
