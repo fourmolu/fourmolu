@@ -100,8 +100,8 @@ mkConfig path Opts {optQuiet, optConfig = cliConfig, optPrinterOpts = cliPrinter
     cliConfig
       { cfgPrinterOpts =
           resolvePrinterOpts
-            [ cliPrinterOpts,
-              cfgFilePrinterOpts fourmoluConfig
+            [ cfgFilePrinterOpts fourmoluConfig,
+              cliPrinterOpts
             ],
         cfgFixityOverrides =
           FixityOverrides . mconcat . map unFixityOverrides $
