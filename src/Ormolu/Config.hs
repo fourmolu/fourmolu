@@ -58,6 +58,7 @@ import Control.Monad (forM)
 import Data.Aeson ((.!=), (.:?))
 import Data.Aeson qualified as Aeson
 import Data.Aeson.Types qualified as Aeson
+import Data.Foldable (foldl')
 import Data.Functor.Identity (Identity (..))
 import Data.Map.Strict qualified as Map
 import Data.Set (Set)
@@ -230,7 +231,7 @@ deriving instance Show PrinterOptsTotal
 
 -- | Apply the given configuration in order (later options override earlier).
 resolvePrinterOpts :: [PrinterOptsPartial] -> PrinterOptsTotal
-resolvePrinterOpts = foldr fillMissingPrinterOpts defaultPrinterOpts
+resolvePrinterOpts = foldl' (flip fillMissingPrinterOpts) defaultPrinterOpts
 
 ----------------------------------------------------------------------------
 -- Loading Fourmolu configuration
