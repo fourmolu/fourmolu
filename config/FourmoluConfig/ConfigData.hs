@@ -218,6 +218,16 @@ allOptions =
         ormolu = HsList [],
         sinceVersion = Just "0.13.0.0",
         cliOverrides = emptyOverrides
+      },
+    Option
+      { name = "single-deriving-parens",
+        fieldName = Just "poSingleDerivingParens",
+        description = "Whether to put parentheses around a single deriving class",
+        type_ = "SingleDerivingParens",
+        default_ = HsExpr "DerivingAlways",
+        ormolu = HsExpr "DerivingAlways",
+        sinceVersion = Nothing,
+        cliOverrides = emptyOverrides
       }
   ]
 
@@ -412,5 +422,13 @@ allFieldTypes =
               "          \"Valid values are: \\\"none\\\", or an integer\"",
               "        ]"
             ]
+      },
+    FieldTypeEnum
+      { fieldTypeName = "SingleDerivingParens",
+        enumOptions =
+          [ ("DerivingAuto", "auto"),
+            ("DerivingAlways", "always"),
+            ("DerivingNever", "never")
+          ]
       }
   ]

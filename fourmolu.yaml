@@ -18,3 +18,4 @@ unicode: never
 respectful: false
 fixities: []
 reexports: []
+single-deriving-parens: always

@@ -231,6 +231,15 @@ spec =
           testCaseSuffix = \(respectful, importExportStyle) ->
             suffixWith ["respectful=" ++ show respectful, show importExportStyle],
           checkIdempotence = True
+        },
+      TestGroup
+        { label = "single-deriving-parens",
+          isMulti = False,
+          testCases = allOptions,
+          updateConfig = \parens opts -> opts {poSingleDerivingParens = pure parens},
+          showTestCase = show,
+          testCaseSuffix = suffix1,
+          checkIdempotence = True
         }
     ]
 

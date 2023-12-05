@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeepSubsumption #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ViewPatterns #-}
 
@@ -160,5 +161,7 @@ diffHsModule = genericQuery
     classDeclCtxEq tc tc' = genericQuery tc tc'
 
     derivedTyClsParensEq :: DerivClauseTys GhcPs -> GenericQ ParseResultDiff
-    derivedTyClsParensEq (DctSingle NoExtField sigTy) dct' = genericQuery (DctMulti NoExtField [sigTy]) dct'
-    derivedTyClsParensEq dct dct' = genericQuery dct dct'
+    derivedTyClsParensEq = considerEqualVia $ curry $ \case
+      (DctSingle _ ty, DctMulti _ [ty']) -> genericQuery ty ty'
+      (DctMulti _ [ty], DctSingle _ ty') -> genericQuery ty ty'
+      (x, y) -> genericQuery x y
