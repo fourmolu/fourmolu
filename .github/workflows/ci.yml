@@ -102,7 +102,7 @@ jobs:
         name: Bundle haddock docs
         run: tar czf fourmolu-docs.tar.gz -C "$(find .stack-work/dist -regex '.*/doc/html/[^/]*')" .
       -
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: fourmolu-docs
           path: fourmolu-docs.tar.gz
@@ -162,7 +162,7 @@ jobs:
           version: ${{ steps.cabal_file.outputs.version }}
       -
         name: Store binary
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: fourmolu-binary-${{ matrix.os }}
           path: bin/fourmolu-*
@@ -209,7 +209,7 @@ jobs:
         name: Create sdist bundle
         run: stack sdist --test-tarball --tar-dir .
       -
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: fourmolu-sdist
           path: fourmolu-*.tar.gz
