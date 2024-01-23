@@ -53,7 +53,7 @@ jobs:
         name: Invalidate cache every month
         run: echo "CURR_MONTH=$(date +%B)" | tee -a "$GITHUB_ENV"
       -
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.cabal/store
           key: ${{ runner.os }}-cabal-cache-${{ env.CURR_MONTH }}-${{ matrix.ghc_version }}-${{ hashFiles('cabal.project.freeze') }}
@@ -77,7 +77,7 @@ jobs:
       -
         uses: actions/checkout@v4
       -
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.stack
           key: ${{ runner.os }}-stack_test-${{ hashFiles('stack.yaml', 'fourmolu.cabal') }}
@@ -90,7 +90,7 @@ jobs:
       -
         uses: actions/checkout@v4
       -
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.stack
           key: ${{ runner.os }}-build_haddock-${{ hashFiles('stack.yaml', 'fourmolu.cabal') }}
@@ -124,7 +124,7 @@ jobs:
       -
         uses: actions/checkout@v4
       -
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.stack
           key: ${{ runner.os }}-build_prod-${{ hashFiles('stack.yaml', 'fourmolu.cabal') }}
@@ -176,7 +176,7 @@ jobs:
       -
         uses: actions/checkout@v4
       -
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.stack
           key: ${{ runner.os }}-lint-stack-${{ hashFiles('stack.yaml', 'fourmolu.cabal') }}
@@ -184,7 +184,7 @@ jobs:
         name: Build Fourmolu executable
         run: stack build --fast :fourmolu
       -
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.cache/pre-commit
           key: ${{ runner.os }}-lint-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
@@ -201,7 +201,7 @@ jobs:
       -
         uses: actions/checkout@v4
       -
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.stack
           key: ${{ runner.os }}-check_sdist-${{ hashFiles('stack.yaml') }}

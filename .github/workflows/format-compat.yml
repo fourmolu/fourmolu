@@ -34,7 +34,7 @@ jobs:
         with:
           path: fourmolu
       -
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.stack
           key: ${{ runner.os }}-format_compat-${{ hashFiles('fourmolu/stack.yaml', 'fourmolu/fourmolu.cabal') }}
