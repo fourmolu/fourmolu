@@ -43,10 +43,12 @@ main = do
   opts@Opts {..} <- execParser optsParserInfo
 
   cwd <- getCurrentDirectory
-  cfg <- case optInputFiles of
-    [] -> mkConfig cwd opts
-    ["-"] -> mkConfig cwd opts
-    file : _ -> mkConfig file opts
+  cfg <- case optConfigFilePath of 
+    Just configFilePath -> mkConfig configFilePath opts
+    Nothing -> case optInputFiles of
+      [] -> mkConfig cwd opts
+      ["-"] -> mkConfig cwd opts
+      file : _ -> mkConfig file opts
 
   let formatOne' =
         formatOne
@@ -272,6 +274,8 @@ data Opts = Opts
     optQuiet :: !Bool,
     -- | Ormolu 'Config'
     optConfig :: !(Config RegionIndices),
+    -- | Ormolu 'Config'
+    optConfigFilePath :: !(Maybe FilePath),
     -- | Fourmolu 'PrinterOpts',
     optPrinterOpts :: PrinterOptsPartial,
     -- | Options related to info extracted from files
@@ -361,6 +365,11 @@ optsParser =
         help "Make output quieter"
       ]
     <*> configParser
+    <*> (optional . strOption . mconcat)
+      [ metavar "CONFIG_FILE",
+        long "config-file",
+        help "Path towards a config file"
+      ]
     <*> printerOptsParser
     <*> configFileOptsParser
     <*> sourceTypeParser
