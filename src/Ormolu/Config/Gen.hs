@@ -66,12 +66,12 @@ data PrinterOpts f =
       poInStyle :: f InStyle
     , -- | Whether to put parentheses around a single constraint
       poSingleConstraintParens :: f SingleConstraintParens
+    , -- | Whether to put parentheses around a single deriving class
+      poSingleDerivingParens :: f SingleDerivingParens
     , -- | Output Unicode syntax
       poUnicode :: f Unicode
     , -- | Give the programmer more choice on where to insert blank lines
       poRespectful :: f Bool
-    , -- | Whether to put parentheses around a single deriving class
-      poSingleDerivingParens :: f SingleDerivingParens
     }
   deriving (Generic)
 
@@ -91,9 +91,9 @@ emptyPrinterOpts =
     , poLetStyle = Nothing
     , poInStyle = Nothing
     , poSingleConstraintParens = Nothing
+    , poSingleDerivingParens = Nothing
     , poUnicode = Nothing
     , poRespectful = Nothing
-    , poSingleDerivingParens = Nothing
     }
 
 defaultPrinterOpts :: PrinterOpts Identity
@@ -112,9 +112,9 @@ defaultPrinterOpts =
     , poLetStyle = pure LetAuto
     , poInStyle = pure InRightAlign
     , poSingleConstraintParens = pure ConstraintAlways
+    , poSingleDerivingParens = pure DerivingAlways
     , poUnicode = pure UnicodeNever
     , poRespectful = pure True
-    , poSingleDerivingParens = pure DerivingAlways
     }
 
 -- | Fill the field values that are 'Nothing' in the first argument
@@ -140,9 +140,9 @@ fillMissingPrinterOpts p1 p2 =
     , poLetStyle = maybe (poLetStyle p2) pure (poLetStyle p1)
     , poInStyle = maybe (poInStyle p2) pure (poInStyle p1)
     , poSingleConstraintParens = maybe (poSingleConstraintParens p2) pure (poSingleConstraintParens p1)
+    , poSingleDerivingParens = maybe (poSingleDerivingParens p2) pure (poSingleDerivingParens p1)
     , poUnicode = maybe (poUnicode p2) pure (poUnicode p1)
     , poRespectful = maybe (poRespectful p2) pure (poRespectful p1)
-    , poSingleDerivingParens = maybe (poSingleDerivingParens p2) pure (poSingleDerivingParens p1)
     }
 
 parsePrinterOptsCLI ::
@@ -204,6 +204,10 @@ parsePrinterOptsCLI f =
       "Whether to put parentheses around a single constraint (choices: \"auto\", \"always\", or \"never\") (default: always)"
       "OPTION"
     <*> f
+      "single-deriving-parens"
+      "Whether to put parentheses around a single deriving class (choices: \"auto\", \"always\", or \"never\") (default: always)"
+      "OPTION"
+    <*> f
       "unicode"
       "Output Unicode syntax (choices: \"detect\", \"always\", or \"never\") (default: never)"
       "OPTION"
@@ -211,10 +215,6 @@ parsePrinterOptsCLI f =
       "respectful"
       "Give the programmer more choice on where to insert blank lines (default: true)"
       "BOOL"
-    <*> f
-      "single-deriving-parens"
-      "Whether to put parentheses around a single deriving class (choices: \"auto\", \"always\", or \"never\") (default: always)"
-      "OPTION"
 
 parsePrinterOptsJSON ::
   Applicative f =>
@@ -235,9 +235,9 @@ parsePrinterOptsJSON f =
     <*> f "let-style"
     <*> f "in-style"
     <*> f "single-constraint-parens"
+    <*> f "single-deriving-parens"
     <*> f "unicode"
     <*> f "respectful"
-    <*> f "single-deriving-parens"
 
 {---------- PrinterOpts field types ----------}
 
@@ -567,6 +567,9 @@ defaultPrinterOptsYaml =
     , "# Whether to put parentheses around a single constraint (choices: auto, always, or never)"
     , "single-constraint-parens: always"
     , ""
+    , "# Whether to put parentheses around a single deriving class (choices: auto, always, or never)"
+    , "single-deriving-parens: always"
+    , ""
     , "# Output Unicode syntax (choices: detect, always, or never)"
     , "unicode: never"
     , ""
@@ -578,7 +581,4 @@ defaultPrinterOptsYaml =
     , ""
     , "# Module reexports Fourmolu should know about"
     , "reexports: []"
-    , ""
-    , "# Whether to put parentheses around a single deriving class (choices: auto, always, or never)"
-    , "single-deriving-parens: always"
     ]

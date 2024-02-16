@@ -180,6 +180,16 @@ allOptions =
         cliOverrides = emptyOverrides
       },
     Option
+      { name = "single-deriving-parens",
+        fieldName = Just "poSingleDerivingParens",
+        description = "Whether to put parentheses around a single deriving class",
+        type_ = "SingleDerivingParens",
+        default_ = HsExpr "DerivingAlways",
+        ormolu = HsExpr "DerivingAlways",
+        sinceVersion = Just "0.15.0.0",
+        cliOverrides = emptyOverrides
+      },
+    Option
       { name = "unicode",
         fieldName = Just "poUnicode",
         description = "Output Unicode syntax",
@@ -217,16 +227,6 @@ allOptions =
         default_ = HsList [],
         ormolu = HsList [],
         sinceVersion = Just "0.13.0.0",
-        cliOverrides = emptyOverrides
-      },
-    Option
-      { name = "single-deriving-parens",
-        fieldName = Just "poSingleDerivingParens",
-        description = "Whether to put parentheses around a single deriving class",
-        type_ = "SingleDerivingParens",
-        default_ = HsExpr "DerivingAlways",
-        ormolu = HsExpr "DerivingAlways",
-        sinceVersion = Just "0.15.0.0",
         cliOverrides = emptyOverrides
       }
   ]

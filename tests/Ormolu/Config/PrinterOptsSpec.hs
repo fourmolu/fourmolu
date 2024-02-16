@@ -201,6 +201,15 @@ spec =
           checkIdempotence = True
         },
       TestGroup
+        { label = "single-deriving-parens",
+          isMulti = False,
+          testCases = allOptions,
+          updateConfig = \parens opts -> opts {poSingleDerivingParens = pure parens},
+          showTestCase = show,
+          testCaseSuffix = suffix1,
+          checkIdempotence = True
+        },
+      TestGroup
         { label = "unicode-syntax",
           isMulti = False,
           testCases = allOptions,
@@ -231,15 +240,6 @@ spec =
             (if respectful then "respectful" else "not respectful") ++ " + " ++ show importExportStyle,
           testCaseSuffix = \(respectful, importExportStyle) ->
             suffixWith ["respectful=" ++ show respectful, show importExportStyle],
-          checkIdempotence = True
-        },
-      TestGroup
-        { label = "single-deriving-parens",
-          isMulti = False,
-          testCases = allOptions,
-          updateConfig = \parens opts -> opts {poSingleDerivingParens = pure parens},
-          showTestCase = show,
-          testCaseSuffix = suffix1,
           checkIdempotence = True
         }
     ]
