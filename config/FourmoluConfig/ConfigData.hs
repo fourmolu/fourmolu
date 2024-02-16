@@ -226,7 +226,7 @@ allOptions =
         type_ = "SingleDerivingParens",
         default_ = HsExpr "DerivingAlways",
         ormolu = HsExpr "DerivingAlways",
-        sinceVersion = Nothing,
+        sinceVersion = Just "0.15.0.0",
         cliOverrides = emptyOverrides
       }
   ]
