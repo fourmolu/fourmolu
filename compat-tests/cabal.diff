@@ -112,6 +112,31 @@ index 6e0f00d..010bffc 100644
            return v
  
      let req_rename_fn k = case Map.lookup k req_rename of
+diff --git a/Cabal/src/Distribution/PackageDescription/Check.hs b/Cabal/src/Distribution/PackageDescription/Check.hs
+index e8be60f..1b33bd9 100644
+--- a/Cabal/src/Distribution/PackageDescription/Check.hs
++++ b/Cabal/src/Distribution/PackageDescription/Check.hs
+@@ -2732,7 +2732,6 @@ checkGlobFiles verbosity pkg root = do
+       then -- No missing desirable file
+         warnings
+       else -- Some missing desirable files
+-
+         warnings
+           ++ let unlisted' = (root </>) <$> unlisted
+               in [ PackageDistSuspiciousWarn
+@@ -2828,12 +2827,10 @@ checkGlobFiles verbosity pkg root = do
+     checkDoc isDocField path docFiles wrongFieldPaths =
+       if path `elem` docFiles
+         then -- Found desirable doc file
+-
+           ( delete path docFiles
+           , if isDocField then wrongFieldPaths else path : wrongFieldPaths
+           )
+         else -- Not a desirable doc file
+-
+           ( docFiles
+           , wrongFieldPaths
+           )
 diff --git a/Cabal/src/Distribution/Simple/Compiler.hs b/Cabal/src/Distribution/Simple/Compiler.hs
 index 074f2f3..0ac9d19 100644
 --- a/Cabal/src/Distribution/Simple/Compiler.hs
@@ -125,6 +150,18 @@ index 074f2f3..0ac9d19 100644
    , Compiler (..)
    , showCompilerId
    , showCompilerIdWithAbi
+diff --git a/Cabal/src/Distribution/Simple/Configure.hs b/Cabal/src/Distribution/Simple/Configure.hs
+index 9298ab0..6a219bd 100644
+--- a/Cabal/src/Distribution/Simple/Configure.hs
++++ b/Cabal/src/Distribution/Simple/Configure.hs
+@@ -1149,7 +1149,6 @@ dependencySatisfiable
+           -- those are just True.
+             internalDepSatisfiable
+           else -- Backward compatibility for the old sublibrary syntax
+-
+             ( sublibs == mainLibSet
+                 && Map.member
+                   ( pn
 diff --git a/Cabal/src/Distribution/Simple/GHC.hs b/Cabal/src/Distribution/Simple/GHC.hs
 index f01d096..cd2c614 100644
 --- a/Cabal/src/Distribution/Simple/GHC.hs
@@ -218,6 +255,38 @@ index f01d096..cd2c614 100644
    where
      builtDir = componentBuildDir lbi clbi
  
+diff --git a/Cabal/src/Distribution/Simple/GHC/Internal.hs b/Cabal/src/Distribution/Simple/GHC/Internal.hs
+index bb77d20..b15b373 100644
+--- a/Cabal/src/Distribution/Simple/GHC/Internal.hs
++++ b/Cabal/src/Distribution/Simple/GHC/Internal.hs
+@@ -303,7 +303,6 @@ getExtensions verbosity implInfo ghcProg = do
+           then lines str
+           else -- Older GHCs only gave us either Foo or NoFoo,
+           -- so we have to work out the other one ourselves
+-
+             [ extStr''
+             | extStr <- lines str
+             , let extStr' = case extStr of
+@@ -323,7 +322,6 @@ getExtensions verbosity implInfo ghcProg = do
+           -- Since it was not a proper extension, it could
+           -- not be turned off, hence we omit a
+           -- DisableExtension entry here.
+-
+             (EnableExtension NondecreasingIndentation, Nothing)
+               : extensions0
+           else extensions0
+diff --git a/Cabal/src/Distribution/Simple/Register.hs b/Cabal/src/Distribution/Simple/Register.hs
+index fc6075d..4b84d47 100644
+--- a/Cabal/src/Distribution/Simple/Register.hs
++++ b/Cabal/src/Distribution/Simple/Register.hs
+@@ -267,7 +267,6 @@ generateRegistrationInfo verbosity pkg lib lbi clbi inplace reloc distPref packa
+       then -- NB: With an inplace installation, the user may run './Setup
+       -- build' to update the library files, without reregistering.
+       -- In this case, it is critical that the ABI hash not flip.
+-
+         return
+           ( inplaceInstalledPackageInfo
+               pwd
 diff --git a/cabal-install/src/Distribution/Client/CmdHaddockProject.hs b/cabal-install/src/Distribution/Client/CmdHaddockProject.hs
 index d63e890..28b7f43 100644
 --- a/cabal-install/src/Distribution/Client/CmdHaddockProject.hs
@@ -253,6 +322,41 @@ index 46ce2cd..5e88914 100644
  
  getPackageDbStack
    :: CompilerId
+diff --git a/cabal-install/src/Distribution/Client/CmdRepl.hs b/cabal-install/src/Distribution/Client/CmdRepl.hs
+index d8458b9..7d00721 100644
+--- a/cabal-install/src/Distribution/Client/CmdRepl.hs
++++ b/cabal-install/src/Distribution/Client/CmdRepl.hs
+@@ -344,18 +344,18 @@ replAction flags@NixStyleFlags{extraFlags = r@ReplFlags{..}, ..} targetStrings g
+         else -- Unfortunately, the best way to do this is to let the normal solver
+         -- help us resolve the targets, but that isn't ideal for performance,
+         -- especially in the no-project case.
+-        withInstallPlan (lessVerbose verbosity) baseCtx' $ \elaboratedPlan sharedConfig -> do
+-          -- targets should be non-empty map, but there's no NonEmptyMap yet.
+-          targets <- validatedTargets (projectConfigShared (projectConfig ctx)) (pkgConfigCompiler sharedConfig) elaboratedPlan targetSelectors
+-
+-          let
+-            (unitId, _) = fromMaybe (error "panic: targets should be non-empty") $ safeHead $ Map.toList targets
+-            originalDeps = installedUnitId <$> InstallPlan.directDeps elaboratedPlan unitId
+-            oci = OriginalComponentInfo unitId originalDeps
+-            pkgId = fromMaybe (error $ "cannot find " ++ prettyShow unitId) $ packageId <$> InstallPlan.lookup elaboratedPlan unitId
+-            baseCtx'' = addDepsToProjectTarget (envPackages replEnvFlags) pkgId baseCtx'
+-
+-          return (Just oci, baseCtx'')
++          withInstallPlan (lessVerbose verbosity) baseCtx' $ \elaboratedPlan sharedConfig -> do
++            -- targets should be non-empty map, but there's no NonEmptyMap yet.
++            targets <- validatedTargets (projectConfigShared (projectConfig ctx)) (pkgConfigCompiler sharedConfig) elaboratedPlan targetSelectors
++
++            let
++              (unitId, _) = fromMaybe (error "panic: targets should be non-empty") $ safeHead $ Map.toList targets
++              originalDeps = installedUnitId <$> InstallPlan.directDeps elaboratedPlan unitId
++              oci = OriginalComponentInfo unitId originalDeps
++              pkgId = fromMaybe (error $ "cannot find " ++ prettyShow unitId) $ packageId <$> InstallPlan.lookup elaboratedPlan unitId
++              baseCtx'' = addDepsToProjectTarget (envPackages replEnvFlags) pkgId baseCtx'
++
++            return (Just oci, baseCtx'')
+ 
+     -- Now, we run the solver again with the added packages. While the graph
+     -- won't actually reflect the addition of transitive dependencies,
 diff --git a/cabal-install/src/Distribution/Client/CmdSdist.hs b/cabal-install/src/Distribution/Client/CmdSdist.hs
 index cd59466..ef87ab3 100644
 --- a/cabal-install/src/Distribution/Client/CmdSdist.hs
@@ -270,6 +374,18 @@ index cd59466..ef87ab3 100644
  
        ext = case format of
          SourceList _ -> "list"
+diff --git a/cabal-install/src/Distribution/Client/Fetch.hs b/cabal-install/src/Distribution/Client/Fetch.hs
+index 724c583..a5946da 100644
+--- a/cabal-install/src/Distribution/Client/Fetch.hs
++++ b/cabal-install/src/Distribution/Client/Fetch.hs
+@@ -137,7 +137,6 @@ fetch
+       then -- TODO: when we add support for remote tarballs then this message
+       -- will need to be changed because for remote tarballs we fetch them
+       -- at the earlier phase.
+-
+         notice verbosity $
+           "No packages need to be fetched. "
+             ++ "All the requested packages are already local "
 diff --git a/cabal-install/src/Distribution/Client/FetchUtils.hs b/cabal-install/src/Distribution/Client/FetchUtils.hs
 index 2ad9ea2..16468a2 100644
 --- a/cabal-install/src/Distribution/Client/FetchUtils.hs
@@ -283,6 +399,29 @@ index 2ad9ea2..16468a2 100644
  
  -- | Generate the full path to the directory where the local cached copy of
  -- the tarball for a given @PackageIdentifier@ is stored.
+diff --git a/cabal-install/src/Distribution/Client/HttpUtils.hs b/cabal-install/src/Distribution/Client/HttpUtils.hs
+index 3d27882..81c67e7 100644
+--- a/cabal-install/src/Distribution/Client/HttpUtils.hs
++++ b/cabal-install/src/Distribution/Client/HttpUtils.hs
+@@ -181,12 +181,12 @@ downloadURI transport verbosity uri path = do
+           die' verbosity $
+             "Cannot parse URI fragment " ++ uriFrag ++ " " ++ err
+       else -- if there are no uri fragment, use ETag
+-      do
+-        etagPathExists <- doesFileExist etagPath
+-        -- In rare cases the target file doesn't exist, but the etag does.
+-        if targetExists && etagPathExists
+-          then return (CheckETag etagPath)
+-          else return (NeedsDownload Nothing)
++        do
++          etagPathExists <- doesFileExist etagPath
++          -- In rare cases the target file doesn't exist, but the etag does.
++          if targetExists && etagPathExists
++            then return (CheckETag etagPath)
++            else return (NeedsDownload Nothing)
+ 
+   -- Only use the external http transports if we actually have to
+   -- (or have been told to do so)
 diff --git a/cabal-install/src/Distribution/Client/Init/Interactive/Command.hs b/cabal-install/src/Distribution/Client/Init/Interactive/Command.hs
 index 2fab0db..ad222a0 100644
 --- a/cabal-install/src/Distribution/Client/Init/Interactive/Command.hs
@@ -303,7 +442,7 @@ index 2fab0db..ad222a0 100644
  noCommentsPrompt :: Interactive m => InitFlags -> m Bool
  noCommentsPrompt flags = getNoComments flags $ do
 diff --git a/cabal-install/src/Distribution/Client/Install.hs b/cabal-install/src/Distribution/Client/Install.hs
-index 93ad8e5..1c7b38c 100644
+index 93ad8e5..8ae3960 100644
 --- a/cabal-install/src/Distribution/Client/Install.hs
 +++ b/cabal-install/src/Distribution/Client/Install.hs
 @@ -1760,7 +1760,7 @@ installLocalTarballPackage
@@ -324,11 +463,27 @@ index 93ad8e5..1c7b38c 100644
          info verbosity $
            "Updating "
              ++ prettyShow (packageName pkgid) <.> "cabal"
+@@ -2030,7 +2030,6 @@ installUnpackedPackage
+               if is_dir
+                 then -- Sort so that each prefix of the package
+                 -- configurations is well formed
+-
+                   traverse (readPkgConf pkgConfDest) . sort . filter notHidden
+                     =<< getDirectoryContents pkgConfDest
+                 else fmap (: []) $ readPkgConf "." pkgConfDest
 diff --git a/cabal-install/src/Distribution/Client/List.hs b/cabal-install/src/Distribution/Client/List.hs
-index ef9285b..6b53cd7 100644
+index ef9285b..f8a136d 100644
 --- a/cabal-install/src/Distribution/Client/List.hs
 +++ b/cabal-install/src/Distribution/Client/List.hs
-@@ -463,9 +463,9 @@ showPackageDetailedInfo pkginfo =
+@@ -238,7 +238,6 @@ list verbosity packageDBs repos mcompProgdb listFlags pats = do
+     else -- Note: this only works because for 'list', one cannot currently
+     -- specify any version constraints, so listing all installed
+     -- and source ones works.
+-
+       if null matches
+         then notice verbosity "No matches found."
+         else putStr $ unlines (map showPackageSummaryInfo matches)
+@@ -463,9 +462,9 @@ showPackageDetailedInfo pkginfo =
    renderStyle (style{lineLength = 80, ribbonsPerLine = 1}) $
      char '*'
        <+> pretty (pkgName pkginfo)
@@ -341,10 +496,30 @@ index ef9285b..6b53cd7 100644
                vcat
                  [ entryST "Synopsis" synopsis hideIfNull reflowParagraphs
 diff --git a/cabal-install/src/Distribution/Client/ParseUtils.hs b/cabal-install/src/Distribution/Client/ParseUtils.hs
-index 44cdc4c..db2e782 100644
+index 44cdc4c..f79c10d 100644
 --- a/cabal-install/src/Distribution/Client/ParseUtils.hs
 +++ b/cabal-install/src/Distribution/Client/ParseUtils.hs
-@@ -211,8 +211,8 @@ ppField name mdef cur
+@@ -126,7 +126,8 @@ commandOptionsToFields = map viewAsFieldDescr
+ 
+ -- | The description of a section in a config file. It can contain both
+ -- fields and optionally further subsections. See also 'FieldDescr'.
+-data SectionDescr a = forall b.
++data SectionDescr a
++  = forall b.
+   SectionDescr
+   { sectionName :: String
+   , sectionFields :: [FieldDescr b]
+@@ -137,7 +138,8 @@ data SectionDescr a = forall b.
+   }
+ 
+ -- | 'FieldGrammar' section description
+-data FGSectionDescr g a = forall s.
++data FGSectionDescr g a
++  = forall s.
+   FGSectionDescr
+   { fgSectionName :: String
+   , fgSectionGrammar :: g s s
+@@ -211,8 +213,8 @@ ppField name mdef cur
          ( \def ->
              Disp.text "--"
                <+> Disp.text name
@@ -394,6 +569,58 @@ index a67a66a..c37359f 100644
            -- TODO: Maybe exclude Backpack too
  
            elab0 = elaborateSolverToCommon spkg
+diff --git a/cabal-install/src/Distribution/Client/Store.hs b/cabal-install/src/Distribution/Client/Store.hs
+index d678e13..a8809ab 100644
+--- a/cabal-install/src/Distribution/Client/Store.hs
++++ b/cabal-install/src/Distribution/Client/Store.hs
+@@ -202,28 +202,28 @@ newStoreEntry
+         if exists
+           then -- If the entry exists then we lost the race and we must abandon,
+           -- unlock and re-use the existing store entry.
+-          do
+-            info verbosity $
+-              "Concurrent build race: abandoning build in favour of existing "
+-                ++ "store entry "
+-                ++ prettyShow compid
+-                </> prettyShow unitid
+-            return UseExistingStoreEntry
++            do
++              info verbosity $
++                "Concurrent build race: abandoning build in favour of existing "
++                  ++ "store entry "
++                  ++ prettyShow compid
++                  </> prettyShow unitid
++              return UseExistingStoreEntry
+           else -- If the entry does not exist then we won the race and can proceed.
+-          do
+-            -- Register the package into the package db (if appropriate).
+-            register
++            do
++              -- Register the package into the package db (if appropriate).
++              register
+ 
+-            -- Atomically rename the temp dir to the final store entry location.
+-            renameDirectory incomingEntryDir finalEntryDir
+-            for_ otherFiles $ \file -> do
+-              let finalStoreFile = storeDirectory compid </> makeRelative (incomingTmpDir </> (dropDrive (storeDirectory compid))) file
+-              createDirectoryIfMissing True (takeDirectory finalStoreFile)
+-              renameFile file finalStoreFile
++              -- Atomically rename the temp dir to the final store entry location.
++              renameDirectory incomingEntryDir finalEntryDir
++              for_ otherFiles $ \file -> do
++                let finalStoreFile = storeDirectory compid </> makeRelative (incomingTmpDir </> (dropDrive (storeDirectory compid))) file
++                createDirectoryIfMissing True (takeDirectory finalStoreFile)
++                renameFile file finalStoreFile
+ 
+-            debug verbosity $
+-              "Installed store entry " ++ prettyShow compid </> prettyShow unitid
+-            return UseNewStoreEntry
++              debug verbosity $
++                "Installed store entry " ++ prettyShow compid </> prettyShow unitid
++              return UseNewStoreEntry
+     where
+       finalEntryDir = storePackageDirectory compid unitid
+ 
 diff --git a/cabal-install/src/Distribution/Client/Utils.hs b/cabal-install/src/Distribution/Client/Utils.hs
 index f7a51bf..3dac605 100644
 --- a/cabal-install/src/Distribution/Client/Utils.hs

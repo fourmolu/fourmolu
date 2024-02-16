@@ -61,7 +61,7 @@ tests =
         testInputFileName = "test-0-input.hs",
         testArgs = [],
         testUseConfig = False,
-        testExpectedFileName = "test-0-no-extra-info-expected.hs"
+        testExpectedFileName = "test-0-ugly-expected.hs"
       },
     Test
       { testLabel = "File #0 works with manual fixity info",
@@ -76,6 +76,13 @@ tests =
         testArgs = ["--package", "base"],
         testUseConfig = True,
         testExpectedFileName = "test-0-with-fixity-info-expected.hs"
+      },
+    Test
+      { testLabel = "File #0 works when CLI overrides .ormolu",
+        testInputFileName = "test-0-input.hs",
+        testArgs = ["--package", "base", "--fixity", "infixr 5 .=", "--no-cabal"],
+        testUseConfig = True,
+        testExpectedFileName = "test-0-ugly-expected.hs"
       },
     Test
       { testLabel = "File #1 works with no extra info",

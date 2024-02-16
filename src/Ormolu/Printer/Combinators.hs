@@ -27,6 +27,7 @@ module Ormolu.Printer.Combinators
     inciByFrac,
     askSourceType,
     askModuleFixityMap,
+    askDebug,
     located,
     encloseLocated,
     located',
