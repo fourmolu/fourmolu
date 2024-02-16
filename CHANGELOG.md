@@ -1,3 +1,27 @@
+## Fourmolu 0.15.0.0
+
+* Add `single-deriving-parens` configuration option to determine if `deriving` clauses of a single type should be parenthesized ([#386](https://github.com/fourmolu/fourmolu/pull/386))
+
+* Fix the order in which the configurations are applied ([#390](https://github.com/fourmolu/fourmolu/issues/390))
+
+### Upstream changes:
+
+#### Ormolu 0.7.4.0
+
+* Don't error when the `JavaScriptFFI` language pragma is present. [Issue
+  1087](https://github.com/tweag/ormolu/issues/1087).
+* Improve comment placement in if-then-else blocks. [Issue
+  998](https://github.com/tweag/ormolu/issues/998).
+* Now command line options for fixity overrides and module re-exports
+  overwrite information from `.ormolu` files. [Issue
+  1030](https://github.com/tweag/ormolu/issues/1030).
+* Respect newlines in data declarations in more cases. [Issue
+  1077](https://github.com/tweag/ormolu/issues/1077) and [issue
+  947](https://github.com/tweag/ormolu/issues/947).
+* The `-d / --debug` command line option now makes Ormolu print out debug
+  information regarding operator fixity inference. [Issue
+  1060](https://github.com/tweag/ormolu/issues/1060).
+
 ## Fourmolu 0.14.1.0
 
 * Fix `single-constraint-parens: never` for nested quantified constraints ([#374](https://github.com/fourmolu/fourmolu/issues/374))
