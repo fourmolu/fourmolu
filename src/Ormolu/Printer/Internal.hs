@@ -19,6 +19,7 @@ module Ormolu.Printer.Internal
     declNewline,
     askSourceType,
     askModuleFixityMap,
+    askDebug,
     inci,
     inciBy,
     inciByFrac,
@@ -107,7 +108,9 @@ data RC = RC
     -- | Whether the source is a signature or a regular module
     rcSourceType :: SourceType,
     -- | Module fixity map
-    rcModuleFixityMap :: ModuleFixityMap
+    rcModuleFixityMap :: ModuleFixityMap,
+    -- | Whether to print out debug information during printing
+    rcDebug :: !Bool
   }
 
 -- | State context of 'R'.
@@ -179,8 +182,9 @@ runR ::
   -- | Module fixity map
   ModuleFixityMap ->
   -- | Resulting rendition
+  Bool ->
   Text
-runR (R m) sstream cstream printerOpts sourceType extensions moduleFixityMap =
+runR (R m) sstream cstream printerOpts sourceType extensions moduleFixityMap debug =
   TL.toStrict . toLazyText . scBuilder $ execState (runReaderT m rc) sc
   where
     rc =
@@ -192,7 +196,8 @@ runR (R m) sstream cstream printerOpts sourceType extensions moduleFixityMap =
           rcPrinterOpts = printerOpts,
           rcExtensions = extensions,
           rcSourceType = sourceType,
-          rcModuleFixityMap = moduleFixityMap
+          rcModuleFixityMap = moduleFixityMap,
+          rcDebug = debug
         }
     sc =
       SC
@@ -400,6 +405,11 @@ askSourceType = R (asks rcSourceType)
 -- | Retrieve the module fixity map.
 askModuleFixityMap :: R ModuleFixityMap
 askModuleFixityMap = R (asks rcModuleFixityMap)
+
+-- | Retrieve whether we should print out certain debug information while
+-- printing.
+askDebug :: R Bool
+askDebug = R (asks rcDebug)
 
 -- | Like 'inci', but indents by exactly the given number of steps.
 inciBy :: Int -> R () -> R ()

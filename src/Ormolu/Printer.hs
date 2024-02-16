@@ -19,12 +19,14 @@ import Ormolu.Processing.Common
 
 -- | Render several source snippets.
 printSnippets ::
+  -- | Whether to print out debug information during printing
+  Bool ->
   -- | Result of parsing
   [SourceSnippet] ->
   PrinterOptsTotal ->
   -- | Resulting rendition
   Text
-printSnippets snippets printerOpts = T.concat . fmap printSnippet $ snippets
+printSnippets debug snippets printerOpts = T.concat . fmap printSnippet $ snippets
   where
     printSnippet = \case
       ParsedSnippet ParseResult {..} ->
@@ -41,4 +43,5 @@ printSnippets snippets printerOpts = T.concat . fmap printSnippet $ snippets
             prSourceType
             prExtensions
             prModuleFixityMap
+            debug
       RawSnippet r -> r
