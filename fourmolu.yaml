@@ -14,8 +14,8 @@ haddock-style-module: null
 let-style: inline
 in-style: right-align
 single-constraint-parens: always
+single-deriving-parens: always
 unicode: never
 respectful: false
 fixities: []
 reexports: []
-single-deriving-parens: always
