@@ -43,12 +43,13 @@ main = do
   opts@Opts {..} <- execParser optsParserInfo
 
   cwd <- getCurrentDirectory
-  cfg <- case optConfigFilePath of 
-    Just configFilePath -> mkConfig configFilePath opts
+  cfgLoadRes <- case optConfigFilePath of
+    Just configFilePath -> loadConfigFile configFilePath
     Nothing -> case optInputFiles of
-      [] -> mkConfig cwd opts
-      ["-"] -> mkConfig cwd opts
-      file : _ -> mkConfig file opts
+      [] -> findConfigFile cwd
+      ["-"] -> findConfigFile cwd
+      file : _ -> findConfigFile file
+  cfg <- mkConfig opts cfgLoadRes
 
   let formatOne' =
         formatOne
@@ -79,10 +80,10 @@ main = do
   exitWith exitCode
 
 -- | Build the full config, by adding 'PrinterOpts' from a file, if found.
-mkConfig :: FilePath -> Opts -> IO (Config RegionIndices)
-mkConfig path Opts {optQuiet, optConfig = cliConfig, optPrinterOpts = cliPrinterOpts} = do
+mkConfig :: Opts -> ConfigFileLoadResult -> IO (Config RegionIndices)
+mkConfig Opts {optQuiet, optConfig = cliConfig, optPrinterOpts = cliPrinterOpts} result = do
   fourmoluConfig <-
-    loadConfigFile path >>= \case
+    case result of
       ConfigLoaded f cfg -> do
         outputInfo $ "Loaded config from: " <> f
         outputDebug $ unwords ["*** CONFIG FILE ***", show cfg]

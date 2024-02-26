@@ -47,6 +47,7 @@ module Ormolu.Config
     parsePrinterOptType,
 
     -- ** Loading Fourmolu configuration
+    findConfigFile,
     loadConfigFile,
     configFileName,
     FourmoluConfig (..),
@@ -267,19 +268,22 @@ emptyConfig =
       cfgFileReexports = ModuleReexports mempty
     }
 
--- | Read options from a config file, if found.
--- Looks recursively in parent folders, then in 'XdgConfig',
--- for a file named /fourmolu.yaml/.
-loadConfigFile :: FilePath -> IO ConfigFileLoadResult
-loadConfigFile path = do
+findConfigFile :: FilePath -> IO ConfigFileLoadResult
+findConfigFile path = do
   root <- makeAbsolute path
   xdg <- getXdgDirectory XdgConfig ""
   let dirs = reverse $ xdg : scanl1 (</>) (splitPath root)
   findFile dirs configFileName >>= \case
     Nothing -> return $ ConfigNotFound dirs
-    Just file ->
-      either (ConfigParseError file) (ConfigLoaded file)
-        <$> Yaml.decodeFileEither file
+    Just file -> loadConfigFile file
+
+-- | Read options from a config file, if found.
+-- Looks recursively in parent folders, then in 'XdgConfig',
+-- for a file named /fourmolu.yaml/.
+loadConfigFile :: FilePath -> IO ConfigFileLoadResult
+loadConfigFile file =
+  either (ConfigParseError file) (ConfigLoaded file)
+    <$> Yaml.decodeFileEither file
 
 -- | The result of calling 'loadConfigFile'.
 data ConfigFileLoadResult
