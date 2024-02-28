@@ -7,7 +7,6 @@
 
 module Ormolu.Printer.Meat.Declaration.Value
   ( p_valDecl,
-    p_pat,
     p_hsExpr,
     p_hsUntypedSplice,
     p_stringLit,
