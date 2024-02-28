@@ -2,15 +2,15 @@
 
 multilineFunction
     ( a
-        , b
-        , c
-        ) = a + b + c
+    , b
+    , c
+    ) = a + b + c
 
 multilineLambda =
     \( a
-        , b
-        , c
-        ) -> a + b + c
+     , b
+     , c
+     ) -> a + b + c
 
 multilineCase = \case
     ( a
@@ -42,6 +42,6 @@ multilineQuasi =
 
 pattern MultilineSynonym =
     ( 1
-        , 2
-        , 3
-        )
+    , 2
+    , 3
+    )

@@ -4,13 +4,13 @@ multilineFunction
   ( a,
     b,
     c
-    ) = a + b + c
+  ) = a + b + c
 
 multilineLambda =
   \( a,
      b,
      c
-    ) -> a + b + c
+   ) -> a + b + c
 
 multilineCase = \case
   ( a,
@@ -44,4 +44,4 @@ pattern MultilineSynonym =
   ( 1,
     2,
     3
-    )
+  )
