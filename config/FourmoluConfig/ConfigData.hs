@@ -228,6 +228,26 @@ allOptions =
         ormolu = HsList [],
         sinceVersion = Just "0.13.0.0",
         cliOverrides = emptyOverrides
+      },
+    Option
+      { name = "import-grouping-strategy",
+        fieldName = Just "poImportGroupingStrategy",
+        description = "Strategy for grouping imports",
+        type_ = "ImportGroupingStrategy",
+        default_ = HsExpr "NoImportGroupingStrategy",
+        ormolu = HsExpr "NoImportGroupingStrategy",
+        sinceVersion = Nothing,
+        cliOverrides = emptyOverrides
+      },
+    Option
+      { name = "defined-modules",
+        fieldName = Nothing,
+        description = "Modules defined by the current package for import grouping",
+        type_ = "[String]",
+        default_ = HsList [],
+        ormolu = HsList [],
+        sinceVersion = Nothing,
+        cliOverrides = emptyOverrides
       }
   ]
 
@@ -429,6 +449,16 @@ allFieldTypes =
           [ ("DerivingAuto", "auto"),
             ("DerivingAlways", "always"),
             ("DerivingNever", "never")
+          ]
+      },
+    FieldTypeEnum
+      { fieldTypeName = "ImportGroupingStrategy",
+        enumOptions =
+          [ ("NoImportGroupingStrategy", "none"),
+            ("ByQualified", "by-qualified"),
+            ("ByScope", "by-scope"),
+            ("ByScopeThenQualified", "by-scope-then-qualified"),
+            ("ByQualifiedThenScope", "by-qualified-then-scope")
           ]
       }
   ]

@@ -19,3 +19,5 @@ unicode: never
 respectful: false
 fixities: []
 reexports: []
+import-grouping-strategy: none
+defined-modules: []
