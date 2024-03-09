@@ -7,17 +7,25 @@
 
 -- | Manipulations on import lists.
 module Ormolu.Imports
-  ( normalizeImports,
+  ( GroupingOperation (..),
+    GroupingStrategy (..),
+    normalizeImports,
   )
 where
 
+import Control.Monad ((<=<))
 import Data.Bifunctor
 import Data.Char (isAlphaNum)
 import Data.Foldable (toList)
 import Data.Function (on)
-import Data.List (nubBy, sortBy, sortOn)
+import Data.List (nubBy, partition, sortBy, sortOn)
+import Data.List.NonEmpty (NonEmpty, nonEmpty)
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as M
+import Data.Maybe (mapMaybe)
+import Data.Set (Set)
+import Data.Set qualified as S
+import Distribution.ModuleName qualified as Cabal
 import GHC.Data.FastString
 import GHC.Hs
 import GHC.Hs.ImpExp as GHC
@@ -25,28 +33,66 @@ import GHC.Types.Name.Reader
 import GHC.Types.PkgQual
 import GHC.Types.SourceText
 import GHC.Types.SrcLoc
-import Ormolu.Utils (groupBy', notImplemented, separatedByBlank, showOutputable)
+import Ormolu.Utils (ghcModuleNameToCabal, groupBy', notImplemented, separatedByBlank, showOutputable)
 #if !MIN_VERSION_base(4,20,0)
 import Data.List (foldl')
 #endif
+
+data GroupingOperation
+  = UnqualifiedThenQualified
+  | GeneralThenSpecific !(Set Cabal.ModuleName)
+
+data GroupingStrategy
+  = -- | Does nothing beside normalization
+    NoGroupingStrategy
+  | -- | Group all normalized imports by applying the provided grouping operation
+    ApplyGroupingOperations !(NonEmpty GroupingOperation)
 
 -- | Sort, group and normalize imports.
 --
 -- Assumes input list is sorted by source location. Output list is not necessarily
 -- sorted by source location, so this function should be called at most once on a
 -- given input list.
-normalizeImports :: Bool -> [LImportDecl GhcPs] -> [[LImportDecl GhcPs]]
-normalizeImports preserveGroups =
-  map
-    ( fmap snd
-        . M.toAscList
-        . M.fromListWith combineImports
-        . fmap (\x -> (importId x, g x))
-    )
-    . if preserveGroups
-      then map toList . groupBy' (\x y -> not $ separatedByBlank getLocA x y)
-      else pure
+normalizeImports :: Bool -> GroupingStrategy -> [LImportDecl GhcPs] -> [[LImportDecl GhcPs]]
+normalizeImports preserveGroups groupingStrategy =
+  map (fmap snd)
+    . concatMap
+      ( fmap toList
+          . regroup groupingStrategy
+          . M.toAscList
+          . M.fromListWith combineImports
+          . fmap (\x -> (importId x, g x))
+      )
+    . ( if preserveGroups
+          then map toList . groupBy' (\x y -> not $ separatedByBlank getLocA x y)
+          else pure
+      )
   where
+    regroup :: GroupingStrategy -> [(ImportId, LImportDecl GhcPs)] -> [NonEmpty (ImportId, LImportDecl GhcPs)]
+    regroup = \case
+      NoGroupingStrategy -> maybe [] pure . nonEmpty
+      ApplyGroupingOperations ops -> applyGroupingOperations (toList ops)
+
+    applyGroupingOperations :: [GroupingOperation] -> [(ImportId, LImportDecl GhcPs)] -> [NonEmpty (ImportId, LImportDecl GhcPs)]
+    applyGroupingOperations = \case
+      [] -> maybe [] pure . nonEmpty
+      h : t -> applyGroupingOperations t . toList <=< applyGroupingOperation h
+
+    applyGroupingOperation :: GroupingOperation -> [(ImportId, LImportDecl GhcPs)] -> [NonEmpty (ImportId, LImportDecl GhcPs)]
+    applyGroupingOperation = \case
+      UnqualifiedThenQualified -> qualifiedGroups
+      GeneralThenSpecific mods -> scopeGroups mods
+
+    qualifiedGroups :: [(ImportId, LImportDecl GhcPs)] -> [NonEmpty (ImportId, LImportDecl GhcPs)]
+    qualifiedGroups imports =
+      let (unqualified, qualified) = partition (importQualified . fst) imports
+       in mapMaybe nonEmpty [qualified, unqualified]
+
+    scopeGroups :: Set Cabal.ModuleName -> [(ImportId, LImportDecl GhcPs)] -> [NonEmpty (ImportId, LImportDecl GhcPs)]
+    scopeGroups mods imports =
+      let (inScope, outOfScope) = partition ((`S.member` mods) . ghcModuleNameToCabal . importIdName . fst) imports
+       in mapMaybe nonEmpty [outOfScope, inScope]
+
     g :: LImportDecl GhcPs -> LImportDecl GhcPs
     g (L l ImportDecl {..}) =
       L

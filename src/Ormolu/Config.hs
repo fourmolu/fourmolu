@@ -65,6 +65,7 @@ import Data.Map.Strict qualified as Map
 import Data.Set (Set)
 import Data.Set qualified as Set
 import Data.String (fromString)
+import Distribution.ModuleName (ModuleName)
 import Distribution.Types.PackageName (PackageName)
 import GHC.Generics (Generic)
 import GHC.Types.SrcLoc qualified as GHC
@@ -113,7 +114,8 @@ data Config region = Config
     cfgColorMode :: !ColorMode,
     -- | Region selection
     cfgRegion :: !region,
-    cfgPrinterOpts :: !PrinterOptsTotal
+    cfgPrinterOpts :: !PrinterOptsTotal,
+    cfgDefinedModules :: !(Set ModuleName)
   }
   deriving (Eq, Show, Functor, Generic)
 
@@ -154,7 +156,8 @@ defaultConfig =
           { regionStartLine = Nothing,
             regionEndLine = Nothing
           },
-      cfgPrinterOpts = defaultPrinterOpts
+      cfgPrinterOpts = defaultPrinterOpts,
+      cfgDefinedModules = Set.empty
     }
 
 -- | Return all dependencies of the module. This includes both the declared

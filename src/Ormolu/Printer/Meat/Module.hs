@@ -12,11 +12,13 @@ where
 
 import Control.Monad
 import Data.Choice (pattern With)
+import Data.List.NonEmpty qualified as NEL
 import GHC.Hs hiding (comment)
 import GHC.Types.SrcLoc
 import GHC.Utils.Outputable (ppr, showSDocUnsafe)
 import Ormolu.Config
-import Ormolu.Imports (normalizeImports)
+import Ormolu.Config.Gen (ImportGroupingStrategy (..))
+import Ormolu.Imports (GroupingOperation (GeneralThenSpecific, UnqualifiedThenQualified), GroupingStrategy (..), normalizeImports)
 import Ormolu.Parser.CommentStream
 import Ormolu.Parser.Pragma
 import Ormolu.Printer.Combinators
@@ -51,7 +53,8 @@ p_hsModule mstackHeader pragmas hsmod@HsModule {..} = do
     mapM_ (p_hsModuleHeader hsmod) hsmodName
     newline
     preserveGroups <- getPrinterOpt poRespectful
-    forM_ (normalizeImports preserveGroups hsmodImports) $ \importGroup -> do
+    groupingStrategy <- getImportGroupingStrategy
+    forM_ (normalizeImports preserveGroups groupingStrategy hsmodImports) $ \importGroup -> do
       forM_ importGroup (located' p_hsmodImport)
       newline
     declNewline
@@ -60,6 +63,24 @@ p_hsModule mstackHeader pragmas hsmod@HsModule {..} = do
       (if preserveSpacing then p_hsDeclsRespectGrouping else p_hsDecls) Free hsmodDecls
       newline
       spitRemainingComments
+  where
+    getImportGroupingStrategy :: R GroupingStrategy
+    getImportGroupingStrategy = do
+      importGroupingStrategy <- getPrinterOpt poImportGroupingStrategy
+      case importGroupingStrategy of
+        NoImportGroupingStrategy -> do
+          pure NoGroupingStrategy
+        ByQualified ->
+          pure $ ApplyGroupingOperations (pure UnqualifiedThenQualified)
+        ByScope -> do
+          mods <- getDefinedModules
+          pure $ ApplyGroupingOperations (pure (GeneralThenSpecific mods))
+        ByScopeThenQualified -> do
+          mods <- getDefinedModules
+          pure $ ApplyGroupingOperations (NEL.fromList [GeneralThenSpecific mods, UnqualifiedThenQualified])
+        ByQualifiedThenScope -> do
+          mods <- getDefinedModules
+          pure $ ApplyGroupingOperations (NEL.fromList [UnqualifiedThenQualified, GeneralThenSpecific mods])
 
 p_hsModuleHeader :: HsModule GhcPs -> LocatedA ModuleName -> R ()
 p_hsModuleHeader HsModule {hsmodExt = XModulePs {..}, ..} moduleName = do

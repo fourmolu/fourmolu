@@ -19,6 +19,7 @@ module Ormolu.Config.Gen
   , SingleConstraintParens (..)
   , ColumnLimit (..)
   , SingleDerivingParens (..)
+  , ImportGroupingStrategy (..)
   , emptyPrinterOpts
   , defaultPrinterOpts
   , defaultPrinterOptsYaml
@@ -72,6 +73,8 @@ data PrinterOpts f =
       poUnicode :: f Unicode
     , -- | Give the programmer more choice on where to insert blank lines
       poRespectful :: f Bool
+    , -- | Strategy for grouping imports
+      poImportGroupingStrategy :: f ImportGroupingStrategy
     }
   deriving (Generic)
 
@@ -94,6 +97,7 @@ emptyPrinterOpts =
     , poSingleDerivingParens = Nothing
     , poUnicode = Nothing
     , poRespectful = Nothing
+    , poImportGroupingStrategy = Nothing
     }
 
 defaultPrinterOpts :: PrinterOpts Identity
@@ -115,6 +119,7 @@ defaultPrinterOpts =
     , poSingleDerivingParens = pure DerivingAlways
     , poUnicode = pure UnicodeNever
     , poRespectful = pure True
+    , poImportGroupingStrategy = pure NoImportGroupingStrategy
     }
 
 -- | Fill the field values that are 'Nothing' in the first argument
@@ -143,6 +148,7 @@ fillMissingPrinterOpts p1 p2 =
     , poSingleDerivingParens = maybe (poSingleDerivingParens p2) pure (poSingleDerivingParens p1)
     , poUnicode = maybe (poUnicode p2) pure (poUnicode p1)
     , poRespectful = maybe (poRespectful p2) pure (poRespectful p1)
+    , poImportGroupingStrategy = maybe (poImportGroupingStrategy p2) pure (poImportGroupingStrategy p1)
     }
 
 parsePrinterOptsCLI ::
@@ -215,6 +221,10 @@ parsePrinterOptsCLI f =
       "respectful"
       "Give the programmer more choice on where to insert blank lines (default: true)"
       "BOOL"
+    <*> f
+      "import-grouping-strategy"
+      "Strategy for grouping imports (choices: \"none\", \"by-qualified\", \"by-scope\", \"by-scope-then-qualified\", or \"by-qualified-then-scope\") (default: none)"
+      "OPTION"
 
 parsePrinterOptsJSON ::
   Applicative f =>
@@ -238,6 +248,7 @@ parsePrinterOptsJSON f =
     <*> f "single-deriving-parens"
     <*> f "unicode"
     <*> f "respectful"
+    <*> f "import-grouping-strategy"
 
 {---------- PrinterOpts field types ----------}
 
@@ -320,6 +331,14 @@ data SingleDerivingParens
   = DerivingAuto
   | DerivingAlways
   | DerivingNever
+  deriving (Eq, Show, Enum, Bounded)
+
+data ImportGroupingStrategy
+  = NoImportGroupingStrategy
+  | ByQualified
+  | ByScope
+  | ByScopeThenQualified
+  | ByQualifiedThenScope
   deriving (Eq, Show, Enum, Bounded)
 
 instance Aeson.FromJSON CommaStyle where
@@ -525,6 +544,26 @@ instance PrinterOptsFieldType SingleDerivingParens where
           , "Valid values are: \"auto\", \"always\", or \"never\""
           ]
 
+instance Aeson.FromJSON ImportGroupingStrategy where
+  parseJSON =
+    Aeson.withText "ImportGroupingStrategy" $ \s ->
+      either Aeson.parseFail pure $
+        parsePrinterOptType (Text.unpack s)
+
+instance PrinterOptsFieldType ImportGroupingStrategy where
+  parsePrinterOptType s =
+    case s of
+      "none" -> Right NoImportGroupingStrategy
+      "by-qualified" -> Right ByQualified
+      "by-scope" -> Right ByScope
+      "by-scope-then-qualified" -> Right ByScopeThenQualified
+      "by-qualified-then-scope" -> Right ByQualifiedThenScope
+      _ ->
+        Left . unlines $
+          [ "unknown value: " <> show s
+          , "Valid values are: \"none\", \"by-qualified\", \"by-scope\", \"by-scope-then-qualified\", or \"by-qualified-then-scope\""
+          ]
+
 defaultPrinterOptsYaml :: String
 defaultPrinterOptsYaml =
   unlines
@@ -581,4 +620,10 @@ defaultPrinterOptsYaml =
     , ""
     , "# Module reexports Fourmolu should know about"
     , "reexports: []"
+    , ""
+    , "# Strategy for grouping imports (choices: none, by-qualified, by-scope, by-scope-then-qualified, or by-qualified-then-scope)"
+    , "import-grouping-strategy: none"
+    , ""
+    , "# Modules defined by the current package for import grouping"
+    , "defined-modules: []"
     ]

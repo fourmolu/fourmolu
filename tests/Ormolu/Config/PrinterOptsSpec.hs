@@ -15,9 +15,10 @@ import Control.Monad (forM_, when)
 import Data.Algorithm.DiffContext (getContextDiff, prettyContextDiff)
 import Data.Char (isSpace)
 import Data.Maybe (isJust)
+import Data.Set qualified as S
 import Data.Text (Text)
 import Data.Text qualified as T
-import Data.Text.IO.Utf8 qualified as T.Utf8
+import Distribution.ModuleName qualified as ModuleName
 import GHC.Stack (withFrozenCallStack)
 import Ormolu
   ( Config (..),
@@ -50,8 +51,7 @@ import Test.Hspec
 import Text.PrettyPrint qualified as Doc
 import Text.Printf (printf)
 
-data TestGroup
-  = forall a.
+data TestGroup = forall a.
   TestGroup
   { label :: String,
     -- | When True, takes input from 'input-multi.hs' instead of 'input.hs', where sections
@@ -241,6 +241,21 @@ spec =
           testCaseSuffix = \(respectful, importExportStyle) ->
             suffixWith ["respectful=" ++ show respectful, show importExportStyle],
           checkIdempotence = True
+        },
+      TestGroup
+        { label = "import-grouping-strategy",
+          isMulti = False,
+          testCases = (,) <$> allOptions <*> allOptions,
+          updateConfig = \(respectful, igs) opts ->
+            opts
+              { poRespectful = pure respectful,
+                poImportGroupingStrategy = pure igs
+              },
+          showTestCase = \(respectful, igs) ->
+            (if respectful then "respectful" else "not respectful") ++ " + " ++ show igs,
+          testCaseSuffix = \(respectful, igs) ->
+            suffixWith ["respectful=" ++ show respectful, show igs],
+          checkIdempotence = True
         }
     ]
 
@@ -281,7 +296,14 @@ runOrmolu opts checkIdempotence inputPath input =
       defaultConfig
         { cfgPrinterOpts = opts,
           cfgSourceType = detectSourceType inputPath,
-          cfgCheckIdempotence = checkIdempotence
+          cfgCheckIdempotence = checkIdempotence,
+          cfgDefinedModules =
+            S.fromList $
+              ModuleName.fromString
+                <$> [ "SomeInternal.Module1",
+                      "SomeInternal.Module1.SubModuleA",
+                      "SomeInternal.Module2"
+                    ]
         }
 
 checkResult :: Path Rel File -> Text -> Expectation

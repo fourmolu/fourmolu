@@ -31,6 +31,7 @@ module Ormolu.Printer.Internal
     vlayout,
     getLayout,
     getPrinterOpt,
+    getDefinedModules,
 
     -- * Helpers for braces
     useBraces,
@@ -72,10 +73,12 @@ import Data.Functor ((<&>))
 import Data.Functor.Identity (runIdentity)
 import Data.List (find)
 import Data.Maybe (listToMaybe)
+import Data.Set (Set)
 import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Text.Lazy qualified as TL
 import Data.Text.Lazy.Builder
+import Distribution.ModuleName (ModuleName)
 import GHC.Data.EnumSet (EnumSet)
 import GHC.Data.EnumSet qualified as EnumSet
 import GHC.LanguageExtensions.Type
@@ -108,6 +111,7 @@ data RC = RC
     -- | Whether the last expression in the layout can use braces
     rcCanUseBraces :: Bool,
     rcPrinterOpts :: PrinterOptsTotal,
+    rcDefinedModules :: Set ModuleName,
     -- | Enabled extensions
     rcExtensions :: EnumSet Extension,
     -- | Whether the source is a signature or a regular module
@@ -180,6 +184,7 @@ runR ::
   -- | Comment stream
   CommentStream ->
   PrinterOptsTotal ->
+  Set ModuleName ->
   -- | Whether the source is a signature or a regular module
   SourceType ->
   -- | Enabled extensions
@@ -189,7 +194,7 @@ runR ::
   -- | Resulting rendition
   Bool ->
   Text
-runR (R m) sstream cstream printerOpts sourceType extensions moduleFixityMap debug =
+runR (R m) sstream cstream printerOpts definedModules sourceType extensions moduleFixityMap debug =
   TL.toStrict . toLazyText . scBuilder $ execState (runReaderT m rc) sc
   where
     rc =
@@ -199,6 +204,7 @@ runR (R m) sstream cstream printerOpts sourceType extensions moduleFixityMap deb
           rcEnclosingSpans = [],
           rcCanUseBraces = False,
           rcPrinterOpts = printerOpts,
+          rcDefinedModules = definedModules,
           rcExtensions = extensions,
           rcSourceType = sourceType,
           rcModuleFixityMap = moduleFixityMap,
@@ -492,6 +498,9 @@ getLayout = R (asks rcLayout)
 -- | Get a particular 'PrinterOpts' field from the environment.
 getPrinterOpt :: (forall f. PrinterOpts f -> f a) -> R a
 getPrinterOpt f = R $ asks $ runIdentity . f . rcPrinterOpts
+
+getDefinedModules :: R (Set ModuleName)
+getDefinedModules = R $ asks rcDefinedModules
 
 ----------------------------------------------------------------------------
 -- Special helpers for comment placement

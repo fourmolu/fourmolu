@@ -474,6 +474,12 @@ configParser =
               ]
         )
     <*> pure defaultPrinterOpts -- unused; overwritten in resolveConfig
+    <*> (fmap Set.fromList . many . strOption . mconcat)
+      [ long "defined-modules",
+        short 'm',
+        metavar "DEFINED_MODULES",
+        help "Modules Fourmolu should consider as defined by the current package"
+      ]
 
 sourceTypeParser :: Parser (Maybe SourceType)
 sourceTypeParser =
