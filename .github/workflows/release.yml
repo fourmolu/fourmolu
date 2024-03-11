@@ -51,7 +51,7 @@ jobs:
           hackageToken: ${{ secrets[steps.hackage_token_secret.outputs.name] }}
           packagesPath: ./sdist
       -
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.VERSION }}
           body_path: /tmp/changelog-body
