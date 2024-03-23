@@ -22,7 +22,6 @@ import Data.List (nubBy, partition, sortBy, sortOn)
 import Data.List.NonEmpty (NonEmpty, nonEmpty)
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as M
-import Data.Maybe (mapMaybe)
 import Data.Set (Set)
 import Data.Set qualified as S
 import Distribution.ModuleName qualified as Cabal
@@ -78,20 +77,20 @@ normalizeImports preserveGroups groupingStrategy =
       [] -> maybe [] pure . nonEmpty
       h : t -> applyGroupingOperations t . toList <=< applyGroupingOperation h
 
-    applyGroupingOperation :: GroupingOperation -> [(ImportId, LImportDecl GhcPs)] -> [NonEmpty (ImportId, LImportDecl GhcPs)]
+    applyGroupingOperation :: GroupingOperation -> [(ImportId, LImportDecl GhcPs)] -> [[(ImportId, LImportDecl GhcPs)]]
     applyGroupingOperation = \case
       UnqualifiedThenQualified -> qualifiedGroups
       GeneralThenSpecific mods -> scopeGroups mods
 
-    qualifiedGroups :: [(ImportId, LImportDecl GhcPs)] -> [NonEmpty (ImportId, LImportDecl GhcPs)]
+    qualifiedGroups :: [(ImportId, LImportDecl GhcPs)] -> [[(ImportId, LImportDecl GhcPs)]]
     qualifiedGroups imports =
       let (unqualified, qualified) = partition (importQualified . fst) imports
-       in mapMaybe nonEmpty [qualified, unqualified]
+       in filter (not . null) [qualified, unqualified]
 
-    scopeGroups :: Set Cabal.ModuleName -> [(ImportId, LImportDecl GhcPs)] -> [NonEmpty (ImportId, LImportDecl GhcPs)]
+    scopeGroups :: Set Cabal.ModuleName -> [(ImportId, LImportDecl GhcPs)] -> [[(ImportId, LImportDecl GhcPs)]]
     scopeGroups mods imports =
       let (inScope, outOfScope) = partition ((`S.member` mods) . ghcModuleNameToCabal . importIdName . fst) imports
-       in mapMaybe nonEmpty [outOfScope, inScope]
+       in filter (not . null) [outOfScope, inScope]
 
     g :: LImportDecl GhcPs -> LImportDecl GhcPs
     g (L l ImportDecl {..}) =
