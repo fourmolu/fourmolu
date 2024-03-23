@@ -18,6 +18,7 @@ import Data.Maybe (isJust)
 import Data.Set qualified as S
 import Data.Text (Text)
 import Data.Text qualified as T
+import Data.Text.IO.Utf8 qualified as T.Utf8
 import Distribution.ModuleName qualified as ModuleName
 import GHC.Stack (withFrozenCallStack)
 import Ormolu

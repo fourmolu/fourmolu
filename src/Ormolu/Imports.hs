@@ -8,18 +8,18 @@
 -- | Manipulations on import lists.
 module Ormolu.Imports
   ( GroupingOperation (..),
+    noGroupingOperations,
     GroupingStrategy (..),
     normalizeImports,
   )
 where
 
-import Control.Monad ((<=<))
+import Control.Monad ((>=>))
 import Data.Bifunctor
 import Data.Char (isAlphaNum)
 import Data.Foldable (toList)
 import Data.Function (on)
 import Data.List (nubBy, partition, sortBy, sortOn)
-import Data.List.NonEmpty (NonEmpty, nonEmpty)
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as M
 import Data.Set (Set)
@@ -41,11 +41,11 @@ data GroupingOperation
   = UnqualifiedThenQualified
   | GeneralThenSpecific !(Set Cabal.ModuleName)
 
-data GroupingStrategy
-  = -- | Does nothing beside normalization
-    NoGroupingStrategy
-  | -- | Group all normalized imports by applying the provided grouping operation
-    ApplyGroupingOperations !(NonEmpty GroupingOperation)
+newtype GroupingStrategy
+  = ApplyGroupingOperations [GroupingOperation]
+
+noGroupingOperations :: GroupingStrategy
+noGroupingOperations = ApplyGroupingOperations mempty
 
 -- | Sort, group and normalize imports.
 --
@@ -56,8 +56,7 @@ normalizeImports :: Bool -> GroupingStrategy -> [LImportDecl GhcPs] -> [[LImport
 normalizeImports preserveGroups groupingStrategy =
   map (fmap snd)
     . concatMap
-      ( fmap toList
-          . regroup groupingStrategy
+      ( regroupImports groupingStrategy
           . M.toAscList
           . M.fromListWith combineImports
           . fmap (\x -> (importId x, g x))
@@ -67,16 +66,18 @@ normalizeImports preserveGroups groupingStrategy =
           else pure
       )
   where
-    regroup :: GroupingStrategy -> [(ImportId, LImportDecl GhcPs)] -> [NonEmpty (ImportId, LImportDecl GhcPs)]
-    regroup = \case
-      NoGroupingStrategy -> maybe [] pure . nonEmpty
-      ApplyGroupingOperations ops -> applyGroupingOperations (toList ops)
+    g :: LImportDecl GhcPs -> LImportDecl GhcPs
+    g (L l ImportDecl {..}) =
+      L
+        l
+        ImportDecl
+          { ideclImportList = second (fmap normalizeLies) <$> ideclImportList,
+            ..
+          }
 
-    applyGroupingOperations :: [GroupingOperation] -> [(ImportId, LImportDecl GhcPs)] -> [NonEmpty (ImportId, LImportDecl GhcPs)]
-    applyGroupingOperations = \case
-      [] -> maybe [] pure . nonEmpty
-      h : t -> applyGroupingOperations t . toList <=< applyGroupingOperation h
-
+regroupImports :: GroupingStrategy -> [(ImportId, LImportDecl GhcPs)] -> [[(ImportId, LImportDecl GhcPs)]]
+regroupImports (ApplyGroupingOperations ops) = foldr ((>=>) . applyGroupingOperation) pure ops
+  where
     applyGroupingOperation :: GroupingOperation -> [(ImportId, LImportDecl GhcPs)] -> [[(ImportId, LImportDecl GhcPs)]]
     applyGroupingOperation = \case
       UnqualifiedThenQualified -> qualifiedGroups
@@ -91,15 +92,6 @@ normalizeImports preserveGroups groupingStrategy =
     scopeGroups mods imports =
       let (inScope, outOfScope) = partition ((`S.member` mods) . ghcModuleNameToCabal . importIdName . fst) imports
        in filter (not . null) [outOfScope, inScope]
-
-    g :: LImportDecl GhcPs -> LImportDecl GhcPs
-    g (L l ImportDecl {..}) =
-      L
-        l
-        ImportDecl
-          { ideclImportList = second (fmap normalizeLies) <$> ideclImportList,
-            ..
-          }
 
 -- | Combine two import declarations. It should be assumed that 'ImportId's
 -- are equal.
