@@ -230,12 +230,12 @@ allOptions =
         cliOverrides = emptyOverrides
       },
     Option
-      { name = "import-grouping-strategy",
-        fieldName = Just "poImportGroupingStrategy",
+      { name = "import-grouping",
+        fieldName = Just "poImportGrouping",
         description = "Strategy for grouping imports",
-        type_ = "ImportGroupingStrategy",
-        default_ = HsExpr "NoImportGroupingStrategy",
-        ormolu = HsExpr "NoImportGroupingStrategy",
+        type_ = "ImportGroups",
+        default_ = HsExpr "CreateSingleGroup",
+        ormolu = HsExpr "CreateSingleGroup",
         sinceVersion = Nothing,
         cliOverrides = emptyOverrides
       },
@@ -451,14 +451,92 @@ allFieldTypes =
             ("DerivingNever", "never")
           ]
       },
-    FieldTypeEnum
-      { fieldTypeName = "ImportGroupingStrategy",
-        enumOptions =
-          [ ("NoImportGroupingStrategy", "none"),
-            ("ByQualified", "by-qualified"),
-            ("ByScope", "by-scope"),
-            ("ByScopeThenQualified", "by-scope-then-qualified"),
-            ("ByQualifiedThenScope", "by-qualified-then-scope")
-          ]
+    FieldTypeADT
+      { fieldTypeName = "ImportGroups",
+        adtConstructors =
+          [ "CreateSingleGroup",
+            "SplitByScope",
+            "SplitByQualified",
+            "SplitByScopeAndQualified",
+            "UseCustomImportGroups (NonEmpty CF.ImportGroup)"
+          ],
+        adtSchema =
+          ADTSchema
+            { adtOptions =
+                [ ADTOptionLiteral "single",
+                  ADTOptionLiteral "by-qualified",
+                  ADTOptionLiteral "by-scope",
+                  ADTOptionLiteral "by-scope-then-qualified"
+                ],
+              adtInputType =
+                ADTSchemaInputText
+                  [ ADTSchemaInputParserString
+                  ]
+            },
+        adtRender =
+          [ ("CreateSingleGroup", "single"),
+            ("SplitByQualified", "by-qualified"),
+            ("SplitByScope", "by-scope"),
+            ("SplitByScopeAndQualified", "by-scope-then-qualified")
+          ],
+        adtParseJSON =
+          unlines
+            [ "\\case",
+              "  Aeson.String \"single\" -> pure CreateSingleGroup",
+              "  Aeson.String \"by-qualified\" -> pure SplitByQualified",
+              "  Aeson.String \"by-scope\" -> pure SplitByScope",
+              "  Aeson.String \"by-scope-then-qualified\" -> pure SplitByScopeAndQualified",
+              "  arr@(Aeson.Array _) -> UseCustomImportGroups <$> Aeson.liftParseJSON Nothing parseGroup (Aeson.listParser parseGroup) arr",
+              "  other ->",
+              "    fail . unlines $",
+              "      [ \"unknown value: \" <> show other,",
+              "        \"Valid values are: \\\"single\\\", \\\"by-qualified\\\", \\\"by-scope\\\", \\\"by-scope-then-qualified\\\" or a valid YAML configuration for import groups\"",
+              "      ]",
+              "  where",
+              "        parseGroup :: Aeson.Value -> Aeson.Parser CF.ImportGroup",
+              "        parseGroup = Aeson.withObject \"ImportGroup\" $ \\o ->",
+              "          CF.ImportGroup",
+              "            <$> Aeson.parseField o \"name\"",
+              "            <*> Aeson.explicitParseField (Aeson.liftParseJSON Nothing parseRule (Aeson.listParser parseRule)) o \"rules\"",
+              "        parseRule :: Aeson.Value -> Aeson.Parser CF.ImportGroupRule",
+              "        parseRule = Aeson.withObject \"rule\" $ \\o ->",
+              "          CF.ImportGroupRule",
+              "            <$> parseModuleMatcher (Aeson.Object o)",
+              "            <*> Aeson.parseFieldMaybe o \"qualified\"",
+              "            <*> Aeson.explicitParseFieldMaybe parseTieBreaker o \"tie-breaker\"",
+              "        parseModuleMatcher :: Aeson.Value ->  Aeson.Parser CF.ImportModuleMatcher",
+              "        parseModuleMatcher v = asum [parseCabalModuleMatcher v, parseMatchModuleMatcher v, parseRegexModuleMatcher v]",
+              "        parseCabalModuleMatcher :: Aeson.Value -> Aeson.Parser CF.ImportModuleMatcher",
+              "        parseCabalModuleMatcher = Aeson.withObject \"ImportModuleMatcher\" $ \\o -> do",
+              "          c <- Aeson.parseField @String o \"cabal\"",
+              "          case c of",
+              "            \"defined-modules\" -> pure CF.MatchDefinedModules",
+              "            other -> fail $ \"Unknown Cabal matching: \" <> other",
+              "        parseMatchModuleMatcher :: Aeson.Value -> Aeson.Parser CF.ImportModuleMatcher",
+              "        parseMatchModuleMatcher = Aeson.withObject \"ImportModuleMatcher\" $ \\o -> do",
+              "          c <- Aeson.parseField @String o \"match\"",
+              "          case c of",
+              "            \"all\" -> pure CF.MatchAllModules",
+              "            other -> fail $ \"Unknown matcher: \" <> other",
+              "        parseRegexModuleMatcher :: Aeson.Value -> Aeson.Parser CF.ImportModuleMatcher",
+              "        parseRegexModuleMatcher = Aeson.withObject \"ImportModuleMatcher\" $ \\o -> do",
+              "          CF.RegexModuleMatcher",
+              "            <$> Aeson.parseField @String o \"regex\"",
+              "        parseTieBreaker :: Aeson.Value -> Aeson.Parser CF.ImportTieBreaker",
+              "        parseTieBreaker = fmap CF.ImportTieBreaker . Aeson.parseJSON"
+            ],
+        adtParsePrinterOptType =
+          unlines
+            [ "\\case",
+              "  \"single\" -> Right CreateSingleGroup",
+              "  \"by-qualified\" -> Right SplitByQualified",
+              "  \"by-scope\" -> Right SplitByScope",
+              "  \"by-scope-then-qualified\" -> Right SplitByScopeAndQualified",
+              "  s ->",
+              "    Left . unlines $",
+              "      [ \"unknown value: \" <> show s",
+              "      , \"Valid values are: \\\"single\\\", \\\"by-qualified\\\", \\\"by-scope\\\", \\\"by-scope-then-qualified\\\" or a valid YAML configuration for import groups (see fourmolu.yaml)\"",
+              "      ]"
+            ]
       }
   ]
