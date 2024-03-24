@@ -1,6 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
 
-import qualified Data.Map as Map
+import Data.Map qualified as Map
 import Data.Maybe (fromMaybe, mapMaybe)
 import FourmoluConfig.ConfigData
 import FourmoluConfig.GenerateUtils
@@ -37,10 +37,13 @@ configGenHs =
       "",
       "import qualified Data.Aeson as Aeson",
       "import qualified Data.Aeson.Types as Aeson",
+      "import Control.Applicative (asum)",
       "import Data.Functor.Identity (Identity)",
+      "import Data.List.NonEmpty (NonEmpty)",
       "import Data.Scientific (floatingOrInteger)",
       "import qualified Data.Text as Text",
       "import GHC.Generics (Generic)",
+      "import qualified Ormolu.Config.Fixed as CF",
       "import Text.Read (readEither, readMaybe)",
       "",
       "-- | Options controlling formatting output.",

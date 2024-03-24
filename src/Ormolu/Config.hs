@@ -38,6 +38,11 @@ module Ormolu.Config
     HaddockPrintStyle (..),
     HaddockPrintStyleModule (..),
     ImportExportStyle (..),
+    ImportGroups (..),
+    ImportGroup (..),
+    ImportGroupRule (..),
+    ImportModuleMatcher (..),
+    ImportTieBreaker (..),
     LetStyle (..),
     InStyle (..),
     Unicode (..),
@@ -66,9 +71,11 @@ import Data.Set (Set)
 import Data.Set qualified as Set
 import Data.String (fromString)
 import Data.Yaml qualified as Yaml
+import Distribution.ModuleName (ModuleName)
 import Distribution.Types.PackageName (PackageName)
 import GHC.Generics (Generic)
 import GHC.Types.SrcLoc qualified as GHC
+import Ormolu.Config.Fixed
 import Ormolu.Config.Gen
 import Ormolu.Fixity
 import Ormolu.Terminal (ColorMode (..))
@@ -111,7 +118,8 @@ data Config region = Config
     cfgColorMode :: !ColorMode,
     -- | Region selection
     cfgRegion :: !region,
-    cfgPrinterOpts :: !PrinterOptsTotal
+    cfgPrinterOpts :: !PrinterOptsTotal,
+    cfgDefinedModules :: !(Set ModuleName)
   }
   deriving (Eq, Show, Functor, Generic)
 
@@ -152,7 +160,8 @@ defaultConfig =
           { regionStartLine = Nothing,
             regionEndLine = Nothing
           },
-      cfgPrinterOpts = defaultPrinterOpts
+      cfgPrinterOpts = defaultPrinterOpts,
+      cfgDefinedModules = Set.empty
     }
 
 -- | Return all dependencies of the module. This includes both the declared

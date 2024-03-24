@@ -15,8 +15,10 @@ import Control.Monad (forM_, when)
 import Data.Algorithm.DiffContext (getContextDiff, prettyContextDiff)
 import Data.Char (isSpace)
 import Data.Maybe (isJust)
+import Data.Set qualified as S
 import Data.Text (Text)
 import Data.Text qualified as T
+import Distribution.ModuleName qualified as ModuleName
 import GHC.Stack (withFrozenCallStack)
 import Ormolu
   ( Config (..),
@@ -27,7 +29,7 @@ import Ormolu
     detectSourceType,
     ormolu,
   )
-import Ormolu.Config (ColumnLimit (..), HaddockPrintStyleModule (..))
+import Ormolu.Config (ColumnLimit (..), HaddockPrintStyleModule (..), ImportGroups (..))
 import Ormolu.Exception (OrmoluException, printOrmoluException)
 import Ormolu.Terminal (ColorMode (..), runTerm)
 import Ormolu.Utils.IO (readFileUtf8, writeFileUtf8)
@@ -50,8 +52,7 @@ import Test.Hspec
 import Text.PrettyPrint qualified as Doc
 import Text.Printf (printf)
 
-data TestGroup
-  = forall a.
+data TestGroup = forall a.
   TestGroup
   { label :: String,
     -- | When True, takes input from 'input-multi.hs' instead of 'input.hs', where sections
@@ -241,6 +242,23 @@ spec =
           testCaseSuffix = \(respectful, importExportStyle) ->
             suffixWith ["respectful=" ++ show respectful, show importExportStyle],
           checkIdempotence = True
+        },
+      TestGroup
+        { label = "import-grouping",
+          isMulti = False,
+          testCases =
+            let testedStrategies = [CreateSingleGroup, SplitByQualified, SplitByScope, SplitByScopeAndQualified]
+             in (,) <$> allOptions <*> testedStrategies,
+          updateConfig = \(respectful, igs) opts ->
+            opts
+              { poRespectful = pure respectful,
+                poImportGrouping = pure igs
+              },
+          showTestCase = \(respectful, igs) ->
+            (if respectful then "respectful" else "not respectful") ++ " + " ++ show igs,
+          testCaseSuffix = \(respectful, igs) ->
+            suffixWith ["respectful=" ++ show respectful, show igs],
+          checkIdempotence = True
         }
     ]
 
@@ -281,7 +299,14 @@ runOrmolu opts checkIdempotence inputPath input =
       defaultConfig
         { cfgPrinterOpts = opts,
           cfgSourceType = detectSourceType inputPath,
-          cfgCheckIdempotence = checkIdempotence
+          cfgCheckIdempotence = checkIdempotence,
+          cfgDefinedModules =
+            S.fromList $
+              ModuleName.fromString
+                <$> [ "SomeInternal.Module1",
+                      "SomeInternal.Module1.SubModuleA",
+                      "SomeInternal.Module2"
+                    ]
         }
 
 checkResult :: Path Rel File -> Text -> Expectation

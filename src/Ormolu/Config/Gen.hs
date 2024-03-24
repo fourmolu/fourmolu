@@ -19,6 +19,7 @@ module Ormolu.Config.Gen
   , SingleConstraintParens (..)
   , ColumnLimit (..)
   , SingleDerivingParens (..)
+  , ImportGroups (..)
   , emptyPrinterOpts
   , defaultPrinterOpts
   , defaultPrinterOptsYaml
@@ -31,10 +32,13 @@ where
 
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Types as Aeson
+import Control.Applicative (asum)
 import Data.Functor.Identity (Identity)
+import Data.List.NonEmpty (NonEmpty)
 import Data.Scientific (floatingOrInteger)
 import qualified Data.Text as Text
 import GHC.Generics (Generic)
+import qualified Ormolu.Config.Fixed as CF
 import Text.Read (readEither, readMaybe)
 
 -- | Options controlling formatting output.
@@ -72,6 +76,8 @@ data PrinterOpts f =
       poUnicode :: f Unicode
     , -- | Give the programmer more choice on where to insert blank lines
       poRespectful :: f Bool
+    , -- | Strategy for grouping imports
+      poImportGrouping :: f ImportGroups
     }
   deriving (Generic)
 
@@ -94,6 +100,7 @@ emptyPrinterOpts =
     , poSingleDerivingParens = Nothing
     , poUnicode = Nothing
     , poRespectful = Nothing
+    , poImportGrouping = Nothing
     }
 
 defaultPrinterOpts :: PrinterOpts Identity
@@ -115,6 +122,7 @@ defaultPrinterOpts =
     , poSingleDerivingParens = pure DerivingAlways
     , poUnicode = pure UnicodeNever
     , poRespectful = pure True
+    , poImportGrouping = pure CreateSingleGroup
     }
 
 -- | Fill the field values that are 'Nothing' in the first argument
@@ -143,6 +151,7 @@ fillMissingPrinterOpts p1 p2 =
     , poSingleDerivingParens = maybe (poSingleDerivingParens p2) pure (poSingleDerivingParens p1)
     , poUnicode = maybe (poUnicode p2) pure (poUnicode p1)
     , poRespectful = maybe (poRespectful p2) pure (poRespectful p1)
+    , poImportGrouping = maybe (poImportGrouping p2) pure (poImportGrouping p1)
     }
 
 parsePrinterOptsCLI ::
@@ -215,6 +224,10 @@ parsePrinterOptsCLI f =
       "respectful"
       "Give the programmer more choice on where to insert blank lines (default: true)"
       "BOOL"
+    <*> f
+      "import-grouping"
+      "Strategy for grouping imports (default: single)"
+      "OPTION"
 
 parsePrinterOptsJSON ::
   Applicative f =>
@@ -238,6 +251,7 @@ parsePrinterOptsJSON f =
     <*> f "single-deriving-parens"
     <*> f "unicode"
     <*> f "respectful"
+    <*> f "import-grouping"
 
 {---------- PrinterOpts field types ----------}
 
@@ -321,6 +335,14 @@ data SingleDerivingParens
   | DerivingAlways
   | DerivingNever
   deriving (Eq, Show, Enum, Bounded)
+
+data ImportGroups
+  = CreateSingleGroup
+  | SplitByScope
+  | SplitByQualified
+  | SplitByScopeAndQualified
+  | UseCustomImportGroups (NonEmpty CF.ImportGroup)
+  deriving (Eq, Show)
 
 instance Aeson.FromJSON CommaStyle where
   parseJSON =
@@ -525,6 +547,65 @@ instance PrinterOptsFieldType SingleDerivingParens where
           , "Valid values are: \"auto\", \"always\", or \"never\""
           ]
 
+instance Aeson.FromJSON ImportGroups where
+  parseJSON =
+    \case
+      Aeson.String "single" -> pure CreateSingleGroup
+      Aeson.String "by-qualified" -> pure SplitByQualified
+      Aeson.String "by-scope" -> pure SplitByScope
+      Aeson.String "by-scope-then-qualified" -> pure SplitByScopeAndQualified
+      arr@(Aeson.Array _) -> UseCustomImportGroups <$> Aeson.liftParseJSON Nothing parseGroup (Aeson.listParser parseGroup) arr
+      other ->
+        fail . unlines $
+          [ "unknown value: " <> show other,
+            "Valid values are: \"single\", \"by-qualified\", \"by-scope\", \"by-scope-then-qualified\" or a valid YAML configuration for import groups"
+          ]
+      where
+            parseGroup :: Aeson.Value -> Aeson.Parser CF.ImportGroup
+            parseGroup = Aeson.withObject "ImportGroup" $ \o ->
+              CF.ImportGroup
+                <$> Aeson.parseField o "name"
+                <*> Aeson.explicitParseField (Aeson.liftParseJSON Nothing parseRule (Aeson.listParser parseRule)) o "rules"
+            parseRule :: Aeson.Value -> Aeson.Parser CF.ImportGroupRule
+            parseRule = Aeson.withObject "rule" $ \o ->
+              CF.ImportGroupRule
+                <$> parseModuleMatcher (Aeson.Object o)
+                <*> Aeson.parseFieldMaybe o "qualified"
+                <*> Aeson.explicitParseFieldMaybe parseTieBreaker o "tie-breaker"
+            parseModuleMatcher :: Aeson.Value ->  Aeson.Parser CF.ImportModuleMatcher
+            parseModuleMatcher v = asum [parseCabalModuleMatcher v, parseMatchModuleMatcher v, parseRegexModuleMatcher v]
+            parseCabalModuleMatcher :: Aeson.Value -> Aeson.Parser CF.ImportModuleMatcher
+            parseCabalModuleMatcher = Aeson.withObject "ImportModuleMatcher" $ \o -> do
+              c <- Aeson.parseField @String o "cabal"
+              case c of
+                "defined-modules" -> pure CF.MatchDefinedModules
+                other -> fail $ "Unknown Cabal matching: " <> other
+            parseMatchModuleMatcher :: Aeson.Value -> Aeson.Parser CF.ImportModuleMatcher
+            parseMatchModuleMatcher = Aeson.withObject "ImportModuleMatcher" $ \o -> do
+              c <- Aeson.parseField @String o "match"
+              case c of
+                "all" -> pure CF.MatchAllModules
+                other -> fail $ "Unknown matcher: " <> other
+            parseRegexModuleMatcher :: Aeson.Value -> Aeson.Parser CF.ImportModuleMatcher
+            parseRegexModuleMatcher = Aeson.withObject "ImportModuleMatcher" $ \o -> do
+              CF.RegexModuleMatcher
+                <$> Aeson.parseField @String o "regex"
+            parseTieBreaker :: Aeson.Value -> Aeson.Parser CF.ImportTieBreaker
+            parseTieBreaker = fmap CF.ImportTieBreaker . Aeson.parseJSON
+
+instance PrinterOptsFieldType ImportGroups where
+  parsePrinterOptType =
+    \case
+      "single" -> Right CreateSingleGroup
+      "by-qualified" -> Right SplitByQualified
+      "by-scope" -> Right SplitByScope
+      "by-scope-then-qualified" -> Right SplitByScopeAndQualified
+      s ->
+        Left . unlines $
+          [ "unknown value: " <> show s
+          , "Valid values are: \"single\", \"by-qualified\", \"by-scope\", \"by-scope-then-qualified\" or a valid YAML configuration for import groups (see fourmolu.yaml)"
+          ]
+
 defaultPrinterOptsYaml :: String
 defaultPrinterOptsYaml =
   unlines
@@ -581,4 +662,10 @@ defaultPrinterOptsYaml =
     , ""
     , "# Module reexports Fourmolu should know about"
     , "reexports: []"
+    , ""
+    , "# Strategy for grouping imports"
+    , "import-grouping: single"
+    , ""
+    , "# Modules defined by the current package for import grouping"
+    , "defined-modules: []"
     ]

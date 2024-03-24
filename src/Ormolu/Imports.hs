@@ -6,7 +6,10 @@
 
 -- | Manipulations on import lists.
 module Ormolu.Imports
-  ( normalizeImports,
+  ( ImportGroups,
+    createSingleImportGroupStrategy,
+    groupingStrategyFromConfig,
+    normalizeImports,
   )
 where
 
@@ -14,9 +17,15 @@ import Data.Bifunctor
 import Data.Char (isAlphaNum)
 import Data.Foldable (toList)
 import Data.Function (on)
-import Data.List (foldl', nubBy, sortBy, sortOn)
+import Data.List (foldl', groupBy, minimumBy, nubBy, sortBy, sortOn)
+import Data.List.NonEmpty (NonEmpty)
+import Data.List.NonEmpty qualified as NEL
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as M
+import Data.Set (Set)
+import Data.Set qualified as Set
+import Data.Word (Word8)
+import Distribution.ModuleName qualified as Cabal
 import GHC.Data.FastString
 import GHC.Hs
 import GHC.Hs.ImpExp as GHC
@@ -24,24 +33,185 @@ import GHC.Types.Name.Reader
 import GHC.Types.PkgQual
 import GHC.Types.SourceText
 import GHC.Types.SrcLoc
-import Ormolu.Utils (groupBy', notImplemented, separatedByBlank, showOutputable)
+import Ormolu.Config qualified as Config
+import Ormolu.Utils (ghcModuleNameToCabal, groupBy', notImplemented, separatedByBlank, showOutputable)
+import Text.Regex.TDFA (Regex)
+import Text.Regex.TDFA qualified as Regex
+
+newtype ImportGroups = ImportGroups (NonEmpty ImportGroup)
+
+data ImportGroup = ImportGroup
+  { igName :: !(Maybe String),
+    igRules :: !(NonEmpty ImportGroupRule)
+  }
+
+data ImportGroupRule = ImportGroupRule
+  { igrModuleMatcher :: !ModuleMatcher,
+    igrQualifiedMatcher :: !QualifiedImportMatcher,
+    igrTieBreaker :: !ImportTieBreaker
+  }
+
+data ModuleMatcher
+  = MatchAllModules
+  | MatchModules !(Set Cabal.ModuleName)
+  | RegexModuleMatcher !Regex
+
+data QualifiedImportMatcher
+  = MatchQualifiedOnly
+  | MatchUnqualifiedOnly
+  | MatchBothQualifiedAndUnqualified
+
+newtype ImportTieBreaker = ImportTieBreaker Word8
+  deriving stock (Eq, Ord, Bounded)
+
+createSingleImportGroupStrategy :: ImportGroups
+createSingleImportGroupStrategy =
+  ImportGroups $
+    pure
+      ImportGroup
+        { igName = Nothing,
+          igRules = pure matchAllImportRule
+        }
+
+splitByQualifiedStrategy :: ImportGroups
+splitByQualifiedStrategy =
+  ImportGroups $
+    NEL.fromList
+      [ ImportGroup
+          { igName = Nothing,
+            igRules = pure $ withUnqualifiedOnly matchAllImportRule
+          },
+        ImportGroup
+          { igName = Nothing,
+            igRules = pure $ withQualifiedOnly matchAllImportRule
+          }
+      ]
+
+splitByScopeStrategy :: Set Cabal.ModuleName -> ImportGroups
+splitByScopeStrategy mods =
+  ImportGroups $
+    NEL.fromList
+      [ ImportGroup
+          { igName = Nothing,
+            igRules = pure matchAllImportRule
+          },
+        ImportGroup
+          { igName = Nothing,
+            igRules = pure $ matchModulesRule mods
+          }
+      ]
+
+splitByScopeAndQualifiedStrategy :: Set Cabal.ModuleName -> ImportGroups
+splitByScopeAndQualifiedStrategy mods =
+  ImportGroups $
+    NEL.fromList
+      [ ImportGroup
+          { igName = Nothing,
+            igRules =
+              pure $ withQualified matchModule
+          }
+        | matchModule <- [matchAllImportRule, matchModulesRule mods],
+          withQualified <- [withUnqualifiedOnly, withQualifiedOnly]
+      ]
+
+groupingStrategyFromConfig :: Set Cabal.ModuleName -> Config.ImportGroups -> ImportGroups
+groupingStrategyFromConfig definedModules =
+  \case
+    Config.CreateSingleGroup -> createSingleImportGroupStrategy
+    Config.SplitByQualified -> splitByQualifiedStrategy
+    Config.SplitByScope -> splitByScopeStrategy definedModules
+    Config.SplitByScopeAndQualified -> splitByScopeAndQualifiedStrategy definedModules
+    Config.UseCustomImportGroups igs -> ImportGroups $ convertImportGroup <$> igs
+  where
+    convertImportGroup :: Config.ImportGroup -> ImportGroup
+    convertImportGroup Config.ImportGroup {..} =
+      ImportGroup
+        { igName = igName,
+          igRules = convertGroupRule <$> igRules
+        }
+
+    convertGroupRule :: Config.ImportGroupRule -> ImportGroupRule
+    convertGroupRule Config.ImportGroupRule {..} =
+      ImportGroupRule
+        { igrModuleMatcher =
+            case igrModuleMatcher of
+              Config.MatchAllModules -> MatchAllModules
+              Config.MatchDefinedModules -> MatchModules definedModules
+              Config.RegexModuleMatcher re -> RegexModuleMatcher (Regex.makeRegex re),
+          igrQualifiedMatcher =
+            case igrQualified of
+              Just True -> MatchQualifiedOnly
+              Just False -> MatchUnqualifiedOnly
+              Nothing -> MatchBothQualifiedAndUnqualified,
+          igrTieBreaker = maybe defaultImportTieBreaker convertTieBreaker igrTieBreaker
+        }
+
+    convertTieBreaker :: Config.ImportTieBreaker -> ImportTieBreaker
+    convertTieBreaker (Config.ImportTieBreaker tb) = ImportTieBreaker tb
+
+matchAllImportRule :: ImportGroupRule
+matchAllImportRule =
+  ImportGroupRule
+    { igrModuleMatcher = MatchAllModules,
+      igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
+      igrTieBreaker = maxBound
+    }
+
+matchModulesRule :: Set Cabal.ModuleName -> ImportGroupRule
+matchModulesRule mods =
+  ImportGroupRule
+    { igrModuleMatcher = MatchModules mods,
+      igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
+      igrTieBreaker = defaultImportTieBreaker
+    }
+
+withQualifiedOnly :: ImportGroupRule -> ImportGroupRule
+withQualifiedOnly ImportGroupRule {..} =
+  ImportGroupRule
+    { igrQualifiedMatcher = MatchQualifiedOnly,
+      ..
+    }
+
+withUnqualifiedOnly :: ImportGroupRule -> ImportGroupRule
+withUnqualifiedOnly ImportGroupRule {..} =
+  ImportGroupRule
+    { igrQualifiedMatcher = MatchUnqualifiedOnly,
+      ..
+    }
+
+matchesRule :: ImportId -> ImportGroupRule -> Bool
+matchesRule ImportId {..} ImportGroupRule {..} = matchesModules && matchesQualified
+  where
+    matchesModules = case igrModuleMatcher of
+      MatchAllModules -> True
+      MatchModules mods -> ghcModuleNameToCabal importIdName `Set.member` mods
+      RegexModuleMatcher regex -> regex `Regex.matchTest` moduleNameString importIdName
+    matchesQualified = case igrQualifiedMatcher of
+      MatchQualifiedOnly -> importQualified
+      MatchUnqualifiedOnly -> not importQualified
+      MatchBothQualifiedAndUnqualified -> True
+
+defaultImportTieBreaker :: ImportTieBreaker
+defaultImportTieBreaker = ImportTieBreaker 128
 
 -- | Sort, group and normalize imports.
 --
 -- Assumes input list is sorted by source location. Output list is not necessarily
 -- sorted by source location, so this function should be called at most once on a
 -- given input list.
-normalizeImports :: Bool -> [LImportDecl GhcPs] -> [[LImportDecl GhcPs]]
-normalizeImports preserveGroups =
-  map
-    ( fmap snd
-        . M.toAscList
-        . M.fromListWith combineImports
-        . fmap (\x -> (importId x, g x))
-    )
-    . if preserveGroups
-      then map toList . groupBy' (\x y -> not $ separatedByBlank getLocA x y)
-      else pure
+normalizeImports :: Bool -> ImportGroups -> [LImportDecl GhcPs] -> [[LImportDecl GhcPs]]
+normalizeImports preserveGroups importGroups =
+  map (fmap snd)
+    . concatMap
+      ( groupImports importGroups
+          . M.toAscList
+          . M.fromListWith combineImports
+          . fmap (\x -> (importId x, g x))
+      )
+    . ( if preserveGroups
+          then map toList . groupBy' (\x y -> not $ separatedByBlank getLocA x y)
+          else pure
+      )
   where
     g :: LImportDecl GhcPs -> LImportDecl GhcPs
     g (L l ImportDecl {..}) =
@@ -51,6 +221,26 @@ normalizeImports preserveGroups =
           { ideclImportList = second (fmap normalizeLies) <$> ideclImportList,
             ..
           }
+
+groupImports :: ImportGroups -> [(ImportId, x)] -> [[(ImportId, x)]]
+groupImports (ImportGroups igs) = regroup . fmap (breakTies . matchRules)
+  where
+    indexedGroupRules :: [(Int, [ImportGroupRule])]
+    indexedGroupRules = zip [0 ..] (toList . igRules <$> toList igs)
+
+    matchRules :: (ImportId, x) -> ([(Int, [ImportGroupRule])], (ImportId, x))
+    matchRules (iid, x) =
+      let testRule (_, rules) = any (matchesRule iid) rules
+       in (filter testRule indexedGroupRules, (iid, x))
+
+    breakTies :: ([(Int, [ImportGroupRule])], x) -> (Int, x)
+    breakTies ([], x) =
+      (maxBound, x) -- Any non-matched imports will be in the last group
+    breakTies (matches, x) =
+      (fst . minimumBy (compare `on` snd) $ second (minimum . fmap igrTieBreaker) <$> matches, x)
+
+    regroup :: [(Int, x)] -> [[x]]
+    regroup = fmap (fmap snd) . groupBy ((==) `on` fst) . sortOn fst
 
 -- | Combine two import declarations. It should be assumed that 'ImportId's
 -- are equal.

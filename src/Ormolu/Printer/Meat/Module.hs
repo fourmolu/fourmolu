@@ -13,7 +13,8 @@ import GHC.Hs hiding (comment)
 import GHC.Types.SrcLoc
 import GHC.Utils.Outputable (ppr, showSDocUnsafe)
 import Ormolu.Config
-import Ormolu.Imports (normalizeImports)
+import Ormolu.Imports (groupingStrategyFromConfig, normalizeImports)
+import Ormolu.Imports qualified as Imports
 import Ormolu.Parser.CommentStream
 import Ormolu.Parser.Pragma
 import Ormolu.Printer.Combinators
@@ -48,7 +49,8 @@ p_hsModule mstackHeader pragmas hsmod@HsModule {..} = do
     mapM_ (p_hsModuleHeader hsmod) hsmodName
     newline
     preserveGroups <- getPrinterOpt poRespectful
-    forM_ (normalizeImports preserveGroups hsmodImports) $ \importGroup -> do
+    importGroups <- getImportGroups
+    forM_ (normalizeImports preserveGroups importGroups hsmodImports) $ \importGroup -> do
       forM_ importGroup (located' p_hsmodImport)
       newline
     declNewline
@@ -57,6 +59,11 @@ p_hsModule mstackHeader pragmas hsmod@HsModule {..} = do
       (if preserveSpacing then p_hsDeclsRespectGrouping else p_hsDecls) Free hsmodDecls
       newline
       spitRemainingComments
+  where
+    getImportGroups :: R Imports.ImportGroups
+    getImportGroups = do
+      definedModules <- getDefinedModules
+      groupingStrategyFromConfig definedModules <$> getPrinterOpt poImportGrouping
 
 p_hsModuleHeader :: HsModule GhcPs -> LocatedA ModuleName -> R ()
 p_hsModuleHeader HsModule {hsmodExt = XModulePs {..}, ..} moduleName = do

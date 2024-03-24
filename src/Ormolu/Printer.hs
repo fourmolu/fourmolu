@@ -40,6 +40,7 @@ printSnippets debug snippets printerOpts = T.concat . fmap printSnippet $ snippe
             (mkSpanStream prParsedSource)
             prCommentStream
             printerOpts
+            prDefinedModules
             prSourceType
             prExtensions
             prModuleFixityMap
