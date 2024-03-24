@@ -30,7 +30,7 @@ import Ormolu
     detectSourceType,
     ormolu,
   )
-import Ormolu.Config (ColumnLimit (..), HaddockPrintStyleModule (..))
+import Ormolu.Config (ColumnLimit (..), HaddockPrintStyleModule (..), ImportGroups (..))
 import Ormolu.Exception (OrmoluException, printOrmoluException)
 import Ormolu.Terminal (ColorMode (..), runTerm)
 import Path
@@ -244,13 +244,15 @@ spec =
           checkIdempotence = True
         },
       TestGroup
-        { label = "import-grouping-strategy",
+        { label = "import-grouping",
           isMulti = False,
-          testCases = (,) <$> allOptions <*> allOptions,
+          testCases =
+            let testedStrategies = [CreateSingleGroup, SplitByQualified, SplitByScope, SplitByScopeAndQualified]
+             in (,) <$> allOptions <*> testedStrategies,
           updateConfig = \(respectful, igs) opts ->
             opts
               { poRespectful = pure respectful,
-                poImportGroupingStrategy = pure igs
+                poImportGrouping = pure igs
               },
           showTestCase = \(respectful, igs) ->
             (if respectful then "respectful" else "not respectful") ++ " + " ++ show igs,

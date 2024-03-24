@@ -16,8 +16,8 @@ import GHC.Hs hiding (comment)
 import GHC.Types.SrcLoc
 import GHC.Utils.Outputable (ppr, showSDocUnsafe)
 import Ormolu.Config
-import Ormolu.Config.Gen (ImportGroupingStrategy (..))
-import Ormolu.Imports (GroupingOperation (GeneralThenSpecific, UnqualifiedThenQualified), GroupingStrategy (..), noGroupingOperations, normalizeImports)
+import Ormolu.Imports (groupingStrategyFromConfig, normalizeImports)
+import Ormolu.Imports qualified as Imports
 import Ormolu.Parser.CommentStream
 import Ormolu.Parser.Pragma
 import Ormolu.Printer.Combinators
@@ -52,8 +52,8 @@ p_hsModule mstackHeader pragmas hsmod@HsModule {..} = do
     mapM_ (p_hsModuleHeader hsmod) hsmodName
     newline
     preserveGroups <- getPrinterOpt poRespectful
-    groupingStrategy <- getImportGroupingStrategy
-    forM_ (normalizeImports preserveGroups groupingStrategy hsmodImports) $ \importGroup -> do
+    importGroups <- getImportGroups
+    forM_ (normalizeImports preserveGroups importGroups hsmodImports) $ \importGroup -> do
       forM_ importGroup (located' p_hsmodImport)
       newline
     declNewline
@@ -63,23 +63,10 @@ p_hsModule mstackHeader pragmas hsmod@HsModule {..} = do
       newline
       spitRemainingComments
   where
-    getImportGroupingStrategy :: R GroupingStrategy
-    getImportGroupingStrategy = do
-      importGroupingStrategy <- getPrinterOpt poImportGroupingStrategy
-      case importGroupingStrategy of
-        NoImportGroupingStrategy -> do
-          pure noGroupingOperations
-        ByQualified ->
-          pure $ ApplyGroupingOperations (pure UnqualifiedThenQualified)
-        ByScope -> do
-          mods <- getDefinedModules
-          pure $ ApplyGroupingOperations (pure (GeneralThenSpecific mods))
-        ByScopeThenQualified -> do
-          mods <- getDefinedModules
-          pure $ ApplyGroupingOperations ([GeneralThenSpecific mods, UnqualifiedThenQualified])
-        ByQualifiedThenScope -> do
-          mods <- getDefinedModules
-          pure $ ApplyGroupingOperations ([UnqualifiedThenQualified, GeneralThenSpecific mods])
+    getImportGroups :: R Imports.ImportGroups
+    getImportGroups = do
+      definedModules <- getDefinedModules
+      groupingStrategyFromConfig definedModules <$> getPrinterOpt poImportGrouping
 
 p_hsModuleHeader :: HsModule GhcPs -> LocatedA ModuleName -> R ()
 p_hsModuleHeader HsModule {hsmodExt = XModulePs {..}, ..} moduleName = do

@@ -99,6 +99,7 @@ library
         Ormolu.Utils.IO
         Paths_fourmolu
     other-modules:
+        Ormolu.Config.Fixed
         Ormolu.Config.Gen
 
     hs-source-dirs:   src
@@ -122,6 +123,7 @@ library
         ghc-lib-parser >=9.10 && <9.11,
         megaparsec >=9,
         mtl >=2 && <3,
+        regex-tdfa ^>= 1.3.2,
         syb >=0.7 && <0.8,
         text >=2.1 && <3,
         -- fourmolu-only deps
