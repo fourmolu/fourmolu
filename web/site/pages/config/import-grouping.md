@@ -13,13 +13,15 @@ Some basic presets are provided but you can configure your own rules via a dedic
 import-grouping:
   - name: "Text modules"
     rules:
-      - regex: "Data\\.Text(\\..+)?"
+      - module-or-descendant: Data.Text
   - name: "The rest"
-    preset: all # with the least priority
+    preset: all
   - name: "My internals and monads unqualified"
     rules:
       - cabal: defined-modules
+        qualified: no
       - regex: "Control\\.Monad(\\..+)?"
+        qualified: no
   - name: "My internals and monads qualified"
     rules:
       - cabal: defined-modules
@@ -29,7 +31,7 @@ import-grouping:
   - name: "Monad State"
     rules:
       - regex: "Control\\.Monad\\.State\\.Lazy"
-        priority: 1 # Only in case of conflicts, knowing that the presets have the least priority so this should be rare
+        priority: 1
 ```
 
 ## Examples
@@ -39,6 +41,7 @@ import Control.Monad (Monad (..))
 import Control.Monad.State.Lazy (MonadState (..))
 import Data.Maybe (maybe)
 import Data.Text (Text)
+import Data.Text.IO (hGetLine)
 import qualified Data.Text
 import SomeInternal.Module1.SubModuleA
 
@@ -74,7 +77,7 @@ custom
   "import-grouping": [
     {
       "name": "Text modules",
-      "rules": [{ "regex": "Data\\.Text(\\..+)?" }]
+      "rules": [{ "module-or-descendant": "Data.Text" }]
     },
     {
       "name": "The rest",
@@ -83,8 +86,14 @@ custom
     {
       "name": "My internals and monads unqualified",
       "rules": [
-        { "cabal": "defined-modules" },
-        { "regex": "Control\\.Monad(\\..+)?" }
+        {
+          "cabal": "defined-modules",
+          "qualified": false
+        },
+        {
+          "regex": "Control\\.Monad(\\..+)?",
+          "qualified": false
+        }
       ]
     },
     {

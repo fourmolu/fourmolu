@@ -30,6 +30,7 @@ data ImportGroupRule = ImportGroupRule
 data ImportModuleMatcher
   = MatchAllModules
   | MatchDefinedModules
+  | MatchModuleOrDescendant !String
   | RegexModuleMatcher !String
   deriving (Eq, Show)
 

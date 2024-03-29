@@ -151,6 +151,7 @@ groupingStrategyFromConfig definedModules =
             case igrModuleMatcher of
               Config.MatchAllModules -> MatchAllModules
               Config.MatchDefinedModules -> MatchModules definedModules
+              Config.MatchModuleOrDescendant modName -> RegexModuleMatcher (Regex.makeRegex $ mconcat ["^", modName, "($|\\.)"]) -- TODO Actually escape special characters properly! (\Q and \E are not supported)
               Config.RegexModuleMatcher re -> RegexModuleMatcher (Regex.makeRegex re),
           igrQualifiedMatcher =
             case igrQualified of

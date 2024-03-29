@@ -581,7 +581,13 @@ instance Aeson.FromJSON ImportGroups where
                 <*> Aeson.parseFieldMaybe o "qualified"
                 <*> Aeson.explicitParseFieldMaybe parsePriority o "priority"
             parseModuleMatcher :: Aeson.Value ->  Aeson.Parser CF.ImportModuleMatcher
-            parseModuleMatcher v = asum [parseCabalModuleMatcher v, parseMatchModuleMatcher v, parseRegexModuleMatcher v]
+            parseModuleMatcher v = asum
+              [ parseCabalModuleMatcher v
+              , parseMatchModuleMatcher v
+              , parseMatchModuleOrDescendant v
+              , parseRegexModuleMatcher v
+              , fail "Unknown matcher"
+              ]
             parseCabalModuleMatcher :: Aeson.Value -> Aeson.Parser CF.ImportModuleMatcher
             parseCabalModuleMatcher = Aeson.withObject "ImportModuleMatcher" $ \o -> do
               c <- Aeson.parseField @String o "cabal"
@@ -594,6 +600,10 @@ instance Aeson.FromJSON ImportGroups where
               case c of
                 "all" -> pure CF.MatchAllModules
                 other -> fail $ "Unknown matcher: " <> other
+            parseMatchModuleOrDescendant :: Aeson.Value -> Aeson.Parser CF.ImportModuleMatcher
+            parseMatchModuleOrDescendant = Aeson.withObject "ImportModuleMatcher" $ \o -> do
+              CF.MatchModuleOrDescendant
+                <$> Aeson.parseField @String o "module-or-descendant"
             parseRegexModuleMatcher :: Aeson.Value -> Aeson.Parser CF.ImportModuleMatcher
             parseRegexModuleMatcher = Aeson.withObject "ImportModuleMatcher" $ \o -> do
               CF.RegexModuleMatcher
