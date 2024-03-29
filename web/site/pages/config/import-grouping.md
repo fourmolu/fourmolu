@@ -15,9 +15,7 @@ import-grouping:
     rules:
       - regex: "Data\\.Text(\\..+)?"
   - name: "The rest"
-    rules:
-      - match: all
-        tie-breaker: 255
+    preset: all # with the least priority
   - name: "My internals and monads unqualified"
     rules:
       - cabal: defined-modules
@@ -31,7 +29,7 @@ import-grouping:
   - name: "Monad State"
     rules:
       - regex: "Control\\.Monad\\.State\\.Lazy"
-        tie-breaker: 1
+        priority: 1 # Only in case of conflicts, knowing that the presets have the least priority so this should be rare
 ```
 
 ## Examples
@@ -80,7 +78,7 @@ custom
     },
     {
       "name": "The rest",
-      "rules": [{ "match": "all", "tie-breaker": 255 }]
+      "preset": "all"
     },
     {
       "name": "My internals and monads unqualified",
@@ -107,7 +105,7 @@ custom
       "rules": [
         {
           "regex": "Control\\.Monad\\.State\\.Lazy",
-          "tie-breaker": 1
+          "priority": 1
         }
       ]
     }

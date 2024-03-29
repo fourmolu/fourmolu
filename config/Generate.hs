@@ -37,7 +37,7 @@ configGenHs =
       "",
       "import qualified Data.Aeson as Aeson",
       "import qualified Data.Aeson.Types as Aeson",
-      "import Control.Applicative (asum)",
+      "import Control.Applicative (asum, Alternative (..))",
       "import Data.Functor.Identity (Identity)",
       "import Data.List.NonEmpty (NonEmpty)",
       "import Data.Scientific (floatingOrInteger)",

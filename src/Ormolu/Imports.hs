@@ -52,7 +52,7 @@ data ImportGroup = ImportGroup
 data ImportGroupRule = ImportGroupRule
   { igrModuleMatcher :: !ModuleMatcher,
     igrQualifiedMatcher :: !QualifiedImportMatcher,
-    igrTieBreaker :: !ImportTieBreaker
+    igrPriority :: !ImportRulePriority
   }
 
 data ModuleMatcher
@@ -65,7 +65,7 @@ data QualifiedImportMatcher
   | MatchUnqualifiedOnly
   | MatchBothQualifiedAndUnqualified
 
-newtype ImportTieBreaker = ImportTieBreaker Word8
+newtype ImportRulePriority = ImportRulePriority Word8
   deriving stock (Eq, Ord, Bounded)
 
 createSingleImportGroupStrategy :: ImportGroups
@@ -131,8 +131,18 @@ groupingStrategyFromConfig definedModules =
     convertImportGroup Config.ImportGroup {..} =
       ImportGroup
         { igName = igName,
-          igRules = convertGroupRule <$> igRules
+          igRules = either convertGroupPreset (fmap convertGroupRule) igPresetOrRules
         }
+
+    convertGroupPreset :: Config.ImportGroupPreset -> NonEmpty ImportGroupRule
+    convertGroupPreset = \case
+      Config.AllPreset ->
+        NEL.singleton
+          ImportGroupRule
+            { igrModuleMatcher = MatchAllModules,
+              igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
+              igrPriority = maxBound
+            }
 
     convertGroupRule :: Config.ImportGroupRule -> ImportGroupRule
     convertGroupRule Config.ImportGroupRule {..} =
@@ -147,18 +157,18 @@ groupingStrategyFromConfig definedModules =
               Just True -> MatchQualifiedOnly
               Just False -> MatchUnqualifiedOnly
               Nothing -> MatchBothQualifiedAndUnqualified,
-          igrTieBreaker = maybe defaultImportTieBreaker convertTieBreaker igrTieBreaker
+          igrPriority = maybe defaultImportRulePriority convertPriority igrPriority
         }
 
-    convertTieBreaker :: Config.ImportTieBreaker -> ImportTieBreaker
-    convertTieBreaker (Config.ImportTieBreaker tb) = ImportTieBreaker tb
+    convertPriority :: Config.ImportRulePriority -> ImportRulePriority
+    convertPriority (Config.ImportRulePriority tb) = ImportRulePriority tb
 
 matchAllImportRule :: ImportGroupRule
 matchAllImportRule =
   ImportGroupRule
     { igrModuleMatcher = MatchAllModules,
       igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
-      igrTieBreaker = maxBound
+      igrPriority = maxBound
     }
 
 matchModulesRule :: Set Cabal.ModuleName -> ImportGroupRule
@@ -166,7 +176,7 @@ matchModulesRule mods =
   ImportGroupRule
     { igrModuleMatcher = MatchModules mods,
       igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
-      igrTieBreaker = defaultImportTieBreaker
+      igrPriority = defaultImportRulePriority
     }
 
 withQualifiedOnly :: ImportGroupRule -> ImportGroupRule
@@ -195,8 +205,8 @@ matchesRule ImportId {..} ImportGroupRule {..} = matchesModules && matchesQualif
       MatchUnqualifiedOnly -> not importQualified
       MatchBothQualifiedAndUnqualified -> True
 
-defaultImportTieBreaker :: ImportTieBreaker
-defaultImportTieBreaker = ImportTieBreaker 128
+defaultImportRulePriority :: ImportRulePriority
+defaultImportRulePriority = ImportRulePriority 128
 
 -- | Sort, group and normalize imports.
 --
@@ -241,7 +251,7 @@ groupImports (ImportGroups igs) = regroup . fmap (breakTies . matchRules)
     breakTies ([], x) =
       (maxBound, x) -- Any non-matched imports will be in the last group
     breakTies (matches, x) =
-      (fst . minimumBy (compare `on` snd) $ second (minimum . fmap igrTieBreaker) <$> matches, x)
+      (fst . minimumBy (compare `on` snd) $ second (minimum . fmap igrPriority) <$> matches, x)
 
     regroup :: [(Int, x)] -> [[x]]
     regroup = fmap (fmap snd) . groupBy ((==) `on` fst) . sortOn fst

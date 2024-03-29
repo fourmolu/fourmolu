@@ -32,7 +32,7 @@ where
 
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Types as Aeson
-import Control.Applicative (asum)
+import Control.Applicative (asum, Alternative (..))
 import Data.Functor.Identity (Identity)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Scientific (floatingOrInteger)
@@ -563,15 +563,23 @@ instance Aeson.FromJSON ImportGroups where
       where
             parseGroup :: Aeson.Value -> Aeson.Parser CF.ImportGroup
             parseGroup = Aeson.withObject "ImportGroup" $ \o ->
-              CF.ImportGroup
-                <$> Aeson.parseField o "name"
-                <*> Aeson.explicitParseField (Aeson.liftParseJSON Nothing parseRule (Aeson.listParser parseRule)) o "rules"
+                  let 
+                    parsePresetField = Aeson.explicitParseField parsePreset o "preset"
+                    parseRulesField = Aeson.explicitParseField (Aeson.liftParseJSON Nothing parseRule (Aeson.listParser parseRule)) o "rules"
+                    parsePresetOrRules = (Left <$> parsePresetField) <|> (Right <$> parseRulesField)
+                  in CF.ImportGroup
+                    <$> Aeson.parseField o "name"
+                    <*> parsePresetOrRules
+            parsePreset :: Aeson.Value -> Aeson.Parser CF.ImportGroupPreset
+            parsePreset = Aeson.withText "ImportGroupPreset" $ \case
+              "all" -> pure CF.AllPreset
+              other -> fail $ "Unknown preset: " <> Text.unpack other
             parseRule :: Aeson.Value -> Aeson.Parser CF.ImportGroupRule
             parseRule = Aeson.withObject "rule" $ \o ->
               CF.ImportGroupRule
                 <$> parseModuleMatcher (Aeson.Object o)
                 <*> Aeson.parseFieldMaybe o "qualified"
-                <*> Aeson.explicitParseFieldMaybe parseTieBreaker o "tie-breaker"
+                <*> Aeson.explicitParseFieldMaybe parsePriority o "priority"
             parseModuleMatcher :: Aeson.Value ->  Aeson.Parser CF.ImportModuleMatcher
             parseModuleMatcher v = asum [parseCabalModuleMatcher v, parseMatchModuleMatcher v, parseRegexModuleMatcher v]
             parseCabalModuleMatcher :: Aeson.Value -> Aeson.Parser CF.ImportModuleMatcher
@@ -590,8 +598,8 @@ instance Aeson.FromJSON ImportGroups where
             parseRegexModuleMatcher = Aeson.withObject "ImportModuleMatcher" $ \o -> do
               CF.RegexModuleMatcher
                 <$> Aeson.parseField @String o "regex"
-            parseTieBreaker :: Aeson.Value -> Aeson.Parser CF.ImportTieBreaker
-            parseTieBreaker = fmap CF.ImportTieBreaker . Aeson.parseJSON
+            parsePriority :: Aeson.Value -> Aeson.Parser CF.ImportRulePriority
+            parsePriority = fmap CF.ImportRulePriority . Aeson.parseJSON
 
 instance PrinterOptsFieldType ImportGroups where
   parsePrinterOptType =
