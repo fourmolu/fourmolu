@@ -36,8 +36,7 @@ import GHC.Types.SourceText
 import GHC.Types.SrcLoc
 import Ormolu.Config qualified as Config
 import Ormolu.Utils (ghcModuleNameToCabal, groupBy', notImplemented, separatedByBlank, showOutputable)
-import Text.Regex.TDFA (Regex)
-import Text.Regex.TDFA qualified as Regex
+import Ormolu.Utils.Glob (Glob, matchesGlob, mkGlob)
 #if !MIN_VERSION_base(4,20,0)
 import Data.List (foldl')
 #endif
@@ -58,7 +57,7 @@ data ImportGroupRule = ImportGroupRule
 data ModuleMatcher
   = MatchAllModules
   | MatchModules !(Set Cabal.ModuleName)
-  | RegexModuleMatcher !Regex
+  | MatchGlobModule !Glob
 
 data QualifiedImportMatcher
   = MatchQualifiedOnly
@@ -151,8 +150,7 @@ groupingStrategyFromConfig definedModules =
             case igrModuleMatcher of
               Config.MatchAllModules -> MatchAllModules
               Config.MatchDefinedModules -> MatchModules definedModules
-              Config.MatchModuleOrDescendant modName -> RegexModuleMatcher (Regex.makeRegex $ mconcat ["^", modName, "($|\\.)"]) -- TODO Actually escape special characters properly! (\Q and \E are not supported)
-              Config.RegexModuleMatcher re -> RegexModuleMatcher (Regex.makeRegex re),
+              Config.MatchGlob gl -> MatchGlobModule (mkGlob gl),
           igrQualifiedMatcher =
             case igrQualified of
               Just True -> MatchQualifiedOnly
@@ -200,7 +198,7 @@ matchesRule ImportId {..} ImportGroupRule {..} = matchesModules && matchesQualif
     matchesModules = case igrModuleMatcher of
       MatchAllModules -> True
       MatchModules mods -> ghcModuleNameToCabal importIdName `Set.member` mods
-      RegexModuleMatcher regex -> regex `Regex.matchTest` moduleNameString importIdName
+      MatchGlobModule gl -> moduleNameString importIdName `matchesGlob` gl
     matchesQualified = case igrQualifiedMatcher of
       MatchQualifiedOnly -> importQualified
       MatchUnqualifiedOnly -> not importQualified

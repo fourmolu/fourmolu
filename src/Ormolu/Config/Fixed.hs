@@ -30,8 +30,7 @@ data ImportGroupRule = ImportGroupRule
 data ImportModuleMatcher
   = MatchAllModules
   | MatchDefinedModules
-  | MatchModuleOrDescendant !String
-  | RegexModuleMatcher !String
+  | MatchGlob !String
   deriving (Eq, Show)
 
 newtype ImportRulePriority = ImportRulePriority Word8

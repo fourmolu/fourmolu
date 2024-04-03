@@ -13,24 +13,24 @@ Some basic presets are provided but you can configure your own rules via a dedic
 import-grouping:
   - name: "Text modules"
     rules:
-      - module-or-descendant: Data.Text
+      - glob: Data.Text
   - name: "The rest"
     preset: all
   - name: "My internals and monads unqualified"
     rules:
       - cabal: defined-modules
         qualified: no
-      - regex: "Control\\.Monad(\\..+)?"
+      - glob: Control.Monad*
         qualified: no
   - name: "My internals and monads qualified"
     rules:
       - cabal: defined-modules
         qualified: yes
-      - regex: "Control\\.Monad(\\..+)?"
+      - glob: Control.Monad*
         qualified: yes
   - name: "Monad State"
     rules:
-      - regex: "Control\\.Monad\\.State\\.Lazy"
+      - glob: Control.Monad.State.Lazy
         priority: 1
 ```
 
@@ -38,6 +38,7 @@ import-grouping:
 
 ```fourmolu-example-input
 import Control.Monad (Monad (..))
+import qualified Control.Monad.Error as Error
 import Control.Monad.State.Lazy (MonadState (..))
 import Data.Maybe (maybe)
 import Data.Text (Text)
@@ -77,7 +78,7 @@ custom
   "import-grouping": [
     {
       "name": "Text modules",
-      "rules": [{ "module-or-descendant": "Data.Text" }]
+      "rules": [{ "glob": "Data.Text" }]
     },
     {
       "name": "The rest",
@@ -91,7 +92,7 @@ custom
           "qualified": false
         },
         {
-          "regex": "Control\\.Monad(\\..+)?",
+          "glob": "Control.Monad*",
           "qualified": false
         }
       ]
@@ -104,7 +105,7 @@ custom
           "qualified": true
         },
         {
-          "regex": "Control\\.Monad(\\..+)?",
+          "glob": "Control.Monad*",
           "qualified": true
         }
       ]
@@ -113,7 +114,7 @@ custom
       "name": "Monad State",
       "rules": [
         {
-          "regex": "Control\\.Monad\\.State\\.Lazy",
+          "glob": "Control.Monad.State.Lazy",
           "priority": 1
         }
       ]

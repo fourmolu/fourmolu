@@ -584,8 +584,7 @@ instance Aeson.FromJSON ImportGroups where
             parseModuleMatcher v = asum
               [ parseCabalModuleMatcher v
               , parseMatchModuleMatcher v
-              , parseMatchModuleOrDescendant v
-              , parseRegexModuleMatcher v
+              , parseGlobModuleMatcher v
               , fail "Unknown matcher"
               ]
             parseCabalModuleMatcher :: Aeson.Value -> Aeson.Parser CF.ImportModuleMatcher
@@ -600,14 +599,10 @@ instance Aeson.FromJSON ImportGroups where
               case c of
                 "all" -> pure CF.MatchAllModules
                 other -> fail $ "Unknown matcher: " <> other
-            parseMatchModuleOrDescendant :: Aeson.Value -> Aeson.Parser CF.ImportModuleMatcher
-            parseMatchModuleOrDescendant = Aeson.withObject "ImportModuleMatcher" $ \o -> do
-              CF.MatchModuleOrDescendant
-                <$> Aeson.parseField @String o "module-or-descendant"
-            parseRegexModuleMatcher :: Aeson.Value -> Aeson.Parser CF.ImportModuleMatcher
-            parseRegexModuleMatcher = Aeson.withObject "ImportModuleMatcher" $ \o -> do
-              CF.RegexModuleMatcher
-                <$> Aeson.parseField @String o "regex"
+            parseGlobModuleMatcher :: Aeson.Value -> Aeson.Parser CF.ImportModuleMatcher
+            parseGlobModuleMatcher = Aeson.withObject "ImportModuleMatcher" $ \o -> do
+              CF.MatchGlob
+                <$> Aeson.parseField @String o "glob"
             parsePriority :: Aeson.Value -> Aeson.Parser CF.ImportRulePriority
             parsePriority = fmap CF.ImportRulePriority . Aeson.parseJSON
 

@@ -96,6 +96,7 @@ library
         Ormolu.Utils
         Ormolu.Utils.Cabal
         Ormolu.Utils.Fixity
+        Ormolu.Utils.Glob
         Ormolu.Utils.IO
         Paths_fourmolu
     other-modules:
@@ -123,7 +124,6 @@ library
         ghc-lib-parser >=9.10 && <9.11,
         megaparsec >=9,
         mtl >=2 && <3,
-        regex-tdfa ^>= 1.3.2,
         syb >=0.7 && <0.8,
         text >=2.1 && <3,
         -- fourmolu-only deps
@@ -216,6 +216,7 @@ test-suite tests
         Ormolu.Integration.FixitySpec
         Ormolu.Integration.RegionSpec
         Ormolu.Integration.Utils
+        Ormolu.Utils.GlobSpec
     build-depends:
         bytestring,
         Diff >=0.3 && <1,
