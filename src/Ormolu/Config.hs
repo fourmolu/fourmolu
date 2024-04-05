@@ -39,7 +39,7 @@ module Ormolu.Config
     HaddockPrintStyle (..),
     HaddockPrintStyleModule (..),
     ImportExportStyle (..),
-    ImportGroups (..),
+    ImportGrouping (..),
     ImportGroup (..),
     ImportGroupPreset (..),
     ImportGroupRule (..),

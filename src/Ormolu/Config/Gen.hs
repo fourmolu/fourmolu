@@ -19,7 +19,7 @@ module Ormolu.Config.Gen
   , SingleConstraintParens (..)
   , ColumnLimit (..)
   , SingleDerivingParens (..)
-  , ImportGroups (..)
+  , ImportGrouping (..)
   , emptyPrinterOpts
   , defaultPrinterOpts
   , defaultPrinterOptsYaml
@@ -76,8 +76,8 @@ data PrinterOpts f =
       poUnicode :: f Unicode
     , -- | Give the programmer more choice on where to insert blank lines
       poRespectful :: f Bool
-    , -- | Strategy for grouping imports
-      poImportGrouping :: f ImportGroups
+    , -- | Rules for grouping import declarations
+      poImportGrouping :: f ImportGrouping
     }
   deriving (Generic)
 
@@ -226,7 +226,7 @@ parsePrinterOptsCLI f =
       "BOOL"
     <*> f
       "import-grouping"
-      "Strategy for grouping imports (default: single)"
+      "Rules for grouping import declarations (default: single)"
       "OPTION"
 
 parsePrinterOptsJSON ::
@@ -336,7 +336,7 @@ data SingleDerivingParens
   | DerivingNever
   deriving (Eq, Show, Enum, Bounded)
 
-data ImportGroups
+data ImportGrouping
   = CreateSingleGroup
   | SplitByScope
   | SplitByQualified
@@ -547,7 +547,7 @@ instance PrinterOptsFieldType SingleDerivingParens where
           , "Valid values are: \"auto\", \"always\", or \"never\""
           ]
 
-instance Aeson.FromJSON ImportGroups where
+instance Aeson.FromJSON ImportGrouping where
   parseJSON =
     \case
       Aeson.String "single" -> pure CreateSingleGroup
@@ -561,49 +561,49 @@ instance Aeson.FromJSON ImportGroups where
             "Valid values are: \"single\", \"by-qualified\", \"by-scope\", \"by-scope-then-qualified\" or a valid YAML configuration for import groups"
           ]
       where
-            parseGroup :: Aeson.Value -> Aeson.Parser CF.ImportGroup
-            parseGroup = Aeson.withObject "ImportGroup" $ \o ->
-                  let 
-                    parsePresetField = Aeson.explicitParseField parsePreset o "preset"
-                    parseRulesField = Aeson.explicitParseField (Aeson.liftParseJSON Nothing parseRule (Aeson.listParser parseRule)) o "rules"
-                    parsePresetOrRules = (Left <$> parsePresetField) <|> (Right <$> parseRulesField)
-                  in CF.ImportGroup
-                    <$> Aeson.parseField o "name"
-                    <*> parsePresetOrRules
-            parsePreset :: Aeson.Value -> Aeson.Parser CF.ImportGroupPreset
-            parsePreset = Aeson.withText "ImportGroupPreset" $ \case
-              "all" -> pure CF.AllPreset
-              other -> fail $ "Unknown preset: " <> Text.unpack other
-            parseRule :: Aeson.Value -> Aeson.Parser CF.ImportGroupRule
-            parseRule = Aeson.withObject "rule" $ \o ->
-              CF.ImportGroupRule
-                <$> parseModuleMatcher (Aeson.Object o)
-                <*> Aeson.parseFieldMaybe o "qualified"
-            parseModuleMatcher :: Aeson.Value ->  Aeson.Parser CF.ImportModuleMatcher
-            parseModuleMatcher v = asum
-              [ parseCabalModuleMatcher v
-              , parseMatchModuleMatcher v
-              , parseGlobModuleMatcher v
-              , fail "Unknown matcher"
-              ]
-            parseCabalModuleMatcher :: Aeson.Value -> Aeson.Parser CF.ImportModuleMatcher
-            parseCabalModuleMatcher = Aeson.withObject "ImportModuleMatcher" $ \o -> do
-              c <- Aeson.parseField @String o "cabal"
-              case c of
-                "defined-modules" -> pure CF.MatchDefinedModules
-                other -> fail $ "Unknown Cabal matching: " <> other
-            parseMatchModuleMatcher :: Aeson.Value -> Aeson.Parser CF.ImportModuleMatcher
-            parseMatchModuleMatcher = Aeson.withObject "ImportModuleMatcher" $ \o -> do
-              c <- Aeson.parseField @String o "match"
-              case c of
-                "all" -> pure CF.MatchAllModules
-                other -> fail $ "Unknown matcher: " <> other
-            parseGlobModuleMatcher :: Aeson.Value -> Aeson.Parser CF.ImportModuleMatcher
-            parseGlobModuleMatcher = Aeson.withObject "ImportModuleMatcher" $ \o -> do
-              CF.MatchGlob
-                <$> Aeson.parseField @String o "glob"
+        parseGroup :: Aeson.Value -> Aeson.Parser CF.ImportGroup
+        parseGroup = Aeson.withObject "ImportGroup" $ \o ->
+              let 
+                parsePresetField = Aeson.explicitParseField parsePreset o "preset"
+                parseRulesField = Aeson.explicitParseField (Aeson.liftParseJSON Nothing parseRule (Aeson.listParser parseRule)) o "rules"
+                parsePresetOrRules = (Left <$> parsePresetField) <|> (Right <$> parseRulesField)
+              in CF.ImportGroup
+                <$> Aeson.parseField o "name"
+                <*> parsePresetOrRules
+        parsePreset :: Aeson.Value -> Aeson.Parser CF.ImportGroupPreset
+        parsePreset = Aeson.withText "ImportGroupPreset" $ \case
+          "all" -> pure CF.AllPreset
+          other -> fail $ "Unknown preset: " <> Text.unpack other
+        parseRule :: Aeson.Value -> Aeson.Parser CF.ImportGroupRule
+        parseRule = Aeson.withObject "rule" $ \o ->
+          CF.ImportGroupRule
+            <$> parseModuleMatcher (Aeson.Object o)
+            <*> Aeson.parseFieldMaybe o "qualified"
+        parseModuleMatcher :: Aeson.Value ->  Aeson.Parser CF.ImportModuleMatcher
+        parseModuleMatcher v = asum
+          [ parseCabalModuleMatcher v
+          , parseMatchModuleMatcher v
+          , parseGlobModuleMatcher v
+          , fail "Unknown matcher"
+          ]
+        parseCabalModuleMatcher :: Aeson.Value -> Aeson.Parser CF.ImportModuleMatcher
+        parseCabalModuleMatcher = Aeson.withObject "ImportModuleMatcher" $ \o -> do
+          c <- Aeson.parseField @String o "cabal"
+          case c of
+            "defined-modules" -> pure CF.MatchDefinedModules
+            other -> fail $ "Unknown Cabal matching: " <> other
+        parseMatchModuleMatcher :: Aeson.Value -> Aeson.Parser CF.ImportModuleMatcher
+        parseMatchModuleMatcher = Aeson.withObject "ImportModuleMatcher" $ \o -> do
+          c <- Aeson.parseField @String o "match"
+          case c of
+            "all" -> pure CF.MatchAllModules
+            other -> fail $ "Unknown matcher: " <> other
+        parseGlobModuleMatcher :: Aeson.Value -> Aeson.Parser CF.ImportModuleMatcher
+        parseGlobModuleMatcher = Aeson.withObject "ImportModuleMatcher" $ \o -> do
+          CF.MatchGlob
+            <$> Aeson.parseField @String o "glob"
 
-instance PrinterOptsFieldType ImportGroups where
+instance PrinterOptsFieldType ImportGrouping where
   parsePrinterOptType =
     \case
       "single" -> Right CreateSingleGroup
@@ -673,9 +673,9 @@ defaultPrinterOptsYaml =
     , "# Module reexports Fourmolu should know about"
     , "reexports: []"
     , ""
-    , "# Strategy for grouping imports"
+    , "# Rules for grouping import declarations"
     , "import-grouping: single"
     , ""
-    , "# Modules defined by the current package for import grouping"
+    , "# Modules defined by the current Cabal package for import grouping"
     , "defined-modules: []"
     ]

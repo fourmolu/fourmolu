@@ -16,7 +16,7 @@ import GHC.Hs hiding (comment)
 import GHC.Types.SrcLoc
 import GHC.Utils.Outputable (ppr, showSDocUnsafe)
 import Ormolu.Config
-import Ormolu.Imports (groupingStrategyFromConfig, normalizeImports)
+import Ormolu.Imports (groupsFromConfig, normalizeImports)
 import Ormolu.Imports qualified as Imports
 import Ormolu.Parser.CommentStream
 import Ormolu.Parser.Pragma
@@ -66,7 +66,7 @@ p_hsModule mstackHeader pragmas hsmod@HsModule {..} = do
     getImportGroups :: R Imports.ImportGroups
     getImportGroups = do
       definedModules <- getDefinedModules
-      groupingStrategyFromConfig definedModules <$> getPrinterOpt poImportGrouping
+      groupsFromConfig definedModules <$> getPrinterOpt poImportGrouping
 
 p_hsModuleHeader :: HsModule GhcPs -> LocatedA ModuleName -> R ()
 p_hsModuleHeader HsModule {hsmodExt = XModulePs {..}, ..} moduleName = do

@@ -478,7 +478,7 @@ configParser =
       [ long "defined-modules",
         short 'm',
         metavar "DEFINED_MODULES",
-        help "Modules Fourmolu should consider as defined by the current package"
+        help "Modules Fourmolu should consider as defined by the current Cabal package"
       ]
 
 sourceTypeParser :: Parser (Maybe SourceType)

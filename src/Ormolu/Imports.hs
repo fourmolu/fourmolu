@@ -9,7 +9,7 @@
 module Ormolu.Imports
   ( ImportGroups,
     createSingleImportGroupStrategy,
-    groupingStrategyFromConfig,
+    groupsFromConfig,
     normalizeImports,
   )
 where
@@ -117,8 +117,8 @@ splitByScopeAndQualifiedStrategy mods =
           withQualified <- [withUnqualifiedOnly, withQualifiedOnly]
       ]
 
-groupingStrategyFromConfig :: Set Cabal.ModuleName -> Config.ImportGroups -> ImportGroups
-groupingStrategyFromConfig definedModules =
+groupsFromConfig :: Set Cabal.ModuleName -> Config.ImportGrouping -> ImportGroups
+groupsFromConfig definedModules =
   \case
     Config.CreateSingleGroup -> createSingleImportGroupStrategy
     Config.SplitByQualified -> splitByQualifiedStrategy
@@ -172,7 +172,7 @@ matchModulesRule mods =
   ImportGroupRule
     { igrModuleMatcher = MatchModules mods,
       igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
-      igrPriority = defaultImportRulePriority
+      igrPriority = ImportRulePriority 192 -- Lower priority than "all" but higher than the default.
     }
 
 withQualifiedOnly :: ImportGroupRule -> ImportGroupRule
@@ -218,10 +218,9 @@ normalizeImports preserveGroups importGroups =
           . M.fromListWith combineImports
           . fmap (\x -> (importId x, g x))
       )
-    . ( if preserveGroups
-          then map toList . groupBy' (\x y -> not $ separatedByBlank getLocA x y)
-          else pure
-      )
+    . if preserveGroups
+      then map toList . groupBy' (\x y -> not $ separatedByBlank getLocA x y)
+      else pure
   where
     g :: LImportDecl GhcPs -> LImportDecl GhcPs
     g (L l ImportDecl {..}) =

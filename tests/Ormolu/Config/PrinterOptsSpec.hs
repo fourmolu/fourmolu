@@ -30,7 +30,7 @@ import Ormolu
     detectSourceType,
     ormolu,
   )
-import Ormolu.Config (ColumnLimit (..), HaddockPrintStyleModule (..), ImportGroups (..))
+import Ormolu.Config (ColumnLimit (..), HaddockPrintStyleModule (..), ImportGrouping (..))
 import Ormolu.Exception (OrmoluException, printOrmoluException)
 import Ormolu.Terminal (ColorMode (..), runTerm)
 import Path
