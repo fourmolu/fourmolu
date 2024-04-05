@@ -20,13 +20,17 @@ import-grouping:
     rules:
       - cabal: defined-modules
         qualified: no
-      - glob: Control.Monad*
+      - glob: Control.Monad
+        qualified: no
+      - glob: Control.Monad.**
         qualified: no
   - name: "My internals and monads qualified"
     rules:
       - cabal: defined-modules
         qualified: yes
-      - glob: Control.Monad*
+      - glob: Control.Monad
+        qualified: yes
+      - glob: Control.Monad.**
         qualified: yes
   - name: "Monad State"
     rules:
@@ -92,7 +96,11 @@ custom
           "qualified": false
         },
         {
-          "glob": "Control.Monad*",
+          "glob": "Control.Monad",
+          "qualified": false
+        },
+        {
+          "glob": "Control.Monad.**",
           "qualified": false
         }
       ]
@@ -105,7 +113,11 @@ custom
           "qualified": true
         },
         {
-          "glob": "Control.Monad*",
+          "glob": "Control.Monad",
+          "qualified": true
+        },
+        {
+          "glob": "Control.Monad.**",
           "qualified": true
         }
       ]

@@ -5,45 +5,37 @@ module Ormolu.Utils.Glob
     )
 where
 
-import Control.Monad (msum)
-import Data.List (stripPrefix, tails)
+import Data.List (elemIndex, stripPrefix)
+import Data.Maybe (fromMaybe)
 
 data Glob
-    = MatchesAnything
-    | MatchesExactly !String
-    | MatchesPrefix !String !Glob
-    | MatchesUntil !String !Glob
-    deriving (Eq, Show)
-
-isWildcard :: Char -> Bool
-isWildcard = (== '*')
+    = MatchEOI
+    | MatchExactly !String !Glob
+    | SingleWildcard !Glob
+    | DoubleWildcard !Glob
 
 mkGlob :: String -> Glob
-mkGlob = globFor
-    where
-        globFor s =
-            case break isWildcard s of
-                (s', "") -> MatchesExactly s'
-                ("", t) -> globUntil t
-                (p, t) -> MatchesPrefix p (globUntil t)
-        globUntil s = case dropWhile isWildcard s of
-            "" ->
-                MatchesAnything
-            s' ->
-                let (p, t) = break isWildcard s'
-                 in MatchesUntil p (globFor t)
+mkGlob s = case s of
+    [] ->
+        MatchEOI
+    '*' : '*' : t ->
+        DoubleWildcard (mkGlob t)
+    '*' : t ->
+        SingleWildcard (mkGlob t)
+    t ->
+        let (m, t') = break (== '*') t
+         in MatchExactly m (mkGlob t')
 
 matchesGlob :: String -> Glob -> Bool
 matchesGlob s g = case g of
-    MatchesAnything ->
-        True
-    MatchesExactly s' ->
-        s == s'
-    MatchesPrefix p g' ->
+    MatchEOI ->
+        null s
+    MatchExactly p g' ->
         case stripPrefix p s of
             Nothing -> False
-            Just t -> t `matchesGlob` g'
-    MatchesUntil i g' ->
-        case msum (stripPrefix i <$> tails s) of
-            Nothing -> False
-            Just r -> r `matchesGlob` g'
+            Just s' -> matchesGlob s' g'
+    SingleWildcard g' ->
+        let l = fromMaybe (length s) (elemIndex '.' s)
+         in or [matchesGlob s' g' | i <- [0 .. l], let s' = drop i s]
+    DoubleWildcard g' ->
+        or [matchesGlob s' g' | i <- [0 .. length s], let s' = drop i s]
