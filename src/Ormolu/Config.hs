@@ -44,7 +44,6 @@ module Ormolu.Config
     ImportGroupPreset (..),
     ImportGroupRule (..),
     ImportModuleMatcher (..),
-    ImportRulePriority (..),
     LetStyle (..),
     InStyle (..),
     Unicode (..),

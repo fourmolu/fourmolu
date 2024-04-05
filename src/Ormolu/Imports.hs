@@ -156,11 +156,8 @@ groupingStrategyFromConfig definedModules =
               Just True -> MatchQualifiedOnly
               Just False -> MatchUnqualifiedOnly
               Nothing -> MatchBothQualifiedAndUnqualified,
-          igrPriority = maybe defaultImportRulePriority convertPriority igrPriority
+          igrPriority = defaultImportRulePriority
         }
-
-    convertPriority :: Config.ImportRulePriority -> ImportRulePriority
-    convertPriority (Config.ImportRulePriority tb) = ImportRulePriority tb
 
 matchAllImportRule :: ImportGroupRule
 matchAllImportRule =

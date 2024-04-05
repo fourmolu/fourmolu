@@ -579,7 +579,6 @@ instance Aeson.FromJSON ImportGroups where
               CF.ImportGroupRule
                 <$> parseModuleMatcher (Aeson.Object o)
                 <*> Aeson.parseFieldMaybe o "qualified"
-                <*> Aeson.explicitParseFieldMaybe parsePriority o "priority"
             parseModuleMatcher :: Aeson.Value ->  Aeson.Parser CF.ImportModuleMatcher
             parseModuleMatcher v = asum
               [ parseCabalModuleMatcher v
@@ -603,8 +602,6 @@ instance Aeson.FromJSON ImportGroups where
             parseGlobModuleMatcher = Aeson.withObject "ImportModuleMatcher" $ \o -> do
               CF.MatchGlob
                 <$> Aeson.parseField @String o "glob"
-            parsePriority :: Aeson.Value -> Aeson.Parser CF.ImportRulePriority
-            parsePriority = fmap CF.ImportRulePriority . Aeson.parseJSON
 
 instance PrinterOptsFieldType ImportGroups where
   parsePrinterOptType =

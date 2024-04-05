@@ -511,7 +511,6 @@ allFieldTypes =
               "          CF.ImportGroupRule",
               "            <$> parseModuleMatcher (Aeson.Object o)",
               "            <*> Aeson.parseFieldMaybe o \"qualified\"",
-              "            <*> Aeson.explicitParseFieldMaybe parsePriority o \"priority\"",
               "        parseModuleMatcher :: Aeson.Value ->  Aeson.Parser CF.ImportModuleMatcher",
               "        parseModuleMatcher v = asum",
               "          [ parseCabalModuleMatcher v",
@@ -534,9 +533,7 @@ allFieldTypes =
               "        parseGlobModuleMatcher :: Aeson.Value -> Aeson.Parser CF.ImportModuleMatcher",
               "        parseGlobModuleMatcher = Aeson.withObject \"ImportModuleMatcher\" $ \\o -> do",
               "          CF.MatchGlob",
-              "            <$> Aeson.parseField @String o \"glob\"",
-              "        parsePriority :: Aeson.Value -> Aeson.Parser CF.ImportRulePriority",
-              "        parsePriority = fmap CF.ImportRulePriority . Aeson.parseJSON"
+              "            <$> Aeson.parseField @String o \"glob\""
             ],
         adtParsePrinterOptType =
           unlines

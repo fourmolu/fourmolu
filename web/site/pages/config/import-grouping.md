@@ -22,20 +22,15 @@ import-grouping:
         qualified: no
       - glob: Control.Monad
         qualified: no
-      - glob: Control.Monad.**
-        qualified: no
   - name: "My internals and monads qualified"
     rules:
       - cabal: defined-modules
         qualified: yes
       - glob: Control.Monad
         qualified: yes
-      - glob: Control.Monad.**
-        qualified: yes
-  - name: "Monad State"
+  - name: "Specific monads"
     rules:
-      - glob: Control.Monad.State.Lazy
-        priority: 1
+      - glob: Control.Monad.**
 ```
 
 ## Examples
@@ -98,10 +93,6 @@ custom
         {
           "glob": "Control.Monad",
           "qualified": false
-        },
-        {
-          "glob": "Control.Monad.**",
-          "qualified": false
         }
       ]
     },
@@ -115,19 +106,14 @@ custom
         {
           "glob": "Control.Monad",
           "qualified": true
-        },
-        {
-          "glob": "Control.Monad.**",
-          "qualified": true
         }
       ]
     },
     {
-      "name": "Monad State",
+      "name": "My internals and monads qualified",
       "rules": [
         {
-          "glob": "Control.Monad.State.Lazy",
-          "priority": 1
+          "glob": "Control.Monad.**"
         }
       ]
     }

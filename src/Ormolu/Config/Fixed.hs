@@ -3,12 +3,10 @@ module Ormolu.Config.Fixed
     ImportGroupPreset (..),
     ImportGroupRule (..),
     ImportModuleMatcher (..),
-    ImportRulePriority (..),
   )
 where
 
 import Data.List.NonEmpty (NonEmpty)
-import Data.Word (Word8)
 
 data ImportGroup = ImportGroup
   { igName :: !(Maybe String),
@@ -22,8 +20,7 @@ data ImportGroupPreset
 
 data ImportGroupRule = ImportGroupRule
   { igrModuleMatcher :: !ImportModuleMatcher,
-    igrQualified :: !(Maybe Bool),
-    igrPriority :: !(Maybe ImportRulePriority)
+    igrQualified :: !(Maybe Bool)
   }
   deriving (Eq, Show)
 
@@ -31,7 +28,4 @@ data ImportModuleMatcher
   = MatchAllModules
   | MatchDefinedModules
   | MatchGlob !String
-  deriving (Eq, Show)
-
-newtype ImportRulePriority = ImportRulePriority Word8
   deriving (Eq, Show)
