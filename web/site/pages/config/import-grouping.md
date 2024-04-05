@@ -7,7 +7,25 @@ The behavior depends on [`respectful`](/config/respectful):
 - If set to `true`, the existing import groups are preserved, and each group are in turn regrouped according to the import groups configuration.
 - If set to `false`, all existing import groups are merged and the result is regrouped according to the import groups configuration.
 
-Some basic presets are provided but you can configure your own rules via a dedicated YAML configuration. Here's a sample configuration:
+Some basic presets are provided but you can configure your own rules via a dedicated YAML configuration.
+
+Predefined presets:
+
+- `single`: single group of imports
+- `by-qualified`: one group for unqualified imports, then one group for qualified imports
+- `by-scope`: one group for external imports, then one group for imports targeting modules from the current Cabal project
+- `by-scope-then-qualified`: apply `by-scope` first, then `by-qualified`
+
+Predefined groups:
+
+- `all`: preset group that will receive any import not matching any of your custom rules
+
+Predefined matchers:
+
+- `cabal: defined-modules`: matches modules defined in the current Cabal project
+- `glob: pattern`: matches modules matching the provided `pattern`. `*` can be any character on the same module level. `**` can be any character and can span multiple module levels.
+
+Here's a sample configuration:
 
 ```yaml
 import-grouping:
