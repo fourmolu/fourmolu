@@ -63,5 +63,5 @@ spec =
         it "should allow ** to match anything on multiple levels" $
             "Level1.Level2.Level3.Level4.Level5" `matchesGlob` mkGlob "Level1.L**4.Level5" `shouldBe` True
         it "should match strings where wildcards can be replaced by 0 or more characters" $
-            property $ \gc ->
-                gcMatchingString gc `matchesGlob` gcGlob gc `shouldBe` True
+            property $
+                \gc -> gcMatchingString gc `matchesGlob` gcGlob gc

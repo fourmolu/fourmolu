@@ -563,13 +563,13 @@ instance Aeson.FromJSON ImportGrouping where
       where
         parseGroup :: Aeson.Value -> Aeson.Parser CF.ImportGroup
         parseGroup = Aeson.withObject "ImportGroup" $ \o ->
-              let 
-                parsePresetField = Aeson.explicitParseField parsePreset o "preset"
-                parseRulesField = Aeson.explicitParseField (Aeson.liftParseJSON Nothing parseRule (Aeson.listParser parseRule)) o "rules"
-                parsePresetOrRules = (Left <$> parsePresetField) <|> (Right <$> parseRulesField)
-              in CF.ImportGroup
-                <$> Aeson.parseField o "name"
-                <*> parsePresetOrRules
+          let 
+            parsePresetField = Aeson.explicitParseField parsePreset o "preset"
+            parseRulesField = Aeson.explicitParseField (Aeson.liftParseJSON Nothing parseRule (Aeson.listParser parseRule)) o "rules"
+            parsePresetOrRules = (Left <$> parsePresetField) <|> (Right <$> parseRulesField)
+          in CF.ImportGroup
+            <$> Aeson.parseField o "name"
+            <*> parsePresetOrRules
         parsePreset :: Aeson.Value -> Aeson.Parser CF.ImportGroupPreset
         parsePreset = Aeson.withText "ImportGroupPreset" $ \case
           "all" -> pure CF.AllPreset

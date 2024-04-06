@@ -1,6 +1,5 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
 
 -- | Tests for Fourmolu configuration options. Similar to PrinterSpec.hs
@@ -52,7 +51,8 @@ import Test.Hspec
 import Text.PrettyPrint qualified as Doc
 import Text.Printf (printf)
 
-data TestGroup = forall a.
+data TestGroup
+  = forall a.
   TestGroup
   { label :: String,
     -- | When True, takes input from 'input-multi.hs' instead of 'input.hs', where sections
