@@ -123,7 +123,9 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
-          - macos-latest
+          # disable mac for now, since mac can be either x86 or arm, and we
+          # don't have control over which
+          # - macos-latest
 
     name: 'build_prod: ${{ matrix.os }}'
     runs-on: ${{ matrix.os }}
@@ -152,7 +154,6 @@ jobs:
               # not using `dev` flag or testing; done in `stack_test` + `os_test`
           )
           stack build "${ARGS[@]}"
-
       -
         uses: haskell-actions/parse-cabal-file@v1
         id: cabal_file
