@@ -241,6 +241,15 @@ spec =
           testCaseSuffix = \(respectful, importExportStyle) ->
             suffixWith ["respectful=" ++ show respectful, show importExportStyle],
           checkIdempotence = True
+        },
+      TestGroup
+        { label = "newline-inside-type",
+          isMulti = False,
+          testCases = allOptions,
+          updateConfig = \newlineInsideType opts -> opts {poNewlineInsideType = pure newlineInsideType},
+          showTestCase = show,
+          testCaseSuffix = suffix1,
+          checkIdempotence = True
         }
     ]
 

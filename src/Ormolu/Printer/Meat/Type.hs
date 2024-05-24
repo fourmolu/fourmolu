@@ -50,7 +50,9 @@ p_hsType' multilineArgs = \case
     getPrinterOpt poFunctionArrows >>= \case
       LeadingArrows | multilineArgs -> interArgBreak >> txt " " >> p_forallBndrsEnd vis
       _ -> p_forallBndrsEnd vis >> interArgBreak
-    p_hsTypeR (unLoc t)
+    getPrinterOpt poNewlineInsideType >>= \case
+      TypePreserveSingleLine -> located t p_hsType
+      TypeMultiLine -> p_hsTypeR (unLoc t)
   HsQualTy _ qs t -> do
     located qs p_hsContext
     getPrinterOpt poFunctionArrows >>= \case
@@ -59,7 +61,9 @@ p_hsType' multilineArgs = \case
       LeadingArgsArrows -> space >> token'darrow >> interArgBreak
     case unLoc t of
       HsQualTy {} -> p_hsTypeR (unLoc t)
-      HsFunTy {} -> p_hsTypeR (unLoc t)
+      HsFunTy {} -> getPrinterOpt poNewlineInsideType >>= \case
+        TypePreserveSingleLine -> located t p_hsType
+        TypeMultiLine -> p_hsTypeR (unLoc t)
       _ -> located t p_hsTypeR
   HsTyVar _ p n -> do
     case p of

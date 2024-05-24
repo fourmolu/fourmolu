@@ -19,3 +19,4 @@ unicode: never
 respectful: false
 fixities: []
 reexports: []
+newline-inside-type: multi-line

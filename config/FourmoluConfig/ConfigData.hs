@@ -228,6 +228,16 @@ allOptions =
         ormolu = HsList [],
         sinceVersion = Just "0.13.0.0",
         cliOverrides = emptyOverrides
+      },
+    Option
+      { name = "newline-inside-type",
+        fieldName = Just "poNewlineInsideType",
+        description = "Whether type should be multiline if preceded with forall or constraints and a newline",
+        type_ = "NewlineInsideTypeStyle",
+        default_ = HsExpr "TypePreserveSingleLine",
+        ormolu = HsExpr "TypeMultiLine",
+        sinceVersion = Just "0.16.0.0",
+        cliOverrides = emptyOverrides
       }
   ]
 
@@ -429,6 +439,13 @@ allFieldTypes =
           [ ("DerivingAuto", "auto"),
             ("DerivingAlways", "always"),
             ("DerivingNever", "never")
+          ]
+      },
+    FieldTypeEnum
+      { fieldTypeName = "NewlineInsideTypeStyle",
+        enumOptions =
+          [ ("TypePreserveSingleLine", "preserve-single-line"),
+            ("TypeMultiLine", "multi-line")
           ]
       }
   ]

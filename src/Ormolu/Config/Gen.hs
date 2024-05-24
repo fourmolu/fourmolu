@@ -19,6 +19,7 @@ module Ormolu.Config.Gen
   , SingleConstraintParens (..)
   , ColumnLimit (..)
   , SingleDerivingParens (..)
+  , NewlineInsideTypeStyle (..)
   , emptyPrinterOpts
   , defaultPrinterOpts
   , defaultPrinterOptsYaml
@@ -72,6 +73,8 @@ data PrinterOpts f =
       poUnicode :: f Unicode
     , -- | Give the programmer more choice on where to insert blank lines
       poRespectful :: f Bool
+    , -- | Whether type should be multiline if preceded with forall or constraints and a newline
+      poNewlineInsideType :: f NewlineInsideTypeStyle
     }
   deriving (Generic)
 
@@ -94,6 +97,7 @@ emptyPrinterOpts =
     , poSingleDerivingParens = Nothing
     , poUnicode = Nothing
     , poRespectful = Nothing
+    , poNewlineInsideType = Nothing
     }
 
 defaultPrinterOpts :: PrinterOpts Identity
@@ -115,6 +119,7 @@ defaultPrinterOpts =
     , poSingleDerivingParens = pure DerivingAlways
     , poUnicode = pure UnicodeNever
     , poRespectful = pure True
+    , poNewlineInsideType = pure TypePreserveSingleLine
     }
 
 -- | Fill the field values that are 'Nothing' in the first argument
@@ -143,6 +148,7 @@ fillMissingPrinterOpts p1 p2 =
     , poSingleDerivingParens = maybe (poSingleDerivingParens p2) pure (poSingleDerivingParens p1)
     , poUnicode = maybe (poUnicode p2) pure (poUnicode p1)
     , poRespectful = maybe (poRespectful p2) pure (poRespectful p1)
+    , poNewlineInsideType = maybe (poNewlineInsideType p2) pure (poNewlineInsideType p1)
     }
 
 parsePrinterOptsCLI ::
@@ -215,6 +221,10 @@ parsePrinterOptsCLI f =
       "respectful"
       "Give the programmer more choice on where to insert blank lines (default: true)"
       "BOOL"
+    <*> f
+      "newline-inside-type"
+      "Whether type should be multiline if preceded with forall or constraints and a newline (choices: \"preserve-single-line\" or \"multi-line\") (default: preserve-single-line)"
+      "OPTION"
 
 parsePrinterOptsJSON ::
   Applicative f =>
@@ -238,6 +248,7 @@ parsePrinterOptsJSON f =
     <*> f "single-deriving-parens"
     <*> f "unicode"
     <*> f "respectful"
+    <*> f "newline-inside-type"
 
 {---------- PrinterOpts field types ----------}
 
@@ -320,6 +331,11 @@ data SingleDerivingParens
   = DerivingAuto
   | DerivingAlways
   | DerivingNever
+  deriving (Eq, Show, Enum, Bounded)
+
+data NewlineInsideTypeStyle
+  = TypePreserveSingleLine
+  | TypeMultiLine
   deriving (Eq, Show, Enum, Bounded)
 
 instance Aeson.FromJSON CommaStyle where
@@ -525,6 +541,23 @@ instance PrinterOptsFieldType SingleDerivingParens where
           , "Valid values are: \"auto\", \"always\", or \"never\""
           ]
 
+instance Aeson.FromJSON NewlineInsideTypeStyle where
+  parseJSON =
+    Aeson.withText "NewlineInsideTypeStyle" $ \s ->
+      either Aeson.parseFail pure $
+        parsePrinterOptType (Text.unpack s)
+
+instance PrinterOptsFieldType NewlineInsideTypeStyle where
+  parsePrinterOptType s =
+    case s of
+      "preserve-single-line" -> Right TypePreserveSingleLine
+      "multi-line" -> Right TypeMultiLine
+      _ ->
+        Left . unlines $
+          [ "unknown value: " <> show s
+          , "Valid values are: \"preserve-single-line\" or \"multi-line\""
+          ]
+
 defaultPrinterOptsYaml :: String
 defaultPrinterOptsYaml =
   unlines
@@ -581,4 +614,7 @@ defaultPrinterOptsYaml =
     , ""
     , "# Module reexports Fourmolu should know about"
     , "reexports: []"
+    , ""
+    , "# Whether type should be multiline if preceded with forall or constraints and a newline (choices: preserve-single-line or multi-line)"
+    , "newline-inside-type: preserve-single-line"
     ]
