@@ -236,7 +236,7 @@ allOptions =
         type_ = "NewlineInsideTypeStyle",
         default_ = HsExpr "TypePreserveSingleLine",
         ormolu = HsExpr "TypeMultiLine",
-        sinceVersion = Just "0.16.0.0",
+        sinceVersion = Nothing,
         cliOverrides = emptyOverrides
       }
   ]
