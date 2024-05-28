@@ -19,7 +19,7 @@ module Ormolu.Config.Gen
   , SingleConstraintParens (..)
   , ColumnLimit (..)
   , SingleDerivingParens (..)
-  , NewlineInsideTypeStyle (..)
+  , SingleLineTypesStyle (..)
   , emptyPrinterOpts
   , defaultPrinterOpts
   , defaultPrinterOptsYaml
@@ -73,8 +73,8 @@ data PrinterOpts f =
       poUnicode :: f Unicode
     , -- | Give the programmer more choice on where to insert blank lines
       poRespectful :: f Bool
-    , -- | Whether type should be multiline if preceded with forall or constraints and a newline
-      poNewlineInsideType :: f NewlineInsideTypeStyle
+    , -- | Whether a single-line type should be converted to multi-line if preceded with forall or constraints and a newline
+      poSingleLineTypes :: f SingleLineTypesStyle
     }
   deriving (Generic)
 
@@ -97,7 +97,7 @@ emptyPrinterOpts =
     , poSingleDerivingParens = Nothing
     , poUnicode = Nothing
     , poRespectful = Nothing
-    , poNewlineInsideType = Nothing
+    , poSingleLineTypes = Nothing
     }
 
 defaultPrinterOpts :: PrinterOpts Identity
@@ -119,7 +119,7 @@ defaultPrinterOpts =
     , poSingleDerivingParens = pure DerivingAlways
     , poUnicode = pure UnicodeNever
     , poRespectful = pure True
-    , poNewlineInsideType = pure TypePreserveSingleLine
+    , poSingleLineTypes = pure TypeAuto
     }
 
 -- | Fill the field values that are 'Nothing' in the first argument
@@ -148,7 +148,7 @@ fillMissingPrinterOpts p1 p2 =
     , poSingleDerivingParens = maybe (poSingleDerivingParens p2) pure (poSingleDerivingParens p1)
     , poUnicode = maybe (poUnicode p2) pure (poUnicode p1)
     , poRespectful = maybe (poRespectful p2) pure (poRespectful p1)
-    , poNewlineInsideType = maybe (poNewlineInsideType p2) pure (poNewlineInsideType p1)
+    , poSingleLineTypes = maybe (poSingleLineTypes p2) pure (poSingleLineTypes p1)
     }
 
 parsePrinterOptsCLI ::
@@ -222,8 +222,8 @@ parsePrinterOptsCLI f =
       "Give the programmer more choice on where to insert blank lines (default: true)"
       "BOOL"
     <*> f
-      "newline-inside-type"
-      "Whether type should be multiline if preceded with forall or constraints and a newline (choices: \"preserve-single-line\" or \"multi-line\") (default: preserve-single-line)"
+      "single-line-types"
+      "Whether a single-line type should be converted to multi-line if preceded with forall or constraints and a newline (choices: \"auto\" or \"only-if-already-single\") (default: auto)"
       "OPTION"
 
 parsePrinterOptsJSON ::
@@ -248,7 +248,7 @@ parsePrinterOptsJSON f =
     <*> f "single-deriving-parens"
     <*> f "unicode"
     <*> f "respectful"
-    <*> f "newline-inside-type"
+    <*> f "single-line-types"
 
 {---------- PrinterOpts field types ----------}
 
@@ -333,9 +333,9 @@ data SingleDerivingParens
   | DerivingNever
   deriving (Eq, Show, Enum, Bounded)
 
-data NewlineInsideTypeStyle
-  = TypePreserveSingleLine
-  | TypeMultiLine
+data SingleLineTypesStyle
+  = TypeAuto
+  | TypeOnlyIfAlreadySingle
   deriving (Eq, Show, Enum, Bounded)
 
 instance Aeson.FromJSON CommaStyle where
@@ -541,21 +541,21 @@ instance PrinterOptsFieldType SingleDerivingParens where
           , "Valid values are: \"auto\", \"always\", or \"never\""
           ]
 
-instance Aeson.FromJSON NewlineInsideTypeStyle where
+instance Aeson.FromJSON SingleLineTypesStyle where
   parseJSON =
-    Aeson.withText "NewlineInsideTypeStyle" $ \s ->
+    Aeson.withText "SingleLineTypesStyle" $ \s ->
       either Aeson.parseFail pure $
         parsePrinterOptType (Text.unpack s)
 
-instance PrinterOptsFieldType NewlineInsideTypeStyle where
+instance PrinterOptsFieldType SingleLineTypesStyle where
   parsePrinterOptType s =
     case s of
-      "preserve-single-line" -> Right TypePreserveSingleLine
-      "multi-line" -> Right TypeMultiLine
+      "auto" -> Right TypeAuto
+      "only-if-already-single" -> Right TypeOnlyIfAlreadySingle
       _ ->
         Left . unlines $
           [ "unknown value: " <> show s
-          , "Valid values are: \"preserve-single-line\" or \"multi-line\""
+          , "Valid values are: \"auto\" or \"only-if-already-single\""
           ]
 
 defaultPrinterOptsYaml :: String
@@ -615,6 +615,6 @@ defaultPrinterOptsYaml =
     , "# Module reexports Fourmolu should know about"
     , "reexports: []"
     , ""
-    , "# Whether type should be multiline if preceded with forall or constraints and a newline (choices: preserve-single-line or multi-line)"
-    , "newline-inside-type: preserve-single-line"
+    , "# Whether a single-line type should be converted to multi-line if preceded with forall or constraints and a newline (choices: auto or only-if-already-single)"
+    , "single-line-types: auto"
     ]

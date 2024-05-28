@@ -230,12 +230,12 @@ allOptions =
         cliOverrides = emptyOverrides
       },
     Option
-      { name = "newline-inside-type",
-        fieldName = Just "poNewlineInsideType",
-        description = "Whether type should be multiline if preceded with forall or constraints and a newline",
-        type_ = "NewlineInsideTypeStyle",
-        default_ = HsExpr "TypePreserveSingleLine",
-        ormolu = HsExpr "TypeMultiLine",
+      { name = "single-line-types",
+        fieldName = Just "poSingleLineTypes",
+        description = "Whether a single-line type should be converted to multi-line if preceded with forall or constraints and a newline",
+        type_ = "SingleLineTypesStyle",
+        default_ = HsExpr "TypeAuto",
+        ormolu = HsExpr "TypeOnlyIfAlreadySingle",
         sinceVersion = Nothing,
         cliOverrides = emptyOverrides
       }
@@ -442,10 +442,10 @@ allFieldTypes =
           ]
       },
     FieldTypeEnum
-      { fieldTypeName = "NewlineInsideTypeStyle",
+      { fieldTypeName = "SingleLineTypesStyle",
         enumOptions =
-          [ ("TypePreserveSingleLine", "preserve-single-line"),
-            ("TypeMultiLine", "multi-line")
+          [ ("TypeAuto", "auto"),
+            ("TypeOnlyIfAlreadySingle", "only-if-already-single")
           ]
       }
   ]

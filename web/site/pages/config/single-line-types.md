@@ -1,4 +1,4 @@
-# `newline-inside-type`
+# `single-line-types`
 
 $info$
 
@@ -9,12 +9,12 @@ $info$
   (a -> b) -> f a -> f b
 ```
 ```fourmolu-example-tab
-preserve-single-line
-{ "newline-inside-type": "preserve-single-line" }
+auto
+{ "single-line-types": "auto" }
 ```
 ```fourmolu-example-tab
-multi-line
-{ "newline-inside-type": "multi-line" }
+only-if-already-single
+{ "single-line-types": "only-if-already-single" }
 ```
 
 ## See also

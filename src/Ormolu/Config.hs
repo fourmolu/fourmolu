@@ -44,7 +44,7 @@ module Ormolu.Config
     Unicode (..),
     ColumnLimit (..),
     SingleDerivingParens (..),
-    NewlineInsideTypeStyle (..),
+    SingleLineTypesStyle (..),
     parsePrinterOptsCLI,
     parsePrinterOptType,
 

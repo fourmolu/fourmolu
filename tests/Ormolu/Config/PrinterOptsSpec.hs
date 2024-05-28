@@ -243,10 +243,10 @@ spec =
           checkIdempotence = True
         },
       TestGroup
-        { label = "newline-inside-type",
+        { label = "single-line-types",
           isMulti = False,
           testCases = allOptions,
-          updateConfig = \newlineInsideType opts -> opts {poNewlineInsideType = pure newlineInsideType},
+          updateConfig = \singleLineTypes opts -> opts {poSingleLineTypes = pure singleLineTypes},
           showTestCase = show,
           testCaseSuffix = suffix1,
           checkIdempotence = True
