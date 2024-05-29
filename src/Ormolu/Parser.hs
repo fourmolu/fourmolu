@@ -219,7 +219,7 @@ normalizeModule Config {..} hsmod =
         | ConstraintNever <- constraintParens -> [inner]
         | otherwise -> [x]
       [x@(L lx _)]
-        | ConstraintAlways <- constraintParens -> [L lx (HsParTy EpAnnNotUsed x)]
+        | ConstraintAlways <- constraintParens -> [L lx (HsParTy noAnn x)]
         | otherwise -> [x]
       xs -> xs
     constraintParens = runIdentity (poSingleConstraintParens cfgPrinterOpts)

@@ -11,6 +11,7 @@ module Ormolu.Printer.Combinators
     runR,
     getEnclosingSpan,
     getEnclosingSpanWhere,
+    getEnclosingComments,
     isExtensionEnabled,
 
     -- * Combinators
@@ -99,11 +100,11 @@ import Data.List (intersperse)
 import Data.Text (Text)
 import GHC.Data.Strict qualified as Strict
 import GHC.LanguageExtensions.Type
+import GHC.Parser.Annotation
 import GHC.Types.SrcLoc hiding (spans)
 import Ormolu.Config
 import Ormolu.Printer.Comments
 import Ormolu.Printer.Internal
-import Ormolu.Utils (HasSrcSpan (..), getLoc')
 
 ----------------------------------------------------------------------------
 -- Basic
@@ -123,13 +124,13 @@ inciIf b m = if b then inci m else m
 -- 'Located' wrapper, it should be “discharged” with a corresponding
 -- 'located' invocation.
 located ::
-  (HasSrcSpan l) =>
+  (HasLoc l) =>
   -- | Thing to enter
   GenLocated l a ->
   -- | How to render inner value
   (a -> R ()) ->
   R ()
-located (L l' a) f = case loc' l' of
+located (L l' a) f = case locA l' of
   UnhelpfulSpan _ -> f a
   RealSrcSpan l _ -> do
     spitPrecedingComments l
@@ -141,7 +142,7 @@ located (L l' a) f = case loc' l' of
 -- virtual elements at the start and end of the source span to prevent comments
 -- from "floating out".
 encloseLocated ::
-  (HasSrcSpan l) =>
+  (HasLoc l) =>
   GenLocated l [a] ->
   ([a] -> R ()) ->
   R ()
@@ -150,13 +151,13 @@ encloseLocated la f = located la $ \a -> do
   f a
   when (null a) $ located (L endSpan ()) pure
   where
-    l = getLoc' la
+    l = locA la
     (startLoc, endLoc) = (srcSpanStart l, srcSpanEnd l)
     (startSpan, endSpan) = (mkSrcSpan startLoc startLoc, mkSrcSpan endLoc endLoc)
 
 -- | A version of 'located' with arguments flipped.
 located' ::
-  (HasSrcSpan l) =>
+  (HasLoc l) =>
   -- | How to render inner value
   (a -> R ()) ->
   -- | Thing to enter

@@ -72,7 +72,8 @@ data GroupStyle
 p_valDecl :: HsBind GhcPs -> R ()
 p_valDecl = \case
   FunBind _ funId funMatches -> p_funBind funId funMatches
-  PatBind _ pat grhss -> p_match PatternBind False NoSrcStrict [pat] grhss
+  PatBind _ pat multAnn grhss ->
+    p_match PatternBind False multAnn NoSrcStrict [pat] grhss
   VarBind {} -> notImplemented "VarBinds" -- introduced by the type checker
   PatSynBind _ psb -> p_patSynBind psb
 
@@ -89,7 +90,7 @@ p_matchGroup ::
 p_matchGroup = p_matchGroup' exprPlacement p_hsExpr
 
 p_matchGroup' ::
-  ( Anno (GRHS GhcPs (LocatedA body)) ~ SrcAnn NoEpAnns,
+  ( Anno (GRHS GhcPs (LocatedA body)) ~ EpAnnCO,
     Anno (Match GhcPs (LocatedA body)) ~ SrcSpanAnnA
   ) =>
   -- | How to get body placement
@@ -119,6 +120,7 @@ p_matchGroup' placer render style mg@MG {..} = do
         render
         (adjustMatchGroupStyle m style)
         (isInfixMatch m)
+        (HsNoMultAnn NoExtField)
         (matchStrictness m)
         m_pats
         m_grhss
@@ -148,6 +150,8 @@ p_match ::
   MatchGroupStyle ->
   -- | Is this an infix match?
   Bool ->
+  -- | Multiplicity annotation
+  HsMultAnn GhcPs ->
   -- | Strictness prefix (FunBind)
   SrcStrictness ->
   -- | Argument patterns
@@ -158,7 +162,7 @@ p_match ::
 p_match = p_match' exprPlacement p_hsExpr
 
 p_match' ::
-  (Anno (GRHS GhcPs (LocatedA body)) ~ SrcAnn NoEpAnns) =>
+  (Anno (GRHS GhcPs (LocatedA body)) ~ EpAnnCO) =>
   -- | How to get body placement
   (body -> Placement) ->
   -- | How to print body
@@ -167,6 +171,8 @@ p_match' ::
   MatchGroupStyle ->
   -- | Is this an infix match?
   Bool ->
+  -- | Multiplicity annotation
+  HsMultAnn GhcPs ->
   -- | Strictness prefix (FunBind)
   SrcStrictness ->
   -- | Argument patterns
@@ -174,7 +180,7 @@ p_match' ::
   -- | Equations
   GRHSs GhcPs (LocatedA body) ->
   R ()
-p_match' placer render style isInfix strictness m_pats GRHSs {..} = do
+p_match' placer render style isInfix multAnn strictness m_pats GRHSs {..} = do
   -- Normally, since patterns may be placed in a multi-line layout, it is
   -- necessary to bump indentation for the pattern group so it's more
   -- indented than function name. This in turn means that indentation for
@@ -182,6 +188,13 @@ p_match' placer render style isInfix strictness m_pats GRHSs {..} = do
   -- would start with two indentation steps applied, which is ugly, so we
   -- need to be a bit more clever here and bump indentation level only when
   -- pattern group is multiline.
+  case multAnn of
+    HsNoMultAnn NoExtField -> pure ()
+    HsPct1Ann _ -> txt "%1" *> space
+    HsMultAnn _ ty -> do
+      txt "%"
+      located ty p_hsType
+      space
   case strictness of
     NoSrcStrict -> return ()
     SrcStrict -> txt "!"
@@ -213,6 +226,7 @@ p_match' placer render style isInfix strictness m_pats GRHSs {..} = do
                   LazyPat _ _ -> True
                   BangPat _ _ -> True
                   SplicePat _ _ -> True
+                  InvisPat _ _ -> True
                   _ -> False
             txt "\\"
             when needsSpace space
@@ -363,15 +377,13 @@ p_hsCmd' isApp s = \case
     located cmd (p_hsCmd' Applicand s)
     breakpoint
     inci $ located expr p_hsExpr
-  HsCmdLam _ mgroup -> p_matchGroup' cmdPlacement p_hsCmd Lambda mgroup
-  HsCmdPar _ _ c _ -> parens N $ sitcc $ located c p_hsCmd
+  HsCmdLam _ variant mgroup -> p_lam isApp variant cmdPlacement p_hsCmd mgroup
+  HsCmdPar _ c -> parens N $ sitcc $ located c p_hsCmd
   HsCmdCase _ e mgroup ->
     p_case isApp cmdPlacement p_hsCmd e mgroup
-  HsCmdLamCase _ variant mgroup ->
-    p_lamcase isApp variant cmdPlacement p_hsCmd mgroup
   HsCmdIf anns _ if' then' else' ->
     p_if cmdPlacement p_hsCmd anns if' then' else'
-  HsCmdLet _ letToken localBinds _ c ->
+  HsCmdLet (letToken, _) localBinds c ->
     p_let (s == S) p_hsCmd letToken localBinds c
   HsCmdDo _ es -> do
     txt "do"
@@ -442,7 +454,6 @@ p_stmt' placer render = \case
     let letLoc =
           fmap (\(AddEpAnn _ loc) -> loc)
             . find (\(AddEpAnn ann _) -> ann == AnnLet)
-            . epAnnAnns
             $ epAnnLet
     p_let' True letLoc binds Nothing
   ParStmt {} ->
@@ -559,11 +570,10 @@ p_hsLocalBinds = \case
     -- of p_hsLocalBinds). Hence, we introduce a manual Located as we
     -- depend on the layout being correctly set.
     pseudoLocated = \case
-      EpAnn {anns = AnnList {al_anchor = Just Anchor {anchor}}}
-        | let sp = RealSrcSpan anchor Strict.Nothing,
-          -- excluding cases where there are no bindings
-          not $ isZeroWidthSpan sp ->
-            located (L sp ()) . const
+      EpAnn {anns = AnnList {al_anchor}}
+        | -- excluding cases where there are no bindings
+          not $ isZeroWidthSpan (locA al_anchor) ->
+            located (L al_anchor ()) . const
       _ -> id
 
 p_ldotFieldOcc :: XRec GhcPs (DotFieldOcc GhcPs) -> R ()
@@ -577,7 +587,7 @@ p_fieldOcc :: FieldOcc GhcPs -> R ()
 p_fieldOcc FieldOcc {..} = p_rdrName foLabel
 
 p_hsFieldBind ::
-  (lhs ~ GenLocated l a, HasSrcSpan l) =>
+  (lhs ~ GenLocated l a, HasLoc l) =>
   (lhs -> R ()) ->
   HsFieldBind lhs (LHsExpr GhcPs) ->
   R ()
@@ -587,7 +597,7 @@ p_hsFieldBind p_lhs HsFieldBind {..} = do
     space
     equals
     let placement =
-          if onTheSameLine (getLoc' hfbLHS) (getLocA hfbRHS)
+          if onTheSameLine (getLocA hfbLHS) (getLocA hfbRHS)
             then exprPlacement (unLoc hfbRHS)
             else Normal
     placeHanging placement (located hfbRHS p_hsExpr)
@@ -626,10 +636,8 @@ p_hsExpr' isApp s = \case
       HsString (SourceText stxt) _ -> p_stringLit stxt
       HsStringPrim (SourceText stxt) _ -> p_stringLit stxt
       r -> atom r
-  HsLam _ mgroup ->
-    p_matchGroup Lambda mgroup
-  HsLamCase _ variant mgroup ->
-    p_lamcase isApp variant exprPlacement p_hsExpr mgroup
+  HsLam _ variant mgroup ->
+    p_lam isApp variant exprPlacement p_hsExpr mgroup
   HsApp _ f x -> do
     let -- In order to format function applications with multiple parameters
         -- nicer, traverse the AST to gather the function and all the
@@ -687,7 +695,7 @@ p_hsExpr' isApp s = \case
           sep breakpoint (located' p_hsExpr) initp
         placeHanging placement $
           located lastp p_hsExpr
-  HsAppType _ e _ a -> do
+  HsAppType _ e a -> do
     located e p_hsExpr
     breakpoint
     inci $ do
@@ -716,7 +724,7 @@ p_hsExpr' isApp s = \case
     -- negated literals, as `- 1` and `-1` have differing AST.
     when (negativeLiterals && isLiteral) space
     located e p_hsExpr
-  HsPar _ _ e _ ->
+  HsPar _ e ->
     parens s $ sitcc (located e (dontUseBraces . p_hsExpr))
   SectionL _ x op -> do
     located x p_hsExpr
@@ -759,7 +767,7 @@ p_hsExpr' isApp s = \case
     txt "if"
     breakpoint
     inciApplicand isApp $ sep newline (located' (p_grhs RightArrow)) guards
-  HsLet _ letToken localBinds _ e ->
+  HsLet (letToken, _) localBinds e ->
     p_let (s == S) p_hsExpr letToken localBinds e
   HsDo _ doFlavor es -> do
     let doBody moduleName header = do
@@ -857,7 +865,7 @@ p_hsExpr' isApp s = \case
     located expr p_hsExpr
     breakpoint'
     txt "||]"
-  HsUntypedBracket epAnn x -> p_hsQuote epAnn x
+  HsUntypedBracket anns x -> p_hsQuote anns x
   HsTypedSplice _ expr -> p_hsSpliceTH True expr DollarSplice
   HsUntypedSplice _ untySplice -> p_hsUntypedSplice DollarSplice untySplice
   HsProc _ p e -> do
@@ -881,6 +889,10 @@ p_hsExpr' isApp s = \case
       breakpoint
       let inciIfS = case s of N -> id; S -> inci
       inciIfS $ located x p_hsExpr
+  HsEmbTy _ HsWC {hswc_body} -> do
+    txt "type"
+    space
+    located hswc_body p_hsType
 
 p_patSynBind :: PatSynBind GhcPs GhcPs -> R ()
 p_patSynBind PSB {..} = do
@@ -942,7 +954,7 @@ p_patSynBind PSB {..} = do
       inci (rhs conSpans)
 
 p_case ::
-  ( Anno (GRHS GhcPs (LocatedA body)) ~ SrcAnn NoEpAnns,
+  ( Anno (GRHS GhcPs (LocatedA body)) ~ EpAnnCO,
     Anno (Match GhcPs (LocatedA body)) ~ SrcSpanAnnA
   ) =>
   IsApplicand ->
@@ -964,13 +976,13 @@ p_case isApp placer render e mgroup = do
   breakpoint
   inciApplicand isApp (p_matchGroup' placer render Case mgroup)
 
-p_lamcase ::
-  ( Anno (GRHS GhcPs (LocatedA body)) ~ SrcAnn NoEpAnns,
+p_lam ::
+  ( Anno (GRHS GhcPs (LocatedA body)) ~ EpAnnCO,
     Anno (Match GhcPs (LocatedA body)) ~ SrcSpanAnnA
   ) =>
   IsApplicand ->
-  -- | Variant (@\\case@ or @\\cases@)
-  LamCaseVariant ->
+  -- | Variant (@\\@ or @\\case@ or @\\cases@)
+  HsLamVariant ->
   -- | Placer
   (body -> Placement) ->
   -- | Render
@@ -978,12 +990,19 @@ p_lamcase ::
   -- | Expression
   MatchGroup GhcPs (LocatedA body) ->
   R ()
-p_lamcase isApp variant placer render mgroup = do
-  txt $ case variant of
-    LamCase -> "\\case"
-    LamCases -> "\\cases"
-  breakpoint
-  inciApplicand isApp (p_matchGroup' placer render LambdaCase mgroup)
+p_lam isApp variant placer render mgroup = do
+  let mCaseTxt = case variant of
+        LamSingle -> Nothing
+        LamCase -> Just "\\case"
+        LamCases -> Just "\\cases"
+      mgs = if isJust mCaseTxt then LambdaCase else Lambda
+      pMatchGroup = p_matchGroup' placer render mgs mgroup
+  case mCaseTxt of
+    Nothing -> pMatchGroup
+    Just caseTxt -> do
+      txt caseTxt
+      breakpoint
+      inciApplicand isApp pMatchGroup
 
 p_if ::
   -- | Placer
@@ -991,7 +1010,7 @@ p_if ::
   -- | Render
   (body -> R ()) ->
   -- | Annotations
-  EpAnn AnnsIf ->
+  AnnsIf ->
   -- | If
   LHsExpr GhcPs ->
   -- | Then
@@ -999,11 +1018,30 @@ p_if ::
   -- | Else
   LocatedA body ->
   R ()
-p_if placer render epAnn if' then' else' = do
+p_if placer render anns if' then' else' = do
   txt "if"
   space
   located if' p_hsExpr
   breakpoint
+  commentSpans <- fmap getLoc <$> getEnclosingComments
+  let (thenSpan, elseSpan) = (locA aiThen, locA aiElse)
+        where
+          AnnsIf {aiThen, aiElse} = anns
+
+      locatedToken tokenSpan token =
+        located (L tokenSpan ()) $ \_ -> txt token
+
+      betweenSpans spanA spanB s = spanA < s && s < spanB
+
+      placeHangingLocated tokenSpan bodyLoc@(L _ body) = do
+        let bodySpan = getLocA bodyLoc
+            hasComments = fromMaybe False $ do
+              tokenRealSpan <- srcSpanToRealSrcSpan tokenSpan
+              bodyRealSpan <- srcSpanToRealSrcSpan bodySpan
+              pure $ any (betweenSpans tokenRealSpan bodyRealSpan) commentSpans
+            placement = if hasComments then Normal else placer body
+        switchLayout [tokenSpan, bodySpan] $
+          placeHanging placement (located bodyLoc render)
   inci $ do
     locatedToken thenSpan "then"
     space
@@ -1012,34 +1050,6 @@ p_if placer render epAnn if' then' else' = do
     locatedToken elseSpan "else"
     space
     placeHangingLocated elseSpan else'
-  where
-    (thenSpan, elseSpan, commentSpans) =
-      case epAnn of
-        EpAnn {anns = AnnsIf {aiThen, aiElse}, comments} ->
-          ( loc' $ epaLocationRealSrcSpan aiThen,
-            loc' $ epaLocationRealSrcSpan aiElse,
-            map (anchor . getLoc) $
-              case comments of
-                EpaComments cs -> cs
-                EpaCommentsBalanced pre post -> pre <> post
-          )
-        EpAnnNotUsed ->
-          (noSrcSpan, noSrcSpan, [])
-
-    locatedToken tokenSpan token =
-      located (L tokenSpan ()) $ \_ -> txt token
-
-    betweenSpans spanA spanB s = spanA < s && s < spanB
-
-    placeHangingLocated tokenSpan bodyLoc@(L _ body) = do
-      let bodySpan = getLoc' bodyLoc
-          hasComments = fromMaybe False $ do
-            tokenRealSpan <- srcSpanToRealSrcSpan tokenSpan
-            bodyRealSpan <- srcSpanToRealSrcSpan bodySpan
-            pure $ any (betweenSpans tokenRealSpan bodyRealSpan) commentSpans
-          placement = if hasComments then Normal else placer body
-      switchLayout [tokenSpan, bodySpan] $
-        placeHanging placement (located bodyLoc render)
 
 p_let ::
   -- | True if in do-block
@@ -1047,16 +1057,16 @@ p_let ::
   -- | Render
   (body -> R ()) ->
   -- | Annotation for the `let` block
-  LHsToken "let" GhcPs ->
+  EpToken "let" ->
   HsLocalBinds GhcPs ->
   LocatedA body ->
   R ()
 p_let inDo render letToken localBinds e = p_let' inDo letLoc localBinds $ Just (located e render)
   where
     letLoc =
-      case getLoc letToken of
-        TokenLoc loc -> Just loc
-        NoTokenLoc -> Nothing
+      case letToken of
+        EpTok loc -> Just loc
+        NoEpTok -> Nothing
 
 p_let' ::
   -- | True if in do-block
@@ -1143,11 +1153,11 @@ p_pat = \case
   LazyPat _ pat -> do
     txt "~"
     located pat p_pat
-  AsPat _ name _ pat -> do
+  AsPat _ name pat -> do
     p_rdrName name
     txt "@"
     located pat p_pat
-  ParPat _ _ pat _ ->
+  ParPat _ pat ->
     located pat (parens S . sitcc . p_pat)
   BangPat _ pat -> do
     txt "!"
@@ -1212,12 +1222,17 @@ p_pat = \case
   SigPat _ pat HsPS {..} -> do
     located pat p_pat
     p_typeAscription (lhsTypeToSigType hsps_body)
+  EmbTyPat _ (HsTP _ ty) -> do
+    txt "type"
+    space
+    located ty p_hsType
+  InvisPat _ tyPat -> p_tyPat tyPat
 
-p_hsPatSigType :: HsPatSigType GhcPs -> R ()
-p_hsPatSigType (HsPS _ ty) = txt "@" *> located ty p_hsType
+p_tyPat :: HsTyPat GhcPs -> R ()
+p_tyPat (HsTP _ ty) = txt "@" *> located ty p_hsType
 
 p_hsConPatTyArg :: HsConPatTyArg GhcPs -> R ()
-p_hsConPatTyArg (HsConPatTyArg _ patSigTy) = p_hsPatSigType patSigTy
+p_hsConPatTyArg (HsConPatTyArg _ patSigTy) = p_tyPat patSigTy
 
 p_pat_hsFieldBind :: HsRecField GhcPs (LPat GhcPs) -> R ()
 p_pat_hsFieldBind HsFieldBind {..} = do
@@ -1272,11 +1287,11 @@ p_hsSpliceTH isTyped expr = \case
   where
     decoSymbol = if isTyped then "$$" else "$"
 
-p_hsQuote :: EpAnn [AddEpAnn] -> HsQuote GhcPs -> R ()
-p_hsQuote epAnn = \case
+p_hsQuote :: [AddEpAnn] -> HsQuote GhcPs -> R ()
+p_hsQuote anns = \case
   ExpBr _ expr -> do
     let name
-          | any isJust (matchAddEpAnn AnnOpenEQ <$> epAnnAnns epAnn) = ""
+          | any (isJust . matchAddEpAnn AnnOpenEQ) anns = ""
           | otherwise = "e"
     quote name (located expr p_hsExpr)
   PatBr _ pat -> located pat (quote "p" . p_pat)
@@ -1387,10 +1402,9 @@ blockPlacement _ _ = Normal
 -- | Determine placement of a given command.
 cmdPlacement :: HsCmd GhcPs -> Placement
 cmdPlacement = \case
-  HsCmdLam _ _ -> Hanging
-  HsCmdCase _ _ _ -> Hanging
-  HsCmdLamCase _ _ _ -> Hanging
-  HsCmdDo _ _ -> Hanging
+  HsCmdLam {} -> Hanging
+  HsCmdCase {} -> Hanging
+  HsCmdDo {} -> Hanging
   _ -> Normal
 
 -- | Determine placement of a top level command.
@@ -1401,12 +1415,14 @@ cmdTopPlacement (HsCmdTop _ (L _ x)) = cmdPlacement x
 exprPlacement :: HsExpr GhcPs -> Placement
 exprPlacement = \case
   -- Only hang lambdas with single line parameter lists
-  HsLam _ mg -> case mg of
-    MG _ (L _ [L _ (Match _ _ (x : xs) _)])
-      | isOneLineSpan (combineSrcSpans' $ fmap getLocA (x :| xs)) ->
-          Hanging
-    _ -> Normal
-  HsLamCase _ _ _ -> Hanging
+  HsLam _ variant mg -> case variant of
+    LamSingle -> case mg of
+      MG _ (L _ [L _ (Match _ _ (x : xs) _)])
+        | isOneLineSpan (combineSrcSpans' $ fmap getLocA (x :| xs)) ->
+            Hanging
+      _ -> Normal
+    LamCase -> Hanging
+    LamCases -> Hanging
   HsCase _ _ _ -> Hanging
   HsDo _ (DoExpr _) _ -> Hanging
   HsDo _ (MDoExpr _) _ -> Hanging

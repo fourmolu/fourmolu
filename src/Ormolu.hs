@@ -52,6 +52,7 @@ import Data.Maybe (fromMaybe)
 import Data.Set qualified as Set
 import Data.Text (Text)
 import Data.Text qualified as T
+import Data.Text.IO.Utf8 qualified as T.Utf8
 import Debug.Trace
 import GHC.Driver.Errors.Types
 import GHC.Types.Error
@@ -68,7 +69,6 @@ import Ormolu.Parser.Result
 import Ormolu.Printer
 import Ormolu.Utils (showOutputable)
 import Ormolu.Utils.Cabal qualified as CabalUtils
-import Ormolu.Utils.IO
 import System.FilePath
 
 -- | Format a 'Text'.
@@ -165,7 +165,7 @@ ormoluFile ::
   -- | Resulting rendition
   m Text
 ormoluFile cfg path =
-  readFileUtf8 path >>= ormolu cfg path
+  liftIO (T.Utf8.readFile path) >>= ormolu cfg path
 
 -- | Read input from stdin and format it.
 --
@@ -179,7 +179,7 @@ ormoluStdin ::
   -- | Resulting rendition
   m Text
 ormoluStdin cfg =
-  getContentsUtf8 >>= ormolu cfg "<stdin>"
+  liftIO T.Utf8.getContents >>= ormolu cfg "<stdin>"
 
 -- | Refine a 'Config' by incorporating given 'SourceType', 'CabalInfo', and
 -- fixity overrides 'FixityMap'. You can use 'detectSourceType' to deduce

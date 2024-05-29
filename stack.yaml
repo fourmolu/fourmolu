@@ -1,4 +1,5 @@
-resolver: nightly-2023-10-09
+resolver: nightly-2024-05-10
 
 extra-deps:
-- ghc-lib-parser-9.8.1.20231009
+- ghc-lib-parser-9.10.1.20240511
+- Cabal-syntax-3.12.0.0

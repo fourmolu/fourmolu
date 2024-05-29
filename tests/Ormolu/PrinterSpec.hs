@@ -12,11 +12,10 @@ import Data.Maybe (isJust)
 import Data.Set qualified as Set
 import Data.Text (Text)
 import Data.Text qualified as T
-import Data.Text.IO qualified as T
+import Data.Text.IO.Utf8 qualified as T.Utf8
 import Ormolu
 import Ormolu.Config
 import Ormolu.Fixity
-import Ormolu.Utils.IO
 import Path
 import Path.IO
 import System.Environment (lookupEnv)
@@ -77,8 +76,8 @@ checkExample (printerOpts, label, suffix) srcPath' = it (fromRelFile srcPath' ++
   -- 3. Check the output against expected output. Thus all tests should
   -- include two files: input and expected output.
   whenShouldRegenerateOutput $
-    T.writeFile (fromRelFile expectedOutputPath) formatted0
-  expected <- readFileUtf8 $ fromRelFile expectedOutputPath
+    T.Utf8.writeFile (fromRelFile expectedOutputPath) formatted0
+  expected <- T.Utf8.readFile $ fromRelFile expectedOutputPath
   shouldMatch False formatted0 expected
   -- 4. Check that running the formatter on the output produces the same
   -- output again (the transformation is idempotent).

@@ -14,8 +14,6 @@ module Ormolu.Utils
     separatedByBlankNE,
     onTheSameLine,
     groupBy',
-    HasSrcSpan (..),
-    getLoc',
     matchAddEpAnn,
     textToStringBuffer,
     ghcModuleNameToCabal,
@@ -165,21 +163,6 @@ groupBy' eq = flip foldr [] $ \x -> \case
     if x `eq` y
       then (x :| y : ys) : zs
       else pure x : (y :| ys) : zs
-
-class HasSrcSpan l where
-  loc' :: l -> SrcSpan
-
-instance HasSrcSpan SrcSpan where
-  loc' = id
-
-instance HasSrcSpan RealSrcSpan where
-  loc' l = RealSrcSpan l Strict.Nothing
-
-instance HasSrcSpan (SrcSpanAnn' ann) where
-  loc' = locA
-
-getLoc' :: (HasSrcSpan l) => GenLocated l a -> SrcSpan
-getLoc' = loc' . getLoc
 
 -- | Check whether the given 'AnnKeywordId' or its Unicode variant is in an
 -- 'AddEpAnn', and return the 'EpaLocation' if so.
