@@ -1142,9 +1142,10 @@ p_let' inDo letLoc localBinds mBody = do
       HsValBinds epanns _ -> Just epanns
       HsIPBinds epanns _ -> Just epanns
       EmptyLocalBinds _ -> Nothing
-    epAnnsStartLine = \case
-      EpAnn {entry} -> Just (srcSpanStartLine . anchor $ entry)
-      EpAnnNotUsed -> Nothing
+    epAnnsStartLine epAnn =
+      case entry epAnn of
+        EpaSpan (RealSrcSpan r _) -> Just $ srcSpanStartLine r
+        _ -> Nothing
 
 p_pat :: Pat GhcPs -> R ()
 p_pat = \case

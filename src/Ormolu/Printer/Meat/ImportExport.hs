@@ -91,7 +91,7 @@ p_lie encLayout isAllPrevDoc relativePos = \case
     withComma $
       located l1 p_ieWrappedName
     p_exportDoc exportDoc
-  IEThingAbs _ l1 exportDoc ->
+  IEThingAbs _ l1 exportDoc -> do
     withComma $
       located l1 p_ieWrappedName
     p_exportDoc exportDoc

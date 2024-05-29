@@ -100,7 +100,7 @@ import Data.List (intersperse)
 import Data.Text (Text)
 import GHC.Data.Strict qualified as Strict
 import GHC.LanguageExtensions.Type
-import GHC.Parser.Annotation
+import GHC.Parser.Annotation hiding (IsUnicodeSyntax (..))
 import GHC.Types.SrcLoc hiding (spans)
 import Ormolu.Config
 import Ormolu.Printer.Comments

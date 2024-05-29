@@ -200,14 +200,14 @@ p_hsType' multilineArgs = \case
     p_hsTypeR m = p_hsType' multilineArgs m
 
 startTypeAnnotation ::
-  (HasSrcSpan l) =>
+  (HasLoc l) =>
   GenLocated l a ->
   (a -> R ()) ->
   R ()
 startTypeAnnotation = startTypeAnnotation' breakpoint breakpoint
 
 startTypeAnnotationDecl ::
-  (HasSrcSpan l) =>
+  (HasLoc l) =>
   GenLocated l a ->
   (a -> HsType GhcPs) ->
   (a -> R ()) ->
@@ -222,7 +222,7 @@ startTypeAnnotationDecl lItem getType =
     lItem
 
 startTypeAnnotation' ::
-  (HasSrcSpan l) =>
+  (HasLoc l) =>
   R () ->
   R () ->
   GenLocated l a ->
@@ -306,7 +306,7 @@ p_forallBndrs vis p tyvars = do
   p_forallBndrsStart p tyvars
   p_forallBndrsEnd vis
 
-p_forallBndrsStart :: (HasSrcSpan l) => (a -> R ()) -> [GenLocated l a] -> R ()
+p_forallBndrsStart :: (HasLoc l) => (a -> R ()) -> [GenLocated l a] -> R ()
 p_forallBndrsStart _ [] = token'forall
 p_forallBndrsStart p tyvars = do
   switchLayout (locA <$> tyvars) $ do

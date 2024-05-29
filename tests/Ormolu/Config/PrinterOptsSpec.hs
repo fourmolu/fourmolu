@@ -17,6 +17,7 @@ import Data.Char (isSpace)
 import Data.Maybe (isJust)
 import Data.Text (Text)
 import Data.Text qualified as T
+import Data.Text.IO.Utf8 qualified as T.Utf8
 import GHC.Stack (withFrozenCallStack)
 import Ormolu
   ( Config (..),
@@ -30,7 +31,6 @@ import Ormolu
 import Ormolu.Config (ColumnLimit (..), HaddockPrintStyleModule (..))
 import Ormolu.Exception (OrmoluException, printOrmoluException)
 import Ormolu.Terminal (ColorMode (..), runTerm)
-import Ormolu.Utils.IO (readFileUtf8, writeFileUtf8)
 import Path
   ( File,
     Path,
@@ -254,7 +254,7 @@ runTestGroup TestGroup {..} =
             outputFile = testDir </> toRelFile ("output" ++ testCaseSuffix testCase ++ ".hs")
             opts = updateConfig testCase defaultPrinterOpts
 
-        input <- readFileUtf8 inputPath
+        input <- T.Utf8.readFile inputPath
         actual <-
           if isMulti
             then overSectionsM (T.pack "{- // -}") (runOrmolu opts checkIdempotence inputPath) input
@@ -286,7 +286,7 @@ runOrmolu opts checkIdempotence inputPath input =
 
 checkResult :: Path Rel File -> Text -> Expectation
 checkResult outputFile actual
-  | shouldRegenerateOutput = writeFileUtf8 (fromRelFile outputFile) actual
+  | shouldRegenerateOutput = T.Utf8.writeFile (fromRelFile outputFile) actual
   | otherwise =
       getFileContents outputFile >>= \case
         Nothing ->
@@ -326,7 +326,7 @@ getFileContents :: Path b File -> IO (Maybe Text)
 getFileContents path = do
   fileExists <- doesFileExist path
   if fileExists
-    then Just <$> readFileUtf8 (toFilePath path)
+    then Just <$> T.Utf8.readFile (toFilePath path)
     else pure Nothing
 
 getDiff :: (String, Text) -> (String, Text) -> Text
