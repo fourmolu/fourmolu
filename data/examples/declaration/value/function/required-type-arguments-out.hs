@@ -16,6 +16,6 @@ a4 = f (type (forall a. (Read a) => String -> a))
 foo =
   f
     ( type ( Maybe
-               Int
+              Int
            )
     )
