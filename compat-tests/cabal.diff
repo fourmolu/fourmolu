@@ -275,6 +275,22 @@ index bb77d20..b15b373 100644
              (EnableExtension NondecreasingIndentation, Nothing)
                : extensions0
            else extensions0
+diff --git a/Cabal/src/Distribution/Simple/PreProcess.hs b/Cabal/src/Distribution/Simple/PreProcess.hs
+index 03b13ae..d96deb0 100644
+--- a/Cabal/src/Distribution/Simple/PreProcess.hs
++++ b/Cabal/src/Distribution/Simple/PreProcess.hs
+@@ -741,8 +741,9 @@ ppC2hs bi lbi clbi =
+                    | pkg <- pkgs
+                    , opt <-
+                       ["-I" ++ opt | opt <- Installed.includeDirs pkg]
+-                        ++ [ opt | opt@('-' : c : _) <- Installed.ccOptions pkg,
+-                           -- c2hs uses the C ABI
++                        ++ [ opt
++                           | opt@('-' : c : _) <- Installed.ccOptions pkg
++                           , -- c2hs uses the C ABI
+                            -- We assume that there are only C sources
+                            -- and C++ functions are exported via a C
+                            -- interface and wrapped in a C source file.
 diff --git a/Cabal/src/Distribution/Simple/Register.hs b/Cabal/src/Distribution/Simple/Register.hs
 index fc6075d..4b84d47 100644
 --- a/Cabal/src/Distribution/Simple/Register.hs
