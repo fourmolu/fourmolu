@@ -16,8 +16,7 @@ jobs:
           -
             name: cabal
             repo: haskell/cabal
-            # TODO: pin this to the next released version of Cabal that uses fourmolu
-            ref: 439d68efb74bd8f1c2215301d214d9459acdfa63
+            ref: Cabal-v3.12.0.0
             args: Cabal Cabal-syntax cabal-install
           -
             name: swarm
