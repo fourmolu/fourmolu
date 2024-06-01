@@ -358,13 +358,17 @@ brackets_ needBreaks open close style m = sitcc (vlayout singleLine multiLine)
         Leading ->
           if needBreaks
             then inci $ newline >> m
-            else inciIf (style == S) $ space >> m
+            else inciIfS $ space >> m
         Trailing ->
           if needBreaks
             then newline >> inci m
             else space >> sitcc m
       newline
-      inciIf (style == S) close
+      inciIfS close
+
+    -- just indent by 1 space instead of a full indentation. Ideally this would
+    -- be 0, but some contexts require at least one space, e.g. case patterns.
+    inciIfS = if style == S then inciBy 1 else id
 
 ----------------------------------------------------------------------------
 -- Literals
