@@ -459,9 +459,196 @@ index 1e08e84..4779812 100644
  noCommentsPrompt :: Interactive m => InitFlags -> m Bool
  noCommentsPrompt flags = getNoComments flags $ do
 diff --git a/cabal-install/src/Distribution/Client/Install.hs b/cabal-install/src/Distribution/Client/Install.hs
-index e1f855c..480d1e2 100644
+index e1f855c..c1eb443 100644
 --- a/cabal-install/src/Distribution/Client/Install.hs
 +++ b/cabal-install/src/Distribution/Client/Install.hs
+@@ -407,18 +407,18 @@ makeInstallContext
+ makeInstallContext
+   verbosity
+   ( packageDBs
+-    , repoCtxt
+-    , comp
+-    , _
+-    , progdb
+-    , _
+-    , _
+-    , configExFlags
+-    , installFlags
+-    , _
+-    , _
+-    , _
+-    )
++  , repoCtxt
++  , comp
++  , _
++  , progdb
++  , _
++  , _
++  , configExFlags
++  , installFlags
++  , _
++  , _
++  , _
++  )
+   mUserTargets = do
+     let idxState = flagToMaybe (installIndexState installFlags)
+ 
+@@ -472,25 +472,25 @@ makeInstallPlan
+ makeInstallPlan
+   verbosity
+   ( _
+-    , _
+-    , comp
+-    , platform
+-    , _
+-    , _
+-    , configFlags
+-    , configExFlags
+-    , installFlags
+-    , _
+-    , _
+-    , _
+-    )
++  , _
++  , comp
++  , platform
++  , _
++  , _
++  , configFlags
++  , configExFlags
++  , installFlags
++  , _
++  , _
++  , _
++  )
+   ( installedPkgIndex
+-    , sourcePkgDb
+-    , pkgConfigDb
+-    , _
+-    , pkgSpecifiers
+-    , _
+-    ) = do
++  , sourcePkgDb
++  , pkgConfigDb
++  , _
++  , pkgSpecifiers
++  , _
++  ) = do
+     notice verbosity "Resolving dependencies..."
+     return $
+       planPackages
+@@ -516,12 +516,12 @@ processInstallPlan
+   verbosity
+   args@(_, _, _, _, _, _, configFlags, _, installFlags, _, _, _)
+   ( installedPkgIndex
+-    , sourcePkgDb
+-    , _
+-    , userTargets
+-    , pkgSpecifiers
+-    , _
+-    )
++  , sourcePkgDb
++  , _
++  , userTargets
++  , pkgSpecifiers
++  , _
++  )
+   installPlan0 = do
+     checkPrintPlan
+       verbosity
+@@ -1023,18 +1023,18 @@ reportPlanningFailure
+ reportPlanningFailure
+   verbosity
+   ( _
+-    , _
+-    , comp
+-    , platform
+-    , _
+-    , _
+-    , configFlags
+-    , _
+-    , installFlags
+-    , _
+-    , _
+-    , _
+-    )
++  , _
++  , comp
++  , platform
++  , _
++  , _
++  , configFlags
++  , _
++  , installFlags
++  , _
++  , _
++  , _
++  )
+   (_, sourcePkgDb, _, _, pkgSpecifiers, _)
+   message = do
+     when reportFailure $ do
+@@ -1122,18 +1122,18 @@ postInstallActions
+ postInstallActions
+   verbosity
+   ( packageDBs
+-    , _
+-    , comp
+-    , platform
+-    , progdb
+-    , globalFlags
+-    , configFlags
+-    , _
+-    , installFlags
+-    , _
+-    , _
+-    , _
+-    )
++  , _
++  , comp
++  , platform
++  , progdb
++  , globalFlags
++  , configFlags
++  , _
++  , installFlags
++  , _
++  , _
++  , _
++  )
+   _
+   installPlan
+   buildOutcomes = do
+@@ -1413,18 +1413,18 @@ performInstallations
+ performInstallations
+   verbosity
+   ( packageDBs
+-    , repoCtxt
+-    , comp
+-    , platform
+-    , progdb
+-    , globalFlags
+-    , configFlags
+-    , configExFlags
+-    , installFlags
+-    , haddockFlags
+-    , testFlags
+-    , _
+-    )
++  , repoCtxt
++  , comp
++  , platform
++  , progdb
++  , globalFlags
++  , configFlags
++  , configExFlags
++  , installFlags
++  , haddockFlags
++  , testFlags
++  , _
++  )
+   installedPkgIndex
+   installPlan = do
+     info verbosity $ "Number of threads used: " ++ (show numJobs) ++ "."
 @@ -1750,7 +1750,7 @@ installLocalTarballPackage
              descFilePath =
                absUnpackedPath
@@ -512,6 +699,29 @@ index b032110..92f720d 100644
        $+$ nest
          4
          ( vcat
+diff --git a/cabal-install/src/Distribution/Client/Main.hs b/cabal-install/src/Distribution/Client/Main.hs
+index 5959753..8009908 100644
+--- a/cabal-install/src/Distribution/Client/Main.hs
++++ b/cabal-install/src/Distribution/Client/Main.hs
+@@ -741,12 +741,12 @@ installAction (configFlags, _, installFlags, _, _, _) _ globalFlags
+         (const [])
+ installAction
+   ( configFlags
+-    , configExFlags
+-    , installFlags
+-    , haddockFlags
+-    , testFlags
+-    , benchmarkFlags
+-    )
++  , configExFlags
++  , installFlags
++  , haddockFlags
++  , testFlags
++  , benchmarkFlags
++  )
+   extraArgs
+   globalFlags = do
+     let verb = fromFlagOrDefault normal (configVerbosity configFlags)
 diff --git a/cabal-install/src/Distribution/Client/ParseUtils.hs b/cabal-install/src/Distribution/Client/ParseUtils.hs
 index 44cdc4c..f79c10d 100644
 --- a/cabal-install/src/Distribution/Client/ParseUtils.hs
