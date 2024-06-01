@@ -20,7 +20,7 @@ import Data.Foldable (toList)
 import Data.Function (on)
 import Data.List (groupBy, minimumBy, nubBy, sortBy, sortOn)
 import Data.List.NonEmpty (NonEmpty)
-import Data.List.NonEmpty qualified as NEL
+import Data.List.NonEmpty qualified as NonEmpty
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as M
 import Data.Set (Set)
@@ -79,7 +79,7 @@ createSingleImportGroupStrategy =
 splitByQualifiedStrategy :: ImportGroups
 splitByQualifiedStrategy =
   ImportGroups $
-    NEL.fromList
+    NonEmpty.fromList
       [ ImportGroup
           { igName = Nothing,
             igRules = pure $ withUnqualifiedOnly matchAllImportRule
@@ -93,7 +93,7 @@ splitByQualifiedStrategy =
 splitByScopeStrategy :: Set Cabal.ModuleName -> ImportGroups
 splitByScopeStrategy mods =
   ImportGroups $
-    NEL.fromList
+    NonEmpty.fromList
       [ ImportGroup
           { igName = Nothing,
             igRules = pure matchAllImportRule
@@ -107,7 +107,7 @@ splitByScopeStrategy mods =
 splitByScopeAndQualifiedStrategy :: Set Cabal.ModuleName -> ImportGroups
 splitByScopeAndQualifiedStrategy mods =
   ImportGroups $
-    NEL.fromList
+    NonEmpty.fromList
       [ ImportGroup
           { igName = Nothing,
             igRules =
@@ -136,11 +136,11 @@ groupsFromConfig localModules =
     convertGroupPreset :: Config.ImportGroupPreset -> NonEmpty ImportGroupRule
     convertGroupPreset = \case
       Config.AllPreset ->
-        NEL.singleton
+        NonEmpty.singleton
           ImportGroupRule
             { igrModuleMatcher = MatchAllModules,
               igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
-              igrPriority = maxBound
+              igrPriority = ImportRulePriority 100
             }
 
     convertGroupRule :: Config.ImportGroupRule -> ImportGroupRule
@@ -164,7 +164,7 @@ matchAllImportRule =
   ImportGroupRule
     { igrModuleMatcher = MatchAllModules,
       igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
-      igrPriority = maxBound
+      igrPriority = ImportRulePriority 100
     }
 
 matchModulesRule :: Set Cabal.ModuleName -> ImportGroupRule
@@ -172,7 +172,7 @@ matchModulesRule mods =
   ImportGroupRule
     { igrModuleMatcher = MatchModules mods,
       igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
-      igrPriority = ImportRulePriority 192 -- Lower priority than "all" but higher than the default.
+      igrPriority = ImportRulePriority 60 -- Lower priority than "all" but higher than the default.
     }
 
 withQualifiedOnly :: ImportGroupRule -> ImportGroupRule
@@ -202,7 +202,7 @@ matchesRule ImportId {..} ImportGroupRule {..} = matchesModules && matchesQualif
       MatchBothQualifiedAndUnqualified -> True
 
 defaultImportRulePriority :: ImportRulePriority
-defaultImportRulePriority = ImportRulePriority 128
+defaultImportRulePriority = ImportRulePriority 50
 
 -- | Sort, group and normalize imports.
 --
