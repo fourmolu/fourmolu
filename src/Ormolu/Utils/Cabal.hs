@@ -169,16 +169,16 @@ getLocalModules = extractPackageModules
     extractLibraryModules Library {..} = mconcat [exposedModules, extractBuildInfoModules libBuildInfo]
 
     extractForeignLibraryModules :: ForeignLib -> [ModuleName]
-    extractForeignLibraryModules ForeignLib {..} = extractBuildInfoModules foreignLibBuildInfo
+    extractForeignLibraryModules = extractBuildInfoModules . foreignLibBuildInfo
 
     extractExecutableModules :: Executable -> [ModuleName]
-    extractExecutableModules Executable {..} = extractBuildInfoModules buildInfo
+    extractExecutableModules = extractBuildInfoModules . buildInfo
 
     extractTestSuiteModules :: TestSuite -> [ModuleName]
-    extractTestSuiteModules TestSuite {..} = extractBuildInfoModules testBuildInfo
+    extractTestSuiteModules = extractBuildInfoModules . testBuildInfo
 
     extractBenchmarkModules :: Benchmark -> [ModuleName]
-    extractBenchmarkModules Benchmark {..} = extractBuildInfoModules benchmarkBuildInfo
+    extractBenchmarkModules = extractBuildInfoModules . benchmarkBuildInfo
 
     extractBuildInfoModules :: BuildInfo -> [ModuleName]
     extractBuildInfoModules BuildInfo {..} = mconcat [otherModules, virtualModules, autogenModules]
