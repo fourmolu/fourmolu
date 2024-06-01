@@ -291,3 +291,15 @@ spec = do
                     }
                 ]
         actualStrategy `shouldBe` Just (UseCustomImportGroups expectedRules)
+      it "fails when a rule cannot be identified" $ do
+        let parse :: IO FourmoluConfig
+            parse =
+              Yaml.decodeThrow . Char8.pack . unlines $
+                [ "import-grouping:",
+                  "  - rules:",
+                  "      - some-unknown-rule-type: whatever"
+                ]
+            anUnknownModuleMatcher e = case e of
+              Yaml.AesonException msg -> "Unknown or invalid module matcher" `isInfixOf` msg
+              _ -> False
+        parse `shouldThrow` anUnknownModuleMatcher
