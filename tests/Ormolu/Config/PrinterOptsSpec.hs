@@ -13,6 +13,7 @@ import Control.Exception (catch)
 import Control.Monad (forM_, when)
 import Data.Algorithm.DiffContext (getContextDiff, prettyContextDiff)
 import Data.Char (isSpace)
+import Data.List.NonEmpty qualified as NonEmpty
 import Data.Maybe (isJust)
 import Data.Set qualified as S
 import Data.Text (Text)
@@ -29,7 +30,7 @@ import Ormolu
     detectSourceType,
     ormolu,
   )
-import Ormolu.Config (ColumnLimit (..), HaddockPrintStyleModule (..), ImportGrouping (..))
+import Ormolu.Config (ColumnLimit (..), HaddockPrintStyleModule (..), ImportGroup (..), ImportGroupPreset (..), ImportGroupRule (..), ImportGrouping (..), ImportModuleMatcher (..))
 import Ormolu.Exception (OrmoluException, printOrmoluException)
 import Ormolu.Terminal (ColorMode (..), runTerm)
 import Path
@@ -51,8 +52,7 @@ import Test.Hspec
 import Text.PrettyPrint qualified as Doc
 import Text.Printf (printf)
 
-data TestGroup
-  = forall a.
+data TestGroup = forall a.
   TestGroup
   { label :: String,
     -- | When True, takes input from 'input-multi.hs' instead of 'input.hs', where sections
@@ -247,7 +247,60 @@ spec =
         { label = "import-grouping",
           isMulti = False,
           testCases =
-            let testedStrategies = [CreateSingleGroup, SplitByQualified, SplitByScope, SplitByScopeAndQualified]
+            let testedStrategies =
+                  [ CreateSingleGroup,
+                    SplitByQualified,
+                    SplitByScope,
+                    SplitByScopeAndQualified,
+                    UseCustomImportGroups $
+                      NonEmpty.fromList
+                        [ ImportGroup
+                            { igName = Nothing,
+                              igPresetOrRules =
+                                Right $
+                                  NonEmpty.fromList
+                                    [ ImportGroupRule
+                                        { igrModuleMatcher = MatchGlob "Data.Text",
+                                          igrQualified = Nothing
+                                        }
+                                    ]
+                            },
+                          ImportGroup
+                            { igName = Nothing,
+                              igPresetOrRules = Left AllPreset
+                            },
+                          ImportGroup
+                            { igName = Nothing,
+                              igPresetOrRules =
+                                Right $
+                                  NonEmpty.fromList
+                                    [ ImportGroupRule
+                                        { igrModuleMatcher = MatchGlob "SomeInternal.**",
+                                          igrQualified = Just True
+                                        },
+                                      ImportGroupRule
+                                        { igrModuleMatcher = MatchGlob "Unknown.**",
+                                          igrQualified = Just False
+                                        }
+                                    ]
+                            },
+                          ImportGroup
+                            { igName = Nothing,
+                              igPresetOrRules =
+                                Right $
+                                  NonEmpty.fromList
+                                    [ ImportGroupRule
+                                        { igrModuleMatcher = MatchLocalModules,
+                                          igrQualified = Just False
+                                        },
+                                      ImportGroupRule
+                                        { igrModuleMatcher = MatchAllModules,
+                                          igrQualified = Just True
+                                        }
+                                    ]
+                            }
+                        ]
+                  ]
              in (,) <$> allOptions <*> testedStrategies,
           updateConfig = \(respectful, igs) opts ->
             opts
@@ -255,9 +308,9 @@ spec =
                 poImportGrouping = pure igs
               },
           showTestCase = \(respectful, igs) ->
-            (if respectful then "respectful" else "not respectful") ++ " + " ++ show igs,
+            (if respectful then "respectful" else "not respectful") ++ " + " ++ showStrategy igs,
           testCaseSuffix = \(respectful, igs) ->
-            suffixWith ["respectful=" ++ show respectful, show igs],
+            suffixWith ["respectful=" ++ show respectful, showStrategy igs],
           checkIdempotence = True
         }
     ]
@@ -385,3 +438,8 @@ spanEnd :: (a -> Bool) -> [a] -> ([a], [a])
 spanEnd f xs =
   let xs' = reverse xs
    in (reverse $ dropWhile f xs', reverse $ takeWhile f xs')
+
+showStrategy :: ImportGrouping -> String
+showStrategy igs = case igs of
+  UseCustomImportGroups _ -> "custom"
+  _ -> show igs
