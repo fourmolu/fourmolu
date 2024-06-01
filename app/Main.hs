@@ -115,6 +115,7 @@ resolveConfig opts@(Opts {optConfig = cliConfig, optPrinterOpts = cliPrinterOpts
     findConfigFile' = do
       cwd <- getCurrentDirectory
       case optInputFiles opts of
+        _ | Just configPath <- optConfigFilePath opts -> pure $ Right configPath
         [] -> findConfigFile cwd
         ["-"] -> findConfigFile cwd
         file : _ -> findConfigFile $ FP.takeDirectory file
@@ -278,6 +279,8 @@ data Opts = Opts
     optQuiet :: !Bool,
     -- | Ormolu 'Config'
     optConfig :: !(Config RegionIndices),
+    -- | Ormolu 'Config'
+    optConfigFilePath :: !(Maybe FilePath),
     -- | Fourmolu 'PrinterOpts',
     optPrinterOpts :: PrinterOptsPartial,
     -- | Options related to info extracted from files
@@ -367,6 +370,11 @@ optsParser =
         help "Make output quieter"
       ]
     <*> configParser
+    <*> (optional . strOption . mconcat)
+      [ metavar "CONFIG_FILE",
+        long "config",
+        help "Path to the config file to use. If not specified, tries to discover one automatically."
+      ]
     <*> printerOptsParser
     <*> configFileOptsParser
     <*> sourceTypeParser

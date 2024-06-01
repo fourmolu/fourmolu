@@ -66,6 +66,19 @@ spec =
               }
         stdout `shouldBe` "f :: Show a => a -> String\n"
 
+    it "uses specified config file" $ \fourmoluExe ->
+      withTempDir $ \tmpdir -> do
+        let configFile = tmpdir </> "foo" </> "my-config.yaml"
+        let inputFile = tmpdir </> "bar" </> "input.hs"
+        writeFile' configFile "single-constraint-parens: never"
+        writeFile' inputFile "f :: (Show a) => a -> String"
+        stdout <-
+          readFrom $
+            (proc fourmoluExe ["--no-cabal", "--config", configFile, inputFile])
+              { procCwd = Just tmpdir
+              }
+        stdout `shouldBe` "f :: Show a => a -> String\n"
+
     it "recursively finds files in directories" $ \fourmoluExe -> do
       withTempDir $ \tmpdir -> do
         let hsFile = tmpdir </> "test.hs"
