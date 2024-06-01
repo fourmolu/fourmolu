@@ -74,22 +74,25 @@ main = do
 resolveConfig :: Opts -> IO (Config RegionIndices)
 resolveConfig opts@(Opts {optConfig = cliConfig, optPrinterOpts = cliPrinterOpts}) = do
   fourmoluConfig <-
-    loadConfigFile' >>= \case
-      ConfigLoaded f cfg -> do
-        outputInfo $ "Loaded config from: " <> f
-        outputDebug $ unwords ["*** CONFIG FILE ***", show cfg]
-        pure cfg
-      ConfigParseError f e -> do
-        outputError . unlines $
-          [ "Failed to load " <> f <> ":",
-            Yaml.prettyPrintParseException e
-          ]
-        exitWith $ ExitFailure 400
-      ConfigNotFound searchDirs -> do
+    findConfigFile' >>= \case
+      Left ConfigNotFound {searchDirs} -> do
         outputDebug . unlines $
           ("No " ++ show configFileName ++ " found in any of:")
             : map ("  " ++) searchDirs
         pure emptyConfig
+      Right configPath ->
+        Yaml.decodeFileEither configPath >>= \case
+          Left e -> do
+            outputError . unlines $
+              [ "Failed to load " <> configPath <> ":",
+                Yaml.prettyPrintParseException e
+              ]
+            exitWith $ ExitFailure 400
+          Right cfg -> do
+            outputInfo $ "Loaded config from: " <> configPath
+            outputDebug $ unwords ["*** CONFIG FILE ***", show cfg]
+            pure cfg
+
   return $
     cliConfig
       { cfgPrinterOpts =
@@ -109,12 +112,12 @@ resolveConfig opts@(Opts {optConfig = cliConfig, optPrinterOpts = cliPrinterOpts
             ]
       }
   where
-    loadConfigFile' = do
+    findConfigFile' = do
       cwd <- getCurrentDirectory
       case optInputFiles opts of
-        [] -> loadConfigFile cwd
-        ["-"] -> loadConfigFile cwd
-        file : _ -> loadConfigFile $ FP.takeDirectory file
+        [] -> findConfigFile cwd
+        ["-"] -> findConfigFile cwd
+        file : _ -> findConfigFile $ FP.takeDirectory file
 
     output = hPutStrLn stderr
     outputError = output
