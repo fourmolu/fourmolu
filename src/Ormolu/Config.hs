@@ -79,7 +79,7 @@ import System.Directory
     getXdgDirectory,
     makeAbsolute,
   )
-import System.FilePath (splitPath, (</>))
+import System.FilePath (takeDirectory)
 #if !MIN_VERSION_base(4,20,0)
 import Data.List (foldl')
 #endif
@@ -278,12 +278,17 @@ loadConfigFile :: FilePath -> IO ConfigFileLoadResult
 loadConfigFile rootDir = do
   rootDirAbs <- makeAbsolute rootDir
   xdg <- getXdgDirectory XdgConfig ""
-  let dirs = reverse $ xdg : scanl1 (</>) (splitPath rootDirAbs)
+  let dirs = getParents rootDirAbs ++ [xdg]
   findFile dirs configFileName >>= \case
     Nothing -> return $ ConfigNotFound dirs
     Just file ->
       either (ConfigParseError file) (ConfigLoaded file)
         <$> Yaml.decodeFileEither file
+  where
+    -- getParents "/a/b/c/" == ["/a/b/c/", "/a/b/", "/a/", "/"]
+    getParents dir =
+      let parentDir = takeDirectory dir
+       in dir : if parentDir == dir then [] else getParents parentDir
 
 -- | The result of calling 'loadConfigFile'.
 data ConfigFileLoadResult
