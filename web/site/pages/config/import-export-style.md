@@ -35,4 +35,3 @@ For more examples, see the [test files](https://github.com/fourmolu/fourmolu/tre
 ## See also
 
 * [`comma-style`](/config/comma-style)
-
