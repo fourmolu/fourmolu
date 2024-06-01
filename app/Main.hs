@@ -40,12 +40,7 @@ import System.IO (hPutStrLn, stderr)
 main :: IO ()
 main = do
   opts@Opts {..} <- execParser optsParserInfo
-
-  cwd <- getCurrentDirectory
-  cfg <- case optInputFiles of
-    [] -> mkConfig cwd opts
-    ["-"] -> mkConfig cwd opts
-    file : _ -> mkConfig (FP.takeDirectory file) opts
+  cfg <- resolveConfig opts
 
   let formatOne' =
         formatOne
@@ -76,10 +71,10 @@ main = do
   exitWith exitCode
 
 -- | Build the full config, by adding 'PrinterOpts' from a file, if found.
-mkConfig :: FilePath -> Opts -> IO (Config RegionIndices)
-mkConfig path Opts {optQuiet, optConfig = cliConfig, optPrinterOpts = cliPrinterOpts} = do
+resolveConfig :: Opts -> IO (Config RegionIndices)
+resolveConfig opts@(Opts {optConfig = cliConfig, optPrinterOpts = cliPrinterOpts}) = do
   fourmoluConfig <-
-    loadConfigFile path >>= \case
+    loadConfigFile' >>= \case
       ConfigLoaded f cfg -> do
         outputInfo $ "Loaded config from: " <> f
         outputDebug $ unwords ["*** CONFIG FILE ***", show cfg]
@@ -114,9 +109,16 @@ mkConfig path Opts {optQuiet, optConfig = cliConfig, optPrinterOpts = cliPrinter
             ]
       }
   where
+    loadConfigFile' = do
+      cwd <- getCurrentDirectory
+      case optInputFiles opts of
+        [] -> loadConfigFile cwd
+        ["-"] -> loadConfigFile cwd
+        file : _ -> loadConfigFile $ FP.takeDirectory file
+
     output = hPutStrLn stderr
     outputError = output
-    outputInfo = unless optQuiet . output
+    outputInfo = unless (optQuiet opts) . output
     outputDebug = when (cfgDebug cliConfig) . output
 
 getHaskellFiles :: FilePath -> IO [FilePath]
@@ -455,7 +457,7 @@ configParser =
                 help "End line of the region to format (inclusive)"
               ]
         )
-    <*> pure defaultPrinterOpts -- unused; overwritten in mkConfig
+    <*> pure defaultPrinterOpts -- unused; overwritten in resolveConfig
 
 sourceTypeParser :: Parser (Maybe SourceType)
 sourceTypeParser =
