@@ -121,7 +121,7 @@ data Config region = Config
     -- | Region selection
     cfgRegion :: !region,
     cfgPrinterOpts :: !PrinterOptsTotal,
-    cfgDefinedModules :: !(Set ModuleName)
+    cfgLocalModules :: !(Set ModuleName)
   }
   deriving (Eq, Show, Functor, Generic)
 
@@ -163,7 +163,7 @@ defaultConfig =
             regionEndLine = Nothing
           },
       cfgPrinterOpts = defaultPrinterOpts,
-      cfgDefinedModules = Set.empty
+      cfgLocalModules = Set.empty
     }
 
 -- | Return all dependencies of the module. This includes both the declared

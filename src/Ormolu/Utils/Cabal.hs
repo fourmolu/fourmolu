@@ -58,7 +58,7 @@ data CabalInfo = CabalInfo
     ciDependencies :: !(Set PackageName),
     -- | Absolute path to the cabal file
     ciCabalFilePath :: !FilePath,
-    -- | Defined modules
+    -- | Local modules
     ciModules :: ![ModuleName]
   }
   deriving (Eq, Show)
@@ -101,7 +101,7 @@ data CachedCabalFile = CachedCabalFile
     -- corresponding 'DynOption's and dependencies.
     extensionsAndDeps :: Map FilePath ([DynOption], [PackageName]),
     -- | Modules defined in the cabal file
-    definedModules :: [ModuleName]
+    localModules :: [ModuleName]
   }
   deriving (Show)
 
@@ -130,7 +130,7 @@ parseCabalInfo cabalFileAsGiven sourceFileAsGiven = liftIO $ do
         throwIO . OrmoluCabalFileParsingFailed cabalFile . snd
     let extensionsAndDeps =
           getExtensionAndDepsMap cabalFile genericPackageDescription
-        definedModules = getDefinedModules genericPackageDescription
+        localModules = getLocalModules genericPackageDescription
     pure CachedCabalFile {..}
   let (dynOpts, dependencies, mentioned) =
         case M.lookup (dropExtensions sourceFileAbs) extensionsAndDeps of
@@ -144,15 +144,15 @@ parseCabalInfo cabalFileAsGiven sourceFileAsGiven = liftIO $ do
           ciDynOpts = dynOpts,
           ciDependencies = Set.fromList dependencies,
           ciCabalFilePath = cabalFile,
-          ciModules = definedModules
+          ciModules = localModules
         }
     )
   where
     whenLeft :: (Applicative f) => Either e a -> (e -> f a) -> f a
     whenLeft eitha ma = either ma pure eitha
 
-getDefinedModules :: GenericPackageDescription -> [ModuleName]
-getDefinedModules = extactPackageModules
+getLocalModules :: GenericPackageDescription -> [ModuleName]
+getLocalModules = extactPackageModules
   where
     extactPackageModules :: GenericPackageDescription -> [ModuleName]
     extactPackageModules GenericPackageDescription {..} =

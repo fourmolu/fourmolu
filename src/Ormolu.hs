@@ -222,8 +222,8 @@ refineConfig sourceType mcabalInfo mfixityOverrides mreexports rawConfig =
       cfgDependencies =
         Set.union (cfgDependencies rawConfig) depsFromCabal,
       cfgSourceType = sourceType,
-      cfgDefinedModules =
-        cfgDefinedModules rawConfig
+      cfgLocalModules =
+        cfgLocalModules rawConfig
           <> maybe Set.empty (Set.fromList . CabalUtils.ciModules) mcabalInfo
     }
   where

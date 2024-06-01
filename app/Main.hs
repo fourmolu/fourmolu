@@ -475,10 +475,10 @@ configParser =
         )
     <*> pure defaultPrinterOpts -- unused; overwritten in resolveConfig
     <*> (fmap Set.fromList . many . strOption . mconcat)
-      [ long "defined-modules",
+      [ long "local-modules",
         short 'm',
-        metavar "DEFINED_MODULES",
-        help "Modules Fourmolu should consider as defined by the current Cabal package"
+        metavar "LOCAL_MODULES",
+        help "Modules Fourmolu should consider as local by the current Cabal package"
       ]
 
 sourceTypeParser :: Parser (Maybe SourceType)

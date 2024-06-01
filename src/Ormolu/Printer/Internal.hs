@@ -31,7 +31,7 @@ module Ormolu.Printer.Internal
     vlayout,
     getLayout,
     getPrinterOpt,
-    getDefinedModules,
+    getLocalModules,
 
     -- * Helpers for braces
     useBraces,
@@ -111,7 +111,7 @@ data RC = RC
     -- | Whether the last expression in the layout can use braces
     rcCanUseBraces :: Bool,
     rcPrinterOpts :: PrinterOptsTotal,
-    rcDefinedModules :: Set ModuleName,
+    rcLocalModules :: Set ModuleName,
     -- | Enabled extensions
     rcExtensions :: EnumSet Extension,
     -- | Whether the source is a signature or a regular module
@@ -194,7 +194,7 @@ runR ::
   -- | Resulting rendition
   Bool ->
   Text
-runR (R m) sstream cstream printerOpts definedModules sourceType extensions moduleFixityMap debug =
+runR (R m) sstream cstream printerOpts localModules sourceType extensions moduleFixityMap debug =
   TL.toStrict . toLazyText . scBuilder $ execState (runReaderT m rc) sc
   where
     rc =
@@ -204,7 +204,7 @@ runR (R m) sstream cstream printerOpts definedModules sourceType extensions modu
           rcEnclosingSpans = [],
           rcCanUseBraces = False,
           rcPrinterOpts = printerOpts,
-          rcDefinedModules = definedModules,
+          rcLocalModules = localModules,
           rcExtensions = extensions,
           rcSourceType = sourceType,
           rcModuleFixityMap = moduleFixityMap,
@@ -499,8 +499,8 @@ getLayout = R (asks rcLayout)
 getPrinterOpt :: (forall f. PrinterOpts f -> f a) -> R a
 getPrinterOpt f = R $ asks $ runIdentity . f . rcPrinterOpts
 
-getDefinedModules :: R (Set ModuleName)
-getDefinedModules = R $ asks rcDefinedModules
+getLocalModules :: R (Set ModuleName)
+getLocalModules = R $ asks rcLocalModules
 
 ----------------------------------------------------------------------------
 -- Special helpers for comment placement

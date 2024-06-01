@@ -65,8 +65,8 @@ p_hsModule mstackHeader pragmas hsmod@HsModule {..} = do
   where
     getImportGroups :: R Imports.ImportGroups
     getImportGroups = do
-      definedModules <- getDefinedModules
-      groupsFromConfig definedModules <$> getPrinterOpt poImportGrouping
+      localModules <- getLocalModules
+      groupsFromConfig localModules <$> getPrinterOpt poImportGrouping
 
 p_hsModuleHeader :: HsModule GhcPs -> LocatedA ModuleName -> R ()
 p_hsModuleHeader HsModule {hsmodExt = XModulePs {..}, ..} moduleName = do

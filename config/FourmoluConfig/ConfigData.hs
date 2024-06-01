@@ -240,7 +240,7 @@ allOptions =
         cliOverrides = emptyOverrides
       },
     Option
-      { name = "defined-modules",
+      { name = "local-modules",
         fieldName = Nothing,
         description = "Modules defined by the current Cabal package for import grouping",
         type_ = "[String]",
@@ -523,7 +523,7 @@ allFieldTypes =
               "    parseCabalModuleMatcher = Aeson.withObject \"ImportModuleMatcher\" $ \\o -> do",
               "      c <- Aeson.parseField @String o \"cabal\"",
               "      case c of",
-              "        \"defined-modules\" -> pure CF.MatchDefinedModules",
+              "        \"local-modules\" -> pure CF.MatchLocalModules",
               "        other -> fail $ \"Unknown Cabal matching: \" <> other",
               "    parseMatchModuleMatcher :: Aeson.Value -> Aeson.Parser CF.ImportModuleMatcher",
               "    parseMatchModuleMatcher = Aeson.withObject \"ImportModuleMatcher\" $ \\o -> do",

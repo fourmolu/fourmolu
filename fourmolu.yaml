@@ -20,4 +20,4 @@ respectful: false
 fixities: []
 reexports: []
 import-grouping: single
-defined-modules: []
+local-modules: []

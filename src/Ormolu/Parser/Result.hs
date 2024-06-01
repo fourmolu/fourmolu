@@ -37,6 +37,6 @@ data ParseResult = ParseResult
     prModuleFixityMap :: ModuleFixityMap,
     -- | Indentation level, can be non-zero in case of region formatting
     prIndent :: Int,
-    -- | Defined modules
-    prDefinedModules :: Set ModuleName
+    -- | Local modules
+    prLocalModules :: Set ModuleName
   }

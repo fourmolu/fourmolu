@@ -118,12 +118,12 @@ splitByScopeAndQualifiedStrategy mods =
       ]
 
 groupsFromConfig :: Set Cabal.ModuleName -> Config.ImportGrouping -> ImportGroups
-groupsFromConfig definedModules =
+groupsFromConfig localModules =
   \case
     Config.CreateSingleGroup -> createSingleImportGroupStrategy
     Config.SplitByQualified -> splitByQualifiedStrategy
-    Config.SplitByScope -> splitByScopeStrategy definedModules
-    Config.SplitByScopeAndQualified -> splitByScopeAndQualifiedStrategy definedModules
+    Config.SplitByScope -> splitByScopeStrategy localModules
+    Config.SplitByScopeAndQualified -> splitByScopeAndQualifiedStrategy localModules
     Config.UseCustomImportGroups igs -> ImportGroups $ convertImportGroup <$> igs
   where
     convertImportGroup :: Config.ImportGroup -> ImportGroup
@@ -149,7 +149,7 @@ groupsFromConfig definedModules =
         { igrModuleMatcher =
             case igrModuleMatcher of
               Config.MatchAllModules -> MatchAllModules
-              Config.MatchDefinedModules -> MatchModules definedModules
+              Config.MatchLocalModules -> MatchModules localModules
               Config.MatchGlob gl -> MatchGlobModule (mkGlob gl),
           igrQualifiedMatcher =
             case igrQualified of

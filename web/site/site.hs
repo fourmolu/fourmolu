@@ -134,7 +134,7 @@ getPageInfo = \case
 
 getOptionDemoWidget :: ConfigData.Option -> Maybe String
 getOptionDemoWidget option@ConfigData.Option {..}
-  | name `elem` ["fixities", "reexports", "defined-modules"] = Nothing
+  | name `elem` ["fixities", "reexports", "local-modules"] = Nothing
   | otherwise =
       Just . concat $
         [ printf "<label>",
@@ -276,7 +276,7 @@ replaceFourmoluExamples =
             let config =
                   Fourmolu.defaultConfig
                     { Fourmolu.cfgPrinterOpts = Fourmolu.resolvePrinterOpts [printerOpts],
-                      Fourmolu.cfgDefinedModules =
+                      Fourmolu.cfgLocalModules =
                         S.fromList $
                           fromString
                             <$> [ "SomeInternal.Module1",

@@ -1,4 +1,4 @@
-# `defined-modules`
+# `local-modules`
 
 $info$
 

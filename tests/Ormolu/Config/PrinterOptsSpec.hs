@@ -300,7 +300,7 @@ runOrmolu opts checkIdempotence inputPath input =
         { cfgPrinterOpts = opts,
           cfgSourceType = detectSourceType inputPath,
           cfgCheckIdempotence = checkIdempotence,
-          cfgDefinedModules =
+          cfgLocalModules =
             S.fromList $
               ModuleName.fromString
                 <$> [ "SomeInternal.Module1",

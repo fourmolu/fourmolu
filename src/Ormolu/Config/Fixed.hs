@@ -31,6 +31,6 @@ data ImportGroupRule = ImportGroupRule
 
 data ImportModuleMatcher
   = MatchAllModules
-  | MatchDefinedModules
+  | MatchLocalModules
   | MatchGlob !String
   deriving (Eq, Show)

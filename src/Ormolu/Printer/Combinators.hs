@@ -41,7 +41,7 @@ module Ormolu.Printer.Combinators
     breakpoint,
     breakpoint',
     getPrinterOpt,
-    getDefinedModules,
+    getLocalModules,
 
     -- ** Formatting lists
     sep,
