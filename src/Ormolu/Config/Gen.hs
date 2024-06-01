@@ -38,7 +38,7 @@ import Data.List.NonEmpty (NonEmpty)
 import Data.Scientific (floatingOrInteger)
 import qualified Data.Text as Text
 import GHC.Generics (Generic)
-import qualified Ormolu.Config.Fixed as CF
+import qualified Ormolu.Config.Types as CT
 import Text.Read (readEither, readMaybe)
 
 -- | Options controlling formatting output.
@@ -341,7 +341,7 @@ data ImportGrouping
   | SplitByScope
   | SplitByQualified
   | SplitByScopeAndQualified
-  | UseCustomImportGroups (NonEmpty CF.ImportGroup)
+  | UseCustomImportGroups (NonEmpty CT.ImportGroup)
   deriving (Eq, Show)
 
 instance Aeson.FromJSON CommaStyle where
@@ -561,46 +561,46 @@ instance Aeson.FromJSON ImportGrouping where
             "Valid values are: \"single\", \"by-qualified\", \"by-scope\", \"by-scope-then-qualified\" or a valid YAML configuration for import groups"
           ]
       where
-        parseGroup :: Aeson.Value -> Aeson.Parser CF.ImportGroup
+        parseGroup :: Aeson.Value -> Aeson.Parser CT.ImportGroup
         parseGroup = Aeson.withObject "ImportGroup" $ \o ->
           let 
             parsePresetField = Aeson.explicitParseField parsePreset o "preset"
             parseRulesField = Aeson.explicitParseField (Aeson.liftParseJSON Nothing parseRule (Aeson.listParser parseRule)) o "rules"
             parsePresetOrRules = (Left <$> parsePresetField) <|> (Right <$> parseRulesField)
-          in CF.ImportGroup
+          in CT.ImportGroup
             <$> Aeson.parseField o "name"
             <*> parsePresetOrRules
-        parsePreset :: Aeson.Value -> Aeson.Parser CF.ImportGroupPreset
+        parsePreset :: Aeson.Value -> Aeson.Parser CT.ImportGroupPreset
         parsePreset = Aeson.withText "ImportGroupPreset" $ \case
-          "all" -> pure CF.AllPreset
+          "all" -> pure CT.AllPreset
           other -> fail $ "Unknown preset: " <> Text.unpack other
-        parseRule :: Aeson.Value -> Aeson.Parser CF.ImportGroupRule
+        parseRule :: Aeson.Value -> Aeson.Parser CT.ImportGroupRule
         parseRule = Aeson.withObject "rule" $ \o ->
-          CF.ImportGroupRule
+          CT.ImportGroupRule
             <$> parseModuleMatcher (Aeson.Object o)
             <*> Aeson.parseFieldMaybe o "qualified"
-        parseModuleMatcher :: Aeson.Value ->  Aeson.Parser CF.ImportModuleMatcher
+        parseModuleMatcher :: Aeson.Value ->  Aeson.Parser CT.ImportModuleMatcher
         parseModuleMatcher v = asum
           [ parseCabalModuleMatcher v
           , parseMatchModuleMatcher v
           , parseGlobModuleMatcher v
           , fail "Unknown matcher"
           ]
-        parseCabalModuleMatcher :: Aeson.Value -> Aeson.Parser CF.ImportModuleMatcher
+        parseCabalModuleMatcher :: Aeson.Value -> Aeson.Parser CT.ImportModuleMatcher
         parseCabalModuleMatcher = Aeson.withObject "ImportModuleMatcher" $ \o -> do
           c <- Aeson.parseField @String o "cabal"
           case c of
-            "local-modules" -> pure CF.MatchLocalModules
+            "local-modules" -> pure CT.MatchLocalModules
             other -> fail $ "Unknown Cabal matching: " <> other
-        parseMatchModuleMatcher :: Aeson.Value -> Aeson.Parser CF.ImportModuleMatcher
+        parseMatchModuleMatcher :: Aeson.Value -> Aeson.Parser CT.ImportModuleMatcher
         parseMatchModuleMatcher = Aeson.withObject "ImportModuleMatcher" $ \o -> do
           c <- Aeson.parseField @String o "match"
           case c of
-            "all" -> pure CF.MatchAllModules
+            "all" -> pure CT.MatchAllModules
             other -> fail $ "Unknown matcher: " <> other
-        parseGlobModuleMatcher :: Aeson.Value -> Aeson.Parser CF.ImportModuleMatcher
+        parseGlobModuleMatcher :: Aeson.Value -> Aeson.Parser CT.ImportModuleMatcher
         parseGlobModuleMatcher = Aeson.withObject "ImportModuleMatcher" $ \o -> do
-          CF.MatchGlob
+          CT.MatchGlob
             <$> Aeson.parseField @String o "glob"
 
 instance PrinterOptsFieldType ImportGrouping where

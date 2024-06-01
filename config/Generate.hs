@@ -43,7 +43,7 @@ configGenHs =
       "import Data.Scientific (floatingOrInteger)",
       "import qualified Data.Text as Text",
       "import GHC.Generics (Generic)",
-      "import qualified Ormolu.Config.Fixed as CF",
+      "import qualified Ormolu.Config.Types as CT",
       "import Text.Read (readEither, readMaybe)",
       "",
       "-- | Options controlling formatting output.",

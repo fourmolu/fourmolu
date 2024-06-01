@@ -100,8 +100,8 @@ library
         Ormolu.Utils.IO
         Paths_fourmolu
     other-modules:
-        Ormolu.Config.Fixed
         Ormolu.Config.Gen
+        Ormolu.Config.Types
 
     hs-source-dirs:   src
     other-modules:    GHC.DynFlags

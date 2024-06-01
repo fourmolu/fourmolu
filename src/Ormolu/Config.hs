@@ -74,8 +74,8 @@ import Distribution.ModuleName (ModuleName)
 import Distribution.Types.PackageName (PackageName)
 import GHC.Generics (Generic)
 import GHC.Types.SrcLoc qualified as GHC
-import Ormolu.Config.Fixed
 import Ormolu.Config.Gen
+import Ormolu.Config.Types
 import Ormolu.Fixity
 import Ormolu.Terminal (ColorMode (..))
 import Ormolu.Utils.Fixity (parseFixityDeclarationStr, parseModuleReexportDeclarationStr)
