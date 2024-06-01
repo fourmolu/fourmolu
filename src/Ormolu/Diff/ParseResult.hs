@@ -97,17 +97,21 @@ diffHsModule = genericQuery
                   `extQ` considerEqual @SourceText
                   `extQ` hsDocStringEq
                   `extQ` importDeclQualifiedStyleEq
-                  `extQ` considerEqual @(LayoutInfo GhcPs)
                   `extQ` classDeclCtxEq
                   `extQ` derivedTyClsParensEq
                   `extQ` considerEqual @EpAnnComments -- ~ XCGRHSs GhcPs
                   `extQ` considerEqual @TokenLocation -- in LHs(Uni)Token
                   `extQ` considerEqual @EpaLocation
+                  `extQ` considerEqual @EpLayout
+                  `extQ` considerEqual @[AddEpAnn]
+                  `extQ` considerEqual @AnnSig
+                  `extQ` considerEqual @HsRuleAnn
                   `ext2Q` forLocated
                   -- unicode-related
-                  `extQ` considerEqual @(HsUniToken "->" "→")
-                  `extQ` considerEqual @(HsUniToken "::" "∷")
-                  `extQ` considerEqual @(HsLinearArrowTokens GhcPs)
+                  `extQ` considerEqual @(EpUniToken "->" "→")
+                  `extQ` considerEqual @(EpUniToken "::" "∷")
+                  `extQ` considerEqual @EpLinearArrow
+                  `extQ` considerEqualVia' compareAnnKeywordId
               )
               x
               y
@@ -145,7 +149,10 @@ diffHsModule = genericQuery
       GenLocated e0 e1 ->
       GenericQ ParseResultDiff
     forLocated x@(L mspn _) y =
-      maybe id appendSpan (cast `ext1Q` (Just . locA) $ mspn) (genericQuery x y)
+      maybe id appendSpan (cast `ext1Q` (Just . epAnnLoc) $ mspn) (genericQuery x y)
+      where
+        epAnnLoc :: EpAnn ann -> SrcSpan
+        epAnnLoc = locA
     appendSpan :: SrcSpan -> ParseResultDiff -> ParseResultDiff
     appendSpan s' d@(Different ss) =
       case s' of
@@ -165,3 +172,21 @@ diffHsModule = genericQuery
       (DctSingle _ ty, DctMulti _ [ty']) -> genericQuery ty ty'
       (DctMulti _ [ty], DctSingle _ ty') -> genericQuery ty ty'
       (x, y) -> genericQuery x y
+
+    compareAnnKeywordId x y =
+      let go = curry $ \case
+            (AnnCloseB, AnnCloseBU) -> True
+            (AnnCloseQ, AnnCloseQU) -> True
+            (AnnDarrow, AnnDarrowU) -> True
+            (AnnDcolon, AnnDcolonU) -> True
+            (AnnForall, AnnForallU) -> True
+            (AnnLarrow, AnnLarrowU) -> True
+            (AnnOpenB, AnnOpenBU) -> True
+            (AnnOpenEQ, AnnOpenEQU) -> True
+            (AnnRarrow, AnnRarrowU) -> True
+            (Annlarrowtail, AnnlarrowtailU) -> True
+            (Annrarrowtail, AnnrarrowtailU) -> True
+            (AnnLarrowtail, AnnLarrowtailU) -> True
+            (AnnRarrowtail, AnnRarrowtailU) -> True
+            (_, _) -> False
+       in go x y || go y x || x == y

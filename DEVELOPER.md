@@ -139,7 +139,8 @@ Fourmolu aims to continue merging upstream changes in Ormolu. Whenever Ormolu ma
 1. Find the commit corresponding to the new Ormolu version and merge it: `git merge <commit> -m 'Merge ormolu-X.Y.Z'`
 1. (Recommended) Switch to diff3 conflicts: `git checkout --conflict=diff3`. This provides more context that might be helpful for resolving conflicts. See [docs](https://git-scm.com/book/en/v2/Git-Tools-Advanced-Merging#_checking_out_conflicts).
 1. Resolve conflicts + finish merge: `git merge --continue`
-1. Run tests to ensure everything works well: `stack test`
+1. Follow "Update tests" section to update tests
+1. Lint files with `pre-commit run -a`
 1. Make a PR and merge as usual
     1. **MAKE SURE TO CREATE A MERGE COMMIT**. Don't use the "Squash and merge" or "Rebase and merge" options.
 
@@ -158,7 +159,6 @@ Fourmolu aims to continue merging upstream changes in Ormolu. Whenever Ormolu ma
     * `weeder.dhall`
 
 * Conflicts at the following paths should be resolved by throwing out Ormolu's changes and keeping our changes (i.e. if there's a conflict, use `git checkout --ours`):
-    * `stack.yaml`
     * `.github/workflows/ci.yml`
 
 * The state of the following paths should be the same as they are in Ormolu (i.e. if there's a conflict, use `git checkout --theirs`)

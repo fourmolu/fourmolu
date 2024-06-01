@@ -1,4 +1,5 @@
 {-# LANGUAGE ApplicativeDo #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
@@ -59,7 +60,6 @@ import Control.Monad (forM)
 import Data.Aeson ((.!=), (.:?))
 import Data.Aeson qualified as Aeson
 import Data.Aeson.Types qualified as Aeson
-import Data.Foldable (foldl')
 import Data.Functor.Identity (Identity (..))
 import Data.Map.Strict qualified as Map
 import Data.Set (Set)
@@ -80,6 +80,9 @@ import System.Directory
     makeAbsolute,
   )
 import System.FilePath (splitPath, (</>))
+#if !MIN_VERSION_base(4,20,0)
+import Data.List (foldl')
+#endif
 
 -- | Type of sources that can be formatted by Ormolu.
 data SourceType

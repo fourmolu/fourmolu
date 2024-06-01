@@ -104,6 +104,6 @@ p_hsModuleHeader HsModule {hsmodExt = XModulePs {..}, ..} moduleName = do
           (epaLocationRealSrcSpan moduleLoc, epaLocationRealSrcSpan whereLoc)
         anns -> error $ "Module had unexpected annotations: " ++ showSDocUnsafe (ppr anns)
     exportClosePSpan = do
-      AddEpAnn AnnCloseP loc <- al_close . anns . ann . getLoc =<< hsmodExports
+      AddEpAnn AnnCloseP loc <- al_close . anns . getLoc =<< hsmodExports
       Just $ epaLocationRealSrcSpan loc
     isOnSameLine token1 token2 = srcSpanEndLine token1 == srcSpanStartLine token2
