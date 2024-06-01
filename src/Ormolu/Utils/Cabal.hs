@@ -152,10 +152,10 @@ parseCabalInfo cabalFileAsGiven sourceFileAsGiven = liftIO $ do
     whenLeft eitha ma = either ma pure eitha
 
 getLocalModules :: GenericPackageDescription -> [ModuleName]
-getLocalModules = extactPackageModules
+getLocalModules = extractPackageModules
   where
-    extactPackageModules :: GenericPackageDescription -> [ModuleName]
-    extactPackageModules GenericPackageDescription {..} =
+    extractPackageModules :: GenericPackageDescription -> [ModuleName]
+    extractPackageModules GenericPackageDescription {..} =
       mconcat
         [ maybe [] (extractLibraryModules . condTreeData) condLibrary,
           extractLibraryModules . condTreeData . snd =<< condSubLibraries,
