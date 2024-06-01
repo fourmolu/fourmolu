@@ -557,7 +557,7 @@ instance Aeson.FromJSON ImportGrouping where
       arr@(Aeson.Array _) -> UseCustomImportGroups <$> Aeson.liftParseJSON Nothing parseGroup (Aeson.listParser parseGroup) arr
       other ->
         fail . unlines $
-          [ "unknown value: " <> show other,
+          [ "unknown strategy value: " <> show other,
             "Valid values are: \"single\", \"by-qualified\", \"by-scope\", \"by-scope-then-qualified\" or a valid YAML configuration for import groups"
           ]
       where
@@ -568,7 +568,7 @@ instance Aeson.FromJSON ImportGrouping where
             parseRulesField = Aeson.explicitParseField (Aeson.liftParseJSON Nothing parseRule (Aeson.listParser parseRule)) o "rules"
             parsePresetOrRules = (Left <$> parsePresetField) <|> (Right <$> parseRulesField)
           in CT.ImportGroup
-            <$> Aeson.parseField o "name"
+            <$> Aeson.parseFieldMaybe o "name"
             <*> parsePresetOrRules
         parsePreset :: Aeson.Value -> Aeson.Parser CT.ImportGroupPreset
         parsePreset = Aeson.withText "ImportGroupPreset" $ \case
