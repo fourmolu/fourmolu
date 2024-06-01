@@ -12,12 +12,6 @@ package hakyll
 package cmark-gfm-simple
   flags: +ghc-syntax-highlighter
 
--- https://github.com/mrkkrp/ghc-syntax-highlighter/pull/41
-source-repository-package
-  type: git
-  location: https://github.com/brandonchinn178/ghc-syntax-highlighter
-  tag: c5a47e19c14b1e312c5d424eb6f4569464be1257
-
 source-repository-package
   type: git
   location: https://github.com/brandonchinn178/ghc-syntax-highlighter-themed
