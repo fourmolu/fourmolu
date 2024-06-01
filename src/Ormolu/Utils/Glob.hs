@@ -9,7 +9,7 @@ import Data.List (elemIndex, stripPrefix)
 import Data.Maybe (fromMaybe)
 
 data Glob
-    = MatchEOI
+    = MatchEOF
     | MatchExactly !String !Glob
     | SingleWildcard !Glob
     | DoubleWildcard !Glob
@@ -17,7 +17,7 @@ data Glob
 mkGlob :: String -> Glob
 mkGlob s = case s of
     [] ->
-        MatchEOI
+        MatchEOF
     '*' : '*' : t ->
         DoubleWildcard (mkGlob t)
     '*' : t ->
@@ -28,7 +28,7 @@ mkGlob s = case s of
 
 matchesGlob :: String -> Glob -> Bool
 matchesGlob s g = case g of
-    MatchEOI ->
+    MatchEOF ->
         null s
     MatchExactly p g' ->
         case stripPrefix p s of
