@@ -27,7 +27,7 @@ spec = do
   -- Config for normal Ormolu output + default Fourmolu output
   ormoluConfig <-
     runIO $
-      loadConfigFile "fourmolu.yaml" >>= \case
+      loadConfigFile "." >>= \case
         ConfigLoaded _ cfg -> pure cfg
         result -> error $ "Could not load config file: " ++ show result
   let ormoluPrinterOpts = resolvePrinterOpts [cfgFilePrinterOpts ormoluConfig]

@@ -271,13 +271,14 @@ emptyConfig =
     }
 
 -- | Read options from a config file, if found.
--- Looks recursively in parent folders, then in 'XdgConfig',
--- for a file named /fourmolu.yaml/.
+--
+-- Looks for a file named /fourmolu.yaml/, first in the given path and
+-- its parents, and then in the XDG config directory.
 loadConfigFile :: FilePath -> IO ConfigFileLoadResult
-loadConfigFile path = do
-  root <- makeAbsolute path
+loadConfigFile rootDir = do
+  rootDirAbs <- makeAbsolute rootDir
   xdg <- getXdgDirectory XdgConfig ""
-  let dirs = reverse $ xdg : scanl1 (</>) (splitPath root)
+  let dirs = reverse $ xdg : scanl1 (</>) (splitPath rootDirAbs)
   findFile dirs configFileName >>= \case
     Nothing -> return $ ConfigNotFound dirs
     Just file ->

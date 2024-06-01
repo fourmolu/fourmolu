@@ -45,7 +45,7 @@ main = do
   cfg <- case optInputFiles of
     [] -> mkConfig cwd opts
     ["-"] -> mkConfig cwd opts
-    file : _ -> mkConfig file opts
+    file : _ -> mkConfig (FP.takeDirectory file) opts
 
   let formatOne' =
         formatOne
