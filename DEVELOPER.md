@@ -112,6 +112,8 @@ To release a new version, do the following workflow:
 
     1. Audit `web/site/` docs
 
+    1. Check that `--help` looks good
+
 1. Create PR as usual and merge into `main`
     1. In the `check_sdist` CI job, check the output of the `stack sdist` step for any warnings.
 
