@@ -7,9 +7,9 @@ foolr x = proc a -> x >- a
 bar f x =
     proc
         ( y
-            , z
-            , w
-            )
+         , z
+         , w
+         )
     ->
         f -- The value
             -<
