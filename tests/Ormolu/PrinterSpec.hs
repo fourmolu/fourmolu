@@ -13,6 +13,7 @@ import Data.Set qualified as Set
 import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Text.IO.Utf8 qualified as T.Utf8
+import Data.Yaml qualified as Yaml
 import Ormolu
 import Ormolu.Config
 import Ormolu.Fixity
@@ -25,11 +26,7 @@ import Test.Hspec
 spec :: Spec
 spec = do
   -- Config for normal Ormolu output + default Fourmolu output
-  ormoluConfig <-
-    runIO $
-      loadConfigFile "fourmolu.yaml" >>= \case
-        ConfigLoaded _ cfg -> pure cfg
-        result -> error $ "Could not load config file: " ++ show result
+  ormoluConfig <- runIO $ Yaml.decodeFileEither "fourmolu.yaml" >>= either (error . show) pure
   let ormoluPrinterOpts = resolvePrinterOpts [cfgFilePrinterOpts ormoluConfig]
 
   es <- runIO locateExamples

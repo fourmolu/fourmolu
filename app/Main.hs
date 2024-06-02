@@ -40,12 +40,7 @@ import System.IO (hPutStrLn, stderr)
 main :: IO ()
 main = do
   opts@Opts {..} <- execParser optsParserInfo
-
-  cwd <- getCurrentDirectory
-  cfg <- case optInputFiles of
-    [] -> mkConfig cwd opts
-    ["-"] -> mkConfig cwd opts
-    file : _ -> mkConfig file opts
+  cfg <- resolveConfig opts
 
   let formatOne' =
         formatOne
@@ -76,25 +71,28 @@ main = do
   exitWith exitCode
 
 -- | Build the full config, by adding 'PrinterOpts' from a file, if found.
-mkConfig :: FilePath -> Opts -> IO (Config RegionIndices)
-mkConfig path Opts {optQuiet, optConfig = cliConfig, optPrinterOpts = cliPrinterOpts} = do
+resolveConfig :: Opts -> IO (Config RegionIndices)
+resolveConfig opts@(Opts {optConfig = cliConfig, optPrinterOpts = cliPrinterOpts}) = do
   fourmoluConfig <-
-    loadConfigFile path >>= \case
-      ConfigLoaded f cfg -> do
-        outputInfo $ "Loaded config from: " <> f
-        outputDebug $ unwords ["*** CONFIG FILE ***", show cfg]
-        pure cfg
-      ConfigParseError f e -> do
-        outputError . unlines $
-          [ "Failed to load " <> f <> ":",
-            Yaml.prettyPrintParseException e
-          ]
-        exitWith $ ExitFailure 400
-      ConfigNotFound searchDirs -> do
+    findConfigFile' >>= \case
+      Left ConfigNotFound {searchDirs} -> do
         outputDebug . unlines $
           ("No " ++ show configFileName ++ " found in any of:")
             : map ("  " ++) searchDirs
         pure emptyConfig
+      Right configPath ->
+        Yaml.decodeFileEither configPath >>= \case
+          Left e -> do
+            outputError . unlines $
+              [ "Failed to load " <> configPath <> ":",
+                Yaml.prettyPrintParseException e
+              ]
+            exitWith $ ExitFailure 400
+          Right cfg -> do
+            outputInfo $ "Loaded config from: " <> configPath
+            outputDebug $ unwords ["*** CONFIG FILE ***", show cfg]
+            pure cfg
+
   return $
     cliConfig
       { cfgPrinterOpts =
@@ -114,9 +112,17 @@ mkConfig path Opts {optQuiet, optConfig = cliConfig, optPrinterOpts = cliPrinter
             ]
       }
   where
+    findConfigFile' = do
+      cwd <- getCurrentDirectory
+      case optInputFiles opts of
+        _ | Just configPath <- optConfigFilePath opts -> pure $ Right configPath
+        [] -> findConfigFile cwd
+        ["-"] -> findConfigFile cwd
+        file : _ -> findConfigFile $ FP.takeDirectory file
+
     output = hPutStrLn stderr
     outputError = output
-    outputInfo = unless optQuiet . output
+    outputInfo = unless (optQuiet opts) . output
     outputDebug = when (cfgDebug cliConfig) . output
 
 getHaskellFiles :: FilePath -> IO [FilePath]
@@ -273,6 +279,8 @@ data Opts = Opts
     optQuiet :: !Bool,
     -- | Ormolu 'Config'
     optConfig :: !(Config RegionIndices),
+    -- | Ormolu 'Config'
+    optConfigFilePath :: !(Maybe FilePath),
     -- | Fourmolu 'PrinterOpts',
     optPrinterOpts :: PrinterOptsPartial,
     -- | Options related to info extracted from files
@@ -362,6 +370,11 @@ optsParser =
         help "Make output quieter"
       ]
     <*> configParser
+    <*> (optional . strOption . mconcat)
+      [ metavar "CONFIG_FILE",
+        long "config",
+        help "Path to the config file to use. If not specified, tries to discover one automatically."
+      ]
     <*> printerOptsParser
     <*> configFileOptsParser
     <*> sourceTypeParser
@@ -455,7 +468,7 @@ configParser =
                 help "End line of the region to format (inclusive)"
               ]
         )
-    <*> pure defaultPrinterOpts -- unused; overwritten in mkConfig
+    <*> pure defaultPrinterOpts -- unused; overwritten in resolveConfig
 
 sourceTypeParser :: Parser (Maybe SourceType)
 sourceTypeParser =

@@ -48,11 +48,11 @@ module Ormolu.Config
     parsePrinterOptType,
 
     -- ** Loading Fourmolu configuration
-    loadConfigFile,
+    ConfigNotFound (..),
+    findConfigFile,
     configFileName,
     FourmoluConfig (..),
     emptyConfig,
-    ConfigFileLoadResult (..),
   )
 where
 
@@ -65,7 +65,6 @@ import Data.Map.Strict qualified as Map
 import Data.Set (Set)
 import Data.Set qualified as Set
 import Data.String (fromString)
-import Data.Yaml qualified as Yaml
 import Distribution.Types.PackageName (PackageName)
 import GHC.Generics (Generic)
 import GHC.Types.SrcLoc qualified as GHC
@@ -79,7 +78,7 @@ import System.Directory
     getXdgDirectory,
     makeAbsolute,
   )
-import System.FilePath (splitPath, (</>))
+import System.FilePath (takeDirectory)
 #if !MIN_VERSION_base(4,20,0)
 import Data.List (foldl')
 #endif
@@ -270,25 +269,25 @@ emptyConfig =
       cfgFileReexports = ModuleReexports mempty
     }
 
--- | Read options from a config file, if found.
--- Looks recursively in parent folders, then in 'XdgConfig',
--- for a file named /fourmolu.yaml/.
-loadConfigFile :: FilePath -> IO ConfigFileLoadResult
-loadConfigFile path = do
-  root <- makeAbsolute path
+-- | Find a fourmolu configuration file.
+--
+-- Looks for a file named /fourmolu.yaml/, first in the given path and
+-- its parents, and then in the XDG config directory.
+findConfigFile :: FilePath -> IO (Either ConfigNotFound FilePath)
+findConfigFile rootDir = do
+  rootDirAbs <- makeAbsolute rootDir
   xdg <- getXdgDirectory XdgConfig ""
-  let dirs = reverse $ xdg : scanl1 (</>) (splitPath root)
-  findFile dirs configFileName >>= \case
-    Nothing -> return $ ConfigNotFound dirs
-    Just file ->
-      either (ConfigParseError file) (ConfigLoaded file)
-        <$> Yaml.decodeFileEither file
+  let dirs = getParents rootDirAbs ++ [xdg]
+  maybe (Left $ ConfigNotFound dirs) Right <$> findFile dirs configFileName
+  where
+    -- getParents "/a/b/c/" == ["/a/b/c/", "/a/b/", "/a/", "/"]
+    getParents dir =
+      let parentDir = takeDirectory dir
+       in dir : if parentDir == dir then [] else getParents parentDir
 
--- | The result of calling 'loadConfigFile'.
-data ConfigFileLoadResult
-  = ConfigLoaded FilePath FourmoluConfig
-  | ConfigParseError FilePath Yaml.ParseException
-  | ConfigNotFound [FilePath]
+data ConfigNotFound = ConfigNotFound
+  { searchDirs :: [FilePath]
+  }
   deriving (Show)
 
 -- | Expected file name for YAML config.

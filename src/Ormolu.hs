@@ -22,8 +22,8 @@ module Ormolu
     PrinterOptsPartial,
     PrinterOptsTotal,
     defaultPrinterOpts,
-    loadConfigFile,
-    ConfigFileLoadResult (..),
+    findConfigFile,
+    ConfigNotFound (..),
     configFileName,
     resolvePrinterOpts,
 
