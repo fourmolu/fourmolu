@@ -26,6 +26,13 @@ constraintsNewlineMultiLineParams
   => a -> b -> c -> d
   -> (a, b, c, d)
 
+multiLineConstraintsNewlineOneLineParams
+  ::
+  ( C1
+  , C2
+  , C3) 
+  => a -> b -> c -> d -> (a, b, c, d)
+
 -- Edge cases with several =>
 
 manyConstraintsNewlineOneLineParams ::

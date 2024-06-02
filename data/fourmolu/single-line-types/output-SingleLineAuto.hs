@@ -10,11 +10,7 @@ forallOneLineParams ::
     forall a b c d. a -> b -> c -> d -> (a, b, c, d)
 forallNewlineOneLineParams ::
     forall a b c d.
-    a ->
-    b ->
-    c ->
-    d ->
-    (a, b, c, d)
+    a -> b -> c -> d -> (a, b, c, d)
 forallNewlineMultiLineParams ::
     forall a b c d.
     a ->
@@ -24,11 +20,7 @@ forallNewlineMultiLineParams ::
     (a, b, c, d)
 constraintsNewlineOneLineParams ::
     (C1, C2, C3) =>
-    a ->
-    b ->
-    c ->
-    d ->
-    (a, b, c, d)
+    a -> b -> c -> d -> (a, b, c, d)
 constraintsNewlineMultiLineParams ::
     (C1, C2, C3) =>
     a ->
@@ -36,15 +28,19 @@ constraintsNewlineMultiLineParams ::
     c ->
     d ->
     (a, b, c, d)
+multiLineConstraintsNewlineOneLineParams ::
+    ( C1
+    , C2
+    , C3
+    ) =>
+    a -> b -> c -> d -> (a, b, c, d)
 -- Edge cases with several =>
 
 manyConstraintsNewlineOneLineParams ::
     (Show a) =>
     (Eq a) =>
     (Num a) =>
-    a ->
-    a ->
-    ()
+    a -> a -> ()
 manyConstraintsNewlineMultiLineParams ::
     (Show a) =>
     (Eq a) =>
@@ -68,9 +64,7 @@ constraintsOneLineParamsConstraintsOneLineParams ::
     a ->
     (Eq a) =>
     (Num a) =>
-    a ->
-    a ->
-    ()
+    a -> a -> ()
 constraintsMultiLineParamsConstraintsOneLineParams ::
     (Show a) =>
     a ->
@@ -78,9 +72,7 @@ constraintsMultiLineParamsConstraintsOneLineParams ::
     a ->
     (Eq a) =>
     (Num a) =>
-    a ->
-    a ->
-    ()
+    a -> a -> ()
 constraintsOneLineParamsConstraintsMultiLineParams ::
     (Show a) =>
     a ->

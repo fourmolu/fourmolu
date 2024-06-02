@@ -119,7 +119,7 @@ defaultPrinterOpts =
     , poSingleDerivingParens = pure DerivingAlways
     , poUnicode = pure UnicodeNever
     , poRespectful = pure True
-    , poSingleLineTypes = pure TypeAuto
+    , poSingleLineTypes = pure SingleLineAuto
     }
 
 -- | Fill the field values that are 'Nothing' in the first argument
@@ -334,8 +334,8 @@ data SingleDerivingParens
   deriving (Eq, Show, Enum, Bounded)
 
 data SingleLineTypesStyle
-  = TypeAuto
-  | TypeOnlyIfAlreadySingle
+  = SingleLineAuto
+  | SingleLineIfAlreadySingle
   deriving (Eq, Show, Enum, Bounded)
 
 instance Aeson.FromJSON CommaStyle where
@@ -550,8 +550,8 @@ instance Aeson.FromJSON SingleLineTypesStyle where
 instance PrinterOptsFieldType SingleLineTypesStyle where
   parsePrinterOptType s =
     case s of
-      "auto" -> Right TypeAuto
-      "only-if-already-single" -> Right TypeOnlyIfAlreadySingle
+      "auto" -> Right SingleLineAuto
+      "only-if-already-single" -> Right SingleLineIfAlreadySingle
       _ ->
         Left . unlines $
           [ "unknown value: " <> show s

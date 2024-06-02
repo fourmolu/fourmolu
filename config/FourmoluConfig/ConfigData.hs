@@ -234,8 +234,8 @@ allOptions =
         fieldName = Just "poSingleLineTypes",
         description = "Whether a single-line type should be converted to multi-line if preceded with forall or constraints and a newline",
         type_ = "SingleLineTypesStyle",
-        default_ = HsExpr "TypeAuto",
-        ormolu = HsExpr "TypeOnlyIfAlreadySingle",
+        default_ = HsExpr "SingleLineAuto",
+        ormolu = HsExpr "SingleLineIfAlreadySingle",
         sinceVersion = Nothing,
         cliOverrides = emptyOverrides
       }
@@ -444,8 +444,8 @@ allFieldTypes =
     FieldTypeEnum
       { fieldTypeName = "SingleLineTypesStyle",
         enumOptions =
-          [ ("TypeAuto", "auto"),
-            ("TypeOnlyIfAlreadySingle", "only-if-already-single")
+          [ ("SingleLineAuto", "auto"),
+            ("SingleLineIfAlreadySingle", "only-if-already-single")
           ]
       }
   ]
