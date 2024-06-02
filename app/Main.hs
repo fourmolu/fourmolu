@@ -39,7 +39,7 @@ import System.IO (hPutStrLn, stderr)
 -- | Entry point of the program.
 main :: IO ()
 main = do
-  opts@Opts {..} <- execParser optsParserInfo
+  opts@Opts {..} <- runParser optsParserInfo
   cfg <- resolveConfig opts
 
   let formatOne' =
@@ -69,6 +69,9 @@ main = do
                 else 102
 
   exitWith exitCode
+  where
+    runParser p = do
+      customExecParser (prefs $ helpIndent 35 <> columns 100) p
 
 -- | Build the full config, by adding 'PrinterOpts' from a file, if found.
 resolveConfig :: Opts -> IO (Config RegionIndices)
