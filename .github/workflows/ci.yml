@@ -60,8 +60,6 @@ jobs:
           restore-keys: |
                ${{ runner.os }}-cabal-cache-${{ env.CURR_MONTH }}-${{ matrix.ghc_version }}-
       -
-        run: cabal install --overwrite-policy=always alex happy
-      -
         run: cabal test
 
   stack_test:

@@ -348,26 +348,24 @@ index e243eb8..85a6006 100644
 -        withInstallPlan (lessVerbose verbosity) baseCtx' $ \elaboratedPlan sharedConfig -> do
 -          -- targets should be non-empty map, but there's no NonEmptyMap yet.
 -          targets <- validatedTargets (projectConfigShared (projectConfig ctx)) (pkgConfigCompiler sharedConfig) elaboratedPlan targetSelectors
--
++          withInstallPlan (lessVerbose verbosity) baseCtx' $ \elaboratedPlan sharedConfig -> do
++            -- targets should be non-empty map, but there's no NonEmptyMap yet.
++            targets <- validatedTargets (projectConfigShared (projectConfig ctx)) (pkgConfigCompiler sharedConfig) elaboratedPlan targetSelectors
+ 
 -          let
 -            (unitId, _) = fromMaybe (error "panic: targets should be non-empty") $ safeHead $ Map.toList targets
 -            originalDeps = installedUnitId <$> InstallPlan.directDeps elaboratedPlan unitId
 -            oci = OriginalComponentInfo unitId originalDeps
 -            pkgId = fromMaybe (error $ "cannot find " ++ prettyShow unitId) $ packageId <$> InstallPlan.lookup elaboratedPlan unitId
 -            baseCtx'' = addDepsToProjectTarget (envPackages replEnvFlags) pkgId baseCtx'
--
--          return (Just oci, baseCtx'')
-+          withInstallPlan (lessVerbose verbosity) baseCtx' $ \elaboratedPlan sharedConfig -> do
-+            -- targets should be non-empty map, but there's no NonEmptyMap yet.
-+            targets <- validatedTargets (projectConfigShared (projectConfig ctx)) (pkgConfigCompiler sharedConfig) elaboratedPlan targetSelectors
-+
 +            let
 +              (unitId, _) = fromMaybe (error "panic: targets should be non-empty") $ safeHead $ Map.toList targets
 +              originalDeps = installedUnitId <$> InstallPlan.directDeps elaboratedPlan unitId
 +              oci = OriginalComponentInfo unitId originalDeps
 +              pkgId = fromMaybe (error $ "cannot find " ++ prettyShow unitId) $ packageId <$> InstallPlan.lookup elaboratedPlan unitId
 +              baseCtx'' = addDepsToProjectTarget (envPackages replEnvFlags) pkgId baseCtx'
-+
+ 
+-          return (Just oci, baseCtx'')
 +            return (Just oci, baseCtx'')
  
      -- Now, we run the solver again with the added packages. While the graph

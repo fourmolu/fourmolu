@@ -56,7 +56,7 @@ jobs:
         run: |
           git apply --allow-empty ../fourmolu/compat-tests/${{ matrix.name }}.diff
           fourmolu -i ${{ matrix.args }}
-          git diff > ${{ matrix.name }}.diff
+          git -c 'diff.algorithm=histogram' diff > ${{ matrix.name }}.diff
       -
         name: Compare diff
         run: diff -u fourmolu/compat-tests/${{ matrix.name }}.diff target/${{ matrix.name }}.diff
