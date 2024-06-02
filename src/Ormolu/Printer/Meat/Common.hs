@@ -192,7 +192,6 @@ p_hsDoc' poHStyle hstyle needsNewline (L l str) = do
   let docStringLines = splitDocString shouldEscapeCommentBraces $ hsDocString str
 
   mSrcSpan <- getSrcSpan l
-
   let useSingleLineComments =
         or
           [ poHStyle == HaddockSingleLine,
@@ -201,20 +200,11 @@ p_hsDoc' poHStyle hstyle needsNewline (L l str) = do
             maybe False ((> 1) . srcSpanStartCol) mSrcSpan
           ]
 
-  let body sep' =
-        forM_ (zip docStringLines (True : repeat False)) $ \(x, isFirst) -> do
-          if isFirst
-            then do
-              -- prevent trailing space in multi-line comments
-              unless (not useSingleLineComments && T.null x) space
-            else do
-              sep'
-          unless (T.null x) (txt x)
-
   if useSingleLineComments
     then do
       txt $ "-- " <> haddockDelim
-      body $ newline >> txt "--" >> space
+      space
+      sep (newline >> txt "--" >> space) txt docStringLines
     else do
       txt . T.concat $
         [ "{-",
@@ -223,6 +213,11 @@ p_hsDoc' poHStyle hstyle needsNewline (L l str) = do
             _ -> " ",
           haddockDelim
         ]
+      -- Avoid trailing space if there's nothing on the first line.
+      -- Usually, 'space' prevents trailing space, but not with our `txt "\n"` hack.
+      case docStringLines of
+        "" : _ -> pure ()
+        _ -> space
       -- 'newline' doesn't allow multiple blank newlines, which changes the comment
       -- if the user writes a comment with multiple newlines. So we have to do this
       -- to force the printer to output a newline. The HaddockSingleLine branch
@@ -231,7 +226,7 @@ p_hsDoc' poHStyle hstyle needsNewline (L l str) = do
       -- 'newline' also takes indentation into account, but since multiline comments
       -- are never used in an indented context (see useSingleLineComments), this is
       -- safe
-      body $ txt "\n"
+      sep (txt "\n") txt docStringLines
       newline
       txt "-}"
 
