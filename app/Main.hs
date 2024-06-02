@@ -31,6 +31,7 @@ import Ormolu.Terminal
 import Ormolu.Utils (showOutputable)
 import Ormolu.Utils.Fixity
 import Paths_fourmolu (version)
+import System.Console.Terminal.Size qualified as Terminal
 import System.Directory
 import System.Exit (ExitCode (..), exitWith)
 import System.FilePath qualified as FP
@@ -71,7 +72,8 @@ main = do
   exitWith exitCode
   where
     runParser p = do
-      customExecParser (prefs $ helpIndent 35 <> columns 100) p
+      termWidth <- maybe 100 Terminal.width <$> Terminal.size
+      customExecParser (prefs $ helpIndent 35 <> columns termWidth) p
 
 -- | Build the full config, by adding 'PrinterOpts' from a file, if found.
 resolveConfig :: Opts -> IO (Config RegionIndices)
