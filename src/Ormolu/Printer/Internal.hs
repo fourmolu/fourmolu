@@ -13,11 +13,13 @@ module Ormolu.Printer.Internal
 
     -- * Internal functions
     txt,
+    txtStripIndent,
     interferingTxt,
     atom,
     space,
     newline,
     declNewline,
+    multilineCommentNewline,
     askSourceType,
     askModuleFixityMap,
     askDebug,
@@ -66,6 +68,7 @@ import Control.Monad
 import Control.Monad.Reader
 import Control.Monad.State.Strict
 import Data.Bool (bool)
+import Data.Char (isSpace)
 import Data.Choice (Choice)
 import Data.Choice qualified as Choice
 import Data.Coerce
@@ -256,6 +259,15 @@ txt ::
   R ()
 txt = spit SimpleText
 
+-- | Same as 'txt', except strip leading whitespace equal to the current
+-- indentation level. Useful for multiline comments, where the AST contains
+-- the full leading whitespace.
+txtStripIndent :: Text -> R ()
+txtStripIndent s = do
+  indent <- R (asks rcIndent)
+  let (leadingSpaces, s') = T.span isSpace s
+  txt $ T.drop indent leadingSpaces <> s'
+
 -- | Similar to 'txt' but the text inserted this way is assumed to break the
 -- “link” between the preceding atom and its pending comments.
 interferingTxt ::
@@ -347,6 +359,23 @@ space = R . modify $ \sc ->
 
 declNewline :: R ()
 declNewline = newlineRawN =<< getPrinterOpt poNewlinesBetweenDecls
+
+-- | Add a newline in a multiline comment.
+--
+-- Can't use 'newline' because it avoids adding multiple consecutive newlines.
+-- Single-line comments don't have this issue because each line has at least "--".
+multilineCommentNewline :: R ()
+multilineCommentNewline =
+  -- inlining part of rawNewline here because rawNewline still swallows newlines
+  -- when called consecutively
+  R . modify $ \sc ->
+    sc
+      { scBuilder = scBuilder sc <> "\n",
+        scColumn = 0,
+        scIndent = 0,
+        scThisLineSpans = [],
+        scRequestedDelimiter = AfterNewline
+      }
 
 -- | Output a newline. First time 'newline' is used after some non-'newline'
 -- output it gets inserted immediately. Second use of 'newline' does not

@@ -18,10 +18,12 @@ module Ormolu.Printer.Combinators
 
     -- ** Basic
     txt,
+    txtStripIndent,
     atom,
     space,
     newline,
     declNewline,
+    multilineCommentNewline,
     inci,
     inciBy,
     inciIf,

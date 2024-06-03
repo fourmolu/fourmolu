@@ -195,9 +195,7 @@ p_hsDoc' poHStyle hstyle needsNewline (L l str) = do
   let useSingleLineComments =
         or
           [ poHStyle == HaddockSingleLine,
-            length docStringLines <= 1,
-            -- Use multiple single-line comments when the whole comment is indented
-            maybe False ((> 1) . srcSpanStartCol) mSrcSpan
+            length docStringLines <= 1
           ]
 
   if useSingleLineComments
@@ -213,20 +211,8 @@ p_hsDoc' poHStyle hstyle needsNewline (L l str) = do
             _ -> " ",
           haddockDelim
         ]
-      -- Avoid trailing space if there's nothing on the first line.
-      -- Usually, 'space' prevents trailing space, but not with our `txt "\n"` hack.
-      case docStringLines of
-        "" : _ -> pure ()
-        _ -> space
-      -- 'newline' doesn't allow multiple blank newlines, which changes the comment
-      -- if the user writes a comment with multiple newlines. So we have to do this
-      -- to force the printer to output a newline. The HaddockSingleLine branch
-      -- doesn't have this problem because each newline has at least "--".
-      --
-      -- 'newline' also takes indentation into account, but since multiline comments
-      -- are never used in an indented context (see useSingleLineComments), this is
-      -- safe
-      sep (txt "\n") txt docStringLines
+      space
+      sep multilineCommentNewline txtStripIndent docStringLines
       newline
       txt "-}"
 
