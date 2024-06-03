@@ -5,7 +5,8 @@ module Test (
     SinceType (..), -- ^ @since 4.0
     SinceClass (..), -- ^ @since 5.0
     Multi (..),
-    -- ^ since 6.0
-    -- multi
-    -- line
+    {- ^ since 6.0
+    multi
+    line
+    -}
 ) where

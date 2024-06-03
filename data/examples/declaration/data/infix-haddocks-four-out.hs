@@ -23,9 +23,10 @@ data MixedDocs
         right
 
 data DocPartial
-    = Left -- ^ left docs
-      -- on multiple
-      -- lines
+    = Left {- ^ left docs
+      on multiple
+      lines
+      -}
         :*:
         Right
     | -- | op

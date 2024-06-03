@@ -3,8 +3,9 @@ module Foo (
 
     -- * Something
     bar,
-    -- | A multiline
-    -- comment here
+    {- | A multiline
+    comment here
+    -}
     baz,
 
     -- * Another thing
@@ -61,7 +62,8 @@ module Test (
     SinceType (..), -- ^ @since 4.0
     SinceClass (..), -- ^ @since 5.0
     Multi (..),
-    -- ^ since 6.0
-    -- multi
-    -- line
+    {- ^ since 6.0
+    multi
+    line
+    -}
 ) where
