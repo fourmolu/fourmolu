@@ -191,14 +191,7 @@ p_hsDoc' poHStyle hstyle needsNewline (L l str) = do
           HaddockMultiLineCompact -> True
   let docStringLines = splitDocString shouldEscapeCommentBraces $ hsDocString str
 
-  mSrcSpan <- getSrcSpan l
-  let useSingleLineComments =
-        or
-          [ poHStyle == HaddockSingleLine,
-            length docStringLines <= 1
-          ]
-
-  if useSingleLineComments
+  if poHStyle == HaddockSingleLine || length docStringLines <= 1
     then do
       txt $ "-- " <> haddockDelim
       space
@@ -217,7 +210,7 @@ p_hsDoc' poHStyle hstyle needsNewline (L l str) = do
       txt "-}"
 
   when (Choice.isTrue needsNewline) newline
-  traverse_ (setSpanMark . HaddockSpan hstyle) mSrcSpan
+  traverse_ (setSpanMark . HaddockSpan hstyle) =<< getSrcSpan l
   where
     haddockDelim =
       case hstyle of
