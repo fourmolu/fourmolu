@@ -13,6 +13,7 @@ data Glob
     | MatchExactly !String !Glob
     | SingleWildcard !Glob
     | DoubleWildcard !Glob
+    deriving (Eq, Show)
 
 mkGlob :: String -> Glob
 mkGlob s = case s of

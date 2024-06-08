@@ -23,7 +23,6 @@ import Data.List.NonEmpty (NonEmpty)
 import Data.List.NonEmpty qualified as NonEmpty
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as M
-import Data.Maybe (fromMaybe)
 import Data.Set (Set)
 import Data.Set qualified as Set
 import Distribution.ModuleName qualified as Cabal
@@ -36,7 +35,7 @@ import GHC.Types.SourceText
 import GHC.Types.SrcLoc
 import Ormolu.Config qualified as Config
 import Ormolu.Utils (ghcModuleNameToCabal, groupBy', notImplemented, separatedByBlank, showOutputable)
-import Ormolu.Utils.Glob (Glob, matchesGlob, mkGlob)
+import Ormolu.Utils.Glob (Glob, matchesGlob)
 #if !MIN_VERSION_base(4,20,0)
 import Data.List (foldl')
 #endif
@@ -50,7 +49,7 @@ data ImportGroup = ImportGroup
 
 data ImportGroupRule = ImportGroupRule
   { igrModuleMatcher :: !ModuleMatcher,
-    igrQualifiedMatcher :: !QualifiedImportMatcher,
+    igrQualifiedMatcher :: !Config.QualifiedImportMatcher,
     igrPriority :: !Config.ImportRulePriority
   }
 
@@ -58,11 +57,6 @@ data ModuleMatcher
   = MatchAllModules
   | MatchModules !(Set Cabal.ModuleName)
   | MatchGlobModule !Glob
-
-data QualifiedImportMatcher
-  = MatchQualifiedOnly
-  | MatchUnqualifiedOnly
-  | MatchBothQualifiedAndUnqualified
 
 importGroupSingleStrategy :: ImportGroups
 importGroupSingleStrategy =
@@ -137,20 +131,16 @@ groupsFromConfig localModules =
             case igrModuleMatcher of
               Config.MatchAllModules -> MatchAllModules
               Config.MatchLocalModules -> MatchModules localModules
-              Config.MatchGlob gl -> MatchGlobModule (mkGlob gl),
-          igrQualifiedMatcher =
-            case igrQualified of
-              Just True -> MatchQualifiedOnly
-              Just False -> MatchUnqualifiedOnly
-              Nothing -> MatchBothQualifiedAndUnqualified,
-          igrPriority = fromMaybe defaultImportRulePriority igrPriority
+              Config.MatchGlob gl -> MatchGlobModule gl,
+          igrQualifiedMatcher = igrQualified,
+          igrPriority = igrPriority
         }
 
 matchAllImportRule :: ImportGroupRule
 matchAllImportRule =
   ImportGroupRule
     { igrModuleMatcher = MatchAllModules,
-      igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
+      igrQualifiedMatcher = Config.MatchBothQualifiedAndUnqualified,
       igrPriority = Config.ImportRulePriority 100
     }
 
@@ -158,21 +148,21 @@ matchModulesRule :: Set Cabal.ModuleName -> ImportGroupRule
 matchModulesRule mods =
   ImportGroupRule
     { igrModuleMatcher = MatchModules mods,
-      igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
+      igrQualifiedMatcher = Config.MatchBothQualifiedAndUnqualified,
       igrPriority = Config.ImportRulePriority 60 -- Lower priority than "all" but higher than the default.
     }
 
 withQualifiedOnly :: ImportGroupRule -> ImportGroupRule
 withQualifiedOnly ImportGroupRule {..} =
   ImportGroupRule
-    { igrQualifiedMatcher = MatchQualifiedOnly,
+    { igrQualifiedMatcher = Config.MatchQualifiedOnly,
       ..
     }
 
 withUnqualifiedOnly :: ImportGroupRule -> ImportGroupRule
 withUnqualifiedOnly ImportGroupRule {..} =
   ImportGroupRule
-    { igrQualifiedMatcher = MatchUnqualifiedOnly,
+    { igrQualifiedMatcher = Config.MatchUnqualifiedOnly,
       ..
     }
 
@@ -184,12 +174,9 @@ matchesRule ImportId {..} ImportGroupRule {..} = matchesModules && matchesQualif
       MatchModules mods -> ghcModuleNameToCabal importIdName `Set.member` mods
       MatchGlobModule gl -> moduleNameString importIdName `matchesGlob` gl
     matchesQualified = case igrQualifiedMatcher of
-      MatchQualifiedOnly -> importQualified
-      MatchUnqualifiedOnly -> not importQualified
-      MatchBothQualifiedAndUnqualified -> True
-
-defaultImportRulePriority :: Config.ImportRulePriority
-defaultImportRulePriority = Config.ImportRulePriority 50
+      Config.MatchQualifiedOnly -> importQualified
+      Config.MatchUnqualifiedOnly -> not importQualified
+      Config.MatchBothQualifiedAndUnqualified -> True
 
 -- | Sort, group and normalize imports.
 --

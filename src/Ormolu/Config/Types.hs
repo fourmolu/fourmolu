@@ -1,18 +1,23 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Ormolu.Config.Types
   ( ImportGroup (..),
     ImportGroupRule (..),
     ImportModuleMatcher (..),
     ImportRulePriority (..),
+    defaultImportRulePriority,
+    QualifiedImportMatcher (..),
   )
 where
 
 import Control.Applicative (Alternative (..), asum)
+import Data.Aeson ((.!=), (.:), (.:?))
 import Data.Aeson qualified as Aeson
 import Data.Aeson.Types qualified as Aeson
 import Data.List.NonEmpty (NonEmpty)
 import Data.Word (Word8)
+import Ormolu.Utils.Glob (Glob, mkGlob)
 
 data ImportGroup = ImportGroup
   { igName :: !(Maybe String),
@@ -29,20 +34,27 @@ instance Aeson.FromJSON ImportGroup where
 data ImportGroupRule = ImportGroupRule
   { igrModuleMatcher :: !ImportModuleMatcher,
     -- | 'Just True' to match qualified declarations, 'Just False' to match unqualified ones and 'Nothing' to match both
-    igrQualified :: !(Maybe Bool),
-    igrPriority :: !(Maybe ImportRulePriority)
+    igrQualified :: !QualifiedImportMatcher,
+    igrPriority :: !ImportRulePriority
   }
   deriving (Eq, Show)
 
 instance Aeson.FromJSON ImportGroupRule where
-  parseJSON = Aeson.withObject "rule" $ \o ->
+  parseJSON = Aeson.withObject "rule" $ \o -> do
     let parseModuleMatcher = Aeson.parseJSON (Aeson.Object o)
         failUnknownModuleMatcher = Aeson.parseFail "Unknown or invalid module matcher"
         attemptParseModuleMatcher = parseModuleMatcher <|> failUnknownModuleMatcher
-     in ImportGroupRule
-          <$> attemptParseModuleMatcher
-          <*> Aeson.parseFieldMaybe o "qualified"
-          <*> Aeson.parseFieldMaybe o "priority"
+    igrModuleMatcher <- attemptParseModuleMatcher
+
+    qualified <- o .:? "qualified"
+    igrQualified <- case qualified of
+      Just True -> pure MatchQualifiedOnly
+      Just False -> pure MatchUnqualifiedOnly
+      Nothing -> pure MatchBothQualifiedAndUnqualified
+
+    igrPriority <- o .:? "priority" .!= defaultImportRulePriority
+
+    pure ImportGroupRule {..}
 
 newtype ImportRulePriority = ImportRulePriority Word8
   deriving (Eq, Ord, Show, Bounded)
@@ -50,10 +62,19 @@ newtype ImportRulePriority = ImportRulePriority Word8
 instance Aeson.FromJSON ImportRulePriority where
   parseJSON = fmap ImportRulePriority . Aeson.parseJSON
 
+defaultImportRulePriority :: ImportRulePriority
+defaultImportRulePriority = ImportRulePriority 50
+
+data QualifiedImportMatcher
+  = MatchQualifiedOnly
+  | MatchUnqualifiedOnly
+  | MatchBothQualifiedAndUnqualified
+  deriving (Eq, Show)
+
 data ImportModuleMatcher
   = MatchAllModules
   | MatchLocalModules
-  | MatchGlob !String
+  | MatchGlob !Glob
   deriving (Eq, Show)
 
 instance Aeson.FromJSON ImportModuleMatcher where
@@ -73,5 +94,6 @@ instance Aeson.FromJSON ImportModuleMatcher where
 
       parseGlobModuleMatcher :: Aeson.Value -> Aeson.Parser ImportModuleMatcher
       parseGlobModuleMatcher = Aeson.withObject "ImportModuleMatcher" $ \o -> do
-        MatchGlob
-          <$> Aeson.parseField @String o "glob"
+        rawGlob <- o .: "glob"
+        let glob = mkGlob rawGlob
+        pure (MatchGlob glob)
