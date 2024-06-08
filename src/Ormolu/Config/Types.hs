@@ -1,9 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
--- | This module contains configuration data types that are not meant to be
--- provided directly as CLI arguments or through the configuration GUI but as
--- more advanced YAML options.
 module Ormolu.Config.Types
   ( ImportGroup (..),
     ImportGroupPreset (..),
