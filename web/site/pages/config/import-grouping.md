@@ -22,7 +22,8 @@ Predefined groups:
 
 Predefined matchers:
 
-- `cabal: local-modules`: matches modules defined in the current Cabal project
+- `match: all`: matches all modules
+- `match: local-modules`: matches modules defined in the current Cabal project
 - `glob: pattern`: matches modules matching the provided `pattern`. `*` can be any character on the same module level. `**` can be any character and can span multiple module levels.
 
 Here's a sample configuration:
@@ -36,13 +37,13 @@ import-grouping:
     preset: all
   - name: "My internals and monads unqualified"
     rules:
-      - cabal: local-modules
+      - match: local-modules
         qualified: no
       - glob: Control.Monad
         qualified: no
   - name: "My internals and monads qualified"
     rules:
-      - cabal: local-modules
+      - match: local-modules
         qualified: yes
       - glob: Control.Monad
         qualified: yes
@@ -105,7 +106,7 @@ custom
       "name": "My internals and monads unqualified",
       "rules": [
         {
-          "cabal": "local-modules",
+          "match": "local-modules",
           "qualified": false
         },
         {
@@ -118,7 +119,7 @@ custom
       "name": "My internals and monads qualified",
       "rules": [
         {
-          "cabal": "local-modules",
+          "match": "local-modules",
           "qualified": true
         },
         {

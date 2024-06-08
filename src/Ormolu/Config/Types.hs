@@ -65,23 +65,16 @@ data ImportModuleMatcher
 instance Aeson.FromJSON ImportModuleMatcher where
   parseJSON v =
     asum
-      [ parseCabalModuleMatcher v,
-        parseMatchModuleMatcher v,
+      [ parseMatchModuleMatcher v,
         parseGlobModuleMatcher v
       ]
     where
-      parseCabalModuleMatcher :: Aeson.Value -> Aeson.Parser ImportModuleMatcher
-      parseCabalModuleMatcher = Aeson.withObject "ImportModuleMatcher" $ \o -> do
-        c <- Aeson.parseField @String o "cabal"
-        case c of
-          "local-modules" -> pure MatchLocalModules
-          other -> Aeson.parseFail $ "Unknown Cabal matching: " <> other
-
       parseMatchModuleMatcher :: Aeson.Value -> Aeson.Parser ImportModuleMatcher
       parseMatchModuleMatcher = Aeson.withObject "ImportModuleMatcher" $ \o -> do
         c <- Aeson.parseField @String o "match"
         case c of
           "all" -> pure MatchAllModules
+          "local-modules" -> pure MatchLocalModules
           other -> Aeson.parseFail $ "Unknown matcher: " <> other
 
       parseGlobModuleMatcher :: Aeson.Value -> Aeson.Parser ImportModuleMatcher

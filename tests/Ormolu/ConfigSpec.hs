@@ -159,12 +159,12 @@ spec = do
                     }
                 ]
         actualStrategy `shouldBe` Just (UseCustomImportGroups expectedRules)
-      it "parses a 'cabal' rule for local modules" $ do
+      it "parses a 'match' rule for local modules" $ do
         config <-
           Yaml.decodeThrow . Char8.pack . unlines $
             [ "import-grouping:",
               "  - rules:",
-              "      - cabal: local-modules"
+              "      - match: local-modules"
             ]
         let actualStrategy = poImportGrouping (cfgFilePrinterOpts config)
             expectedRules =
@@ -216,13 +216,13 @@ spec = do
               "    preset: all",
               "  - name: My internals and monads unqualified",
               "    rules:",
-              "      - cabal: local-modules",
+              "      - match: local-modules",
               "        qualified: no",
               "      - glob: Control.Monad",
               "        qualified: no",
               "  - name: My internals and monads qualified",
               "    rules:",
-              "      - cabal: local-modules",
+              "      - match: local-modules",
               "        qualified: yes",
               "      - glob: Control.Monad",
               "        qualified: yes",
