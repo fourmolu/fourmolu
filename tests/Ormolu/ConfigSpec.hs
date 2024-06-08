@@ -51,12 +51,11 @@ spec = do
         let actualStrategy = poImportGrouping (cfgFilePrinterOpts config)
         actualStrategy `shouldBe` Just SplitByScopeAndQualified
       it "fails when an unknown strategy is requested" $ do
-        let parse :: IO FourmoluConfig
-            parse = Yaml.decodeThrow "import-grouping: fake-strategy"
-            anUnknownStrategyValue e = case e of
-              Yaml.AesonException msg -> "unknown strategy value" `isInfixOf` msg
+        let decodeResult = Yaml.decodeEither' @FourmoluConfig "import-grouping: fake-strategy"
+            isAnUnknownStrategyValue e = case e of
+              Left (Yaml.AesonException msg) -> "unknown strategy value" `isInfixOf` msg
               _ -> False
-        parse `shouldThrow` anUnknownStrategyValue
+        decodeResult `shouldSatisfy` isAnUnknownStrategyValue
       it "parses a grouping rule's name" $ do
         config <-
           Yaml.decodeThrow . Char8.pack . unlines $
@@ -292,14 +291,13 @@ spec = do
                 ]
         actualStrategy `shouldBe` Just (UseCustomImportGroups expectedRules)
       it "fails when a rule cannot be identified" $ do
-        let parse :: IO FourmoluConfig
-            parse =
-              Yaml.decodeThrow . Char8.pack . unlines $
+        let decodeResult =
+              Yaml.decodeEither' @FourmoluConfig . Char8.pack . unlines $
                 [ "import-grouping:",
                   "  - rules:",
                   "      - some-unknown-rule-type: whatever"
                 ]
-            anUnknownModuleMatcher e = case e of
-              Yaml.AesonException msg -> "Unknown or invalid module matcher" `isInfixOf` msg
+            isAnUnknownModuleMatcher e = case e of
+              Left (Yaml.AesonException msg) -> "Unknown or invalid module matcher" `isInfixOf` msg
               _ -> False
-        parse `shouldThrow` anUnknownModuleMatcher
+        decodeResult `shouldSatisfy` isAnUnknownModuleMatcher
