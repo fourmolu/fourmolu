@@ -18,7 +18,7 @@ import Data.Generics
 import GHC.Hs
 import GHC.Types.SourceText
 import GHC.Types.SrcLoc
-import Ormolu.Imports (createSingleImportGroupStrategy, normalizeImports)
+import Ormolu.Imports (importGroupSingleStrategy, normalizeImports)
 import Ormolu.Parser.CommentStream
 import Ormolu.Parser.Result
 import Ormolu.Utils
@@ -55,8 +55,8 @@ diffParseResult
     } =
     diffCommentStream cstream0 cstream1
       <> diffHsModule
-        hs0 {hsmodImports = concat . normalizeImports False createSingleImportGroupStrategy $ hsmodImports hs0}
-        hs1 {hsmodImports = concat . normalizeImports False createSingleImportGroupStrategy $ hsmodImports hs1}
+        hs0 {hsmodImports = concat . normalizeImports False importGroupSingleStrategy $ hsmodImports hs0}
+        hs1 {hsmodImports = concat . normalizeImports False importGroupSingleStrategy $ hsmodImports hs1}
 
 diffCommentStream :: CommentStream -> CommentStream -> ParseResultDiff
 diffCommentStream (CommentStream cs) (CommentStream cs')

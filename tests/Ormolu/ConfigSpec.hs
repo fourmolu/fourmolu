@@ -34,22 +34,22 @@ spec = do
       poIndentation (resolvePrinterOpts configs) `shouldBe` 4
 
     context "when using an import grouping configuration" $ do
-      it "parses 'single' as the 'CreateSingleGroup' import grouping strategy" $ do
+      it "parses 'single' as the 'ImportGroupSingle' import grouping strategy" $ do
         config <- Yaml.decodeThrow "import-grouping: single"
         let actualStrategy = poImportGrouping (cfgFilePrinterOpts config)
-        actualStrategy `shouldBe` Just CreateSingleGroup
-      it "parses 'by-qualified' as the 'SplitByQualified' import grouping strategy" $ do
+        actualStrategy `shouldBe` Just ImportGroupSingle
+      it "parses 'by-qualified' as the 'ImportGroupByQualified' import grouping strategy" $ do
         config <- Yaml.decodeThrow "import-grouping: by-qualified"
         let actualStrategy = poImportGrouping (cfgFilePrinterOpts config)
-        actualStrategy `shouldBe` Just SplitByQualified
-      it "parses 'by-scope' as the 'SplitByScope' import grouping strategy" $ do
+        actualStrategy `shouldBe` Just ImportGroupByQualified
+      it "parses 'by-scope' as the 'ImportGroupByScope' import grouping strategy" $ do
         config <- Yaml.decodeThrow "import-grouping: by-scope"
         let actualStrategy = poImportGrouping (cfgFilePrinterOpts config)
-        actualStrategy `shouldBe` Just SplitByScope
-      it "parses 'by-scope-then-qualified' as the 'SplitByScopeAndQualified' import grouping strategy" $ do
+        actualStrategy `shouldBe` Just ImportGroupByScope
+      it "parses 'by-scope-then-qualified' as the 'ImportGroupByScopeThenQualified' import grouping strategy" $ do
         config <- Yaml.decodeThrow "import-grouping: by-scope-then-qualified"
         let actualStrategy = poImportGrouping (cfgFilePrinterOpts config)
-        actualStrategy `shouldBe` Just SplitByScopeAndQualified
+        actualStrategy `shouldBe` Just ImportGroupByScopeThenQualified
       it "fails when an unknown strategy is requested" $ do
         let decodeResult = Yaml.decodeEither' @FourmoluConfig "import-grouping: fake-strategy"
             isAnUnknownStrategyValue e = case e of
@@ -71,7 +71,7 @@ spec = do
                       igPresetOrRules = Left AllPreset
                     }
                 ]
-        actualStrategy `shouldBe` Just (UseCustomImportGroups expectedRules)
+        actualStrategy `shouldBe` Just (ImportGroupCustom expectedRules)
       it "parses the 'all' preset" $ do
         config <-
           Yaml.decodeThrow . Char8.pack . unlines $
@@ -86,7 +86,7 @@ spec = do
                       igPresetOrRules = Left AllPreset
                     }
                 ]
-        actualStrategy `shouldBe` Just (UseCustomImportGroups expectedRules)
+        actualStrategy `shouldBe` Just (ImportGroupCustom expectedRules)
       it "enables the 'qualified' rule option" $ do
         config <-
           Yaml.decodeThrow . Char8.pack . unlines $
@@ -110,7 +110,7 @@ spec = do
                             ]
                     }
                 ]
-        actualStrategy `shouldBe` Just (UseCustomImportGroups expectedRules)
+        actualStrategy `shouldBe` Just (ImportGroupCustom expectedRules)
       it "disables the 'qualified' rule option" $ do
         config <-
           Yaml.decodeThrow . Char8.pack . unlines $
@@ -134,7 +134,7 @@ spec = do
                             ]
                     }
                 ]
-        actualStrategy `shouldBe` Just (UseCustomImportGroups expectedRules)
+        actualStrategy `shouldBe` Just (ImportGroupCustom expectedRules)
       it "parses a 'glob' rule" $ do
         config <-
           Yaml.decodeThrow . Char8.pack . unlines $
@@ -157,7 +157,7 @@ spec = do
                             ]
                     }
                 ]
-        actualStrategy `shouldBe` Just (UseCustomImportGroups expectedRules)
+        actualStrategy `shouldBe` Just (ImportGroupCustom expectedRules)
       it "parses a 'match' rule for local modules" $ do
         config <-
           Yaml.decodeThrow . Char8.pack . unlines $
@@ -180,7 +180,7 @@ spec = do
                             ]
                     }
                 ]
-        actualStrategy `shouldBe` Just (UseCustomImportGroups expectedRules)
+        actualStrategy `shouldBe` Just (ImportGroupCustom expectedRules)
       it "parses a 'match' rule for all modules" $ do
         config <-
           Yaml.decodeThrow . Char8.pack . unlines $
@@ -203,7 +203,7 @@ spec = do
                             ]
                     }
                 ]
-        actualStrategy `shouldBe` Just (UseCustomImportGroups expectedRules)
+        actualStrategy `shouldBe` Just (ImportGroupCustom expectedRules)
       it "parses multiple group configurations and rules in their order of appearance in the configuration" $ do
         config <-
           Yaml.decodeThrow . Char8.pack . unlines $
@@ -289,7 +289,7 @@ spec = do
                             ]
                     }
                 ]
-        actualStrategy `shouldBe` Just (UseCustomImportGroups expectedRules)
+        actualStrategy `shouldBe` Just (ImportGroupCustom expectedRules)
       it "fails when a rule cannot be identified" $ do
         let decodeResult =
               Yaml.decodeEither' @FourmoluConfig . Char8.pack . unlines $

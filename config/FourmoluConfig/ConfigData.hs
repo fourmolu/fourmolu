@@ -234,8 +234,8 @@ allOptions =
         fieldName = Just "poImportGrouping",
         description = "Rules for grouping import declarations",
         type_ = "ImportGrouping",
-        default_ = HsExpr "CreateSingleGroup",
-        ormolu = HsExpr "CreateSingleGroup",
+        default_ = HsExpr "ImportGroupSingle",
+        ormolu = HsExpr "ImportGroupSingle",
         sinceVersion = Nothing,
         cliOverrides = emptyOverrides
       },
@@ -454,11 +454,11 @@ allFieldTypes =
     FieldTypeADT
       { fieldTypeName = "ImportGrouping",
         adtConstructors =
-          [ "CreateSingleGroup",
-            "SplitByScope",
-            "SplitByQualified",
-            "SplitByScopeAndQualified",
-            "UseCustomImportGroups (NonEmpty CT.ImportGroup)"
+          [ "ImportGroupSingle",
+            "ImportGroupByScope",
+            "ImportGroupByQualified",
+            "ImportGroupByScopeThenQualified",
+            "ImportGroupCustom (NonEmpty CT.ImportGroup)"
           ],
         adtSchema =
           ADTSchema
@@ -475,19 +475,19 @@ allFieldTypes =
                   ]
             },
         adtRender =
-          [ ("CreateSingleGroup", "single"),
-            ("SplitByQualified", "by-qualified"),
-            ("SplitByScope", "by-scope"),
-            ("SplitByScopeAndQualified", "by-scope-then-qualified")
+          [ ("ImportGroupSingle", "single"),
+            ("ImportGroupByQualified", "by-qualified"),
+            ("ImportGroupByScope", "by-scope"),
+            ("ImportGroupByScopeThenQualified", "by-scope-then-qualified")
           ],
         adtParseJSON =
           unlines
             [ "\\case",
-              "  Aeson.String \"single\" -> pure CreateSingleGroup",
-              "  Aeson.String \"by-qualified\" -> pure SplitByQualified",
-              "  Aeson.String \"by-scope\" -> pure SplitByScope",
-              "  Aeson.String \"by-scope-then-qualified\" -> pure SplitByScopeAndQualified",
-              "  arr@(Aeson.Array _) -> UseCustomImportGroups <$> Aeson.parseJSON arr",
+              "  Aeson.String \"single\" -> pure ImportGroupSingle",
+              "  Aeson.String \"by-qualified\" -> pure ImportGroupByQualified",
+              "  Aeson.String \"by-scope\" -> pure ImportGroupByScope",
+              "  Aeson.String \"by-scope-then-qualified\" -> pure ImportGroupByScopeThenQualified",
+              "  arr@(Aeson.Array _) -> ImportGroupCustom <$> Aeson.parseJSON arr",
               "  other ->",
               "    fail . unlines $",
               "      [ \"unknown strategy value: \" <> show other,",
@@ -497,10 +497,10 @@ allFieldTypes =
         adtParsePrinterOptType =
           unlines
             [ "\\case",
-              "  \"single\" -> Right CreateSingleGroup",
-              "  \"by-qualified\" -> Right SplitByQualified",
-              "  \"by-scope\" -> Right SplitByScope",
-              "  \"by-scope-then-qualified\" -> Right SplitByScopeAndQualified",
+              "  \"single\" -> Right ImportGroupSingle",
+              "  \"by-qualified\" -> Right ImportGroupByQualified",
+              "  \"by-scope\" -> Right ImportGroupByScope",
+              "  \"by-scope-then-qualified\" -> Right ImportGroupByScopeThenQualified",
               "  s ->",
               "    Left . unlines $",
               "      [ \"unknown value: \" <> show s",

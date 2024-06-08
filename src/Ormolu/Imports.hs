@@ -8,7 +8,7 @@
 -- | Manipulations on import lists.
 module Ormolu.Imports
   ( ImportGroups,
-    createSingleImportGroupStrategy,
+    importGroupSingleStrategy,
     groupsFromConfig,
     normalizeImports,
   )
@@ -67,8 +67,8 @@ data QualifiedImportMatcher
 newtype ImportRulePriority = ImportRulePriority Word8
   deriving stock (Eq, Ord, Bounded)
 
-createSingleImportGroupStrategy :: ImportGroups
-createSingleImportGroupStrategy =
+importGroupSingleStrategy :: ImportGroups
+importGroupSingleStrategy =
   ImportGroups $
     pure
       ImportGroup
@@ -76,8 +76,8 @@ createSingleImportGroupStrategy =
           igRules = pure matchAllImportRule
         }
 
-splitByQualifiedStrategy :: ImportGroups
-splitByQualifiedStrategy =
+importGroupByQualifiedStrategy :: ImportGroups
+importGroupByQualifiedStrategy =
   ImportGroups $
     NonEmpty.fromList
       [ ImportGroup
@@ -90,8 +90,8 @@ splitByQualifiedStrategy =
           }
       ]
 
-splitByScopeStrategy :: Set Cabal.ModuleName -> ImportGroups
-splitByScopeStrategy mods =
+importGroupByScopeStrategy :: Set Cabal.ModuleName -> ImportGroups
+importGroupByScopeStrategy mods =
   ImportGroups $
     NonEmpty.fromList
       [ ImportGroup
@@ -104,8 +104,8 @@ splitByScopeStrategy mods =
           }
       ]
 
-splitByScopeAndQualifiedStrategy :: Set Cabal.ModuleName -> ImportGroups
-splitByScopeAndQualifiedStrategy mods =
+importGroupByScopeThenQualifiedStrategy :: Set Cabal.ModuleName -> ImportGroups
+importGroupByScopeThenQualifiedStrategy mods =
   ImportGroups $
     NonEmpty.fromList
       [ ImportGroup
@@ -120,11 +120,11 @@ splitByScopeAndQualifiedStrategy mods =
 groupsFromConfig :: Set Cabal.ModuleName -> Config.ImportGrouping -> ImportGroups
 groupsFromConfig localModules =
   \case
-    Config.CreateSingleGroup -> createSingleImportGroupStrategy
-    Config.SplitByQualified -> splitByQualifiedStrategy
-    Config.SplitByScope -> splitByScopeStrategy localModules
-    Config.SplitByScopeAndQualified -> splitByScopeAndQualifiedStrategy localModules
-    Config.UseCustomImportGroups igs -> ImportGroups $ convertImportGroup <$> igs
+    Config.ImportGroupSingle -> importGroupSingleStrategy
+    Config.ImportGroupByQualified -> importGroupByQualifiedStrategy
+    Config.ImportGroupByScope -> importGroupByScopeStrategy localModules
+    Config.ImportGroupByScopeThenQualified -> importGroupByScopeThenQualifiedStrategy localModules
+    Config.ImportGroupCustom igs -> ImportGroups $ convertImportGroup <$> igs
   where
     convertImportGroup :: Config.ImportGroup -> ImportGroup
     convertImportGroup Config.ImportGroup {..} =

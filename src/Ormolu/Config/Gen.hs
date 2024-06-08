@@ -121,7 +121,7 @@ defaultPrinterOpts =
     , poSingleDerivingParens = pure DerivingAlways
     , poUnicode = pure UnicodeNever
     , poRespectful = pure True
-    , poImportGrouping = pure CreateSingleGroup
+    , poImportGrouping = pure ImportGroupSingle
     }
 
 -- | Fill the field values that are 'Nothing' in the first argument
@@ -336,11 +336,11 @@ data SingleDerivingParens
   deriving (Eq, Show, Enum, Bounded)
 
 data ImportGrouping
-  = CreateSingleGroup
-  | SplitByScope
-  | SplitByQualified
-  | SplitByScopeAndQualified
-  | UseCustomImportGroups (NonEmpty CT.ImportGroup)
+  = ImportGroupSingle
+  | ImportGroupByScope
+  | ImportGroupByQualified
+  | ImportGroupByScopeThenQualified
+  | ImportGroupCustom (NonEmpty CT.ImportGroup)
   deriving (Eq, Show)
 
 instance Aeson.FromJSON CommaStyle where
@@ -549,11 +549,11 @@ instance PrinterOptsFieldType SingleDerivingParens where
 instance Aeson.FromJSON ImportGrouping where
   parseJSON =
     \case
-      Aeson.String "single" -> pure CreateSingleGroup
-      Aeson.String "by-qualified" -> pure SplitByQualified
-      Aeson.String "by-scope" -> pure SplitByScope
-      Aeson.String "by-scope-then-qualified" -> pure SplitByScopeAndQualified
-      arr@(Aeson.Array _) -> UseCustomImportGroups <$> Aeson.parseJSON arr
+      Aeson.String "single" -> pure ImportGroupSingle
+      Aeson.String "by-qualified" -> pure ImportGroupByQualified
+      Aeson.String "by-scope" -> pure ImportGroupByScope
+      Aeson.String "by-scope-then-qualified" -> pure ImportGroupByScopeThenQualified
+      arr@(Aeson.Array _) -> ImportGroupCustom <$> Aeson.parseJSON arr
       other ->
         fail . unlines $
           [ "unknown strategy value: " <> show other,
@@ -563,10 +563,10 @@ instance Aeson.FromJSON ImportGrouping where
 instance PrinterOptsFieldType ImportGrouping where
   parsePrinterOptType =
     \case
-      "single" -> Right CreateSingleGroup
-      "by-qualified" -> Right SplitByQualified
-      "by-scope" -> Right SplitByScope
-      "by-scope-then-qualified" -> Right SplitByScopeAndQualified
+      "single" -> Right ImportGroupSingle
+      "by-qualified" -> Right ImportGroupByQualified
+      "by-scope" -> Right ImportGroupByScope
+      "by-scope-then-qualified" -> Right ImportGroupByScopeThenQualified
       s ->
         Left . unlines $
           [ "unknown value: " <> show s

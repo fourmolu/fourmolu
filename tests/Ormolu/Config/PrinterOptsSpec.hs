@@ -248,11 +248,11 @@ spec =
           isMulti = False,
           testCases =
             let testedStrategies =
-                  [ CreateSingleGroup,
-                    SplitByQualified,
-                    SplitByScope,
-                    SplitByScopeAndQualified,
-                    UseCustomImportGroups . NonEmpty.fromList $
+                  [ ImportGroupSingle,
+                    ImportGroupByQualified,
+                    ImportGroupByScope,
+                    ImportGroupByScopeThenQualified,
+                    ImportGroupCustom . NonEmpty.fromList $
                       [ ImportGroup
                           { igName = Nothing,
                             igPresetOrRules =
@@ -440,5 +440,5 @@ spanEnd f xs =
 
 showStrategy :: ImportGrouping -> String
 showStrategy igs = case igs of
-  UseCustomImportGroups _ -> "custom"
+  ImportGroupCustom _ -> "custom"
   _ -> show igs
