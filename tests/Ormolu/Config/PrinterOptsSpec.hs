@@ -252,54 +252,53 @@ spec =
                     SplitByQualified,
                     SplitByScope,
                     SplitByScopeAndQualified,
-                    UseCustomImportGroups $
-                      NonEmpty.fromList
-                        [ ImportGroup
-                            { igName = Nothing,
-                              igPresetOrRules =
-                                Right $
-                                  NonEmpty.fromList
-                                    [ ImportGroupRule
-                                        { igrModuleMatcher = MatchGlob "Data.Text",
-                                          igrQualified = Nothing
-                                        }
-                                    ]
-                            },
-                          ImportGroup
-                            { igName = Nothing,
-                              igPresetOrRules = Left AllPreset
-                            },
-                          ImportGroup
-                            { igName = Nothing,
-                              igPresetOrRules =
-                                Right $
-                                  NonEmpty.fromList
-                                    [ ImportGroupRule
-                                        { igrModuleMatcher = MatchGlob "SomeInternal.**",
-                                          igrQualified = Just True
-                                        },
-                                      ImportGroupRule
-                                        { igrModuleMatcher = MatchGlob "Unknown.**",
-                                          igrQualified = Just False
-                                        }
-                                    ]
-                            },
-                          ImportGroup
-                            { igName = Nothing,
-                              igPresetOrRules =
-                                Right $
-                                  NonEmpty.fromList
-                                    [ ImportGroupRule
-                                        { igrModuleMatcher = MatchLocalModules,
-                                          igrQualified = Just False
-                                        },
-                                      ImportGroupRule
-                                        { igrModuleMatcher = MatchAllModules,
-                                          igrQualified = Just True
-                                        }
-                                    ]
-                            }
-                        ]
+                    UseCustomImportGroups . NonEmpty.fromList $
+                      [ ImportGroup
+                          { igName = Nothing,
+                            igPresetOrRules =
+                              Right $
+                                NonEmpty.fromList
+                                  [ ImportGroupRule
+                                      { igrModuleMatcher = MatchGlob "Data.Text",
+                                        igrQualified = Nothing
+                                      }
+                                  ]
+                          },
+                        ImportGroup
+                          { igName = Nothing,
+                            igPresetOrRules = Left AllPreset
+                          },
+                        ImportGroup
+                          { igName = Nothing,
+                            igPresetOrRules =
+                              Right $
+                                NonEmpty.fromList
+                                  [ ImportGroupRule
+                                      { igrModuleMatcher = MatchGlob "SomeInternal.**",
+                                        igrQualified = Just True
+                                      },
+                                    ImportGroupRule
+                                      { igrModuleMatcher = MatchGlob "Unknown.**",
+                                        igrQualified = Just False
+                                      }
+                                  ]
+                          },
+                        ImportGroup
+                          { igName = Nothing,
+                            igPresetOrRules =
+                              Right $
+                                NonEmpty.fromList
+                                  [ ImportGroupRule
+                                      { igrModuleMatcher = MatchLocalModules,
+                                        igrQualified = Just False
+                                      },
+                                    ImportGroupRule
+                                      { igrModuleMatcher = MatchAllModules,
+                                        igrQualified = Just True
+                                      }
+                                  ]
+                          }
+                      ]
                   ]
              in (,) <$> allOptions <*> testedStrategies,
           updateConfig = \(respectful, igs) opts ->
