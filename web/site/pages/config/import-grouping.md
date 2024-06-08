@@ -16,10 +16,6 @@ Predefined presets:
 - `by-scope`: one group for external imports, then one group for imports targeting modules from the current Cabal project
 - `by-scope-then-qualified`: apply `by-scope` first, then `by-qualified`
 
-Predefined groups:
-
-- `all`: preset group that will receive any import not matching any of your custom rules
-
 Predefined matchers:
 
 - `match: all`: matches all modules
@@ -34,7 +30,9 @@ import-grouping:
     rules:
       - glob: Data.Text
   - name: "The rest"
-    preset: all
+    rules:
+      - match: all
+        priority: 100
   - name: "My internals and monads unqualified"
     rules:
       - match: local-modules
@@ -100,7 +98,12 @@ custom
     },
     {
       "name": "The rest",
-      "preset": "all"
+      "rules": [
+        {
+          "match": "all",
+          "priority": 100
+        }
+      ]
     },
     {
       "name": "My internals and monads unqualified",

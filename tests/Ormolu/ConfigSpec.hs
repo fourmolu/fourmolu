@@ -8,7 +8,7 @@ import Data.List (isInfixOf)
 import Data.List.NonEmpty qualified as NonEmpty
 import Data.Map qualified as Map
 import Data.Yaml qualified as Yaml
-import Ormolu.Config (FourmoluConfig (..), ImportGroup (..), ImportGroupPreset (..), ImportGroupRule (..), ImportGrouping (..), ImportModuleMatcher (..), PrinterOpts (..), resolvePrinterOpts)
+import Ormolu.Config (FourmoluConfig (..), ImportGroup (..), ImportGroupRule (..), ImportGrouping (..), ImportModuleMatcher (..), ImportRulePriority (ImportRulePriority), PrinterOpts (..), resolvePrinterOpts)
 import Ormolu.Fixity (ModuleReexports (..))
 import Test.Hspec
 
@@ -61,29 +61,22 @@ spec = do
           Yaml.decodeThrow . Char8.pack . unlines $
             [ "import-grouping:",
               "  - name: Some name",
-              "    preset: all"
+              "    rules:",
+              "      - match: all"
             ]
         let actualStrategy = poImportGrouping (cfgFilePrinterOpts config)
             expectedRules =
               NonEmpty.fromList
                 [ ImportGroup
                     { igName = Just "Some name",
-                      igPresetOrRules = Left AllPreset
-                    }
-                ]
-        actualStrategy `shouldBe` Just (ImportGroupCustom expectedRules)
-      it "parses the 'all' preset" $ do
-        config <-
-          Yaml.decodeThrow . Char8.pack . unlines $
-            [ "import-grouping:",
-              "  - preset: all"
-            ]
-        let actualStrategy = poImportGrouping (cfgFilePrinterOpts config)
-            expectedRules =
-              NonEmpty.fromList
-                [ ImportGroup
-                    { igName = Nothing,
-                      igPresetOrRules = Left AllPreset
+                      igRules =
+                        NonEmpty.fromList
+                          [ ImportGroupRule
+                              { igrModuleMatcher = MatchAllModules,
+                                igrQualified = Nothing,
+                                igrPriority = Nothing
+                              }
+                          ]
                     }
                 ]
         actualStrategy `shouldBe` Just (ImportGroupCustom expectedRules)
@@ -100,14 +93,14 @@ spec = do
               NonEmpty.fromList
                 [ ImportGroup
                     { igName = Nothing,
-                      igPresetOrRules =
-                        Right $
-                          NonEmpty.fromList
-                            [ ImportGroupRule
-                                { igrModuleMatcher = MatchGlob "**",
-                                  igrQualified = Just True
-                                }
-                            ]
+                      igRules =
+                        NonEmpty.fromList
+                          [ ImportGroupRule
+                              { igrModuleMatcher = MatchGlob "**",
+                                igrQualified = Just True,
+                                igrPriority = Nothing
+                              }
+                          ]
                     }
                 ]
         actualStrategy `shouldBe` Just (ImportGroupCustom expectedRules)
@@ -124,14 +117,38 @@ spec = do
               NonEmpty.fromList
                 [ ImportGroup
                     { igName = Nothing,
-                      igPresetOrRules =
-                        Right $
-                          NonEmpty.fromList
-                            [ ImportGroupRule
-                                { igrModuleMatcher = MatchGlob "**",
-                                  igrQualified = Just False
-                                }
-                            ]
+                      igRules =
+                        NonEmpty.fromList
+                          [ ImportGroupRule
+                              { igrModuleMatcher = MatchGlob "**",
+                                igrQualified = Just False,
+                                igrPriority = Nothing
+                              }
+                          ]
+                    }
+                ]
+        actualStrategy `shouldBe` Just (ImportGroupCustom expectedRules)
+      it "decodes the 'priority' rule option" $ do
+        config <-
+          Yaml.decodeThrow . Char8.pack . unlines $
+            [ "import-grouping:",
+              "  - rules:",
+              "      - match: all",
+              "        priority: 55"
+            ]
+        let actualStrategy = poImportGrouping (cfgFilePrinterOpts config)
+            expectedRules =
+              NonEmpty.fromList
+                [ ImportGroup
+                    { igName = Nothing,
+                      igRules =
+                        NonEmpty.fromList
+                          [ ImportGroupRule
+                              { igrModuleMatcher = MatchAllModules,
+                                igrQualified = Nothing,
+                                igrPriority = Just (ImportRulePriority 55)
+                              }
+                          ]
                     }
                 ]
         actualStrategy `shouldBe` Just (ImportGroupCustom expectedRules)
@@ -147,14 +164,14 @@ spec = do
               NonEmpty.fromList
                 [ ImportGroup
                     { igName = Nothing,
-                      igPresetOrRules =
-                        Right $
-                          NonEmpty.fromList
-                            [ ImportGroupRule
-                                { igrModuleMatcher = MatchGlob "Data.Text.**",
-                                  igrQualified = Nothing
-                                }
-                            ]
+                      igRules =
+                        NonEmpty.fromList
+                          [ ImportGroupRule
+                              { igrModuleMatcher = MatchGlob "Data.Text.**",
+                                igrQualified = Nothing,
+                                igrPriority = Nothing
+                              }
+                          ]
                     }
                 ]
         actualStrategy `shouldBe` Just (ImportGroupCustom expectedRules)
@@ -170,14 +187,14 @@ spec = do
               NonEmpty.fromList
                 [ ImportGroup
                     { igName = Nothing,
-                      igPresetOrRules =
-                        Right $
-                          NonEmpty.fromList
-                            [ ImportGroupRule
-                                { igrModuleMatcher = MatchLocalModules,
-                                  igrQualified = Nothing
-                                }
-                            ]
+                      igRules =
+                        NonEmpty.fromList
+                          [ ImportGroupRule
+                              { igrModuleMatcher = MatchLocalModules,
+                                igrQualified = Nothing,
+                                igrPriority = Nothing
+                              }
+                          ]
                     }
                 ]
         actualStrategy `shouldBe` Just (ImportGroupCustom expectedRules)
@@ -193,14 +210,14 @@ spec = do
               NonEmpty.fromList
                 [ ImportGroup
                     { igName = Nothing,
-                      igPresetOrRules =
-                        Right $
-                          NonEmpty.fromList
-                            [ ImportGroupRule
-                                { igrModuleMatcher = MatchAllModules,
-                                  igrQualified = Nothing
-                                }
-                            ]
+                      igRules =
+                        NonEmpty.fromList
+                          [ ImportGroupRule
+                              { igrModuleMatcher = MatchAllModules,
+                                igrQualified = Nothing,
+                                igrPriority = Nothing
+                              }
+                          ]
                     }
                 ]
         actualStrategy `shouldBe` Just (ImportGroupCustom expectedRules)
@@ -212,7 +229,9 @@ spec = do
               "    rules:",
               "      - glob: Data.Text",
               "  - name: The rest",
-              "    preset: all",
+              "    rules:",
+              "      - match: all",
+              "        priority: 100",
               "  - name: My internals and monads unqualified",
               "    rules:",
               "      - match: local-modules",
@@ -234,59 +253,68 @@ spec = do
               NonEmpty.fromList
                 [ ImportGroup
                     { igName = Just "Text modules",
-                      igPresetOrRules =
-                        Right $
-                          NonEmpty.fromList
-                            [ ImportGroupRule
-                                { igrModuleMatcher = MatchGlob "Data.Text",
-                                  igrQualified = Nothing
-                                }
-                            ]
+                      igRules =
+                        NonEmpty.fromList
+                          [ ImportGroupRule
+                              { igrModuleMatcher = MatchGlob "Data.Text",
+                                igrQualified = Nothing,
+                                igrPriority = Nothing
+                              }
+                          ]
                     },
                   ImportGroup
                     { igName = Just "The rest",
-                      igPresetOrRules = Left AllPreset
+                      igRules =
+                        NonEmpty.fromList
+                          [ ImportGroupRule
+                              { igrModuleMatcher = MatchAllModules,
+                                igrQualified = Nothing,
+                                igrPriority = Just (ImportRulePriority 100)
+                              }
+                          ]
                     },
                   ImportGroup
                     { igName = Just "My internals and monads unqualified",
-                      igPresetOrRules =
-                        Right $
-                          NonEmpty.fromList
-                            [ ImportGroupRule
-                                { igrModuleMatcher = MatchLocalModules,
-                                  igrQualified = Just False
-                                },
-                              ImportGroupRule
-                                { igrModuleMatcher = MatchGlob "Control.Monad",
-                                  igrQualified = Just False
-                                }
-                            ]
+                      igRules =
+                        NonEmpty.fromList
+                          [ ImportGroupRule
+                              { igrModuleMatcher = MatchLocalModules,
+                                igrQualified = Just False,
+                                igrPriority = Nothing
+                              },
+                            ImportGroupRule
+                              { igrModuleMatcher = MatchGlob "Control.Monad",
+                                igrQualified = Just False,
+                                igrPriority = Nothing
+                              }
+                          ]
                     },
                   ImportGroup
                     { igName = Just "My internals and monads qualified",
-                      igPresetOrRules =
-                        Right $
-                          NonEmpty.fromList
-                            [ ImportGroupRule
-                                { igrModuleMatcher = MatchLocalModules,
-                                  igrQualified = Just True
-                                },
-                              ImportGroupRule
-                                { igrModuleMatcher = MatchGlob "Control.Monad",
-                                  igrQualified = Just True
-                                }
-                            ]
+                      igRules =
+                        NonEmpty.fromList
+                          [ ImportGroupRule
+                              { igrModuleMatcher = MatchLocalModules,
+                                igrQualified = Just True,
+                                igrPriority = Nothing
+                              },
+                            ImportGroupRule
+                              { igrModuleMatcher = MatchGlob "Control.Monad",
+                                igrQualified = Just True,
+                                igrPriority = Nothing
+                              }
+                          ]
                     },
                   ImportGroup
                     { igName = Just "Specific monads",
-                      igPresetOrRules =
-                        Right $
-                          NonEmpty.fromList
-                            [ ImportGroupRule
-                                { igrModuleMatcher = MatchGlob "Control.Monad.**",
-                                  igrQualified = Nothing
-                                }
-                            ]
+                      igRules =
+                        NonEmpty.fromList
+                          [ ImportGroupRule
+                              { igrModuleMatcher = MatchGlob "Control.Monad.**",
+                                igrQualified = Nothing,
+                                igrPriority = Nothing
+                              }
+                          ]
                     }
                 ]
         actualStrategy `shouldBe` Just (ImportGroupCustom expectedRules)
