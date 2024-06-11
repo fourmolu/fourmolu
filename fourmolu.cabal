@@ -156,6 +156,8 @@ executable fourmolu
         th-env >=0.1.1 && <0.2,
         -- fourmolu-only deps
         directory >=1.3.3 && <1.4,
+        optparse-applicative >=0.17,
+        terminal-size >=0.1 && <0.4,
         yaml >=0.11.6.0 && <1,
         fourmolu
 
