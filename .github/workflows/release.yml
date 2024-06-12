@@ -24,11 +24,6 @@ jobs:
       -
         uses: actions/download-artifact@v4
         with:
-          name: fourmolu-binary-macos-latest
-          path: ./bin/
-      -
-        uses: actions/download-artifact@v4
-        with:
           name: fourmolu-sdist
           path: ./sdist/
       -
@@ -59,5 +54,4 @@ jobs:
           target_commitish: ${{ github.sha }}
           files: |
             bin/fourmolu-${{ env.VERSION }}-linux-x86_64
-            bin/fourmolu-${{ env.VERSION }}-osx-x86_64
           fail_on_unmatched_files: true
