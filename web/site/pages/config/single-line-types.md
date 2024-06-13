@@ -7,8 +7,8 @@ The `auto` option keeps parameters in a single line, ignoring whether foralls/co
 ## Examples
 
 ```fourmolu-example-input
-(<$>) :: Functor f =>
-  (a -> b) -> f a -> f b
+mapM :: Monad m =>
+  (a -> m b) -> t a -> m (t b)
 ```
 ```fourmolu-example-tab
 auto
