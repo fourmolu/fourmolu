@@ -7,7 +7,7 @@ The `auto` option keeps parameters in a single line, ignoring whether foralls/co
 ## Examples
 
 ```fourmolu-example-input
-mapM :: Monad m =>
+mapM :: (Traversable t, Monad m) =>
   (a -> m b) -> t a -> m (t b)
 ```
 ```fourmolu-example-tab
