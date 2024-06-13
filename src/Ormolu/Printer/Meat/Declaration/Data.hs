@@ -1,7 +1,10 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
 
 -- | Renedring of data type declarations.
@@ -11,9 +14,11 @@ module Ormolu.Printer.Meat.Declaration.Data
 where
 
 import Control.Monad
+import Data.Choice (Choice, pattern Is, pattern Isn't, pattern With)
+import Data.Choice qualified as Choice
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.List.NonEmpty qualified as NE
-import Data.Maybe (isJust, mapMaybe, maybeToList)
+import Data.Maybe (isJust, isNothing, mapMaybe, maybeToList)
 import Data.Text qualified as Text
 import Data.Void
 import GHC.Data.Strict qualified as Strict
@@ -96,9 +101,12 @@ p_dataDecl style name tyVars getTyVarLoc p_tyVar fixity HsDataDefn {..} = do
             breakpoint
             txt "where"
           breakpoint
-          sepSemi (located' (p_conDecl False)) dd_cons'
+          sepSemi (located' (p_conDecl (Isn't #singleRecCon))) dd_cons'
         else switchLayout (getLocA name : (getLocA <$> dd_cons')) . inci $ do
-          let singleConstRec = isSingleConstRec dd_cons'
+          let singleRecCon =
+                case dd_cons' of
+                  [L _ ConDeclH98 {con_args = RecCon {}}] -> Is #singleRecCon
+                  _ -> Isn't #singleRecCon
               compactLayoutAroundEquals =
                 onTheSameLine
                   (getLocA name)
@@ -109,7 +117,7 @@ p_dataDecl style name tyVars getTyVarLoc p_tyVar fixity HsDataDefn {..} = do
           if hasHaddocks dd_cons'
             then newline
             else
-              if singleConstRec && compactLayoutAroundEquals
+              if Choice.isTrue singleRecCon && compactLayoutAroundEquals
                 then space
                 else breakpoint
           equals
@@ -120,84 +128,59 @@ p_dataDecl style name tyVars getTyVarLoc p_tyVar fixity HsDataDefn {..} = do
                   then newline >> txt "|" >> space
                   else space >> txt "|" >> space
               sitcc' =
-                if hasHaddocks dd_cons' || not singleConstRec
+                if hasHaddocks dd_cons' || Choice.isFalse singleRecCon
                   then sitcc
                   else id
-          sep s (sitcc' . located' (p_conDecl singleConstRec)) dd_cons'
+          sep s (sitcc' . located' (p_conDecl singleRecCon)) dd_cons'
   unless (null dd_derivs) breakpoint
   inci $ sep newline (located' p_hsDerivingClause) dd_derivs
 
-p_conDecl ::
-  Bool ->
-  ConDecl GhcPs ->
-  R ()
-p_conDecl singleConstRec = \case
-  ConDeclGADT {..} -> do
-    mapM_ (p_hsDoc Pipe True) con_doc
-    let conDeclSpn =
-          fmap getLocA (NE.toList con_names)
-            <> [getLocA con_bndrs]
-            <> maybeToList (fmap getLocA con_mb_cxt)
-            <> conArgsSpans
-          where
-            conArgsSpans = case con_g_args of
-              PrefixConGADT NoExtField xs -> getLocA . hsScaledThing <$> xs
-              RecConGADT _ x -> [getLocA x]
-    switchLayout conDeclSpn $ do
-      let c :| cs = con_names
-      p_rdrName c
-      unless (null cs) . inci $ do
-        commaDel
-        sep commaDel p_rdrName cs
-      inci $ do
-        let conTy = case con_g_args of
-              PrefixConGADT NoExtField xs ->
-                let go (HsScaled a b) t = addCLocA t b (HsFunTy NoExtField a b t)
-                 in foldr go con_res_ty xs
-              RecConGADT _ r ->
-                addCLocA r con_res_ty $
-                  HsFunTy
-                    NoExtField
-                    (HsUnrestrictedArrow noAnn)
-                    (la2la $ HsRecTy noAnn <$> r)
-                    con_res_ty
-            qualTy = case con_mb_cxt of
-              Nothing -> conTy
-              Just qs ->
-                addCLocA qs conTy $
-                  HsQualTy NoExtField qs conTy
-            quantifiedTy :: LHsType GhcPs
-            quantifiedTy =
-              addCLocA con_bndrs qualTy $
-                hsOuterTyVarBndrsToHsType (unLoc con_bndrs) qualTy
-        startTypeAnnotationDecl quantifiedTy id p_hsType
-  ConDeclH98 {..} -> do
-    mapM_ (p_hsDoc Pipe True) con_doc
-    let conNameSpn = getLocA con_name
-        conNameWithContextSpn =
-          [ RealSrcSpan real Strict.Nothing
-            | EpaSpan (RealSrcSpan real _) <-
-                mapMaybe (matchAddEpAnn AnnForall) con_ext
-          ]
-            <> fmap getLocA con_ex_tvs
-            <> maybeToList (fmap getLocA con_mb_cxt)
-            <> [conNameSpn]
-        conDeclSpn = conNameSpn : conArgsSpans
-          where
-            conArgsSpans = case con_args of
-              PrefixCon [] xs -> getLocA . hsScaledThing <$> xs
-              PrefixCon (v : _) _ -> absurd v
-              RecCon l -> [getLocA l]
-              InfixCon x y -> getLocA . hsScaledThing <$> [x, y]
-    switchLayout conNameWithContextSpn $ do
-      when con_forall $ do
-        p_forallBndrs ForAllInvis p_hsTyVarBndr con_ex_tvs
-        breakpoint
-        indent <- getPrinterOpt poIndentation
-        vlayout (pure ()) . txt $ Text.replicate (indent - 2) " "
-      forM_ con_mb_cxt p_lhsContext
-    switchLayout conDeclSpn $ case con_args of
-      PrefixCon [] xs -> do
+p_conDecl :: Choice "singleRecCon" -> ConDecl GhcPs -> R ()
+p_conDecl _ ConDeclGADT {..} = do
+  mapM_ (p_hsDoc Pipe (With #endNewline)) con_doc
+  switchLayout conDeclSpn $ do
+    let c :| cs = con_names
+    p_rdrName c
+    unless (null cs) . inci $ do
+      commaDel
+      sep commaDel p_rdrName cs
+    inci $ do
+      let conTy = case con_g_args of
+            PrefixConGADT NoExtField xs ->
+              let go (HsScaled a b) t = addCLocA t b (HsFunTy NoExtField a b t)
+               in foldr go con_res_ty xs
+            RecConGADT _ r ->
+              addCLocA r con_res_ty $
+                HsFunTy
+                  NoExtField
+                  (HsUnrestrictedArrow noAnn)
+                  (la2la $ HsRecTy noAnn <$> r)
+                  con_res_ty
+          qualTy = case con_mb_cxt of
+            Nothing -> conTy
+            Just qs ->
+              addCLocA qs conTy $
+                HsQualTy NoExtField qs conTy
+          quantifiedTy :: LHsType GhcPs
+          quantifiedTy =
+            addCLocA con_bndrs qualTy $
+              hsOuterTyVarBndrsToHsType (unLoc con_bndrs) qualTy
+      startTypeAnnotationDecl quantifiedTy id p_hsType
+  where
+    conDeclSpn =
+      fmap getLocA (NE.toList con_names)
+        <> [getLocA con_bndrs]
+        <> maybeToList (fmap getLocA con_mb_cxt)
+        <> conArgsSpans
+    conArgsSpans = case con_g_args of
+      PrefixConGADT NoExtField xs -> getLocA . hsScaledThing <$> xs
+      RecConGADT _ x -> [getLocA x]
+p_conDecl singleRecCon ConDeclH98 {..} =
+  case con_args of
+    PrefixCon (_ :: [Void]) xs -> do
+      renderConDoc
+      renderContext
+      switchLayout conDeclSpn $ do
         p_rdrName con_name
         let args = hsScaledThing <$> xs
             argsHaveDocs = conArgsHaveHaddocks args
@@ -205,18 +188,72 @@ p_conDecl singleConstRec = \case
         unless (null xs) delimiter
         inci . sitcc $
           sep delimiter (sitcc . located' p_hsType) args
-      PrefixCon (v : _) _ -> absurd v
-      RecCon l -> do
+    RecCon l -> do
+      renderConDoc
+      renderContext
+      switchLayout conDeclSpn $ do
         p_rdrName con_name
         breakpoint
-        inciIf (not singleConstRec) (located l p_conDeclFields)
-      InfixCon (HsScaled _ x) (HsScaled _ y) -> do
-        located x p_hsType
-        breakpoint
+        inciIf (Choice.isFalse singleRecCon) (located l p_conDeclFields)
+    InfixCon (HsScaled _ l) (HsScaled _ r) -> do
+      -- manually render these
+      let (lType, larg_doc) = splitDocTy l
+      let (rType, rarg_doc) = splitDocTy r
+
+      -- the constructor haddock can go on top of the entire constructor
+      -- only if neither argument has haddocks
+      let putConDocOnTop = isNothing larg_doc && isNothing rarg_doc
+
+      when putConDocOnTop renderConDoc
+      renderContext
+      switchLayout conDeclSpn $ do
+        -- the left arg haddock can use pipe only if the infix constructor has docs
+        if isJust con_doc
+          then do
+            mapM_ (p_hsDoc Pipe (With #endNewline)) larg_doc
+            located lType p_hsType
+            breakpoint
+          else do
+            located lType p_hsType
+            case larg_doc of
+              Just doc -> space >> p_hsDoc Caret (With #endNewline) doc
+              Nothing -> breakpoint
         inci $ do
+          unless putConDocOnTop renderConDoc
           p_rdrName con_name
-          space
-          located y p_hsType
+          case rarg_doc of
+            Just doc -> newline >> p_hsDoc Pipe (With #endNewline) doc
+            Nothing -> breakpoint
+          located rType p_hsType
+  where
+    renderConDoc = mapM_ (p_hsDoc Pipe (With #endNewline)) con_doc
+    renderContext =
+      switchLayout conNameWithContextSpn $ do
+        when con_forall $ do
+          p_forallBndrs ForAllInvis p_hsTyVarBndr con_ex_tvs
+          breakpoint
+          indent <- getPrinterOpt poIndentation
+          vlayout (pure ()) . txt $ Text.replicate (indent - 2) " "
+        forM_ con_mb_cxt p_lhsContext
+
+    conNameWithContextSpn =
+      [ RealSrcSpan real Strict.Nothing
+      | EpaSpan (RealSrcSpan real _) <-
+          mapMaybe (matchAddEpAnn AnnForall) con_ext
+      ]
+        <> fmap getLocA con_ex_tvs
+        <> maybeToList (fmap getLocA con_mb_cxt)
+        <> [conNameSpn]
+    conDeclSpn = conNameSpn : conArgsSpans
+    conNameSpn = getLocA con_name
+    conArgsSpans = case con_args of
+      PrefixCon (_ :: [Void]) xs -> getLocA . hsScaledThing <$> xs
+      RecCon l -> [getLocA l]
+      InfixCon x y -> getLocA . hsScaledThing <$> [x, y]
+
+    splitDocTy = \case
+      L _ (HsDocTy _ ty doc) -> (ty, Just doc)
+      ty -> (ty, Nothing)
 
 p_lhsContext ::
   LHsContext GhcPs ->
@@ -289,13 +326,6 @@ isInfix :: LexicalFixity -> Bool
 isInfix = \case
   Infix -> True
   Prefix -> False
-
-isSingleConstRec :: [LConDecl GhcPs] -> Bool
-isSingleConstRec [(L _ ConDeclH98 {..})] =
-  case con_args of
-    RecCon _ -> True
-    _ -> False
-isSingleConstRec _ = False
 
 hasHaddocks :: [LConDecl GhcPs] -> Bool
 hasHaddocks = any (f . unLoc)

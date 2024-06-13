@@ -24,6 +24,137 @@ index 47d4667..ffd1713 100644
    , module Distribution.Types.GenericPackageDescription
  
      -- * Components
+diff --git a/Cabal-syntax/src/Distribution/PackageDescription/PrettyPrint.hs b/Cabal-syntax/src/Distribution/PackageDescription/PrettyPrint.hs
+index b03b1b9..a876a5c 100644
+--- a/Cabal-syntax/src/Distribution/PackageDescription/PrettyPrint.hs
++++ b/Cabal-syntax/src/Distribution/PackageDescription/PrettyPrint.hs
+@@ -150,35 +150,35 @@ ppCondLibrary v (Just condTree) =
+ ppCondSubLibraries :: CabalSpecVersion -> [(UnqualComponentName, CondTree ConfVar [Dependency] Library)] -> [PrettyField ()]
+ ppCondSubLibraries v libs =
+   [ PrettySection () "library" [pretty n] $
+-    ppCondTree2 v (libraryFieldGrammar $ LSubLibName n) condTree
++      ppCondTree2 v (libraryFieldGrammar $ LSubLibName n) condTree
+   | (n, condTree) <- libs
+   ]
+ 
+ ppCondForeignLibs :: CabalSpecVersion -> [(UnqualComponentName, CondTree ConfVar [Dependency] ForeignLib)] -> [PrettyField ()]
+ ppCondForeignLibs v flibs =
+   [ PrettySection () "foreign-library" [pretty n] $
+-    ppCondTree2 v (foreignLibFieldGrammar n) condTree
++      ppCondTree2 v (foreignLibFieldGrammar n) condTree
+   | (n, condTree) <- flibs
+   ]
+ 
+ ppCondExecutables :: CabalSpecVersion -> [(UnqualComponentName, CondTree ConfVar [Dependency] Executable)] -> [PrettyField ()]
+ ppCondExecutables v exes =
+   [ PrettySection () "executable" [pretty n] $
+-    ppCondTree2 v (executableFieldGrammar n) condTree
++      ppCondTree2 v (executableFieldGrammar n) condTree
+   | (n, condTree) <- exes
+   ]
+ 
+ ppCondTestSuites :: CabalSpecVersion -> [(UnqualComponentName, CondTree ConfVar [Dependency] TestSuite)] -> [PrettyField ()]
+ ppCondTestSuites v suites =
+   [ PrettySection () "test-suite" [pretty n] $
+-    ppCondTree2 v testSuiteFieldGrammar (fmap FG.unvalidateTestSuite condTree)
++      ppCondTree2 v testSuiteFieldGrammar (fmap FG.unvalidateTestSuite condTree)
+   | (n, condTree) <- suites
+   ]
+ 
+ ppCondBenchmarks :: CabalSpecVersion -> [(UnqualComponentName, CondTree ConfVar [Dependency] Benchmark)] -> [PrettyField ()]
+ ppCondBenchmarks v suites =
+   [ PrettySection () "benchmark" [pretty n] $
+-    ppCondTree2 v benchmarkFieldGrammar (fmap FG.unvalidateBenchmark condTree)
++      ppCondTree2 v benchmarkFieldGrammar (fmap FG.unvalidateBenchmark condTree)
+   | (n, condTree) <- suites
+   ]
+ 
+@@ -308,6 +308,6 @@ showHookedBuildInfo (mb_lib_bi, ex_bis) =
+   showFields (const NoComment) $
+     maybe mempty (prettyFieldGrammar cabalSpecLatest buildInfoFieldGrammar) mb_lib_bi
+       ++ [ PrettySection () "executable:" [pretty name] $
+-          prettyFieldGrammar cabalSpecLatest buildInfoFieldGrammar bi
++            prettyFieldGrammar cabalSpecLatest buildInfoFieldGrammar bi
+          | (name, bi) <- ex_bis
+          ]
+diff --git a/Cabal/src/Distribution/Backpack/ComponentsGraph.hs b/Cabal/src/Distribution/Backpack/ComponentsGraph.hs
+index aef3db8..5f0b7bc 100644
+--- a/Cabal/src/Distribution/Backpack/ComponentsGraph.hs
++++ b/Cabal/src/Distribution/Backpack/ComponentsGraph.hs
+@@ -41,9 +41,9 @@ dispComponentsWithDeps :: ComponentsWithDeps -> Doc
+ dispComponentsWithDeps graph =
+   vcat
+     [ hang
+-      (text "component" <+> pretty (componentName c))
+-      4
+-      (vcat [text "dependency" <+> pretty cdep | cdep <- cdeps])
++        (text "component" <+> pretty (componentName c))
++        4
++        (vcat [text "dependency" <+> pretty cdep | cdep <- cdeps])
+     | (c, cdeps) <- graph
+     ]
+ 
+diff --git a/Cabal/src/Distribution/Backpack/Configure.hs b/Cabal/src/Distribution/Backpack/Configure.hs
+index 8e9eb18..2dc5c2f 100644
+--- a/Cabal/src/Distribution/Backpack/Configure.hs
++++ b/Cabal/src/Distribution/Backpack/Configure.hs
+@@ -278,16 +278,16 @@ toComponentLocalBuildInfos
+                 -- TODO: Undupe.
+                 ++ unlines
+                   [ "installed package "
+-                    ++ prettyShow (packageId pkg)
+-                    ++ " is broken due to missing package "
+-                    ++ intercalate ", " (map prettyShow deps)
++                      ++ prettyShow (packageId pkg)
++                      ++ " is broken due to missing package "
++                      ++ intercalate ", " (map prettyShow deps)
+                   | (Left pkg, deps) <- broken
+                   ]
+                 ++ unlines
+                   [ "planned package "
+-                    ++ prettyShow (packageId pkg)
+-                    ++ " is broken due to missing package "
+-                    ++ intercalate ", " (map prettyShow deps)
++                      ++ prettyShow (packageId pkg)
++                      ++ " is broken due to missing package "
++                      ++ intercalate ", " (map prettyShow deps)
+                   | (Right pkg, deps) <- broken
+                   ]
+ 
+@@ -325,10 +325,10 @@ toComponentLocalBuildInfos
+             2
+             ( vcat
+                 [ text "package"
+-                  <+> pretty (packageName user)
+-                  <+> parens (pretty (installedUnitId user))
+-                  <+> text "requires"
+-                  <+> pretty inst
++                    <+> pretty (packageName user)
++                    <+> parens (pretty (installedUnitId user))
++                    <+> text "requires"
++                    <+> pretty inst
+                 | (_dep_key, insts) <- inconsistencies
+                 , (inst, users) <- insts
+                 , user <- users
+diff --git a/Cabal/src/Distribution/Backpack/ConfiguredComponent.hs b/Cabal/src/Distribution/Backpack/ConfiguredComponent.hs
+index 9bfaefb..9d1ed67 100644
+--- a/Cabal/src/Distribution/Backpack/ConfiguredComponent.hs
++++ b/Cabal/src/Distribution/Backpack/ConfiguredComponent.hs
+@@ -86,10 +86,10 @@ dispConfiguredComponent cc =
+     4
+     ( vcat
+         [ hsep $
+-          [ text "include"
+-          , pretty (ci_id incl)
+-          , pretty (ci_renaming incl)
+-          ]
++            [ text "include"
++            , pretty (ci_id incl)
++            , pretty (ci_renaming incl)
++            ]
+         | incl <- cc_includes cc
+         ]
+     )
 diff --git a/Cabal/src/Distribution/Backpack/MixLink.hs b/Cabal/src/Distribution/Backpack/MixLink.hs
 index b358612..3e4cc8d 100644
 --- a/Cabal/src/Distribution/Backpack/MixLink.hs
@@ -91,7 +222,7 @@ index b358612..3e4cc8d 100644
            -- detect loops eventually in 'unifyUnitId'), but it
            -- seems harmless enough
 diff --git a/Cabal/src/Distribution/Backpack/UnifyM.hs b/Cabal/src/Distribution/Backpack/UnifyM.hs
-index 6e0f00d..010bffc 100644
+index 6e0f00d..042f19a 100644
 --- a/Cabal/src/Distribution/Backpack/UnifyM.hs
 +++ b/Cabal/src/Distribution/Backpack/UnifyM.hs
 @@ -422,7 +422,7 @@ failWithMutuallyRecursiveUnitsError required_mod_name mod_names =
@@ -112,6 +243,184 @@ index 6e0f00d..010bffc 100644
            return v
  
      let req_rename_fn k = case Map.lookup k req_rename of
+@@ -609,13 +609,13 @@ convertInclude
+           r <-
+             sequence
+               [ case Map.lookup from provs of
+-                Just m -> return (to, m)
+-                Nothing ->
+-                  failWith $
+-                    text "Package"
+-                      <+> quotes (pretty pid)
+-                      <+> text "does not expose the module"
+-                      <+> quotes (pretty from)
++                  Just m -> return (to, m)
++                  Nothing ->
++                    failWith $
++                      text "Package"
++                        <+> quotes (pretty pid)
++                        <+> text "does not expose the module"
++                        <+> quotes (pretty from)
+               | (from, to) <- rns
+               ]
+           return (r, prov_rns)
+diff --git a/Cabal/src/Distribution/PackageDescription/Check/Warning.hs b/Cabal/src/Distribution/PackageDescription/Check/Warning.hs
+index f7a048f..86a7afb 100644
+--- a/Cabal/src/Distribution/PackageDescription/Check/Warning.hs
++++ b/Cabal/src/Distribution/PackageDescription/Check/Warning.hs
+@@ -883,10 +883,10 @@ ppExplanation (DeprecatedExtensions ourDeprecatedExtensions) =
+     ++ ". "
+     ++ unwords
+       [ "Instead of '"
+-        ++ prettyShow ext
+-        ++ "' use '"
+-        ++ prettyShow replacement
+-        ++ "'."
++          ++ prettyShow ext
++          ++ "' use '"
++          ++ prettyShow replacement
++          ++ "'."
+       | (ext, Just replacement) <- ourDeprecatedExtensions
+       ]
+ ppExplanation MissingFieldCategory = "No 'category' field."
+diff --git a/Cabal/src/Distribution/Simple/Build.hs b/Cabal/src/Distribution/Simple/Build.hs
+index bc6ac7a..e9e103c 100644
+--- a/Cabal/src/Distribution/Simple/Build.hs
++++ b/Cabal/src/Distribution/Simple/Build.hs
+@@ -309,19 +309,19 @@ repl pkg_descr lbi flags suffixes args = do
+   -- build any dependent components
+   sequence_
+     [ do
+-      let clbi = targetCLBI subtarget
+-          comp = targetComponent subtarget
+-          lbi' = lbiForComponent comp lbi
+-      preBuildComponent verbosity lbi subtarget
+-      buildComponent
+-        mempty{buildVerbosity = toFlag verbosity}
+-        NoFlag
+-        pkg_descr
+-        lbi'
+-        suffixes
+-        comp
+-        clbi
+-        distPref
++        let clbi = targetCLBI subtarget
++            comp = targetComponent subtarget
++            lbi' = lbiForComponent comp lbi
++        preBuildComponent verbosity lbi subtarget
++        buildComponent
++          mempty{buildVerbosity = toFlag verbosity}
++          NoFlag
++          pkg_descr
++          lbi'
++          suffixes
++          comp
++          clbi
++          distPref
+     | subtarget <- safeInit componentsToBuild
+     ]
+ 
+diff --git a/Cabal/src/Distribution/Simple/Build/Macros.hs b/Cabal/src/Distribution/Simple/Build/Macros.hs
+index 3dbce86..ebee0d9 100644
+--- a/Cabal/src/Distribution/Simple/Build/Macros.hs
++++ b/Cabal/src/Distribution/Simple/Build/Macros.hs
+@@ -47,12 +47,12 @@ generateCabalMacrosHeader pkg_descr lbi clbi =
+       { Z.zPackages = map mkZPackage $ package pkg_descr : map getPid (componentPackageDeps clbi)
+       , Z.zTools =
+           [ Z.ZTool
+-            { Z.ztoolName = programId prog
+-            , Z.ztoolVersion = ver
+-            , Z.ztoolX = major1
+-            , Z.ztoolY = major2
+-            , Z.ztoolZ = minor
+-            }
++              { Z.ztoolName = programId prog
++              , Z.ztoolVersion = ver
++              , Z.ztoolX = major1
++              , Z.ztoolY = major2
++              , Z.ztoolZ = minor
++              }
+           | prog <- configuredPrograms $ withPrograms lbi
+           , ver <- maybeToList (programVersion prog)
+           , let (major1, major2, minor) = majorMinor ver
+diff --git a/Cabal/src/Distribution/Simple/BuildTarget.hs b/Cabal/src/Distribution/Simple/BuildTarget.hs
+index 06b387c..c85e7d5 100644
+--- a/Cabal/src/Distribution/Simple/BuildTarget.hs
++++ b/Cabal/src/Distribution/Simple/BuildTarget.hs
+@@ -492,17 +492,17 @@ type ComponentStringName = String
+ pkgComponentInfo :: PackageDescription -> [ComponentInfo]
+ pkgComponentInfo pkg =
+   [ ComponentInfo
+-    { cinfoName = componentName c
+-    , cinfoStrName = componentStringName pkg (componentName c)
+-    , cinfoSrcDirs = map getSymbolicPath $ hsSourceDirs bi
+-    , cinfoModules = componentModules c
+-    , cinfoHsFiles = componentHsFiles c
+-    , cinfoAsmFiles = asmSources bi
+-    , cinfoCmmFiles = cmmSources bi
+-    , cinfoCFiles = cSources bi
+-    , cinfoCxxFiles = cxxSources bi
+-    , cinfoJsFiles = jsSources bi
+-    }
++      { cinfoName = componentName c
++      , cinfoStrName = componentStringName pkg (componentName c)
++      , cinfoSrcDirs = map getSymbolicPath $ hsSourceDirs bi
++      , cinfoModules = componentModules c
++      , cinfoHsFiles = componentHsFiles c
++      , cinfoAsmFiles = asmSources bi
++      , cinfoCmmFiles = cmmSources bi
++      , cinfoCFiles = cSources bi
++      , cinfoCxxFiles = cxxSources bi
++      , cinfoJsFiles = jsSources bi
++      }
+   | c <- pkgComponents pkg
+   , let bi = componentBuildInfo c
+   ]
+@@ -1051,8 +1051,8 @@ checkBuildTargets
+     let (enabled, disabled) =
+           partitionEithers
+             [ case componentDisabledReason enabledComps comp of
+-              Nothing -> Left target'
+-              Just reason -> Right (cname, reason)
++                Nothing -> Left target'
++                Just reason -> Right (cname, reason)
+             | target <- targets
+             , let target'@(cname, _) = swizzleTarget target
+             , let comp = getComponent pkg_descr cname
+diff --git a/Cabal/src/Distribution/Simple/Command.hs b/Cabal/src/Distribution/Simple/Command.hs
+index 2da6486..0399263 100644
+--- a/Cabal/src/Distribution/Simple/Command.hs
++++ b/Cabal/src/Distribution/Simple/Command.hs
+@@ -424,8 +424,8 @@ commandShowOptions command v =
+       ]
+     showOptDescr x (OptArg _ (_ssff, lf : _) _ _ _ showflag) =
+       [ case flag of
+-        Just s -> "--" ++ lf ++ "=" ++ s
+-        Nothing -> "--" ++ lf
++          Just s -> "--" ++ lf ++ "=" ++ s
++          Nothing -> "--" ++ lf
+       | flag <- showflag x
+       ]
+     showOptDescr _ _ =
+@@ -579,12 +579,12 @@ commandParseArgs command global args =
+     accum flags = foldr (flip (.)) id [f | Right f <- flags]
+     unrecognised opts =
+       [ "unrecognized "
+-        ++ "'"
+-        ++ (commandName command)
+-        ++ "'"
+-        ++ " option `"
+-        ++ opt
+-        ++ "'\n"
++          ++ "'"
++          ++ (commandName command)
++          ++ "'"
++          ++ " option `"
++          ++ opt
++          ++ "'\n"
+       | opt <- opts
+       ]
+     -- For unrecognised global flags we put them in the position just after
 diff --git a/Cabal/src/Distribution/Simple/Compiler.hs b/Cabal/src/Distribution/Simple/Compiler.hs
 index 6aaa093..dca2efe 100644
 --- a/Cabal/src/Distribution/Simple/Compiler.hs
@@ -126,7 +435,7 @@ index 6aaa093..dca2efe 100644
    , showCompilerId
    , showCompilerIdWithAbi
 diff --git a/Cabal/src/Distribution/Simple/Configure.hs b/Cabal/src/Distribution/Simple/Configure.hs
-index d6bffdd..99dd4aa 100644
+index d6bffdd..c6bbaf6 100644
 --- a/Cabal/src/Distribution/Simple/Configure.hs
 +++ b/Cabal/src/Distribution/Simple/Configure.hs
 @@ -1360,7 +1360,6 @@ dependencySatisfiable
@@ -137,11 +446,157 @@ index d6bffdd..99dd4aa 100644
              ( sublibs == mainLibSet
                  && Map.member
                    ( pn
+@@ -1837,9 +1836,9 @@ reportSelectedDependencies verbosity deps =
+   info verbosity $
+     unlines
+       [ "Dependency "
+-        ++ prettyShow (simplifyDependency dep)
+-        ++ ": using "
+-        ++ prettyShow pkgid
++          ++ prettyShow (simplifyDependency dep)
++          ++ ": using "
++          ++ prettyShow pkgid
+       | (dep, resolution) <- deps
+       , let pkgid = case resolution of
+               ExternalDependency pkg' -> packageId pkg'
+@@ -2040,15 +2039,15 @@ combinedConstraints constraints dependencies installedPackages = do
+     dispDependencies deps =
+       hsep
+         [ text "--dependency="
+-          <<>> quotes
+-            ( pretty pkgname
+-                <<>> case cname of
+-                  CLibName LMainLibName -> ""
+-                  CLibName (LSubLibName n) -> ":" <<>> pretty n
+-                  _ -> ":" <<>> pretty cname
+-                <<>> char '='
+-                <<>> pretty cid
+-            )
++            <<>> quotes
++              ( pretty pkgname
++                  <<>> case cname of
++                    CLibName LMainLibName -> ""
++                    CLibName (LSubLibName n) -> ":" <<>> pretty n
++                    _ -> ":" <<>> pretty cname
++                  <<>> char '='
++                  <<>> pretty cid
++              )
+         | (pkgname, cname, cid) <- deps
+         ]
+ 
+diff --git a/Cabal/src/Distribution/Simple/Errors.hs b/Cabal/src/Distribution/Simple/Errors.hs
+index 2c5af36..6e081d7 100644
+--- a/Cabal/src/Distribution/Simple/Errors.hs
++++ b/Cabal/src/Distribution/Simple/Errors.hs
+@@ -420,26 +420,26 @@ exceptionMessage e = case e of
+   ReportBuildTargetProblems targets ->
+     unlines
+       [ "Unrecognised build target '"
+-        ++ target
+-        ++ "'.\n"
+-        ++ "Expected a "
+-        ++ intercalate " or " expected
+-        ++ ", rather than '"
+-        ++ got
+-        ++ "'."
++          ++ target
++          ++ "'.\n"
++          ++ "Expected a "
++          ++ intercalate " or " expected
++          ++ ", rather than '"
++          ++ got
++          ++ "'."
+       | (target, expected, got) <- targets
+       ]
+   UnknownBuildTarget targets ->
+     unlines
+       [ "Unknown build target '"
+-        ++ target
+-        ++ "'.\nThere is no "
+-        ++ intercalate
+-          " or "
+-          [ mungeThing thing ++ " '" ++ got ++ "'"
+-          | (thing, got) <- nosuch
+-          ]
+-        ++ "."
++          ++ target
++          ++ "'.\nThere is no "
++          ++ intercalate
++            " or "
++            [ mungeThing thing ++ " '" ++ got ++ "'"
++            | (thing, got) <- nosuch
++            ]
++          ++ "."
+       | (target, nosuch) <- targets
+       ]
+     where
+@@ -448,16 +448,16 @@ exceptionMessage e = case e of
+   AmbiguousBuildTarget targets ->
+     unlines
+       [ "Ambiguous build target '"
+-        ++ target
+-        ++ "'. It could be:\n "
+-        ++ unlines
+-          [ "   "
+-            ++ ut
+-            ++ " ("
+-            ++ bt
+-            ++ ")"
+-          | (ut, bt) <- amb
+-          ]
++          ++ target
++          ++ "'. It could be:\n "
++          ++ unlines
++            [ "   "
++                ++ ut
++                ++ " ("
++                ++ bt
++                ++ ")"
++            | (ut, bt) <- amb
++            ]
+       | (target, amb) <- targets
+       ]
+   CheckBuildTargets errorStr -> errorStr
+@@ -633,8 +633,8 @@ exceptionMessage e = case e of
+   ExplainErrors hdr libs ->
+     unlines $
+       [ if plural
+-        then "Missing dependencies on foreign libraries:"
+-        else "Missing dependency on a foreign library:"
++          then "Missing dependencies on foreign libraries:"
++          else "Missing dependency on a foreign library:"
+       | missing
+       ]
+         ++ case hdr of
 diff --git a/Cabal/src/Distribution/Simple/GHC.hs b/Cabal/src/Distribution/Simple/GHC.hs
-index 614de75..4c9f300 100644
+index 614de75..41112bf 100644
 --- a/Cabal/src/Distribution/Simple/GHC.hs
 +++ b/Cabal/src/Distribution/Simple/GHC.hs
-@@ -854,47 +854,47 @@ installLib verbosity lbi targetDir dynlibTargetDir _builtDir pkg lib clbi = do
+@@ -531,8 +531,8 @@ getInstalledPackages'
+ getInstalledPackages' verbosity packagedbs progdb =
+   sequenceA
+     [ do
+-      pkgs <- HcPkg.dump (hcPkgInfo progdb) verbosity packagedb
+-      return (packagedb, pkgs)
++        pkgs <- HcPkg.dump (hcPkgInfo progdb) verbosity packagedb
++        return (packagedb, pkgs)
+     | packagedb <- packagedbs
+     ]
+ 
+@@ -839,9 +839,9 @@ installLib verbosity lbi targetDir dynlibTargetDir _builtDir pkg lib clbi = do
+     whenVanilla $ do
+       sequence_
+         [ installOrdinary
+-          builtDir
+-          targetDir
+-          (mkGenericStaticLibName (l ++ f))
++            builtDir
++            targetDir
++            (mkGenericStaticLibName (l ++ f))
+         | l <-
+             getHSLibraryName
+               (componentUnitId clbi)
+@@ -854,20 +854,20 @@ installLib verbosity lbi targetDir dynlibTargetDir _builtDir pkg lib clbi = do
        whenGHCi $ installOrdinary builtDir targetDir ghciProfLibName
      whenShared $
        if
@@ -150,86 +605,72 @@ index 614de75..4c9f300 100644
 -          | specVersion pkg < CabalSpecV3_0 -> do
 -              sequence_
 -                [ installShared
--                  builtDir
--                  dynlibTargetDir
--                  (mkGenericSharedLibName platform compiler_id (l ++ f))
++        -- The behavior for "extra-bundled-libraries" changed in version 2.5.0.
++        -- See ghc issue #15837 and Cabal PR #5855.
++        | specVersion pkg < CabalSpecV3_0 -> do
++            sequence_
++              [ installShared
+                   builtDir
+                   dynlibTargetDir
+                   (mkGenericSharedLibName platform compiler_id (l ++ f))
 -                | l <- getHSLibraryName uid : extraBundledLibs (libBuildInfo lib)
 -                , f <- "" : extraDynLibFlavours (libBuildInfo lib)
 -                ]
 -          | otherwise -> do
 -              sequence_
 -                [ installShared
--                  builtDir
--                  dynlibTargetDir
--                  ( mkGenericSharedLibName
--                      platform
--                      compiler_id
--                      (getHSLibraryName uid ++ f)
--                  )
--                | f <- "" : extraDynLibFlavours (libBuildInfo lib)
--                ]
--              sequence_
--                [ do
--                  files <- getDirectoryContents builtDir
--                  let l' =
--                        mkGenericSharedBundledLibName
--                          platform
--                          compiler_id
--                          l
--                  forM_ files $ \file ->
--                    when (l' `isPrefixOf` file) $ do
--                      isFile <- doesFileExist (builtDir </> file)
--                      when isFile $ do
--                        installShared
--                          builtDir
--                          dynlibTargetDir
--                          file
--                | l <- extraBundledLibs (libBuildInfo lib)
--                ]
-+        -- The behavior for "extra-bundled-libraries" changed in version 2.5.0.
-+        -- See ghc issue #15837 and Cabal PR #5855.
-+        | specVersion pkg < CabalSpecV3_0 -> do
-+            sequence_
-+              [ installShared
-+                builtDir
-+                dynlibTargetDir
-+                (mkGenericSharedLibName platform compiler_id (l ++ f))
 +              | l <- getHSLibraryName uid : extraBundledLibs (libBuildInfo lib)
 +              , f <- "" : extraDynLibFlavours (libBuildInfo lib)
 +              ]
 +        | otherwise -> do
 +            sequence_
 +              [ installShared
-+                builtDir
-+                dynlibTargetDir
-+                ( mkGenericSharedLibName
-+                    platform
-+                    compiler_id
-+                    (getHSLibraryName uid ++ f)
-+                )
+                   builtDir
+                   dynlibTargetDir
+                   ( mkGenericSharedLibName
+@@ -875,10 +875,10 @@ installLib verbosity lbi targetDir dynlibTargetDir _builtDir pkg lib clbi = do
+                       compiler_id
+                       (getHSLibraryName uid ++ f)
+                   )
+-                | f <- "" : extraDynLibFlavours (libBuildInfo lib)
+-                ]
+-              sequence_
+-                [ do
 +              | f <- "" : extraDynLibFlavours (libBuildInfo lib)
 +              ]
 +            sequence_
 +              [ do
-+                files <- getDirectoryContents builtDir
-+                let l' =
-+                      mkGenericSharedBundledLibName
-+                        platform
-+                        compiler_id
-+                        l
-+                forM_ files $ \file ->
-+                  when (l' `isPrefixOf` file) $ do
-+                    isFile <- doesFileExist (builtDir </> file)
-+                    when isFile $ do
-+                      installShared
-+                        builtDir
-+                        dynlibTargetDir
-+                        file
+                   files <- getDirectoryContents builtDir
+                   let l' =
+                         mkGenericSharedBundledLibName
+@@ -893,8 +893,8 @@ installLib verbosity lbi targetDir dynlibTargetDir _builtDir pkg lib clbi = do
+                           builtDir
+                           dynlibTargetDir
+                           file
+-                | l <- extraBundledLibs (libBuildInfo lib)
+-                ]
 +              | l <- extraBundledLibs (libBuildInfo lib)
 +              ]
    where
      builtDir = componentBuildDir lbi clbi
  
+diff --git a/Cabal/src/Distribution/Simple/GHC/Build/Link.hs b/Cabal/src/Distribution/Simple/GHC/Build/Link.hs
+index f25c60c..f80f2f4 100644
+--- a/Cabal/src/Distribution/Simple/GHC/Build/Link.hs
++++ b/Cabal/src/Distribution/Simple/GHC/Build/Link.hs
+@@ -239,9 +239,9 @@ linkLibrary buildTargetDir cleanedExtraLibDirs pkg_descr verbosity runGhcProg li
+         , catMaybes
+             <$> sequenceA
+               [ findFileWithExtension
+-                [Suffix $ buildWayPrefix way ++ objExtension]
+-                [buildTargetDir]
+-                (ModuleName.toFilePath x ++ "_stub")
++                  [Suffix $ buildWayPrefix way ++ objExtension]
++                  [buildTargetDir]
++                  (ModuleName.toFilePath x ++ "_stub")
+               | ghcVersion < mkVersion [7, 2] -- ghc-7.2+ does not make _stub.o files
+               , x <- allLibModules lib clbi
+               ]
 diff --git a/Cabal/src/Distribution/Simple/GHC/Internal.hs b/Cabal/src/Distribution/Simple/GHC/Internal.hs
 index 43e329f..7a90f9f 100644
 --- a/Cabal/src/Distribution/Simple/GHC/Internal.hs
@@ -250,6 +691,213 @@ index 43e329f..7a90f9f 100644
              (EnableExtension NondecreasingIndentation, Nothing)
                : extensions0
            else extensions0
+diff --git a/Cabal/src/Distribution/Simple/GHCJS.hs b/Cabal/src/Distribution/Simple/GHCJS.hs
+index 4e14bc0..bd4e659 100644
+--- a/Cabal/src/Distribution/Simple/GHCJS.hs
++++ b/Cabal/src/Distribution/Simple/GHCJS.hs
+@@ -408,8 +408,8 @@ getInstalledPackages'
+ getInstalledPackages' verbosity packagedbs progdb =
+   sequenceA
+     [ do
+-      pkgs <- HcPkg.dump (hcPkgInfo progdb) verbosity packagedb
+-      return (packagedb, pkgs)
++        pkgs <- HcPkg.dump (hcPkgInfo progdb) verbosity packagedb
++        return (packagedb, pkgs)
+     | packagedb <- packagedbs
+     ]
+ 
+@@ -1415,44 +1415,44 @@ gbuild verbosity numJobs pkg_descr lbi bm clbi = do
+     info verbosity "Building C++ Sources..."
+     sequence_
+       [ do
+-        let baseCxxOpts =
+-              Internal.componentCxxGhcOptions
+-                verbosity
+-                lbi
+-                bnfo
+-                clbi
+-                tmpDir
+-                filename
+-            vanillaCxxOpts =
+-              if isGhcDynamic
+-                then -- Dynamic GHC requires C++ sources to be built
+-                -- with -fPIC for REPL to work. See #2207.
+-                  baseCxxOpts{ghcOptFPic = toFlag True}
+-                else baseCxxOpts
+-            profCxxOpts =
+-              vanillaCxxOpts
+-                `mappend` mempty
+-                  { ghcOptProfilingMode = toFlag True
+-                  }
+-            sharedCxxOpts =
+-              vanillaCxxOpts
+-                `mappend` mempty
+-                  { ghcOptFPic = toFlag True
+-                  , ghcOptDynLinkMode = toFlag GhcDynamicOnly
+-                  }
+-            opts
+-              | needProfiling = profCxxOpts
+-              | needDynamic = sharedCxxOpts
+-              | otherwise = vanillaCxxOpts
+-            -- TODO: Placing all Haskell, C, & C++ objects in a single directory
+-            --       Has the potential for file collisions. In general we would
+-            --       consider this a user error. However, we should strive to
+-            --       add a warning if this occurs.
+-            odir = fromFlag (ghcOptObjDir opts)
+-        createDirectoryIfMissingVerbose verbosity True odir
+-        needsRecomp <- checkNeedsRecompilation filename opts
+-        when needsRecomp $
+-          runGhcProg opts
++          let baseCxxOpts =
++                Internal.componentCxxGhcOptions
++                  verbosity
++                  lbi
++                  bnfo
++                  clbi
++                  tmpDir
++                  filename
++              vanillaCxxOpts =
++                if isGhcDynamic
++                  then -- Dynamic GHC requires C++ sources to be built
++                  -- with -fPIC for REPL to work. See #2207.
++                    baseCxxOpts{ghcOptFPic = toFlag True}
++                  else baseCxxOpts
++              profCxxOpts =
++                vanillaCxxOpts
++                  `mappend` mempty
++                    { ghcOptProfilingMode = toFlag True
++                    }
++              sharedCxxOpts =
++                vanillaCxxOpts
++                  `mappend` mempty
++                    { ghcOptFPic = toFlag True
++                    , ghcOptDynLinkMode = toFlag GhcDynamicOnly
++                    }
++              opts
++                | needProfiling = profCxxOpts
++                | needDynamic = sharedCxxOpts
++                | otherwise = vanillaCxxOpts
++              -- TODO: Placing all Haskell, C, & C++ objects in a single directory
++              --       Has the potential for file collisions. In general we would
++              --       consider this a user error. However, we should strive to
++              --       add a warning if this occurs.
++              odir = fromFlag (ghcOptObjDir opts)
++          createDirectoryIfMissingVerbose verbosity True odir
++          needsRecomp <- checkNeedsRecompilation filename opts
++          when needsRecomp $
++            runGhcProg opts
+       | filename <- cxxSrcs
+       ]
+ 
+@@ -1461,40 +1461,40 @@ gbuild verbosity numJobs pkg_descr lbi bm clbi = do
+     info verbosity "Building C Sources..."
+     sequence_
+       [ do
+-        let baseCcOpts =
+-              Internal.componentCcGhcOptions
+-                verbosity
+-                lbi
+-                bnfo
+-                clbi
+-                tmpDir
+-                filename
+-            vanillaCcOpts =
+-              if isGhcDynamic
+-                then -- Dynamic GHC requires C sources to be built
+-                -- with -fPIC for REPL to work. See #2207.
+-                  baseCcOpts{ghcOptFPic = toFlag True}
+-                else baseCcOpts
+-            profCcOpts =
+-              vanillaCcOpts
+-                `mappend` mempty
+-                  { ghcOptProfilingMode = toFlag True
+-                  }
+-            sharedCcOpts =
+-              vanillaCcOpts
+-                `mappend` mempty
+-                  { ghcOptFPic = toFlag True
+-                  , ghcOptDynLinkMode = toFlag GhcDynamicOnly
+-                  }
+-            opts
+-              | needProfiling = profCcOpts
+-              | needDynamic = sharedCcOpts
+-              | otherwise = vanillaCcOpts
+-            odir = fromFlag (ghcOptObjDir opts)
+-        createDirectoryIfMissingVerbose verbosity True odir
+-        needsRecomp <- checkNeedsRecompilation filename opts
+-        when needsRecomp $
+-          runGhcProg opts
++          let baseCcOpts =
++                Internal.componentCcGhcOptions
++                  verbosity
++                  lbi
++                  bnfo
++                  clbi
++                  tmpDir
++                  filename
++              vanillaCcOpts =
++                if isGhcDynamic
++                  then -- Dynamic GHC requires C sources to be built
++                  -- with -fPIC for REPL to work. See #2207.
++                    baseCcOpts{ghcOptFPic = toFlag True}
++                  else baseCcOpts
++              profCcOpts =
++                vanillaCcOpts
++                  `mappend` mempty
++                    { ghcOptProfilingMode = toFlag True
++                    }
++              sharedCcOpts =
++                vanillaCcOpts
++                  `mappend` mempty
++                    { ghcOptFPic = toFlag True
++                    , ghcOptDynLinkMode = toFlag GhcDynamicOnly
++                    }
++              opts
++                | needProfiling = profCcOpts
++                | needDynamic = sharedCcOpts
++                | otherwise = vanillaCcOpts
++              odir = fromFlag (ghcOptObjDir opts)
++          createDirectoryIfMissingVerbose verbosity True odir
++          needsRecomp <- checkNeedsRecompilation filename opts
++          when needsRecomp $
++            runGhcProg opts
+       | filename <- cSrcs
+       ]
+ 
+@@ -1884,9 +1884,9 @@ installLib verbosity lbi targetDir dynlibTargetDir _builtDir _pkg lib clbi = do
+     whenShared $
+       sequence_
+         [ installShared
+-          builtDir'
+-          dynlibTargetDir
+-          (toJSLibName $ mkGenericSharedLibName platform compiler_id (l ++ f))
++            builtDir'
++            dynlibTargetDir
++            (toJSLibName $ mkGenericSharedLibName platform compiler_id (l ++ f))
+         | l <- getHSLibraryName uid : extraBundledLibs (libBuildInfo lib)
+         , f <- "" : extraDynLibFlavours (libBuildInfo lib)
+         ]
+diff --git a/Cabal/src/Distribution/Simple/Glob.hs b/Cabal/src/Distribution/Simple/Glob.hs
+index 9ce97d7..fcac932 100644
+--- a/Cabal/src/Distribution/Simple/Glob.hs
++++ b/Cabal/src/Distribution/Simple/Glob.hs
+@@ -100,11 +100,11 @@ matchDirFileGlobWithDie verbosity rip version dir filepath = case parseFileGlob
+     let errors :: [String]
+         errors =
+           [ "filepath wildcard '"
+-            ++ filepath
+-            ++ "' refers to the directory"
+-            ++ " '"
+-            ++ missingDir
+-            ++ "', which does not exist or is not a directory."
++              ++ filepath
++              ++ "' refers to the directory"
++              ++ " '"
++              ++ missingDir
++              ++ "', which does not exist or is not a directory."
+           | missingDir <- missingDirectories
+           ]
+             ++ [ "filepath wildcard '" ++ filepath ++ "' does not match any files."
 diff --git a/Cabal/src/Distribution/Simple/Glob/Internal.hs b/Cabal/src/Distribution/Simple/Glob/Internal.hs
 index 4f0b91e..2d90559 100644
 --- a/Cabal/src/Distribution/Simple/Glob/Internal.hs
@@ -262,10 +910,96 @@ index 4f0b91e..2d90559 100644
            let (_, candidateExts) = splitExtensions $ takeFileName candidate
                extractExts :: GlobPieces -> Maybe String
                extractExts [] = Nothing
+diff --git a/Cabal/src/Distribution/Simple/Haddock.hs b/Cabal/src/Distribution/Simple/Haddock.hs
+index 33d4972..0194e23 100644
+--- a/Cabal/src/Distribution/Simple/Haddock.hs
++++ b/Cabal/src/Distribution/Simple/Haddock.hs
+@@ -1009,25 +1009,25 @@ haddockPackagePaths ipkgs mkHtmlPath = do
+   interfaces <-
+     sequenceA
+       [ case interfaceAndHtmlPath ipkg of
+-        Nothing -> return (Left (packageId ipkg))
+-        Just (interface, html) -> do
+-          (html', hypsrc') <-
+-            case html of
+-              Just htmlPath -> do
+-                let hypSrcPath = htmlPath </> defaultHyperlinkedSourceDirectory
+-                hypSrcExists <- doesDirectoryExist hypSrcPath
+-                return $
+-                  ( Just (fixFileUrl htmlPath)
+-                  , if hypSrcExists
+-                      then Just (fixFileUrl hypSrcPath)
+-                      else Nothing
+-                  )
+-              Nothing -> return (Nothing, Nothing)
++          Nothing -> return (Left (packageId ipkg))
++          Just (interface, html) -> do
++            (html', hypsrc') <-
++              case html of
++                Just htmlPath -> do
++                  let hypSrcPath = htmlPath </> defaultHyperlinkedSourceDirectory
++                  hypSrcExists <- doesDirectoryExist hypSrcPath
++                  return $
++                    ( Just (fixFileUrl htmlPath)
++                    , if hypSrcExists
++                        then Just (fixFileUrl hypSrcPath)
++                        else Nothing
++                    )
++                Nothing -> return (Nothing, Nothing)
+ 
+-          exists <- doesFileExist interface
+-          if exists
+-            then return (Right (interface, html', hypsrc', Visible))
+-            else return (Left pkgid)
++            exists <- doesFileExist interface
++            if exists
++              then return (Right (interface, html', hypsrc', Visible))
++              else return (Left pkgid)
+       | ipkg <- ipkgs
+       , let pkgid = packageId ipkg
+       , pkgName pkgid `notElem` noHaddockWhitelist
+diff --git a/Cabal/src/Distribution/Simple/Install.hs b/Cabal/src/Distribution/Simple/Install.hs
+index 789845c..1bfc03f 100644
+--- a/Cabal/src/Distribution/Simple/Install.hs
++++ b/Cabal/src/Distribution/Simple/Install.hs
+@@ -305,8 +305,8 @@ installIncludeFiles verbosity libBi lbi buildPref destIncludeDir = do
+   incs <- traverse (findInc incdirs) (installIncludes libBi)
+   sequence_
+     [ do
+-      createDirectoryIfMissingVerbose verbosity True destDir
+-      installOrdinaryFile verbosity srcFile destFile
++        createDirectoryIfMissingVerbose verbosity True destDir
++        installOrdinaryFile verbosity srcFile destFile
+     | (relFile, srcFile) <- incs
+     , let destFile = destIncludeDir </> relFile
+           destDir = takeDirectory destFile
 diff --git a/Cabal/src/Distribution/Simple/PreProcess.hs b/Cabal/src/Distribution/Simple/PreProcess.hs
-index 4f69ce6..17263a5 100644
+index 4f69ce6..fc44a58 100644
 --- a/Cabal/src/Distribution/Simple/PreProcess.hs
 +++ b/Cabal/src/Distribution/Simple/PreProcess.hs
+@@ -243,14 +243,14 @@ preprocessComponent pd comp lbi clbi isSrcDist verbosity handlers =
+                  ]
+       sequence_
+         [ preprocessFile
+-          (map unsafeMakeSymbolicPath sourceDirs)
+-          dir
+-          isSrcDist
+-          (ModuleName.toFilePath modu)
+-          verbosity
+-          builtinSuffixes
+-          biHandlers
+-          False
++            (map unsafeMakeSymbolicPath sourceDirs)
++            dir
++            isSrcDist
++            (ModuleName.toFilePath modu)
++            verbosity
++            builtinSuffixes
++            biHandlers
++            False
+         | modu <- modules
+         ]
+       -- XXX: what we do here (re SymbolicPath dir)
 @@ -674,8 +674,9 @@ ppC2hs bi lbi clbi =
                     | pkg <- pkgs
                     , opt <-
@@ -290,6 +1024,136 @@ index 4cfc5ba..3a6c616 100644
          return
            ( inplaceInstalledPackageInfo
                pwd
+diff --git a/cabal-install/src/Distribution/Client/BuildReports/Storage.hs b/cabal-install/src/Distribution/Client/BuildReports/Storage.hs
+index 34f2c38..c86300b 100644
+--- a/cabal-install/src/Distribution/Client/BuildReports/Storage.hs
++++ b/cabal-install/src/Distribution/Client/BuildReports/Storage.hs
+@@ -119,8 +119,8 @@ storeLocal
+ storeLocal cinfo templates reports platform =
+   sequence_
+     [ do
+-      createDirectoryIfMissing True (takeDirectory file)
+-      appendFile file output
++        createDirectoryIfMissing True (takeDirectory file)
++        appendFile file output
+     | -- TODO: make this concurrency safe, either lock the report file or make
+     --      sure the writes for each report are atomic
+     (file, reports') <-
+diff --git a/cabal-install/src/Distribution/Client/CmdErrorMessages.hs b/cabal-install/src/Distribution/Client/CmdErrorMessages.hs
+index 8345d9e..41ded1d 100644
+--- a/cabal-install/src/Distribution/Client/CmdErrorMessages.hs
++++ b/cabal-install/src/Distribution/Client/CmdErrorMessages.hs
+@@ -381,58 +381,58 @@ renderTargetProblemNoneEnabled verb targetSelector targets =
+     ++ " because none of the components are available to build: "
+     ++ renderListSemiAnd
+       [ case (status, mstanza) of
+-        (TargetDisabledByUser, Just stanza) ->
+-          renderListCommaAnd
+-            [ "the " ++ showComponentName availableTargetComponentName
+-            | AvailableTarget{availableTargetComponentName} <- targets'
+-            ]
+-            ++ plural (listPlural targets') " is " " are "
+-            ++ " not available because building "
+-            ++ renderOptionalStanza Plural stanza
+-            ++ " has been disabled in the configuration"
+-        (TargetDisabledBySolver, Just stanza) ->
+-          renderListCommaAnd
+-            [ "the " ++ showComponentName availableTargetComponentName
+-            | AvailableTarget{availableTargetComponentName} <- targets'
+-            ]
+-            ++ plural (listPlural targets') " is " " are "
+-            ++ "not available because the solver picked a plan that does not "
+-            ++ "include the "
+-            ++ renderOptionalStanza Plural stanza
+-            ++ ", perhaps because no such plan exists. To see the error message "
+-            ++ "explaining the problems with such plans, force the solver to "
+-            ++ "include the "
+-            ++ renderOptionalStanza Plural stanza
+-            ++ " for all "
+-            ++ "packages, by adding the line 'tests: True' to the "
+-            ++ "'cabal.project.local' file."
+-        (TargetNotBuildable, _) ->
+-          renderListCommaAnd
+-            [ "the " ++ showComponentName availableTargetComponentName
+-            | AvailableTarget{availableTargetComponentName} <- targets'
+-            ]
+-            ++ plural (listPlural targets') " is " " are all "
+-            ++ "marked as 'buildable: False'"
+-        (TargetNotLocal, _) ->
+-          renderListCommaAnd
+-            [ "the " ++ showComponentName availableTargetComponentName
+-            | AvailableTarget{availableTargetComponentName} <- targets'
+-            ]
+-            ++ " cannot be built because cabal does not currently support "
+-            ++ "building test suites or benchmarks of non-local dependencies"
+-        (TargetBuildable () TargetNotRequestedByDefault, Just stanza) ->
+-          renderListCommaAnd
+-            [ "the " ++ showComponentName availableTargetComponentName
+-            | AvailableTarget{availableTargetComponentName} <- targets'
+-            ]
+-            ++ " will not be built because "
+-            ++ renderOptionalStanza Plural stanza
+-            ++ " are not built by default in the current configuration (but you "
+-            ++ "can still build them specifically)" -- TODO: say how
+-        _ ->
+-          error $
+-            "renderBuildTargetProblem: unexpected status "
+-              ++ show (status, mstanza)
++          (TargetDisabledByUser, Just stanza) ->
++            renderListCommaAnd
++              [ "the " ++ showComponentName availableTargetComponentName
++              | AvailableTarget{availableTargetComponentName} <- targets'
++              ]
++              ++ plural (listPlural targets') " is " " are "
++              ++ " not available because building "
++              ++ renderOptionalStanza Plural stanza
++              ++ " has been disabled in the configuration"
++          (TargetDisabledBySolver, Just stanza) ->
++            renderListCommaAnd
++              [ "the " ++ showComponentName availableTargetComponentName
++              | AvailableTarget{availableTargetComponentName} <- targets'
++              ]
++              ++ plural (listPlural targets') " is " " are "
++              ++ "not available because the solver picked a plan that does not "
++              ++ "include the "
++              ++ renderOptionalStanza Plural stanza
++              ++ ", perhaps because no such plan exists. To see the error message "
++              ++ "explaining the problems with such plans, force the solver to "
++              ++ "include the "
++              ++ renderOptionalStanza Plural stanza
++              ++ " for all "
++              ++ "packages, by adding the line 'tests: True' to the "
++              ++ "'cabal.project.local' file."
++          (TargetNotBuildable, _) ->
++            renderListCommaAnd
++              [ "the " ++ showComponentName availableTargetComponentName
++              | AvailableTarget{availableTargetComponentName} <- targets'
++              ]
++              ++ plural (listPlural targets') " is " " are all "
++              ++ "marked as 'buildable: False'"
++          (TargetNotLocal, _) ->
++            renderListCommaAnd
++              [ "the " ++ showComponentName availableTargetComponentName
++              | AvailableTarget{availableTargetComponentName} <- targets'
++              ]
++              ++ " cannot be built because cabal does not currently support "
++              ++ "building test suites or benchmarks of non-local dependencies"
++          (TargetBuildable () TargetNotRequestedByDefault, Just stanza) ->
++            renderListCommaAnd
++              [ "the " ++ showComponentName availableTargetComponentName
++              | AvailableTarget{availableTargetComponentName} <- targets'
++              ]
++              ++ " will not be built because "
++              ++ renderOptionalStanza Plural stanza
++              ++ " are not built by default in the current configuration (but you "
++              ++ "can still build them specifically)" -- TODO: say how
++          _ ->
++            error $
++              "renderBuildTargetProblem: unexpected status "
++                ++ show (status, mstanza)
+       | ((status, mstanza), targets') <- sortGroupOn groupingKey targets
+       ]
+   where
 diff --git a/cabal-install/src/Distribution/Client/CmdHaddockProject.hs b/cabal-install/src/Distribution/Client/CmdHaddockProject.hs
 index bde0948..bbcd060 100644
 --- a/cabal-install/src/Distribution/Client/CmdHaddockProject.hs
@@ -338,7 +1202,7 @@ index 8ca8d61..841b182 100644
                { pathCompiler = Flag True
                , pathDirectories = Flag [minBound .. maxBound]
 diff --git a/cabal-install/src/Distribution/Client/CmdRepl.hs b/cabal-install/src/Distribution/Client/CmdRepl.hs
-index e243eb8..85a6006 100644
+index e243eb8..1c8806a 100644
 --- a/cabal-install/src/Distribution/Client/CmdRepl.hs
 +++ b/cabal-install/src/Distribution/Client/CmdRepl.hs
 @@ -340,18 +340,18 @@ replAction flags@NixStyleFlags{extraFlags = r@ReplFlags{..}, ..} targetStrings g
@@ -370,6 +1234,29 @@ index e243eb8..85a6006 100644
  
      -- Now, we run the solver again with the added packages. While the graph
      -- won't actually reflect the addition of transitive dependencies,
+@@ -780,14 +780,14 @@ renderReplProblem (TargetProblemMatchesMultiple decision targetSelector targets)
+     ++ (if targetSelectorRefersToPkgs targetSelector then "includes " else "are ")
+     ++ renderListSemiAnd
+       [ "the "
+-        ++ renderComponentKind Plural ckind
+-        ++ " "
+-        ++ renderListCommaAnd
+-          [ maybe (prettyShow pkgname) prettyShow (componentNameString cname)
+-          | t <- ts
+-          , let cname = availableTargetComponentName t
+-                pkgname = packageName (availableTargetPackageId t)
+-          ]
++          ++ renderComponentKind Plural ckind
++          ++ " "
++          ++ renderListCommaAnd
++            [ maybe (prettyShow pkgname) prettyShow (componentNameString cname)
++            | t <- ts
++            , let cname = availableTargetComponentName t
++                  pkgname = packageName (availableTargetPackageId t)
++            ]
+       | (ckind, ts) <- sortGroupOn availableTargetComponentKind targets
+       ]
+     ++ ".\n\n"
 diff --git a/cabal-install/src/Distribution/Client/CmdSdist.hs b/cabal-install/src/Distribution/Client/CmdSdist.hs
 index a1142b0..019d815 100644
 --- a/cabal-install/src/Distribution/Client/CmdSdist.hs
@@ -387,6 +1274,179 @@ index a1142b0..019d815 100644
  
        ext = case format of
          SourceList _ -> "list"
+diff --git a/cabal-install/src/Distribution/Client/Dependency.hs b/cabal-install/src/Distribution/Client/Dependency.hs
+index 37e0cbd..a3893dc 100644
+--- a/cabal-install/src/Distribution/Client/Dependency.hs
++++ b/cabal-install/src/Distribution/Client/Dependency.hs
+@@ -439,8 +439,8 @@ dontInstallNonReinstallablePackages params =
+   where
+     extraConstraints =
+       [ LabeledPackageConstraint
+-        (PackageConstraint (ScopeAnyQualifier pkgname) PackagePropertyInstalled)
+-        ConstraintSourceNonReinstallablePackage
++          (PackageConstraint (ScopeAnyQualifier pkgname) PackagePropertyInstalled)
++          ConstraintSourceNonReinstallablePackage
+       | pkgname <- nonReinstallablePackages
+       ]
+ 
+diff --git a/cabal-install/src/Distribution/Client/Errors.hs b/cabal-install/src/Distribution/Client/Errors.hs
+index d25c59a..7e8cd5d 100644
+--- a/cabal-install/src/Distribution/Client/Errors.hs
++++ b/cabal-install/src/Distribution/Client/Errors.hs
+@@ -553,14 +553,14 @@ exceptionMessageCabalInstall e = case e of
+   PackageNameAmbiguousErr ambiguities ->
+     unlines
+       [ "There is no package named '"
+-        ++ prettyShow name
+-        ++ "'. "
+-        ++ ( if length matches > 1
+-              then "However, the following package names exist: "
+-              else "However, the following package name exists: "
+-           )
+-        ++ intercalate ", " ["'" ++ prettyShow m ++ "'" | m <- matches]
+-        ++ "."
++          ++ prettyShow name
++          ++ "'. "
++          ++ ( if length matches > 1
++                then "However, the following package names exist: "
++                else "However, the following package name exists: "
++             )
++          ++ intercalate ", " ["'" ++ prettyShow m ++ "'" | m <- matches]
++          ++ "."
+       | (name, matches) <- ambiguities
+       ]
+   ExtractTarballPackageErr err -> err
+@@ -654,49 +654,49 @@ exceptionMessageCabalInstall e = case e of
+   UnrecognisedTarget targets ->
+     unlines
+       [ "Unrecognised target '"
+-        ++ target
+-        ++ "'.\n"
+-        ++ "Expected a "
+-        ++ intercalate " or " expected
+-        ++ ", rather than '"
+-        ++ got
+-        ++ "'."
++          ++ target
++          ++ "'.\n"
++          ++ "Expected a "
++          ++ intercalate " or " expected
++          ++ ", rather than '"
++          ++ got
++          ++ "'."
+       | (target, expected, got) <- targets
+       ]
+   NoSuchTargetSelectorErr targets ->
+     unlines
+       [ "Unknown target '"
+-        ++ target
+-        ++ "'.\n"
+-        ++ unlines
+-          [ ( case inside of
+-                Just (kind, "") ->
+-                  "The " ++ kind ++ " has no "
+-                Just (kind, thing) ->
+-                  "The " ++ kind ++ " " ++ thing ++ " has no "
+-                Nothing -> "There is no "
+-            )
+-            ++ intercalate
+-              " or "
+-              [ mungeThing thing ++ " '" ++ got ++ "'"
+-              | (thing, got, _alts) <- nosuch'
+-              ]
+-            ++ "."
+-            ++ if null alternatives
+-              then ""
+-              else
+-                "\nPerhaps you meant "
+-                  ++ intercalate
+-                    ";\nor "
+-                    [ "the " ++ thing ++ " '" ++ intercalate "' or '" alts ++ "'?"
+-                    | (thing, alts) <- alternatives
+-                    ]
+-          | (inside, nosuch') <- groupByContainer nosuch
+-          , let alternatives =
+-                  [ (thing, alts)
+-                  | (thing, _got, alts@(_ : _)) <- nosuch'
++          ++ target
++          ++ "'.\n"
++          ++ unlines
++            [ ( case inside of
++                  Just (kind, "") ->
++                    "The " ++ kind ++ " has no "
++                  Just (kind, thing) ->
++                    "The " ++ kind ++ " " ++ thing ++ " has no "
++                  Nothing -> "There is no "
++              )
++                ++ intercalate
++                  " or "
++                  [ mungeThing thing ++ " '" ++ got ++ "'"
++                  | (thing, got, _alts) <- nosuch'
+                   ]
+-          ]
++                ++ "."
++                ++ if null alternatives
++                  then ""
++                  else
++                    "\nPerhaps you meant "
++                      ++ intercalate
++                        ";\nor "
++                        [ "the " ++ thing ++ " '" ++ intercalate "' or '" alts ++ "'?"
++                        | (thing, alts) <- alternatives
++                        ]
++            | (inside, nosuch') <- groupByContainer nosuch
++            , let alternatives =
++                    [ (thing, alts)
++                    | (thing, _got, alts@(_ : _)) <- nosuch'
++                    ]
++            ]
+       | (target, nosuch) <- targets
+       , let groupByContainer =
+               map
+@@ -716,16 +716,16 @@ exceptionMessageCabalInstall e = case e of
+   TargetSelectorAmbiguousErr targets ->
+     unlines
+       [ "Ambiguous target '"
+-        ++ target
+-        ++ "'. It could be:\n "
+-        ++ unlines
+-          [ "   "
+-            ++ ut
+-            ++ " ("
+-            ++ bt
+-            ++ ")"
+-          | (ut, bt) <- amb
+-          ]
++          ++ target
++          ++ "'. It could be:\n "
++          ++ unlines
++            [ "   "
++                ++ ut
++                ++ " ("
++                ++ bt
++                ++ ")"
++            | (ut, bt) <- amb
++            ]
+       | (target, amb) <- targets
+       ]
+   TargetSelectorNoCurrentPackageErr target ->
+@@ -772,11 +772,11 @@ exceptionMessageCabalInstall e = case e of
+       ++ "be unambiguous but matches the following targets:\n"
+       ++ unlines
+         [ "'"
+-          ++ rendering
+-          ++ "', matching:"
+-          ++ concatMap
+-            ("\n  - " ++)
+-            matches
++            ++ rendering
++            ++ "', matching:"
++            ++ concatMap
++              ("\n  - " ++)
++              matches
+         | (rendering, matches) <- renderingsAndMatches
+         ]
+       ++ "\nNote: Cabal expects to be able to make a single fully "
 diff --git a/cabal-install/src/Distribution/Client/Fetch.hs b/cabal-install/src/Distribution/Client/Fetch.hs
 index 54db5ae..863472a 100644
 --- a/cabal-install/src/Distribution/Client/Fetch.hs
@@ -400,9 +1460,20 @@ index 54db5ae..863472a 100644
            "No packages need to be fetched. "
              ++ "All the requested packages are already local "
 diff --git a/cabal-install/src/Distribution/Client/FetchUtils.hs b/cabal-install/src/Distribution/Client/FetchUtils.hs
-index c804040..a09000c 100644
+index c804040..6da960d 100644
 --- a/cabal-install/src/Distribution/Client/FetchUtils.hs
 +++ b/cabal-install/src/Distribution/Client/FetchUtils.hs
+@@ -312,8 +312,8 @@ asyncFetchPackages verbosity repoCtxt pkglocs body = do
+   asyncDownloadVars <-
+     sequenceA
+       [ do
+-        v <- newEmptyMVar
+-        return (pkgloc, v)
++          v <- newEmptyMVar
++          return (pkgloc, v)
+       | pkgloc <- pkglocs
+       ]
+ 
 @@ -369,7 +369,7 @@ packageFile :: Repo -> PackageId -> FilePath
  packageFile repo pkgid =
    packageDir repo pkgid
@@ -412,6 +1483,60 @@ index c804040..a09000c 100644
  
  -- | Generate the full path to the directory where the local cached copy of
  -- the tarball for a given @PackageIdentifier@ is stored.
+diff --git a/cabal-install/src/Distribution/Client/FileMonitor.hs b/cabal-install/src/Distribution/Client/FileMonitor.hs
+index 084545d..dffc26a 100644
+--- a/cabal-install/src/Distribution/Client/FileMonitor.hs
++++ b/cabal-install/src/Distribution/Client/FileMonitor.hs
+@@ -678,14 +678,14 @@ probeMonitorStateGlobRel
+         children' <-
+           sequence
+             [ do
+-              fstate' <-
+-                probeMonitorStateGlobRel
+-                  kindfile
+-                  kinddir
+-                  root
+-                  (dirName </> fname)
+-                  fstate
+-              return (fname, fstate')
++                fstate' <-
++                  probeMonitorStateGlobRel
++                    kindfile
++                    kinddir
++                    root
++                    (dirName </> fname)
++                    fstate
++                return (fname, fstate')
+             | (fname, fstate) <- children
+             ]
+         return $! MonitorStateGlobDirs glob globPath mtime children'
+diff --git a/cabal-install/src/Distribution/Client/Get.hs b/cabal-install/src/Distribution/Client/Get.hs
+index 39ace2f..a781f56 100644
+--- a/cabal-install/src/Distribution/Client/Get.hs
++++ b/cabal-install/src/Distribution/Client/Get.hs
+@@ -366,14 +366,14 @@ clonePackagesFromSourceRepo
+     -- Now execute all the required commands for each repo
+     sequence_
+       [ cloneSourceRepo verbosity vcs' repo destDir
+-        `catch` \exitcode ->
+-          throwIO
+-            ( ClonePackageFailedWithExitCode
+-                pkgid
+-                (srpToProxy repo)
+-                (programName (vcsProgram vcs))
+-                exitcode
+-            )
++          `catch` \exitcode ->
++            throwIO
++              ( ClonePackageFailedWithExitCode
++                  pkgid
++                  (srpToProxy repo)
++                  (programName (vcsProgram vcs))
++                  exitcode
++              )
+       | (pkgid, repo, vcs, destDir) <- pkgrepos'
+       , let vcs' = Map.findWithDefault (error $ "Cannot configure " ++ prettyShow (vcsRepoType vcs)) (vcsRepoType vcs) vcss
+       ]
 diff --git a/cabal-install/src/Distribution/Client/HttpUtils.hs b/cabal-install/src/Distribution/Client/HttpUtils.hs
 index 72ba34d..c6b184b 100644
 --- a/cabal-install/src/Distribution/Client/HttpUtils.hs
@@ -457,9 +1582,35 @@ index 1e08e84..4779812 100644
  noCommentsPrompt :: Interactive m => InitFlags -> m Bool
  noCommentsPrompt flags = getNoComments flags $ do
 diff --git a/cabal-install/src/Distribution/Client/Install.hs b/cabal-install/src/Distribution/Client/Install.hs
-index e1f855c..480d1e2 100644
+index e1f855c..b011153 100644
 --- a/cabal-install/src/Distribution/Client/Install.hs
 +++ b/cabal-install/src/Distribution/Client/Install.hs
+@@ -1185,16 +1185,16 @@ storeDetailedBuildReports
+ storeDetailedBuildReports verbosity logsDir reports =
+   sequence_
+     [ do
+-      allReportsDir <- defaultReportsDir
+-      let logFileName = prettyShow (BuildReports.package report) <.> "log"
+-          logFile = logsDir </> logFileName
+-          reportsDir = allReportsDir </> unRepoName (remoteRepoName remoteRepo)
+-          reportFile = reportsDir </> logFileName
++        allReportsDir <- defaultReportsDir
++        let logFileName = prettyShow (BuildReports.package report) <.> "log"
++            logFile = logsDir </> logFileName
++            reportsDir = allReportsDir </> unRepoName (remoteRepoName remoteRepo)
++            reportFile = reportsDir </> logFileName
+ 
+-      handleMissingLogFile $ do
+-        buildLog <- readFile logFile
+-        createDirectoryIfMissing True reportsDir -- FIXME
+-        writeFile reportFile (show (showBuildReport report, buildLog))
++        handleMissingLogFile $ do
++          buildLog <- readFile logFile
++          createDirectoryIfMissing True reportsDir -- FIXME
++          writeFile reportFile (show (showBuildReport report, buildLog))
+     | (report, Just repo) <- reports
+     , Just remoteRepo <- [maybeRepoRemote repo]
+     , isLikelyToHaveLogFile (BuildReports.installOutcome report)
 @@ -1750,7 +1750,7 @@ installLocalTarballPackage
              descFilePath =
                absUnpackedPath
@@ -486,10 +1637,124 @@ index e1f855c..480d1e2 100644
                    traverse (readPkgConf pkgConfDest) . sort . filter notHidden
                      =<< getDirectoryContents pkgConfDest
                  else fmap (: []) $ readPkgConf "." pkgConfDest
+diff --git a/cabal-install/src/Distribution/Client/InstallPlan.hs b/cabal-install/src/Distribution/Client/InstallPlan.hs
+index 46212ba..322abf6 100644
+--- a/cabal-install/src/Distribution/Client/InstallPlan.hs
++++ b/cabal-install/src/Distribution/Client/InstallPlan.hs
+@@ -826,10 +826,10 @@ processingInvariant plan (Processing processingSet completedSet failedSet) =
+     assert
+       ( and
+           [ case Graph.lookup pkgid (planGraph plan) of
+-            Just (Configured _) -> True
+-            Just (PreExisting _) -> False
+-            Just (Installed _) -> False
+-            Nothing -> False
++              Just (Configured _) -> True
++              Just (PreExisting _) -> False
++              Just (Installed _) -> False
++              Nothing -> False
+           | pkgid <- Set.toList processingSet ++ Set.toList failedSet
+           ]
+       )
+@@ -950,8 +950,8 @@ execute jobCtl keepGoing depFailure plan installPkg =
+           do
+             sequence_
+               [ spawnJob jobCtl $ do
+-                result <- installPkg pkg
+-                return (nodeKey pkg, result)
++                  result <- installPkg pkg
++                  return (nodeKey pkg, result)
+               | pkg <- newpkgs
+               ]
+             waitForTasks results tasksFailed processing
+@@ -1052,11 +1052,11 @@ problems
+   -> [PlanProblem ipkg srcpkg]
+ problems graph =
+   [ PackageMissingDeps
+-    pkg
+-    ( mapMaybe
+-        (fmap nodeKey . flip Graph.lookup graph)
+-        missingDeps
+-    )
++      pkg
++      ( mapMaybe
++          (fmap nodeKey . flip Graph.lookup graph)
++          missingDeps
++      )
+   | (pkg, missingDeps) <- Graph.broken graph
+   ]
+     ++ [ PackageCycle cycleGroup
+diff --git a/cabal-install/src/Distribution/Client/InstallSymlink.hs b/cabal-install/src/Distribution/Client/InstallSymlink.hs
+index 13e29a4..0f86534 100644
+--- a/cabal-install/src/Distribution/Client/InstallSymlink.hs
++++ b/cabal-install/src/Distribution/Client/InstallSymlink.hs
+@@ -151,26 +151,26 @@ symlinkBinaries
+             fmap catMaybes $
+               sequenceA
+                 [ do
+-                  privateBinDir <- pkgBinDir pkg ipid
+-                  ok <-
+-                    symlinkBinary
+-                      ( Symlink
+-                          overwritePolicy
+-                          publicBinDir
+-                          privateBinDir
+-                          (prettyShow publicExeName)
+-                          privateExeName
+-                      )
+-                  if ok
+-                    then return Nothing
+-                    else
+-                      return
+-                        ( Just
+-                            ( pkgid
+-                            , publicExeName
+-                            , privateBinDir </> privateExeName
+-                            )
++                    privateBinDir <- pkgBinDir pkg ipid
++                    ok <-
++                      symlinkBinary
++                        ( Symlink
++                            overwritePolicy
++                            publicBinDir
++                            privateBinDir
++                            (prettyShow publicExeName)
++                            privateExeName
+                         )
++                    if ok
++                      then return Nothing
++                      else
++                        return
++                          ( Just
++                              ( pkgid
++                              , publicExeName
++                              , privateBinDir </> privateExeName
++                              )
++                          )
+                 | (rpkg, pkg, exe) <- exes
+                 , let pkgid = packageId pkg
+                       -- This is a bit dodgy; probably won't work for Backpack packages
 diff --git a/cabal-install/src/Distribution/Client/List.hs b/cabal-install/src/Distribution/Client/List.hs
-index b032110..92f720d 100644
+index b032110..4efff16 100644
 --- a/cabal-install/src/Distribution/Client/List.hs
 +++ b/cabal-install/src/Distribution/Client/List.hs
+@@ -185,11 +185,11 @@ getPkgList verbosity packageDBs repoCtxt mcompprogdb listFlags pats = do
+       matches :: [PackageDisplayInfo]
+       matches =
+         [ mergePackageInfo
+-          pref
+-          installedPkgs
+-          sourcePkgs
+-          selectedPkg
+-          False
++            pref
++            installedPkgs
++            sourcePkgs
++            selectedPkg
++            False
+         | (pkgname, installedPkgs, sourcePkgs) <- pkgsInfo
+         , not onlyInstalled || not (null installedPkgs)
+         , let pref = prefs pkgname
 @@ -239,7 +239,6 @@ list verbosity packageDBs repos mcompProgdb listFlags pats = do
      else -- Note: this only works because for 'list', one cannot currently
      -- specify any version constraints, so listing all installed
@@ -498,6 +1763,29 @@ index b032110..92f720d 100644
        if null matches
          then notice verbosity "No matches found."
          else putStr $ unlines (map showPackageSummaryInfo matches)
+@@ -297,14 +296,14 @@ info
+     pkgsinfo <-
+       sequenceA
+         [ do
+-          pkginfo <-
+-            either (dieWithException verbosity) return $
+-              gatherPkgInfo
+-                prefs
+-                installedPkgIndex
+-                sourcePkgIndex
+-                pkgSpecifier
+-          updateFileSystemPackageDetails pkginfo
++            pkginfo <-
++              either (dieWithException verbosity) return $
++                gatherPkgInfo
++                  prefs
++                  installedPkgIndex
++                  sourcePkgIndex
++                  pkgSpecifier
++            updateFileSystemPackageDetails pkginfo
+         | pkgSpecifier <- pkgSpecifiers
+         ]
+ 
 @@ -461,9 +460,9 @@ showPackageDetailedInfo pkginfo =
    renderStyle (style{lineLength = 80, ribbonsPerLine = 1}) $
      char '*'
@@ -510,6 +1798,21 @@ index b032110..92f720d 100644
        $+$ nest
          4
          ( vcat
+diff --git a/cabal-install/src/Distribution/Client/Main.hs b/cabal-install/src/Distribution/Client/Main.hs
+index 5959753..834545a 100644
+--- a/cabal-install/src/Distribution/Client/Main.hs
++++ b/cabal-install/src/Distribution/Client/Main.hs
+@@ -1196,8 +1196,8 @@ uploadAction uploadFlags extraArgs globalFlags = do
+       | otherwise =
+           sequence_
+             [ do
+-              exists <- doesFileExist tarfile
+-              unless exists $ dieWithException verbosity $ FileNotFound tarfile
++                exists <- doesFileExist tarfile
++                unless exists $ dieWithException verbosity $ FileNotFound tarfile
+             | tarfile <- tarfiles
+             ]
+       where
 diff --git a/cabal-install/src/Distribution/Client/ParseUtils.hs b/cabal-install/src/Distribution/Client/ParseUtils.hs
 index 44cdc4c..f79c10d 100644
 --- a/cabal-install/src/Distribution/Client/ParseUtils.hs
@@ -559,7 +1862,7 @@ index a090668..b24e14b 100644
      pkgname = packageName pkgid
  
 diff --git a/cabal-install/src/Distribution/Client/ProjectConfig.hs b/cabal-install/src/Distribution/Client/ProjectConfig.hs
-index a80f517..6820731 100644
+index a80f517..d404d39 100644
 --- a/cabal-install/src/Distribution/Client/ProjectConfig.hs
 +++ b/cabal-install/src/Distribution/Client/ProjectConfig.hs
 @@ -459,7 +459,7 @@ resolveBuildTimeSettings
@@ -571,10 +1874,270 @@ index a80f517..6820731 100644
        givenTemplate = flagToMaybe projectConfigLogFile
  
        useDefaultTemplate
+@@ -1184,10 +1184,10 @@ fetchAndReadSourcePackages
+             preferredHttpTransport
+       sequenceA
+         [ fetchAndReadSourcePackageRemoteTarball
+-          verbosity
+-          distDirLayout
+-          getTransport
+-          uri
++            verbosity
++            distDirLayout
++            getTransport
++            uri
+         | ProjectPackageRemoteTarball uri <- pkgLocations
+         ]
+ 
+@@ -1346,8 +1346,8 @@ syncAndReadSourcePackagesRemoteRepos
+     concat
+       <$> sequenceA
+         [ rerunIfChanged verbosity monitor repoGroup' $ do
+-          vcs' <- getConfiguredVCS repoType
+-          syncRepoGroupAndReadSourcePackages vcs' pathStem repoGroup'
++            vcs' <- getConfiguredVCS repoType
++            syncRepoGroupAndReadSourcePackages vcs' pathStem repoGroup'
+         | repoGroup@((primaryRepo, repoType) : _) <- Map.elems reposByLocation
+         , let repoGroup' = map fst repoGroup
+               pathStem =
+diff --git a/cabal-install/src/Distribution/Client/ProjectOrchestration.hs b/cabal-install/src/Distribution/Client/ProjectOrchestration.hs
+index c3fa259..b69b051 100644
+--- a/cabal-install/src/Distribution/Client/ProjectOrchestration.hs
++++ b/cabal-install/src/Distribution/Client/ProjectOrchestration.hs
+@@ -1180,13 +1180,13 @@ dieOnBuildFailures verbosity currentCommand plan buildOutcomes
+       -- For failures where we have a build log, print the log plus a header
+       sequence_
+         [ do
+-          notice verbosity $
+-            '\n'
+-              : renderFailureDetail False pkg reason
+-              ++ "\nBuild log ( "
+-              ++ logfile
+-              ++ " ):"
+-          readFile logfile >>= noticeNoWrap verbosity
++            notice verbosity $
++              '\n'
++                : renderFailureDetail False pkg reason
++                ++ "\nBuild log ( "
++                ++ logfile
++                ++ " ):"
++            readFile logfile >>= noticeNoWrap verbosity
+         | (pkg, ShowBuildSummaryAndLog reason logfile) <-
+             failuresClassification
+         ]
+@@ -1196,14 +1196,14 @@ dieOnBuildFailures verbosity currentCommand plan buildOutcomes
+       dieIfNotHaddockFailure verbosity $
+         unlines
+           [ case failureClassification of
+-            ShowBuildSummaryAndLog reason _
+-              | verbosity > normal ->
+-                  renderFailureDetail mentionDepOf pkg reason
+-              | otherwise ->
+-                  renderFailureSummary mentionDepOf pkg reason
+-                    ++ ". See the build log above for details."
+-            ShowBuildSummaryOnly reason ->
+-              renderFailureDetail mentionDepOf pkg reason
++              ShowBuildSummaryAndLog reason _
++                | verbosity > normal ->
++                    renderFailureDetail mentionDepOf pkg reason
++                | otherwise ->
++                    renderFailureSummary mentionDepOf pkg reason
++                      ++ ". See the build log above for details."
++              ShowBuildSummaryOnly reason ->
++                renderFailureDetail mentionDepOf pkg reason
+           | let mentionDepOf = verbosity <= normal
+           , (pkg, failureClassification) <- failuresClassification
+           ]
+diff --git a/cabal-install/src/Distribution/Client/ProjectPlanOutput.hs b/cabal-install/src/Distribution/Client/ProjectPlanOutput.hs
+index 0e4fb10..0e78d40 100644
+--- a/cabal-install/src/Distribution/Client/ProjectPlanOutput.hs
++++ b/cabal-install/src/Distribution/Client/ProjectPlanOutput.hs
+@@ -193,12 +193,12 @@ encodePlanAsJson distDirLayout elaboratedInstallPlan elaboratedSharedConfig =
+               let components =
+                     J.object $
+                       [ comp2str c
+-                        J..= J.object
+-                          ( [ "depends" J..= map (jdisplay . confInstId) (map fst ldeps)
+-                            , "exe-depends" J..= map (jdisplay . confInstId) edeps
+-                            ]
+-                              ++ bin_file c
+-                          )
++                          J..= J.object
++                            ( [ "depends" J..= map (jdisplay . confInstId) (map fst ldeps)
++                              , "exe-depends" J..= map (jdisplay . confInstId) edeps
++                              ]
++                                ++ bin_file c
++                            )
+                       | (c, (ldeps, edeps)) <-
+                           ComponentDeps.toList $
+                             ComponentDeps.zip
 diff --git a/cabal-install/src/Distribution/Client/ProjectPlanning.hs b/cabal-install/src/Distribution/Client/ProjectPlanning.hs
-index 0c4facf..3cac558 100644
+index 0c4facf..7cc277e 100644
 --- a/cabal-install/src/Distribution/Client/ProjectPlanning.hs
 +++ b/cabal-install/src/Distribution/Client/ProjectPlanning.hs
+@@ -388,9 +388,9 @@ rebuildProjectConfig
+ 
+     sequence_
+       [ do
+-        info verbosity . render . vcat $
+-          text "this build was affected by the following (project) config files:"
+-            : [text "-" <+> docProjectConfigPath path]
++          info verbosity . render . vcat $
++            text "this build was affected by the following (project) config files:"
++              : [text "-" <+> docProjectConfigPath path]
+       | Explicit path <- Set.toList $ projectConfigProvenance projectConfig
+       ]
+ 
+@@ -927,12 +927,12 @@ programsMonitorFiles progdb =
+ programDbSignature :: ProgramDb -> [ConfiguredProgram]
+ programDbSignature progdb =
+   [ prog
+-    { programMonitorFiles = []
+-    , programOverrideEnv =
+-        filter
+-          ((/= "PATH") . fst)
+-          (programOverrideEnv prog)
+-    }
++      { programMonitorFiles = []
++      , programOverrideEnv =
++          filter
++            ((/= "PATH") . fst)
++            (programOverrideEnv prog)
++      }
+   | prog <- configuredPrograms progdb
+   ]
+ 
+@@ -1063,8 +1063,8 @@ getPackageSourceHashes verbosity withRepoCtx solverPlan = do
+         ) =
+           partitionEithers
+             [ case repo of
+-              RepoSecure{} -> Left (pkgid, repo)
+-              _ -> Right (pkgid, repo)
++                RepoSecure{} -> Left (pkgid, repo)
++                _ -> Right (pkgid, repo)
+             | (pkgid, RepoTarballPackage repo _ _) <- allPkgLocations
+             ]
+ 
+@@ -1086,10 +1086,10 @@ getPackageSourceHashes verbosity withRepoCtx solverPlan = do
+       liftIO $
+         sequence
+           [ do
+-            mtarball <- checkRepoTarballFetched repo pkgid
+-            case mtarball of
+-              Nothing -> return (Left (pkgid, repo))
+-              Just tarball -> return (Right (pkgid, tarball))
++              mtarball <- checkRepoTarballFetched repo pkgid
++              case mtarball of
++                Nothing -> return (Left (pkgid, repo))
++                Just tarball -> return (Right (pkgid, tarball))
+           | (pkgid, repo) <- repoTarballPkgsWithoutMetadata
+           ]
+ 
+@@ -1112,19 +1112,19 @@ getPackageSourceHashes verbosity withRepoCtx solverPlan = do
+               sequence
+                 -- Reading the repo index is expensive so we group the packages by repo
+                 [ repoContextWithSecureRepo repoctx repo $ \secureRepo ->
+-                  Sec.withIndex secureRepo $ \repoIndex ->
+-                    sequence
+-                      [ do
+-                        hash <-
+-                          Sec.trusted
+-                            <$> Sec.indexLookupHash repoIndex pkgid -- strip off Trusted tag
++                    Sec.withIndex secureRepo $ \repoIndex ->
++                      sequence
++                        [ do
++                            hash <-
++                              Sec.trusted
++                                <$> Sec.indexLookupHash repoIndex pkgid -- strip off Trusted tag
+ 
+-                        -- Note that hackage-security currently uses SHA256
+-                        -- but this API could in principle give us some other
+-                        -- choice in future.
+-                        return (pkgid, hashFromTUF hash)
+-                      | pkgid <- pkgids
+-                      ]
++                            -- Note that hackage-security currently uses SHA256
++                            -- but this API could in principle give us some other
++                            -- choice in future.
++                            return (pkgid, hashFromTUF hash)
++                        | pkgid <- pkgids
++                        ]
+                 | (repo, pkgids) <-
+                     map (\grp@((_, repo) :| _) -> (repo, map fst (NE.toList grp)))
+                       . NE.groupBy ((==) `on` (remoteRepoName . repoRemote . snd))
+@@ -1138,8 +1138,8 @@ getPackageSourceHashes verbosity withRepoCtx solverPlan = do
+         repoTarballPkgsNewlyDownloaded <-
+           sequence
+             [ do
+-              tarball <- fetchRepoTarball verbosity repoctx repo pkgid
+-              return (pkgid, tarball)
++                tarball <- fetchRepoTarball verbosity repoctx repo pkgid
++                return (pkgid, tarball)
+             | (pkgid, repo) <- repoTarballPkgsToDownload
+             ]
+ 
+@@ -1164,8 +1164,8 @@ getPackageSourceHashes verbosity withRepoCtx solverPlan = do
+       fmap Map.fromList $
+         sequence
+           [ do
+-            srchash <- readFileHashValue tarball
+-            return (pkgid, srchash)
++              srchash <- readFileHashValue tarball
++              return (pkgid, srchash)
+           | (pkgid, tarball) <- allTarballFilePkgs
+           ]
+   monitorFiles
+@@ -1281,11 +1281,11 @@ planPackages
+           . addConstraints
+             -- enable stanza constraints where the user asked to enable
+             [ LabeledPackageConstraint
+-              ( PackageConstraint
+-                  (scopeToplevel pkgname)
+-                  (PackagePropertyStanzas stanzas)
+-              )
+-              ConstraintSourceConfigFlagOrTarget
++                ( PackageConstraint
++                    (scopeToplevel pkgname)
++                    (PackagePropertyStanzas stanzas)
++                )
++                ConstraintSourceConfigFlagOrTarget
+             | pkg <- localPackages
+             , let pkgname = pkgSpecifierTarget pkg
+                   stanzaM = Map.findWithDefault Map.empty pkgname pkgStanzasEnable
+@@ -1298,11 +1298,11 @@ planPackages
+             -- TODO: [nice to have] should have checked at some point that the
+             -- package in question actually has these flags.
+             [ LabeledPackageConstraint
+-              ( PackageConstraint
+-                  (scopeToplevel pkgname)
+-                  (PackagePropertyFlags flags)
+-              )
+-              ConstraintSourceConfigFlagOrTarget
++                ( PackageConstraint
++                    (scopeToplevel pkgname)
++                    (PackagePropertyFlags flags)
++                )
++                ConstraintSourceConfigFlagOrTarget
+             | (pkgname, flags) <- Map.toList solverSettingFlagAssignments
+             ]
+           . addConstraints
+@@ -1311,11 +1311,11 @@ planPackages
+             -- former we just apply all these flags to all local targets which
+             -- is silly. We should check if the flags are appropriate.
+             [ LabeledPackageConstraint
+-              ( PackageConstraint
+-                  (scopeToplevel pkgname)
+-                  (PackagePropertyFlags flags)
+-              )
+-              ConstraintSourceConfigFlagOrTarget
++                ( PackageConstraint
++                    (scopeToplevel pkgname)
++                    (PackagePropertyFlags flags)
++                )
++                ConstraintSourceConfigFlagOrTarget
+             | let flags = solverSettingFlagAssignment
+             , not (PD.nullFlagAssignment flags)
+             , pkg <- localPackages
 @@ -1674,7 +1674,7 @@ elaborateInstallPlan
                dieProgress $
                  text "Internal libraries only supported with per-component builds."
@@ -584,6 +2147,120 @@ index 0c4facf..3cac558 100644
            -- TODO: Maybe exclude Backpack too
  
            elab0 = elaborateSolverToCommon spkg
+@@ -3529,12 +3529,12 @@ pruneInstallPlanPass2 pkgs =
+           -- TODO: allow requesting executable with different name
+           -- than package name
+           [ ComponentTarget
+-            ( Cabal.CExeName $
+-                packageNameToUnqualComponentName $
+-                  packageName $
+-                    elabPkgSourceId elab
+-            )
+-            WholeComponent
++              ( Cabal.CExeName $
++                  packageNameToUnqualComponentName $
++                    packageName $
++                      elabPkgSourceId elab
++              )
++              WholeComponent
+           | installedUnitId elab `Set.member` hasReverseExeDeps
+           ]
+ 
+diff --git a/cabal-install/src/Distribution/Client/Setup.hs b/cabal-install/src/Distribution/Client/Setup.hs
+index 222b53b..900c6ec 100644
+--- a/cabal-install/src/Distribution/Client/Setup.hs
++++ b/cabal-install/src/Distribution/Client/Setup.hs
+@@ -2351,12 +2351,12 @@ filterHaddockFlags flags cabalLibVersion
+ haddockOptions :: ShowOrParseArgs -> [OptionField HaddockFlags]
+ haddockOptions showOrParseArgs =
+   [ opt
+-    { optionName = "haddock-" ++ name
+-    , optionDescr =
+-        [ fmapOptFlags (\(_, lflags) -> ([], map ("haddock-" ++) lflags)) descr
+-        | descr <- optionDescr opt
+-        ]
+-    }
++      { optionName = "haddock-" ++ name
++      , optionDescr =
++          [ fmapOptFlags (\(_, lflags) -> ([], map ("haddock-" ++) lflags)) descr
++          | descr <- optionDescr opt
++          ]
++      }
+   | opt <- commandOptions Cabal.haddockCommand showOrParseArgs
+   , let name = optionName opt
+   , name
+@@ -2384,12 +2384,12 @@ haddockOptions showOrParseArgs =
+ testOptions :: ShowOrParseArgs -> [OptionField TestFlags]
+ testOptions showOrParseArgs =
+   [ opt
+-    { optionName = prefixTest name
+-    , optionDescr =
+-        [ fmapOptFlags (\(_, lflags) -> ([], map prefixTest lflags)) descr
+-        | descr <- optionDescr opt
+-        ]
+-    }
++      { optionName = prefixTest name
++      , optionDescr =
++          [ fmapOptFlags (\(_, lflags) -> ([], map prefixTest lflags)) descr
++          | descr <- optionDescr opt
++          ]
++      }
+   | opt <- commandOptions Cabal.testCommand showOrParseArgs
+   , let name = optionName opt
+   , name
+@@ -2411,12 +2411,12 @@ testOptions showOrParseArgs =
+ benchmarkOptions :: ShowOrParseArgs -> [OptionField BenchmarkFlags]
+ benchmarkOptions showOrParseArgs =
+   [ opt
+-    { optionName = prefixBenchmark name
+-    , optionDescr =
+-        [ fmapOptFlags (\(_, lflags) -> ([], map prefixBenchmark lflags)) descr
+-        | descr <- optionDescr opt
+-        ]
+-    }
++      { optionName = prefixBenchmark name
++      , optionDescr =
++          [ fmapOptFlags (\(_, lflags) -> ([], map prefixBenchmark lflags)) descr
++          | descr <- optionDescr opt
++          ]
++      }
+   | opt <- commandOptions Cabal.benchmarkCommand showOrParseArgs
+   , let name = optionName opt
+   , name `elem` ["benchmark-options", "benchmark-option"]
+diff --git a/cabal-install/src/Distribution/Client/SolverInstallPlan.hs b/cabal-install/src/Distribution/Client/SolverInstallPlan.hs
+index f442208..85ad80e 100644
+--- a/cabal-install/src/Distribution/Client/SolverInstallPlan.hs
++++ b/cabal-install/src/Distribution/Client/SolverInstallPlan.hs
+@@ -217,9 +217,9 @@ showPlanProblem (PackageInconsistency name inconsistencies) =
+     ++ " but they require inconsistent versions:\n"
+     ++ unlines
+       [ "  package "
+-        ++ prettyShow pkg
+-        ++ " requires "
+-        ++ prettyShow (PackageIdentifier name ver)
++          ++ prettyShow pkg
++          ++ " requires "
++          ++ prettyShow (PackageIdentifier name ver)
+       | (pkg, ver) <- inconsistencies
+       ]
+ showPlanProblem (PackageStateInvalid pkg pkg') =
+@@ -245,11 +245,11 @@ problems
+   -> [SolverPlanProblem]
+ problems indepGoals index =
+   [ PackageMissingDeps
+-    pkg
+-    ( mapMaybe
+-        (fmap packageId . flip Graph.lookup index)
+-        missingDeps
+-    )
++      pkg
++      ( mapMaybe
++          (fmap packageId . flip Graph.lookup index)
++          missingDeps
++      )
+   | (pkg, missingDeps) <- Graph.broken index
+   ]
+     ++ [ PackageCycle cycleGroup
 diff --git a/cabal-install/src/Distribution/Client/Store.hs b/cabal-install/src/Distribution/Client/Store.hs
 index 4e7d97d..cf5ec15 100644
 --- a/cabal-install/src/Distribution/Client/Store.hs
@@ -636,6 +2313,74 @@ index 4e7d97d..cf5ec15 100644
      where
        compid = compilerId compiler
  
+diff --git a/cabal-install/src/Distribution/Client/TargetSelector.hs b/cabal-install/src/Distribution/Client/TargetSelector.hs
+index d294136..5c22201 100644
+--- a/cabal-install/src/Distribution/Client/TargetSelector.hs
++++ b/cabal-install/src/Distribution/Client/TargetSelector.hs
+@@ -746,22 +746,22 @@ disambiguateTargetSelectors matcher matchInput exactMatch matchResults =
+          ]
+     results =
+       [ case findUnambiguous originalMatch matchRenderings of
+-        Just unambiguousRendering ->
+-          Right
+-            ( forgetFileStatus unambiguousRendering
+-            , originalMatch
+-            )
+-        -- This case is an internal error, but we bubble it up and report it
+-        Nothing ->
+-          Left
+-            ( originalMatch
+-            , [ (forgetFileStatus rendering, matches)
+-              | rendering <- matchRenderings
+-              , let Match m _ matches =
+-                      memoisedMatches Map.! rendering
+-              , m /= Inexact
+-              ]
+-            )
++          Just unambiguousRendering ->
++            Right
++              ( forgetFileStatus unambiguousRendering
++              , originalMatch
++              )
++          -- This case is an internal error, but we bubble it up and report it
++          Nothing ->
++            Left
++              ( originalMatch
++              , [ (forgetFileStatus rendering, matches)
++                | rendering <- matchRenderings
++                , let Match m _ matches =
++                        memoisedMatches Map.! rendering
++                , m /= Inexact
++                ]
++              )
+       | (originalMatch, matchRenderings) <- matchResultsRenderings
+       ]
+ 
+@@ -1907,15 +1907,15 @@ collectKnownPackageInfo
+ collectKnownComponentInfo :: PackageDescription -> [KnownComponent]
+ collectKnownComponentInfo pkg =
+   [ KnownComponent
+-    { cinfoName = componentName c
+-    , cinfoStrName = componentStringName (packageName pkg) (componentName c)
+-    , cinfoPackageId = packageId pkg
+-    , cinfoSrcDirs = ordNub (map getSymbolicPath (hsSourceDirs bi))
+-    , cinfoModules = ordNub (componentModules c)
+-    , cinfoHsFiles = ordNub (componentHsFiles c)
+-    , cinfoCFiles = ordNub (cSources bi)
+-    , cinfoJsFiles = ordNub (jsSources bi)
+-    }
++      { cinfoName = componentName c
++      , cinfoStrName = componentStringName (packageName pkg) (componentName c)
++      , cinfoPackageId = packageId pkg
++      , cinfoSrcDirs = ordNub (map getSymbolicPath (hsSourceDirs bi))
++      , cinfoModules = ordNub (componentModules c)
++      , cinfoHsFiles = ordNub (componentHsFiles c)
++      , cinfoCFiles = ordNub (cSources bi)
++      , cinfoJsFiles = ordNub (jsSources bi)
++      }
+   | c <- pkgComponents pkg
+   , let bi = componentBuildInfo c
+   ]
 diff --git a/cabal-install/src/Distribution/Client/Utils.hs b/cabal-install/src/Distribution/Client/Utils.hs
 index f5a10da..a318f23 100644
 --- a/cabal-install/src/Distribution/Client/Utils.hs
@@ -649,3 +2394,317 @@ index f5a10da..a318f23 100644
  
  -- | From Control.Monad.Extra
  --   https://hackage.haskell.org/package/extra-1.7.9
+diff --git a/cabal-install/src/Distribution/Client/VCS.hs b/cabal-install/src/Distribution/Client/VCS.hs
+index 7c071de..c85115e 100644
+--- a/cabal-install/src/Distribution/Client/VCS.hs
++++ b/cabal-install/src/Distribution/Client/VCS.hs
+@@ -770,8 +770,8 @@ vcsPijul =
+       [programInvocation prog cloneArgs]
+         -- And if there's a tag, we have to do that in a second step:
+         ++ [ (programInvocation prog (checkoutArgs tag))
+-            { progInvokeCwd = Just destdir
+-            }
++              { progInvokeCwd = Just destdir
++              }
+            | tag <- maybeToList (srpTag repo)
+            ]
+       where
+diff --git a/cabal-install/tests/UnitTests/Distribution/Client/Get.hs b/cabal-install/tests/UnitTests/Distribution/Client/Get.hs
+index 2788a21..2ca348c 100644
+--- a/cabal-install/tests/UnitTests/Distribution/Client/Get.hs
++++ b/cabal-install/tests/UnitTests/Distribution/Client/Get.hs
+@@ -132,11 +132,11 @@ testSelectRepoKind :: Assertion
+ testSelectRepoKind =
+   sequence_
+     [ do
+-      e <- test requestedRepoType pkgrepos
+-      e @?= ClonePackageNoRepoType pkgidfoo expectedRepo
++        e <- test requestedRepoType pkgrepos
++        e @?= ClonePackageNoRepoType pkgidfoo expectedRepo
+ 
+-      e' <- test requestedRepoType (reverse pkgrepos)
+-      e' @?= ClonePackageNoRepoType pkgidfoo expectedRepo
++        e' <- test requestedRepoType (reverse pkgrepos)
++        e' @?= ClonePackageNoRepoType pkgidfoo expectedRepo
+     | let test rt rs =
+             assertException $
+               clonePackagesFromSourceRepo verbosity "." rt [] rs
+diff --git a/cabal-install/tests/UnitTests/Distribution/Client/Init/Utils.hs b/cabal-install/tests/UnitTests/Distribution/Client/Init/Utils.hs
+index e5ed074..297a1a4 100644
+--- a/cabal-install/tests/UnitTests/Distribution/Client/Init/Utils.hs
++++ b/cabal-install/tests/UnitTests/Distribution/Client/Init/Utils.hs
+@@ -80,8 +80,8 @@ mkLicense lid = SPDX.License (SPDX.ELicense (SPDX.ELicenseId lid) Nothing)
+ mangleBaseDep :: a -> (a -> [Dependency]) -> [Dependency]
+ mangleBaseDep target f =
+   [ if unPackageName x == "base"
+-    then Dependency x anyVersion z
+-    else dep
++      then Dependency x anyVersion z
++      else dep
+   | dep@(Dependency x _ z) <- f target
+   ]
+ 
+diff --git a/cabal-install/tests/UnitTests/Distribution/Client/InstallPlan.hs b/cabal-install/tests/UnitTests/Distribution/Client/InstallPlan.hs
+index 39c719f..88cfedf 100644
+--- a/cabal-install/tests/UnitTests/Distribution/Client/InstallPlan.hs
++++ b/cabal-install/tests/UnitTests/Distribution/Client/InstallPlan.hs
+@@ -131,8 +131,8 @@ isReversePartialTopologicalOrder :: Graph -> [Vertex] -> Bool
+ isReversePartialTopologicalOrder g vs =
+   and
+     [ case (ixs ! u, ixs ! v) of
+-      (Just ixu, Just ixv) -> ixu > ixv
+-      _ -> True
++        (Just ixu, Just ixv) -> ixu > ixv
++        _ -> True
+     | let ixs =
+             array
+               (bounds g)
+@@ -240,11 +240,11 @@ arbitraryInstallPlan mkIPkg mkSrcPkg ipkgProportion graph = do
+       )
+       $ sequenceA
+         [ do
+-          isipkg <-
+-            if isRoot
+-              then pick ipkgProportion
+-              else return False
+-          return (v, isipkg)
++            isipkg <-
++              if isRoot
++                then pick ipkgProportion
++                else return False
++            return (v, isipkg)
+         | (v, n) <- assocs (outdegree graph)
+         , let isRoot = n == 0
+         ]
+diff --git a/cabal-install/tests/UnitTests/Distribution/Client/ProjectConfig.hs b/cabal-install/tests/UnitTests/Distribution/Client/ProjectConfig.hs
+index abdc1e7..e55e401 100644
+--- a/cabal-install/tests/UnitTests/Distribution/Client/ProjectConfig.hs
++++ b/cabal-install/tests/UnitTests/Distribution/Client/ProjectConfig.hs
+@@ -407,20 +407,20 @@ instance Arbitrary ProjectConfig where
+       , projectConfigAllPackages = x9
+       } =
+       [ ProjectConfig
+-        { projectPackages = x0'
+-        , projectPackagesOptional = x1'
+-        , projectPackagesRepo = x2'
+-        , projectPackagesNamed = x3'
+-        , projectConfigBuildOnly = x4'
+-        , projectConfigShared = x5'
+-        , projectConfigProvenance = x6'
+-        , projectConfigLocalPackages = x7'
+-        , projectConfigSpecificPackage =
+-            ( MapMappend
+-                (fmap getNonMEmpty x8')
+-            )
+-        , projectConfigAllPackages = x9'
+-        }
++          { projectPackages = x0'
++          , projectPackagesOptional = x1'
++          , projectPackagesRepo = x2'
++          , projectPackagesNamed = x3'
++          , projectConfigBuildOnly = x4'
++          , projectConfigShared = x5'
++          , projectConfigProvenance = x6'
++          , projectConfigLocalPackages = x7'
++          , projectConfigSpecificPackage =
++              ( MapMappend
++                  (fmap getNonMEmpty x8')
++              )
++          , projectConfigAllPackages = x9'
++          }
+       | ((x0', x1', x2', x3'), (x4', x5', x6', x7', x8', x9')) <-
+           shrink
+             ( (x0, x1, x2, x3)
+@@ -522,26 +522,26 @@ instance Arbitrary ProjectConfigBuildOnly where
+       , projectConfigClientInstallFlags = x17
+       } =
+       [ ProjectConfigBuildOnly
+-        { projectConfigVerbosity = x00'
+-        , projectConfigDryRun = x01'
+-        , projectConfigOnlyDeps = x02'
+-        , projectConfigOnlyDownload = x18'
+-        , projectConfigSummaryFile = x03'
+-        , projectConfigLogFile = x04'
+-        , projectConfigBuildReports = x05'
+-        , projectConfigReportPlanningFailure = x06'
+-        , projectConfigSymlinkBinDir = x07'
+-        , projectConfigNumJobs = postShrink_NumJobs x09'
+-        , projectConfigUseSemaphore = x19'
+-        , projectConfigKeepGoing = x10'
+-        , projectConfigOfflineMode = x11'
+-        , projectConfigKeepTempFiles = x12'
+-        , projectConfigHttpTransport = x13
+-        , projectConfigIgnoreExpiry = x14'
+-        , projectConfigCacheDir = x15
+-        , projectConfigLogsDir = x16
+-        , projectConfigClientInstallFlags = x17'
+-        }
++          { projectConfigVerbosity = x00'
++          , projectConfigDryRun = x01'
++          , projectConfigOnlyDeps = x02'
++          , projectConfigOnlyDownload = x18'
++          , projectConfigSummaryFile = x03'
++          , projectConfigLogFile = x04'
++          , projectConfigBuildReports = x05'
++          , projectConfigReportPlanningFailure = x06'
++          , projectConfigSymlinkBinDir = x07'
++          , projectConfigNumJobs = postShrink_NumJobs x09'
++          , projectConfigUseSemaphore = x19'
++          , projectConfigKeepGoing = x10'
++          , projectConfigOfflineMode = x11'
++          , projectConfigKeepTempFiles = x12'
++          , projectConfigHttpTransport = x13
++          , projectConfigIgnoreExpiry = x14'
++          , projectConfigCacheDir = x15
++          , projectConfigLogsDir = x16
++          , projectConfigClientInstallFlags = x17'
++          }
+       | ( (x00', x01', x02', x03', x04')
+           , (x05', x06', x07', x09')
+           , (x10', x11', x12', x14')
+@@ -803,68 +803,68 @@ instance Arbitrary PackageConfig where
+       , packageConfigBenchmarkOptions = x52
+       } =
+       [ PackageConfig
+-        { packageConfigProgramPaths = postShrink_Paths x00'
+-        , packageConfigProgramArgs = postShrink_Args x01'
+-        , packageConfigProgramPathExtra = x02'
+-        , packageConfigFlagAssignment = x03'
+-        , packageConfigVanillaLib = x04'
+-        , packageConfigSharedLib = x05'
+-        , packageConfigStaticLib = x42'
+-        , packageConfigDynExe = x06'
+-        , packageConfigFullyStaticExe = x50'
+-        , packageConfigProf = x07'
+-        , packageConfigProfLib = x08'
+-        , packageConfigProfExe = x09'
+-        , packageConfigProfDetail = x10'
+-        , packageConfigProfLibDetail = x11'
+-        , packageConfigConfigureArgs = map getNonEmpty x12'
+-        , packageConfigOptimization = x13'
+-        , packageConfigProgPrefix = x14'
+-        , packageConfigProgSuffix = x15'
+-        , packageConfigExtraLibDirs = map getNonEmpty x16'
+-        , packageConfigExtraLibDirsStatic = map getNonEmpty x53'
+-        , packageConfigExtraFrameworkDirs = map getNonEmpty x17'
+-        , packageConfigExtraIncludeDirs = map getNonEmpty x18'
+-        , packageConfigGHCiLib = x19'
+-        , packageConfigSplitSections = x20'
+-        , packageConfigSplitObjs = x20_1'
+-        , packageConfigStripExes = x21'
+-        , packageConfigStripLibs = x22'
+-        , packageConfigTests = x23'
+-        , packageConfigBenchmarks = x24'
+-        , packageConfigCoverage = x25'
+-        , packageConfigRelocatable = x26'
+-        , packageConfigDebugInfo = x27'
+-        , packageConfigDumpBuildInfo = x27_1'
+-        , packageConfigRunTests = x28'
+-        , packageConfigDocumentation = x29'
+-        , packageConfigHaddockHoogle = x30'
+-        , packageConfigHaddockHtml = x31'
+-        , packageConfigHaddockHtmlLocation = x32'
+-        , packageConfigHaddockForeignLibs = x33'
+-        , packageConfigHaddockExecutables = x33_1'
+-        , packageConfigHaddockTestSuites = x34'
+-        , packageConfigHaddockBenchmarks = x35'
+-        , packageConfigHaddockInternal = x36'
+-        , packageConfigHaddockCss = fmap getNonEmpty x37'
+-        , packageConfigHaddockLinkedSource = x38'
+-        , packageConfigHaddockQuickJump = x43'
+-        , packageConfigHaddockHscolourCss = fmap getNonEmpty x39'
+-        , packageConfigHaddockContents = x40'
+-        , packageConfigHaddockForHackage = x41'
+-        , packageConfigHaddockIndex = x54'
+-        , packageConfigHaddockBaseUrl = x55'
+-        , packageConfigHaddockLib = x56'
+-        , packageConfigHaddockOutputDir = x57'
+-        , packageConfigTestHumanLog = x44'
+-        , packageConfigTestMachineLog = x45'
+-        , packageConfigTestShowDetails = x46'
+-        , packageConfigTestKeepTix = x47'
+-        , packageConfigTestWrapper = x48'
+-        , packageConfigTestFailWhenNoTestSuites = x49'
+-        , packageConfigTestTestOptions = x51'
+-        , packageConfigBenchmarkOptions = x52'
+-        }
++          { packageConfigProgramPaths = postShrink_Paths x00'
++          , packageConfigProgramArgs = postShrink_Args x01'
++          , packageConfigProgramPathExtra = x02'
++          , packageConfigFlagAssignment = x03'
++          , packageConfigVanillaLib = x04'
++          , packageConfigSharedLib = x05'
++          , packageConfigStaticLib = x42'
++          , packageConfigDynExe = x06'
++          , packageConfigFullyStaticExe = x50'
++          , packageConfigProf = x07'
++          , packageConfigProfLib = x08'
++          , packageConfigProfExe = x09'
++          , packageConfigProfDetail = x10'
++          , packageConfigProfLibDetail = x11'
++          , packageConfigConfigureArgs = map getNonEmpty x12'
++          , packageConfigOptimization = x13'
++          , packageConfigProgPrefix = x14'
++          , packageConfigProgSuffix = x15'
++          , packageConfigExtraLibDirs = map getNonEmpty x16'
++          , packageConfigExtraLibDirsStatic = map getNonEmpty x53'
++          , packageConfigExtraFrameworkDirs = map getNonEmpty x17'
++          , packageConfigExtraIncludeDirs = map getNonEmpty x18'
++          , packageConfigGHCiLib = x19'
++          , packageConfigSplitSections = x20'
++          , packageConfigSplitObjs = x20_1'
++          , packageConfigStripExes = x21'
++          , packageConfigStripLibs = x22'
++          , packageConfigTests = x23'
++          , packageConfigBenchmarks = x24'
++          , packageConfigCoverage = x25'
++          , packageConfigRelocatable = x26'
++          , packageConfigDebugInfo = x27'
++          , packageConfigDumpBuildInfo = x27_1'
++          , packageConfigRunTests = x28'
++          , packageConfigDocumentation = x29'
++          , packageConfigHaddockHoogle = x30'
++          , packageConfigHaddockHtml = x31'
++          , packageConfigHaddockHtmlLocation = x32'
++          , packageConfigHaddockForeignLibs = x33'
++          , packageConfigHaddockExecutables = x33_1'
++          , packageConfigHaddockTestSuites = x34'
++          , packageConfigHaddockBenchmarks = x35'
++          , packageConfigHaddockInternal = x36'
++          , packageConfigHaddockCss = fmap getNonEmpty x37'
++          , packageConfigHaddockLinkedSource = x38'
++          , packageConfigHaddockQuickJump = x43'
++          , packageConfigHaddockHscolourCss = fmap getNonEmpty x39'
++          , packageConfigHaddockContents = x40'
++          , packageConfigHaddockForHackage = x41'
++          , packageConfigHaddockIndex = x54'
++          , packageConfigHaddockBaseUrl = x55'
++          , packageConfigHaddockLib = x56'
++          , packageConfigHaddockOutputDir = x57'
++          , packageConfigTestHumanLog = x44'
++          , packageConfigTestMachineLog = x45'
++          , packageConfigTestShowDetails = x46'
++          , packageConfigTestKeepTix = x47'
++          , packageConfigTestWrapper = x48'
++          , packageConfigTestFailWhenNoTestSuites = x49'
++          , packageConfigTestTestOptions = x51'
++          , packageConfigBenchmarkOptions = x52'
++          }
+       | ( ( (x00', x01', x02', x03', x04')
+             , (x05', x42', x06', x50', x07', x08', x09')
+             , (x10', x11', x12', x13', x14')
+diff --git a/cabal-install/tests/UnitTests/Distribution/Client/VCS.hs b/cabal-install/tests/UnitTests/Distribution/Client/VCS.hs
+index 0bd4935..aebd02f 100644
+--- a/cabal-install/tests/UnitTests/Distribution/Client/VCS.hs
++++ b/cabal-install/tests/UnitTests/Distribution/Client/VCS.hs
+@@ -710,8 +710,8 @@ getDirectoryContentsRecursive ignore dir0 dir = do
+   entries' <-
+     sequence
+       [ do
+-        isdir <- doesDirectoryExist (dir0 </> dir </> entry)
+-        return (dir </> entry, isdir)
++          isdir <- doesDirectoryExist (dir0 </> dir </> entry)
++          return (dir </> entry, isdir)
+       | entry <- entries
+       , not (isPrefixOf "." entry)
+       , (dir </> entry) `Set.notMember` ignore

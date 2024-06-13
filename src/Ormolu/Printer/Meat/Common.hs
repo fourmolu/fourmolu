@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ViewPatterns #-}
@@ -18,6 +19,8 @@ module Ormolu.Printer.Meat.Common
 where
 
 import Control.Monad
+import Data.Choice (Choice)
+import Data.Choice qualified as Choice
 import Data.Foldable (traverse_)
 import Data.Text qualified as T
 import GHC.Data.FastString
@@ -153,7 +156,7 @@ p_hsDoc ::
   -- | Haddock style
   HaddockStyle ->
   -- | Finish the doc string with a newline
-  Bool ->
+  Choice "endNewline" ->
   -- | The 'LHsDoc' to render
   LHsDoc GhcPs ->
   R ()
@@ -168,7 +171,7 @@ p_hsDoc' ::
   -- | Haddock style
   HaddockStyle ->
   -- | Finish the doc string with a newline
-  Bool ->
+  Choice "endNewline" ->
   -- | The 'LHsDoc' to render
   LHsDoc GhcPs ->
   R ()
@@ -232,7 +235,7 @@ p_hsDoc' poHStyle hstyle needsNewline (L l str) = do
       newline
       txt "-}"
 
-  when needsNewline newline
+  when (Choice.isTrue needsNewline) newline
   traverse_ (setSpanMark . HaddockSpan hstyle) mSrcSpan
   where
     haddockDelim =

@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -64,6 +65,8 @@ import Control.Monad
 import Control.Monad.Reader
 import Control.Monad.State.Strict
 import Data.Bool (bool)
+import Data.Choice (Choice)
+import Data.Choice qualified as Choice
 import Data.Coerce
 import Data.Functor ((<&>))
 import Data.Functor.Identity (runIdentity)
@@ -410,8 +413,8 @@ askModuleFixityMap = R (asks rcModuleFixityMap)
 
 -- | Retrieve whether we should print out certain debug information while
 -- printing.
-askDebug :: R Bool
-askDebug = R (asks rcDebug)
+askDebug :: R (Choice "debug")
+askDebug = R (asks (Choice.fromBool . rcDebug))
 
 -- | Like 'inci', but indents by exactly the given number of steps.
 inciBy :: Int -> R () -> R ()

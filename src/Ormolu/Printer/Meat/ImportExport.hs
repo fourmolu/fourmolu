@@ -1,5 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
 
 -- | Rendering of import and export lists.
@@ -10,6 +12,7 @@ module Ormolu.Printer.Meat.ImportExport
 where
 
 import Control.Monad
+import Data.Choice (pattern Without)
 import Data.Foldable (for_, traverse_)
 import Data.List (inits)
 import Data.Text qualified as T
@@ -124,10 +127,10 @@ p_lie encLayout isAllPrevDoc relativePos = \case
       FirstPos -> return ()
       MiddlePos -> newline
       LastPos -> newline
-    indentDoc $ p_hsDoc (Asterisk n) False str
+    indentDoc $ p_hsDoc (Asterisk n) (Without #endNewline) str
   IEDoc NoExtField str ->
     indentDoc $
-      p_hsDoc Pipe False str
+      p_hsDoc Pipe (Without #endNewline) str
   IEDocNamed NoExtField str -> indentDoc $ txt $ "-- $" <> T.pack str
   where
     -- Add a comma to a import-export list element
@@ -157,7 +160,7 @@ p_lie encLayout isAllPrevDoc relativePos = \case
     p_exportDoc :: Maybe (ExportDoc GhcPs) -> R ()
     p_exportDoc = traverse_ $ \exportDoc -> do
       breakpoint
-      p_hsDoc Caret False exportDoc
+      p_hsDoc Caret (Without #endNewline) exportDoc
 
     indentDoc m = do
       commaStyle <- getCommaStyle
