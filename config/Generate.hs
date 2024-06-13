@@ -89,7 +89,7 @@ configGenHs =
                   quote (getCLIPlaceholder option)
                 ]
             ]
-          | option@Option {name, fieldName = Just _} <- allOptions
+        | option@Option {name, fieldName = Just _} <- allOptions
         ],
       "",
       "parsePrinterOptsJSON ::",
@@ -100,7 +100,7 @@ configGenHs =
       "  pure PrinterOpts",
       indent' 2 . unlines_ $
         [ "<*> f " <> quote name
-          | Option {name, fieldName = Just _} <- allOptions
+        | Option {name, fieldName = Just _} <- allOptions
         ],
       "",
       "{---------- PrinterOpts field types ----------}",
@@ -135,7 +135,7 @@ configGenHs =
                   "  deriving (Eq, Show)",
                   ""
                 ]
-          | fieldType <- allFieldTypes
+        | fieldType <- allFieldTypes
         ],
       unlines_
         [ unlines_ $
@@ -152,7 +152,7 @@ configGenHs =
                   printf "    case s of",
                   unlines_
                     [ printf "      \"%s\" -> Right %s" val con
-                      | (con, val) <- enumOptions
+                    | (con, val) <- enumOptions
                     ],
                   printf "      _ ->",
                   printf "        Left . unlines $",
@@ -171,7 +171,7 @@ configGenHs =
                   indent' 2 adtParsePrinterOptType,
                   printf ""
                 ]
-          | fieldType <- allFieldTypes
+        | fieldType <- allFieldTypes
         ],
       "defaultPrinterOptsYaml :: String",
       "defaultPrinterOptsYaml =",
@@ -186,8 +186,8 @@ configGenHs =
             [ "PrinterOpts",
               indent . unlines_ $
                 [ printf "%c %s" delim (f option)
-                  | (isFirst, option) <- withFirst fieldOptions,
-                    let delim = if isFirst then '{' else ','
+                | (isFirst, option) <- withFirst fieldOptions,
+                  let delim = if isFirst then '{' else ','
                 ],
               "  }"
             ]
@@ -196,8 +196,8 @@ configGenHs =
       unlines_ $
         "data " <> name
           : [ printf "  %c %s" delim con
-              | (isFirst, con) <- withFirst cons,
-                let delim = if isFirst then '=' else '|'
+            | (isFirst, con) <- withFirst cons,
+              let delim = if isFirst then '=' else '|'
             ]
 
     renderEnumOptions enumOptions =
@@ -235,7 +235,7 @@ fourmoluYamlOrmoluStyle = unlines $ header <> config
       ]
     config =
       [ printf "%s: %s" name (hs2yaml type_ ormolu)
-        | Option {..} <- allOptions
+      | Option {..} <- allOptions
       ]
 
 -- | Default fourmolu config that can be printed via `fourmolu --print-defaults`
@@ -244,7 +244,7 @@ fourmoluYamlFourmoluStyle = unlines_ config
   where
     config =
       [ printf "# %s\n%s: %s\n" (getComment opt) name (hs2yaml type_ default_)
-        | opt@Option {..} <- allOptions
+      | opt@Option {..} <- allOptions
       ]
 
     getComment Option {..} =

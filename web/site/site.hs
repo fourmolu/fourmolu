@@ -77,8 +77,8 @@ getPageInfo = \case
       { pageContext =
           listFieldString "demoOptions" "widget" $
             [ (ConfigData.name option, widget)
-              | option <- ConfigData.allOptions,
-                Just widget <- pure $ getOptionDemoWidget option
+            | option <- ConfigData.allOptions,
+              Just widget <- pure $ getOptionDemoWidget option
             ],
         pageSidebar = Nothing
       }
@@ -106,7 +106,7 @@ getPageInfo = \case
                   { sidebarTitle = "Configuration options",
                     sidebarLinks =
                       [ (Text.pack name, "/config/" <> Text.pack name)
-                        | ConfigData.Option {name} <- ConfigData.allOptions
+                      | ConfigData.Option {name} <- ConfigData.allOptions
                       ]
                   }
           }
@@ -127,7 +127,7 @@ getPageInfo = \case
     optionsField fieldName optionCtx =
       listField fieldName optionCtx . pure $
         [ Item (fromFilePath $ ConfigData.name option) option
-          | option <- ConfigData.allOptions
+        | option <- ConfigData.allOptions
         ]
 
 getOptionDemoWidget :: ConfigData.Option -> Maybe String
@@ -174,12 +174,12 @@ getOptionDemoWidget option@ConfigData.Option {..}
                 (renderParsers parsers),
               concat
                 [ printf "<option %s>%s</option>" selected v
-                  | opt <- adtOptions,
-                    let v =
-                          case opt of
-                            ConfigData.ADTOptionLiteral s -> s
-                            ConfigData.ADTOptionDescription s -> s,
-                    let selected = if v == inputDefault then "selected" else "" :: String
+                | opt <- adtOptions,
+                  let v =
+                        case opt of
+                          ConfigData.ADTOptionLiteral s -> s
+                          ConfigData.ADTOptionDescription s -> s,
+                  let selected = if v == inputDefault then "selected" else "" :: String
                 ],
               printf "</select>"
             ]
@@ -197,13 +197,13 @@ getConfigOptionContext option@ConfigData.Option {..} =
             [ wrap "th" label,
               wrap "td" val
             ]
-          | (label, val) <-
-              [ ("Description", description),
-                schema,
-                ("Default", wrap "code" $ hs2yaml type_ default_),
-                ("Ormolu", wrap "code" $ hs2yaml type_ ormolu),
-                ("Since", maybe "<i>Unreleased</i>" ("v" <>) sinceVersion)
-              ]
+        | (label, val) <-
+            [ ("Description", description),
+              schema,
+              ("Default", wrap "code" $ hs2yaml type_ default_),
+              ("Ormolu", wrap "code" $ hs2yaml type_ ormolu),
+              ("Since", maybe "<i>Unreleased</i>" ("v" <>) sinceVersion)
+            ]
         ]
   ]
   where
@@ -214,7 +214,7 @@ getConfigOptionContext option@ConfigData.Option {..} =
           ( "Options",
             wrap "ul" . concat $
               [ wrap "li" (renderOptionHTML opt)
-                | opt <- adtOptions
+              | opt <- adtOptions
               ]
           )
         else
@@ -241,7 +241,7 @@ makeSidebar PageSidebar {..} =
         )
         ( pure
             [ Item (fromFilePath $ Text.unpack name) (name, url)
-              | (name, url) <- sidebarLinks
+            | (name, url) <- sidebarLinks
             ]
         )
     ]
@@ -285,16 +285,16 @@ replaceFourmoluExamples =
                   html $ Text.pack $ printf "<button %s>%s</button>" attrs label,
                   html "</li>"
                 ]
-                | (isActive, label, key, _) <- outputs,
-                  let attrs =
-                        mkAttrs
-                          [ ("class", "nav-link" <> if isActive then " active" else ""),
-                            ("id", "example-tab-" <> key),
-                            ("data-bs-toggle", "tab"),
-                            ("data-bs-target", "#example-output-" <> key),
-                            ("role", "tab"),
-                            ("aria-controls", "example-output-" <> key)
-                          ]
+              | (isActive, label, key, _) <- outputs,
+                let attrs =
+                      mkAttrs
+                        [ ("class", "nav-link" <> if isActive then " active" else ""),
+                          ("id", "example-tab-" <> key),
+                          ("data-bs-toggle", "tab"),
+                          ("data-bs-target", "#example-output-" <> key),
+                          ("role", "tab"),
+                          ("aria-controls", "example-output-" <> key)
+                        ]
               ],
             [html "</ul>"],
             [html "<div class='tab-content'>"],
@@ -303,15 +303,15 @@ replaceFourmoluExamples =
                   noPos $ CMarkGFM.NodeCodeBlock "haskell" output,
                   html "</div>"
                 ]
-                | (isActive, _, key, output) <- outputs,
-                  let attrs =
-                        mkAttrs
-                          [ ("class", "tab-pane" <> if isActive then " active" else ""),
-                            ("id", "example-output-" <> key),
-                            ("role", "tabpanel"),
-                            ("aria-labelledby", "example-tab-" <> key),
-                            ("tabindex", "0")
-                          ]
+              | (isActive, _, key, output) <- outputs,
+                let attrs =
+                      mkAttrs
+                        [ ("class", "tab-pane" <> if isActive then " active" else ""),
+                          ("id", "example-output-" <> key),
+                          ("role", "tabpanel"),
+                          ("aria-labelledby", "example-tab-" <> key),
+                          ("tabindex", "0")
+                        ]
               ],
             [html "</div>"],
             after
