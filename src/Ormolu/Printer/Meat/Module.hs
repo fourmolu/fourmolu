@@ -1,5 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
 
 -- | Rendering of modules.
@@ -9,6 +11,7 @@ module Ormolu.Printer.Meat.Module
 where
 
 import Control.Monad
+import Data.Choice (pattern With)
 import GHC.Hs hiding (comment)
 import GHC.Types.SrcLoc
 import GHC.Utils.Outputable (ppr, showSDocUnsafe)
@@ -65,7 +68,7 @@ p_hsModuleHeader HsModule {hsmodExt = XModulePs {..}, ..} moduleName = do
       getPrinterOpt poHaddockStyleModule >>= \case
         PrintStyleInherit -> getPrinterOpt poHaddockStyle
         PrintStyleOverride style -> pure style
-    forM_ hsmodHaddockModHeader (p_hsDoc' poHStyle Pipe True)
+    forM_ hsmodHaddockModHeader (p_hsDoc' poHStyle Pipe (With #endNewline))
     p_hsmodName name
 
   forM_ hsmodDeprecMessage $ \w -> do

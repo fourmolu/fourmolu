@@ -1,5 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -22,6 +24,7 @@ module Ormolu.Printer.Meat.Type
 where
 
 import Control.Monad
+import Data.Choice (pattern With, pattern Without)
 import Data.Functor ((<&>))
 import GHC.Hs hiding (isPromoted)
 import GHC.Types.SourceText
@@ -143,12 +146,12 @@ p_hsType' multilineArgs = \case
         LeadingArgsArrows -> False
     if usePipe
       then do
-        p_hsDoc Pipe True str
+        p_hsDoc Pipe (With #endNewline) str
         located t p_hsType
       else do
         located t p_hsType
         newline
-        p_hsDoc Caret False str
+        p_hsDoc Caret (Without #endNewline) str
   HsBangTy _ (HsSrcBang _ u s) t -> do
     case u of
       SrcUnpack -> txt "{-# UNPACK #-}" >> space
@@ -327,7 +330,7 @@ p_conDeclField :: ConDeclField GhcPs -> R ()
 p_conDeclField ConDeclField {..} = do
   commaStyle <- getPrinterOpt poCommaStyle
   when (commaStyle == Trailing) $
-    mapM_ (p_hsDoc Pipe True) cd_fld_doc
+    mapM_ (p_hsDoc Pipe (With #endNewline)) cd_fld_doc
   sitcc $
     sep
       commaDel
@@ -350,7 +353,7 @@ p_conDeclField ConDeclField {..} = do
       breakpoint
       sitcc . inci $ p_hsType (unLoc cd_fld_type)
   when (commaStyle == Leading) $
-    mapM_ (inciByFrac (-1) . (newline >>) . p_hsDoc Caret False) cd_fld_doc
+    mapM_ (inciByFrac (-1) . (newline >>) . p_hsDoc Caret (Without #endNewline)) cd_fld_doc
 
 p_lhsTypeArg :: LHsTypeArg GhcPs -> R ()
 p_lhsTypeArg = \case
