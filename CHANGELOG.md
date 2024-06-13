@@ -1,3 +1,18 @@
+## Fourmolu 0.16.1.0
+
+### Upstream changes:
+
+#### Ormolu 0.7.6.0
+
+* Fix Haddock comments on infix constructors
+  [Issue 758](https://github.com/tweag/ormolu/issues/758).
+
+* Don't require a trailing newline in `.ormolu` files. [Issue
+  1122](https://github.com/tweag/ormolu/issues/1122).
+
+* Remove unnecessary indentation from list comprehensions. [Issue
+  966](https://github.com/tweag/ormolu/issues/966).
+
 ## Fourmolu 0.16.0.0
 
 * Allow specifying path to configuration file with `--config` ([#396](https://github.com/fourmolu/fourmolu/issues/396))
