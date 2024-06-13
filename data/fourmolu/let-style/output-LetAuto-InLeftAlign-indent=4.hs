@@ -82,17 +82,17 @@ test_list =
 test_list_do = do
     x <-
         [ x + a + b + c
-            | x <- xs
-            , let
-            , let a = 1
-            , let b = 2
-                  c = 3
-            ]
-
-    [ x + y + a + b + c
-        | y <- ys
+        | x <- xs
         , let
         , let a = 1
         , let b = 2
               c = 3
         ]
+
+    [ x + y + a + b + c
+      | y <- ys
+      , let
+      , let a = 1
+      , let b = 2
+            c = 3
+      ]
