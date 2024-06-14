@@ -2,6 +2,6 @@
 
 $info$
 
-You usually won't need to specify those manually. Fourmolu will fetch those from the Cabal project file.
+Modules to consider as part of the current Cabal package, for the [`import-grouping`](/config/import-grouping) option.
 
-See [`import-grouping`](/config/import-grouping) for more info.
+This is automatically detected from the Cabal file, but can be useful to set manually when you don't have a Cabal file.
