@@ -1,43 +1,20 @@
 module Ormolu.Utils.GlobSpec (spec) where
 
-import Ormolu.Utils.Glob (Glob, matchesGlob, mkGlob)
+import Ormolu.Utils.Glob (matchesGlob, mkGlob)
 import Test.Hspec (Spec, describe, it, shouldBe)
-import Test.QuickCheck (Arbitrary (..), listOf, oneof, property, suchThat)
+import Test.QuickCheck (Arbitrary (..), listOf, property, suchThat)
 
-data GlobCasePart
-    = SingleWildcardFor !String
-    | DoubleWildcardFor !String
-    | ExactPart !String
-    deriving (Eq, Show)
+newtype Wildcardless = Wildcardless String
+    deriving (Show)
 
-newtype GlobCase = GlobCase [GlobCasePart]
-    deriving (Eq, Show)
+instance Arbitrary Wildcardless where
+    arbitrary = fmap Wildcardless $ listOf (arbitrary `suchThat` (/= '*'))
 
-gcGlob :: GlobCase -> Glob
-gcGlob = mkGlob . toGlobString
-    where
-        toGlobString (GlobCase ps) = concatMap toGlobPart ps
-        toGlobPart p = case p of
-            SingleWildcardFor _ -> "*"
-            DoubleWildcardFor _ -> "**"
-            ExactPart s -> s
+newtype ModuleName = ModuleName String
+    deriving (Show)
 
-gcMatchingString :: GlobCase -> String
-gcMatchingString = toMatchingString
-    where
-        toMatchingString (GlobCase ps) = concatMap toMatchingPart ps
-        toMatchingPart p = case p of
-            SingleWildcardFor s -> s
-            DoubleWildcardFor s -> s
-            ExactPart s -> s
-
-instance Arbitrary GlobCase where
-    arbitrary = GlobCase <$> listOf genPart
-        where
-            genPart = oneof [genSingleWildCard, genDoubleWildCard, genExact]
-            genSingleWildCard = SingleWildcardFor <$> listOf (arbitrary `suchThat` (/= '.'))
-            genDoubleWildCard = DoubleWildcardFor <$> arbitrary
-            genExact = ExactPart <$> arbitrary
+instance Arbitrary ModuleName where
+    arbitrary = fmap ModuleName $ listOf (arbitrary `suchThat` (/= '.')) `suchThat` (not . null)
 
 spec :: Spec
 spec =
@@ -62,6 +39,14 @@ spec =
             "Level1.Level2.Level3" `matchesGlob` mkGlob "Level1.L**2.Level3" `shouldBe` True
         it "should allow ** to match anything on multiple levels" $
             "Level1.Level2.Level3.Level4.Level5" `matchesGlob` mkGlob "Level1.L**4.Level5" `shouldBe` True
-        it "should match strings where wildcards can be replaced by 0 or more characters" $
-            property $
-                \gc -> gcMatchingString gc `matchesGlob` gcGlob gc
+
+        describe "Properties" $ do
+            it "should obey: s `matches` glob s with s being any string without '*'" $
+                property $
+                    \(Wildcardless s) -> s `matchesGlob` mkGlob s
+            it "should obey: (a <> b <> c) `matches` glob (a <> * <> c) with b being a module name" $
+                property $
+                    \a (ModuleName b) c -> (a <> b <> c) `matchesGlob` mkGlob (a <> "*" <> c)
+            it "should obey:  (a <> b <> c) `matches` glob (a <> ** <> c)" $
+                property $
+                    \a b c -> (a <> b <> c) `matchesGlob` mkGlob (a <> "**" <> c)
