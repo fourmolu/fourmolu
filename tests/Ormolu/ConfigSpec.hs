@@ -35,6 +35,14 @@ spec = do
       poIndentation (resolvePrinterOpts configs) `shouldBe` 4
 
     context "when using an import grouping configuration" $ do
+      it "parses 'legacy' as the 'ImportGroupLegacy' import grouping strategy" $ do
+        config <- Yaml.decodeThrow "import-grouping: legacy"
+        let actualStrategy = poImportGrouping (cfgFilePrinterOpts config)
+        actualStrategy `shouldBe` Just ImportGroupLegacy
+      it "parses 'preserve' as the 'ImportGroupPreserve' import grouping strategy" $ do
+        config <- Yaml.decodeThrow "import-grouping: preserve"
+        let actualStrategy = poImportGrouping (cfgFilePrinterOpts config)
+        actualStrategy `shouldBe` Just ImportGroupPreserve
       it "parses 'single' as the 'ImportGroupSingle' import grouping strategy" $ do
         config <- Yaml.decodeThrow "import-grouping: single"
         let actualStrategy = poImportGrouping (cfgFilePrinterOpts config)

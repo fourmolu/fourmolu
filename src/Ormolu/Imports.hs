@@ -38,6 +38,7 @@ import Ormolu.Utils (ghcModuleNameToCabal, groupBy', notImplemented, separatedBy
 import Ormolu.Utils.Glob (Glob, matchesGlob)
 #if !MIN_VERSION_base(4,20,0)
 import Data.List (foldl')
+import Data.Bool (bool)
 #endif
 
 newtype ImportGroups = ImportGroups (NonEmpty ImportGroup)
@@ -108,14 +109,16 @@ importGroupByScopeThenQualifiedStrategy mods =
           withQualified <- [withUnqualifiedOnly, withQualifiedOnly]
       ]
 
-groupsFromConfig :: Set Cabal.ModuleName -> Config.ImportGrouping -> ImportGroups
-groupsFromConfig localModules =
+groupsFromConfig :: Bool -> Set Cabal.ModuleName -> Config.ImportGrouping -> Maybe ImportGroups
+groupsFromConfig respectful localModules =
   \case
-    Config.ImportGroupSingle -> importGroupSingleStrategy
-    Config.ImportGroupByQualified -> importGroupByQualifiedStrategy
-    Config.ImportGroupByScope -> importGroupByScopeStrategy localModules
-    Config.ImportGroupByScopeThenQualified -> importGroupByScopeThenQualifiedStrategy localModules
-    Config.ImportGroupCustom igs -> ImportGroups $ convertImportGroup <$> igs
+    Config.ImportGroupLegacy -> bool (Just importGroupSingleStrategy) Nothing respectful
+    Config.ImportGroupPreserve -> Nothing
+    Config.ImportGroupSingle -> Just importGroupSingleStrategy
+    Config.ImportGroupByQualified -> Just importGroupByQualifiedStrategy
+    Config.ImportGroupByScope -> Just $ importGroupByScopeStrategy localModules
+    Config.ImportGroupByScopeThenQualified -> Just $ importGroupByScopeThenQualifiedStrategy localModules
+    Config.ImportGroupCustom igs -> Just . ImportGroups $ convertImportGroup <$> igs
   where
     convertImportGroup :: Config.ImportGroup -> ImportGroup
     convertImportGroup Config.ImportGroup {..} =
@@ -183,19 +186,26 @@ matchesRule ImportId {..} ImportGroupRule {..} = matchesModules && matchesQualif
 -- Assumes input list is sorted by source location. Output list is not necessarily
 -- sorted by source location, so this function should be called at most once on a
 -- given input list.
-normalizeImports :: Bool -> ImportGroups -> [LImportDecl GhcPs] -> [[LImportDecl GhcPs]]
-normalizeImports preserveGroups importGroups =
+normalizeImports :: Maybe ImportGroups -> [LImportDecl GhcPs] -> [[LImportDecl GhcPs]]
+normalizeImports importGroups =
   map (fmap snd)
     . concatMap
-      ( groupImports importGroups
+      ( regroupImports
           . M.toAscList
           . M.fromListWith combineImports
           . fmap (\x -> (importId x, g x))
       )
-    . if preserveGroups
-      then map toList . groupBy' (\x y -> not $ separatedByBlank getLocA x y)
-      else pure
+    . prepareExistingGroups
   where
+    prepareExistingGroups :: [LImportDecl GhcPs] -> [[LImportDecl GhcPs]]
+    prepareExistingGroups =
+      case importGroups of
+        Nothing -> map toList . groupBy' (\x y -> not $ separatedByBlank getLocA x y)
+        Just _ -> pure
+
+    regroupImports :: [(ImportId, x)] -> [[(ImportId, x)]]
+    regroupImports = maybe pure groupImports importGroups
+
     g :: LImportDecl GhcPs -> LImportDecl GhcPs
     g (L l ImportDecl {..}) =
       L

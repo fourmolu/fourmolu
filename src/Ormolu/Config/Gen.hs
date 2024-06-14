@@ -121,7 +121,7 @@ defaultPrinterOpts =
     , poSingleDerivingParens = pure DerivingAlways
     , poUnicode = pure UnicodeNever
     , poRespectful = pure True
-    , poImportGrouping = pure ImportGroupSingle
+    , poImportGrouping = pure ImportGroupLegacy
     }
 
 -- | Fill the field values that are 'Nothing' in the first argument
@@ -225,7 +225,7 @@ parsePrinterOptsCLI f =
       "BOOL"
     <*> f
       "import-grouping"
-      "Rules for grouping import declarations (default: single)"
+      "Rules for grouping import declarations (default: legacy)"
       "OPTION"
 
 parsePrinterOptsJSON ::
@@ -336,7 +336,9 @@ data SingleDerivingParens
   deriving (Eq, Show, Enum, Bounded)
 
 data ImportGrouping
-  = ImportGroupSingle
+  = ImportGroupLegacy
+  | ImportGroupPreserve
+  | ImportGroupSingle
   | ImportGroupByScope
   | ImportGroupByQualified
   | ImportGroupByScopeThenQualified
@@ -549,6 +551,8 @@ instance PrinterOptsFieldType SingleDerivingParens where
 instance Aeson.FromJSON ImportGrouping where
   parseJSON =
     \case
+      Aeson.String "legacy" -> pure ImportGroupLegacy
+      Aeson.String "preserve" -> pure ImportGroupPreserve
       Aeson.String "single" -> pure ImportGroupSingle
       Aeson.String "by-qualified" -> pure ImportGroupByQualified
       Aeson.String "by-scope" -> pure ImportGroupByScope
@@ -557,12 +561,14 @@ instance Aeson.FromJSON ImportGrouping where
       other ->
         fail . unlines $
           [ "unknown strategy value: " <> show other,
-            "Valid values are: \"single\", \"by-qualified\", \"by-scope\", \"by-scope-then-qualified\" or a valid YAML configuration for import groups"
+            "Valid values are: \"legacy\", \"preserve\", \"single\", \"by-qualified\", \"by-scope\", \"by-scope-then-qualified\" or a valid YAML configuration for import groups"
           ]
 
 instance PrinterOptsFieldType ImportGrouping where
   parsePrinterOptType =
     \case
+      "legacy" -> Right ImportGroupLegacy
+      "preserve" -> Right ImportGroupPreserve
       "single" -> Right ImportGroupSingle
       "by-qualified" -> Right ImportGroupByQualified
       "by-scope" -> Right ImportGroupByScope
@@ -570,7 +576,7 @@ instance PrinterOptsFieldType ImportGrouping where
       s ->
         Left . unlines $
           [ "unknown value: " <> show s
-          , "Valid values are: \"single\", \"by-qualified\", \"by-scope\", \"by-scope-then-qualified\" or a valid YAML configuration for import groups (see fourmolu.yaml)"
+          , "Valid values are: \"legacy\", \"preserve\", \"single\", \"by-qualified\", \"by-scope\", \"by-scope-then-qualified\" or a valid YAML configuration for import groups (see fourmolu.yaml)"
           ]
 
 defaultPrinterOptsYaml :: String
@@ -631,7 +637,7 @@ defaultPrinterOptsYaml =
     , "reexports: []"
     , ""
     , "# Rules for grouping import declarations"
-    , "import-grouping: single"
+    , "import-grouping: legacy"
     , ""
     , "# Modules defined by the current Cabal package for import grouping"
     , "local-modules: []"

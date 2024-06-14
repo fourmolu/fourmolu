@@ -234,8 +234,8 @@ allOptions =
         fieldName = Just "poImportGrouping",
         description = "Rules for grouping import declarations",
         type_ = "ImportGrouping",
-        default_ = HsExpr "ImportGroupSingle",
-        ormolu = HsExpr "ImportGroupSingle",
+        default_ = HsExpr "ImportGroupLegacy",
+        ormolu = HsExpr "ImportGroupLegacy",
         sinceVersion = Nothing,
         cliOverrides = emptyOverrides
       },
@@ -454,7 +454,9 @@ allFieldTypes =
     FieldTypeADT
       { fieldTypeName = "ImportGrouping",
         adtConstructors =
-          [ "ImportGroupSingle",
+          [ "ImportGroupLegacy",
+            "ImportGroupPreserve",
+            "ImportGroupSingle",
             "ImportGroupByScope",
             "ImportGroupByQualified",
             "ImportGroupByScopeThenQualified",
@@ -463,7 +465,9 @@ allFieldTypes =
         adtSchema =
           ADTSchema
             { adtOptions =
-                [ ADTOptionLiteral "single",
+                [ ADTOptionLiteral "legacy",
+                  ADTOptionLiteral "preserve",
+                  ADTOptionLiteral "single",
                   ADTOptionLiteral "by-qualified",
                   ADTOptionLiteral "by-scope",
                   ADTOptionLiteral "by-scope-then-qualified"
@@ -475,7 +479,9 @@ allFieldTypes =
                   ]
             },
         adtRender =
-          [ ("ImportGroupSingle", "single"),
+          [ ("ImportGroupLegacy", "legacy"),
+            ("ImportGroupPreserve", "preserve"),
+            ("ImportGroupSingle", "single"),
             ("ImportGroupByQualified", "by-qualified"),
             ("ImportGroupByScope", "by-scope"),
             ("ImportGroupByScopeThenQualified", "by-scope-then-qualified")
@@ -483,6 +489,8 @@ allFieldTypes =
         adtParseJSON =
           unlines
             [ "\\case",
+              "  Aeson.String \"legacy\" -> pure ImportGroupLegacy",
+              "  Aeson.String \"preserve\" -> pure ImportGroupPreserve",
               "  Aeson.String \"single\" -> pure ImportGroupSingle",
               "  Aeson.String \"by-qualified\" -> pure ImportGroupByQualified",
               "  Aeson.String \"by-scope\" -> pure ImportGroupByScope",
@@ -491,12 +499,14 @@ allFieldTypes =
               "  other ->",
               "    fail . unlines $",
               "      [ \"unknown strategy value: \" <> show other,",
-              "        \"Valid values are: \\\"single\\\", \\\"by-qualified\\\", \\\"by-scope\\\", \\\"by-scope-then-qualified\\\" or a valid YAML configuration for import groups\"",
+              "        \"Valid values are: \\\"legacy\\\", \\\"preserve\\\", \\\"single\\\", \\\"by-qualified\\\", \\\"by-scope\\\", \\\"by-scope-then-qualified\\\" or a valid YAML configuration for import groups\"",
               "      ]"
             ],
         adtParsePrinterOptType =
           unlines
             [ "\\case",
+              "  \"legacy\" -> Right ImportGroupLegacy",
+              "  \"preserve\" -> Right ImportGroupPreserve",
               "  \"single\" -> Right ImportGroupSingle",
               "  \"by-qualified\" -> Right ImportGroupByQualified",
               "  \"by-scope\" -> Right ImportGroupByScope",
@@ -504,7 +514,7 @@ allFieldTypes =
               "  s ->",
               "    Left . unlines $",
               "      [ \"unknown value: \" <> show s",
-              "      , \"Valid values are: \\\"single\\\", \\\"by-qualified\\\", \\\"by-scope\\\", \\\"by-scope-then-qualified\\\" or a valid YAML configuration for import groups (see fourmolu.yaml)\"",
+              "      , \"Valid values are: \\\"legacy\\\", \\\"preserve\\\", \\\"single\\\", \\\"by-qualified\\\", \\\"by-scope\\\", \\\"by-scope-then-qualified\\\" or a valid YAML configuration for import groups (see fourmolu.yaml)\"",
               "      ]"
             ]
       }

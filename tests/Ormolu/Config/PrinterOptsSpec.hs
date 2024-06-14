@@ -248,78 +248,74 @@ spec =
         { label = "import-grouping",
           isMulti = False,
           testCases =
-            let testedStrategies =
-                  [ ImportGroupSingle,
-                    ImportGroupByQualified,
-                    ImportGroupByScope,
-                    ImportGroupByScopeThenQualified,
-                    ImportGroupCustom . NonEmpty.fromList $
-                      [ ImportGroup
-                          { igName = Nothing,
-                            igRules =
-                              NonEmpty.fromList
-                                [ ImportGroupRule
-                                    { igrModuleMatcher = MatchGlob (mkGlob "Data.Text"),
-                                      igrQualified = MatchBothQualifiedAndUnqualified,
-                                      igrPriority = defaultImportRulePriority
-                                    }
-                                ]
-                          },
-                        ImportGroup
-                          { igName = Nothing,
-                            igRules =
-                              NonEmpty.fromList
-                                [ ImportGroupRule
-                                    { igrModuleMatcher = MatchAllModules,
-                                      igrQualified = MatchBothQualifiedAndUnqualified,
-                                      igrPriority = ImportRulePriority 100
-                                    }
-                                ]
-                          },
-                        ImportGroup
-                          { igName = Nothing,
-                            igRules =
-                              NonEmpty.fromList
-                                [ ImportGroupRule
-                                    { igrModuleMatcher = MatchGlob (mkGlob "SomeInternal.**"),
-                                      igrQualified = MatchQualifiedOnly,
-                                      igrPriority = defaultImportRulePriority
-                                    },
-                                  ImportGroupRule
-                                    { igrModuleMatcher = MatchGlob (mkGlob "Unknown.**"),
-                                      igrQualified = MatchUnqualifiedOnly,
-                                      igrPriority = defaultImportRulePriority
-                                    }
-                                ]
-                          },
-                        ImportGroup
-                          { igName = Nothing,
-                            igRules =
-                              NonEmpty.fromList
-                                [ ImportGroupRule
-                                    { igrModuleMatcher = MatchLocalModules,
-                                      igrQualified = MatchUnqualifiedOnly,
-                                      igrPriority = defaultImportRulePriority
-                                    },
-                                  ImportGroupRule
-                                    { igrModuleMatcher = MatchAllModules,
-                                      igrQualified = MatchQualifiedOnly,
-                                      igrPriority = defaultImportRulePriority
-                                    }
-                                ]
-                          }
-                      ]
-                  ]
-             in (,) <$> allOptions <*> testedStrategies,
-          updateConfig = \(respectful, igs) opts ->
+            [ ImportGroupPreserve,
+              ImportGroupSingle,
+              ImportGroupByQualified,
+              ImportGroupByScope,
+              ImportGroupByScopeThenQualified,
+              ImportGroupCustom . NonEmpty.fromList $
+                [ ImportGroup
+                    { igName = Nothing,
+                      igRules =
+                        NonEmpty.fromList
+                          [ ImportGroupRule
+                              { igrModuleMatcher = MatchGlob (mkGlob "Data.Text"),
+                                igrQualified = MatchBothQualifiedAndUnqualified,
+                                igrPriority = defaultImportRulePriority
+                              }
+                          ]
+                    },
+                  ImportGroup
+                    { igName = Nothing,
+                      igRules =
+                        NonEmpty.fromList
+                          [ ImportGroupRule
+                              { igrModuleMatcher = MatchAllModules,
+                                igrQualified = MatchBothQualifiedAndUnqualified,
+                                igrPriority = ImportRulePriority 100
+                              }
+                          ]
+                    },
+                  ImportGroup
+                    { igName = Nothing,
+                      igRules =
+                        NonEmpty.fromList
+                          [ ImportGroupRule
+                              { igrModuleMatcher = MatchGlob (mkGlob "SomeInternal.**"),
+                                igrQualified = MatchQualifiedOnly,
+                                igrPriority = defaultImportRulePriority
+                              },
+                            ImportGroupRule
+                              { igrModuleMatcher = MatchGlob (mkGlob "Unknown.**"),
+                                igrQualified = MatchUnqualifiedOnly,
+                                igrPriority = defaultImportRulePriority
+                              }
+                          ]
+                    },
+                  ImportGroup
+                    { igName = Nothing,
+                      igRules =
+                        NonEmpty.fromList
+                          [ ImportGroupRule
+                              { igrModuleMatcher = MatchLocalModules,
+                                igrQualified = MatchUnqualifiedOnly,
+                                igrPriority = defaultImportRulePriority
+                              },
+                            ImportGroupRule
+                              { igrModuleMatcher = MatchAllModules,
+                                igrQualified = MatchQualifiedOnly,
+                                igrPriority = defaultImportRulePriority
+                              }
+                          ]
+                    }
+                ]
+            ],
+          updateConfig = \igs opts ->
             opts
-              { poRespectful = pure respectful,
-                poImportGrouping = pure igs
+              { poImportGrouping = pure igs
               },
-          showTestCase = \(respectful, igs) ->
-            (if respectful then "respectful" else "not respectful") ++ " + " ++ showStrategy igs,
-          testCaseSuffix = \(respectful, igs) ->
-            suffixWith ["respectful=" ++ show respectful, showStrategy igs],
+          showTestCase = showStrategy,
+          testCaseSuffix = \igs -> suffixWith [showStrategy igs],
           checkIdempotence = True
         }
     ]

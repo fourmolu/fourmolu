@@ -55,8 +55,8 @@ diffParseResult
     } =
     diffCommentStream cstream0 cstream1
       <> diffHsModule
-        hs0 {hsmodImports = concat . normalizeImports False importGroupSingleStrategy $ hsmodImports hs0}
-        hs1 {hsmodImports = concat . normalizeImports False importGroupSingleStrategy $ hsmodImports hs1}
+        hs0 {hsmodImports = concat . normalizeImports (Just importGroupSingleStrategy) $ hsmodImports hs0}
+        hs1 {hsmodImports = concat . normalizeImports (Just importGroupSingleStrategy) $ hsmodImports hs1}
 
 diffCommentStream :: CommentStream -> CommentStream -> ParseResultDiff
 diffCommentStream (CommentStream cs) (CommentStream cs')
