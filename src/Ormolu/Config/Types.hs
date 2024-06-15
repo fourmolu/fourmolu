@@ -34,7 +34,7 @@ instance Aeson.FromJSON ImportGroup where
 data ImportGroupRule = ImportGroupRule
   { igrModuleMatcher :: !ImportModuleMatcher,
     -- | 'Just True' to match qualified declarations, 'Just False' to match unqualified ones and 'Nothing' to match both
-    igrQualified :: !QualifiedImportMatcher,
+    igrQualifiedMatcher :: !QualifiedImportMatcher,
     igrPriority :: !ImportRulePriority
   }
   deriving (Eq, Show)
@@ -47,7 +47,7 @@ instance Aeson.FromJSON ImportGroupRule where
     igrModuleMatcher <- attemptParseModuleMatcher
 
     qualified <- o .:? "qualified"
-    igrQualified <- case qualified of
+    igrQualifiedMatcher <- case qualified of
       Just True -> pure MatchQualifiedOnly
       Just False -> pure MatchUnqualifiedOnly
       Nothing -> pure MatchBothQualifiedAndUnqualified

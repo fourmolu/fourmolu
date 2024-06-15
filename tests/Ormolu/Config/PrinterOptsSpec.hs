@@ -260,7 +260,7 @@ spec =
                         NonEmpty.fromList
                           [ ImportGroupRule
                               { igrModuleMatcher = MatchGlob (mkGlob "Data.Text"),
-                                igrQualified = MatchBothQualifiedAndUnqualified,
+                                igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
                                 igrPriority = defaultImportRulePriority
                               }
                           ]
@@ -271,7 +271,7 @@ spec =
                         NonEmpty.fromList
                           [ ImportGroupRule
                               { igrModuleMatcher = MatchAllModules,
-                                igrQualified = MatchBothQualifiedAndUnqualified,
+                                igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
                                 igrPriority = ImportRulePriority 100
                               }
                           ]
@@ -282,12 +282,12 @@ spec =
                         NonEmpty.fromList
                           [ ImportGroupRule
                               { igrModuleMatcher = MatchGlob (mkGlob "SomeInternal.**"),
-                                igrQualified = MatchQualifiedOnly,
+                                igrQualifiedMatcher = MatchQualifiedOnly,
                                 igrPriority = defaultImportRulePriority
                               },
                             ImportGroupRule
                               { igrModuleMatcher = MatchGlob (mkGlob "Unknown.**"),
-                                igrQualified = MatchUnqualifiedOnly,
+                                igrQualifiedMatcher = MatchUnqualifiedOnly,
                                 igrPriority = defaultImportRulePriority
                               }
                           ]
@@ -298,12 +298,12 @@ spec =
                         NonEmpty.fromList
                           [ ImportGroupRule
                               { igrModuleMatcher = MatchLocalModules,
-                                igrQualified = MatchUnqualifiedOnly,
+                                igrQualifiedMatcher = MatchUnqualifiedOnly,
                                 igrPriority = defaultImportRulePriority
                               },
                             ImportGroupRule
                               { igrModuleMatcher = MatchAllModules,
-                                igrQualified = MatchQualifiedOnly,
+                                igrQualifiedMatcher = MatchQualifiedOnly,
                                 igrPriority = defaultImportRulePriority
                               }
                           ]

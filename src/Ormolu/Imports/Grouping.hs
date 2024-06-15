@@ -2,16 +2,13 @@
 {-# LANGUAGE RecordWildCards #-}
 
 module Ormolu.Imports.Grouping
-  ( ImportGroups,
-    Import (..),
-    importGroupSingleStrategy,
-    groupsFromConfig,
+  ( Import (..),
+    prepareExistingGroups,
     groupImports,
   )
 where
 
 import Data.Bifunctor (Bifunctor (..))
-import Data.Bool (bool)
 import Data.Foldable (toList)
 import Data.Function (on)
 import Data.List (groupBy, minimumBy, sortOn)
@@ -20,33 +17,19 @@ import Data.List.NonEmpty qualified as NonEmpty
 import Data.Set (Set)
 import Data.Set qualified as Set
 import Distribution.ModuleName qualified as Cabal
-import Language.Haskell.Syntax (ModuleName, moduleNameString)
+import GHC.Hs (GhcPs, getLocA)
+import Language.Haskell.Syntax (LImportDecl, ModuleName, moduleNameString)
+import Ormolu.Config (ImportGroup (..), ImportGroupRule (..), ImportGrouping (..), ImportModuleMatcher (..))
 import Ormolu.Config qualified as Config
-import Ormolu.Utils (ghcModuleNameToCabal)
-import Ormolu.Utils.Glob (Glob, matchesGlob)
+import Ormolu.Utils (ghcModuleNameToCabal, groupBy', separatedByBlank)
+import Ormolu.Utils.Glob (matchesGlob)
+
+newtype ImportGroups = ImportGroups (NonEmpty ImportGroup)
 
 data Import = Import
   { importName :: ModuleName,
     importQualified :: Bool
   }
-
-newtype ImportGroups = ImportGroups (NonEmpty ImportGroup)
-
-data ImportGroup = ImportGroup
-  { igName :: !(Maybe String),
-    igRules :: !(NonEmpty ImportGroupRule)
-  }
-
-data ImportGroupRule = ImportGroupRule
-  { igrModuleMatcher :: !ModuleMatcher,
-    igrQualifiedMatcher :: !Config.QualifiedImportMatcher,
-    igrPriority :: !Config.ImportRulePriority
-  }
-
-data ModuleMatcher
-  = MatchAllModules
-  | MatchModules !(Set Cabal.ModuleName)
-  | MatchGlobModule !Glob
 
 importGroupSingleStrategy :: ImportGroups
 importGroupSingleStrategy =
@@ -71,8 +54,8 @@ importGroupByQualifiedStrategy =
           }
       ]
 
-importGroupByScopeStrategy :: Set Cabal.ModuleName -> ImportGroups
-importGroupByScopeStrategy mods =
+importGroupByScopeStrategy :: ImportGroups
+importGroupByScopeStrategy =
   ImportGroups $
     NonEmpty.fromList
       [ ImportGroup
@@ -81,52 +64,32 @@ importGroupByScopeStrategy mods =
           },
         ImportGroup
           { igName = Nothing,
-            igRules = pure $ matchModulesRule mods
+            igRules = pure matchLocalModulesRule
           }
       ]
 
-importGroupByScopeThenQualifiedStrategy :: Set Cabal.ModuleName -> ImportGroups
-importGroupByScopeThenQualifiedStrategy mods =
+importGroupByScopeThenQualifiedStrategy :: ImportGroups
+importGroupByScopeThenQualifiedStrategy =
   ImportGroups $
     NonEmpty.fromList
       [ ImportGroup
           { igName = Nothing,
-            igRules =
-              pure $ withQualified matchModule
+            igRules = pure $ withQualified matchModule
           }
-        | matchModule <- [matchAllImportRule, matchModulesRule mods],
+        | matchModule <- [matchAllImportRule, matchLocalModulesRule],
           withQualified <- [withUnqualifiedOnly, withQualifiedOnly]
       ]
 
-groupsFromConfig :: Bool -> Set Cabal.ModuleName -> Config.ImportGrouping -> Maybe ImportGroups
-groupsFromConfig respectful localModules =
+groupsFromConfig :: Config.ImportGrouping -> ImportGroups
+groupsFromConfig =
   \case
-    Config.ImportGroupLegacy -> bool (Just importGroupSingleStrategy) Nothing respectful
-    Config.ImportGroupPreserve -> Nothing
-    Config.ImportGroupSingle -> Just importGroupSingleStrategy
-    Config.ImportGroupByQualified -> Just importGroupByQualifiedStrategy
-    Config.ImportGroupByScope -> Just $ importGroupByScopeStrategy localModules
-    Config.ImportGroupByScopeThenQualified -> Just $ importGroupByScopeThenQualifiedStrategy localModules
-    Config.ImportGroupCustom igs -> Just . ImportGroups $ convertImportGroup <$> igs
-  where
-    convertImportGroup :: Config.ImportGroup -> ImportGroup
-    convertImportGroup Config.ImportGroup {..} =
-      ImportGroup
-        { igName = igName,
-          igRules = convertGroupRule <$> igRules
-        }
-
-    convertGroupRule :: Config.ImportGroupRule -> ImportGroupRule
-    convertGroupRule Config.ImportGroupRule {..} =
-      ImportGroupRule
-        { igrModuleMatcher =
-            case igrModuleMatcher of
-              Config.MatchAllModules -> MatchAllModules
-              Config.MatchLocalModules -> MatchModules localModules
-              Config.MatchGlob gl -> MatchGlobModule gl,
-          igrQualifiedMatcher = igrQualified,
-          igrPriority = igrPriority
-        }
+    Config.ImportGroupLegacy -> importGroupSingleStrategy
+    Config.ImportGroupPreserve -> importGroupSingleStrategy
+    Config.ImportGroupSingle -> importGroupSingleStrategy
+    Config.ImportGroupByQualified -> importGroupByQualifiedStrategy
+    Config.ImportGroupByScope -> importGroupByScopeStrategy
+    Config.ImportGroupByScopeThenQualified -> importGroupByScopeThenQualifiedStrategy
+    Config.ImportGroupCustom igs -> ImportGroups igs
 
 matchAllImportRule :: ImportGroupRule
 matchAllImportRule =
@@ -136,10 +99,10 @@ matchAllImportRule =
       igrPriority = Config.ImportRulePriority 100
     }
 
-matchModulesRule :: Set Cabal.ModuleName -> ImportGroupRule
-matchModulesRule mods =
+matchLocalModulesRule :: ImportGroupRule
+matchLocalModulesRule =
   ImportGroupRule
-    { igrModuleMatcher = MatchModules mods,
+    { igrModuleMatcher = MatchLocalModules,
       igrQualifiedMatcher = Config.MatchBothQualifiedAndUnqualified,
       igrPriority = Config.ImportRulePriority 60 -- Lower priority than "all" but higher than the default.
     }
@@ -158,28 +121,40 @@ withUnqualifiedOnly ImportGroupRule {..} =
       ..
     }
 
-matchesRule :: Import -> ImportGroupRule -> Bool
-matchesRule Import {..} ImportGroupRule {..} = matchesModules && matchesQualified
+matchesRule :: Set Cabal.ModuleName -> Import -> ImportGroupRule -> Bool
+matchesRule localMods Import {..} ImportGroupRule {..} = matchesModules && matchesQualified
   where
     matchesModules = case igrModuleMatcher of
       MatchAllModules -> True
-      MatchModules mods -> ghcModuleNameToCabal importName `Set.member` mods
-      MatchGlobModule gl -> moduleNameString importName `matchesGlob` gl
+      MatchLocalModules -> ghcModuleNameToCabal importName `Set.member` localMods
+      MatchGlob gl -> moduleNameString importName `matchesGlob` gl
     matchesQualified = case igrQualifiedMatcher of
       Config.MatchQualifiedOnly -> importQualified
       Config.MatchUnqualifiedOnly -> not importQualified
       Config.MatchBothQualifiedAndUnqualified -> True
 
-groupImports :: forall x. ImportGroups -> (x -> Import) -> [x] -> [[x]]
-groupImports (ImportGroups igs) fToImport = regroup . fmap (breakTies . matchRules)
+prepareExistingGroups :: ImportGrouping -> Bool -> [LImportDecl GhcPs] -> [[LImportDecl GhcPs]]
+prepareExistingGroups ig respectful =
+  case ig of
+    ImportGroupPreserve -> preserveGroups
+    ImportGroupLegacy | respectful -> preserveGroups
+    _ -> flattenGroups
   where
+    preserveGroups = map toList . groupBy' (\x y -> not $ separatedByBlank getLocA x y)
+    flattenGroups = pure
+
+groupImports :: forall x. ImportGrouping -> Set Cabal.ModuleName -> (x -> Import) -> [x] -> [[x]]
+groupImports ig localModules fToImport = regroup . fmap (breakTies . matchRules)
+  where
+    ImportGroups igs = groupsFromConfig ig
+
     indexedGroupRules :: [(Int, [ImportGroupRule])]
     indexedGroupRules = zip [0 ..] (toList . igRules <$> toList igs)
 
     matchRules :: x -> ([(Int, [ImportGroupRule])], x)
     matchRules x =
       let imp = fToImport x
-          testRule (_, rules) = any (matchesRule imp) rules
+          testRule (_, rules) = any (matchesRule localModules imp) rules
        in (filter testRule indexedGroupRules, x)
 
     breakTies :: ([(Int, [ImportGroupRule])], x) -> (Int, x)
