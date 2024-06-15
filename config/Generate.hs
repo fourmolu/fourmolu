@@ -1,6 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
 
-import Data.Map qualified as Map
+import qualified Data.Map as Map
 import Data.Maybe (fromMaybe, mapMaybe)
 import FourmoluConfig.ConfigData
 import FourmoluConfig.GenerateUtils

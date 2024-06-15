@@ -51,8 +51,7 @@ p_hsModule mstackHeader pragmas hsmod@HsModule {..} = do
     newline
     mapM_ (p_hsModuleHeader hsmod) hsmodName
     newline
-    respectful <- getPrinterOpt poRespectful
-    importGroups <- getImportGroups respectful
+    importGroups <- getImportGroups
     forM_ (normalizeImports importGroups hsmodImports) $ \importGroup -> do
       forM_ importGroup (located' p_hsmodImport)
       newline
@@ -63,10 +62,11 @@ p_hsModule mstackHeader pragmas hsmod@HsModule {..} = do
       newline
       spitRemainingComments
   where
-    getImportGroups :: Bool -> R (Maybe Imports.ImportGroups)
-    getImportGroups respectful =
-      groupsFromConfig respectful
-        <$> getLocalModules
+    getImportGroups :: R (Maybe Imports.ImportGroups)
+    getImportGroups =
+      groupsFromConfig
+        <$> getPrinterOpt poRespectful
+        <*> getLocalModules
         <*> getPrinterOpt poImportGrouping
 
 p_hsModuleHeader :: HsModule GhcPs -> LocatedA ModuleName -> R ()
