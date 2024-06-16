@@ -1189,6 +1189,20 @@ index be4f663..1cd8ef0 100644
  
  getPackageDbStack
    :: Compiler
+diff --git a/cabal-install/src/Distribution/Client/CmdListBin.hs b/cabal-install/src/Distribution/Client/CmdListBin.hs
+index 1fefd3a..6ecd560 100644
+--- a/cabal-install/src/Distribution/Client/CmdListBin.hs
++++ b/cabal-install/src/Distribution/Client/CmdListBin.hs
+@@ -141,8 +141,7 @@ listbinAction flags@NixStyleFlags{..} args globalFlags = do
+     (selectedUnitId, selectedComponent) <-
+       -- Slight duplication with 'runProjectPreBuildPhase'.
+       singleComponentOrElse
+-        ( dieWithException verbosity ThisIsABug
+-        )
++        (dieWithException verbosity ThisIsABug)
+         $ targetsMap buildCtx
+ 
+     printPlan verbosity baseCtx buildCtx
 diff --git a/cabal-install/src/Distribution/Client/CmdPath.hs b/cabal-install/src/Distribution/Client/CmdPath.hs
 index 8ca8d61..841b182 100644
 --- a/cabal-install/src/Distribution/Client/CmdPath.hs
@@ -1257,6 +1271,20 @@ index e243eb8..1c8806a 100644
        | (ckind, ts) <- sortGroupOn availableTargetComponentKind targets
        ]
      ++ ".\n\n"
+diff --git a/cabal-install/src/Distribution/Client/CmdRun.hs b/cabal-install/src/Distribution/Client/CmdRun.hs
+index b390dac..d5b45da 100644
+--- a/cabal-install/src/Distribution/Client/CmdRun.hs
++++ b/cabal-install/src/Distribution/Client/CmdRun.hs
+@@ -247,8 +247,7 @@ runAction flags@NixStyleFlags{..} targetAndArgs globalFlags =
+     (selectedUnitId, selectedComponent) <-
+       -- Slight duplication with 'runProjectPreBuildPhase'.
+       singleExeOrElse
+-        ( dieWithException verbosity RunPhaseReached
+-        )
++        (dieWithException verbosity RunPhaseReached)
+         $ targetsMap buildCtx
+ 
+     printPlan verbosity baseCtx buildCtx
 diff --git a/cabal-install/src/Distribution/Client/CmdSdist.hs b/cabal-install/src/Distribution/Client/CmdSdist.hs
 index a1142b0..019d815 100644
 --- a/cabal-install/src/Distribution/Client/CmdSdist.hs
@@ -1538,7 +1566,7 @@ index 39ace2f..a781f56 100644
        , let vcs' = Map.findWithDefault (error $ "Cannot configure " ++ prettyShow (vcsRepoType vcs)) (vcsRepoType vcs) vcss
        ]
 diff --git a/cabal-install/src/Distribution/Client/HttpUtils.hs b/cabal-install/src/Distribution/Client/HttpUtils.hs
-index 72ba34d..c6b184b 100644
+index 72ba34d..bc4d7e5 100644
 --- a/cabal-install/src/Distribution/Client/HttpUtils.hs
 +++ b/cabal-install/src/Distribution/Client/HttpUtils.hs
 @@ -182,12 +182,12 @@ downloadURI transport verbosity uri path = do
@@ -1560,6 +1588,16 @@ index 72ba34d..c6b184b 100644
  
    -- Only use the external http transports if we actually have to
    -- (or have been told to do so)
+@@ -1040,8 +1040,7 @@ plainHttpTransport =
+       p <- fixupEmptyProxy <$> fetchProxy True
+       Exception.handleJust
+         (guard . isDoesNotExistError)
+-        ( const . dieWithException verbosity $ Couldn'tEstablishHttpConnection
+-        )
++        (const . dieWithException verbosity $ Couldn'tEstablishHttpConnection)
+         $ browse
+         $ do
+           setProxy p
 diff --git a/cabal-install/src/Distribution/Client/Init/Interactive/Command.hs b/cabal-install/src/Distribution/Client/Init/Interactive/Command.hs
 index 1e08e84..4779812 100644
 --- a/cabal-install/src/Distribution/Client/Init/Interactive/Command.hs

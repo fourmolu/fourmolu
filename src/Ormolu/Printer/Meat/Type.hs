@@ -26,6 +26,7 @@ where
 import Control.Monad
 import Data.Choice (pattern With, pattern Without)
 import Data.Functor ((<&>))
+import GHC.Data.Strict qualified as Strict
 import GHC.Hs hiding (isPromoted)
 import GHC.Types.SourceText
 import GHC.Types.SrcLoc
@@ -53,7 +54,7 @@ p_hsType' multilineArgs = \case
     getPrinterOpt poFunctionArrows >>= \case
       LeadingArrows | multilineArgs -> interArgBreak >> txt " " >> p_forallBndrsEnd vis
       _ -> p_forallBndrsEnd vis >> interArgBreak
-    p_hsTypeR (unLoc t)
+    located t p_hsType
   HsQualTy _ qs t -> do
     located qs p_hsContext
     getPrinterOpt poFunctionArrows >>= \case
@@ -62,7 +63,7 @@ p_hsType' multilineArgs = \case
       LeadingArgsArrows -> space >> token'darrow >> interArgBreak
     case unLoc t of
       HsQualTy {} -> p_hsTypeR (unLoc t)
-      HsFunTy {} -> p_hsTypeR (unLoc t)
+      HsFunTy {} -> located t p_hsType
       _ -> located t p_hsTypeR
   HsTyVar _ p n -> do
     case p of
@@ -128,8 +129,11 @@ p_hsType' multilineArgs = \case
     let opTree = BinaryOpBranches (tyOpTree x) op (tyOpTree y)
     p_tyOpTree
       (reassociateOpTree debug (Just . unLoc) modFixityMap opTree)
-  HsParTy _ t ->
-    parens N $ sitcc $ located t p_hsType
+  HsParTy _ t -> do
+    csSpans <-
+      fmap (flip RealSrcSpan Strict.Nothing . getLoc) <$> getEnclosingComments
+    switchLayout (locA t : csSpans) $
+      parens N (sitcc $ located t p_hsType)
   HsIParamTy _ n t -> sitcc $ do
     located n atom
     inci $ startTypeAnnotation t p_hsType

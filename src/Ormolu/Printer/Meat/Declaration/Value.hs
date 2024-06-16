@@ -715,8 +715,11 @@ p_hsExpr' isApp s = \case
     -- negated literals, as `- 1` and `-1` have differing AST.
     when (negativeLiterals && isLiteral) space
     located e p_hsExpr
-  HsPar _ e ->
-    parens s $ sitcc (located e (dontUseBraces . p_hsExpr))
+  HsPar _ e -> do
+    csSpans <-
+      fmap (flip RealSrcSpan Strict.Nothing . getLoc) <$> getEnclosingComments
+    switchLayout (locA e : csSpans) $
+      parens s (sitcc $ located e (dontUseBraces . p_hsExpr))
   SectionL _ x op -> do
     located x p_hsExpr
     breakpoint
