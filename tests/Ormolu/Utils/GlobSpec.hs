@@ -2,7 +2,8 @@ module Ormolu.Utils.GlobSpec (spec) where
 
 import Ormolu.Utils.Glob (matchesGlob, mkGlob)
 import Test.Hspec (Spec, describe, it, shouldBe)
-import Test.QuickCheck (Arbitrary (..), listOf, property, suchThat)
+import Test.Hspec.QuickCheck (prop)
+import Test.QuickCheck (Arbitrary (..), listOf, suchThat)
 
 newtype Wildcardless = Wildcardless String
     deriving (Show)
@@ -41,12 +42,9 @@ spec =
             "Level1.Level2.Level3.Level4.Level5" `matchesGlob` mkGlob "Level1.L**4.Level5" `shouldBe` True
 
         describe "Properties" $ do
-            it "should obey: s `matches` glob s with s being any string without '*'" $
-                property $
-                    \(Wildcardless s) -> s `matchesGlob` mkGlob s
-            it "should obey: (a <> b <> c) `matches` glob (a <> * <> c) with b being a module name" $
-                property $
-                    \a (ModuleName b) c -> (a <> b <> c) `matchesGlob` mkGlob (a <> "*" <> c)
-            it "should obey:  (a <> b <> c) `matches` glob (a <> ** <> c)" $
-                property $
-                    \a b c -> (a <> b <> c) `matchesGlob` mkGlob (a <> "**" <> c)
+            prop "should obey: s `matches` glob s with s being any string without '*'" $
+                \(Wildcardless s) -> s `matchesGlob` mkGlob s
+            prop "should obey: (a <> b <> c) `matches` glob (a <> * <> c) with b being a module name" $
+                \a (ModuleName b) c -> (a <> b <> c) `matchesGlob` mkGlob (a <> "*" <> c)
+            prop "should obey:  (a <> b <> c) `matches` glob (a <> ** <> c)" $
+                \a b c -> (a <> b <> c) `matchesGlob` mkGlob (a <> "**" <> c)

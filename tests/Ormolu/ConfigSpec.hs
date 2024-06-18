@@ -8,7 +8,7 @@ import Data.List (isInfixOf)
 import Data.List.NonEmpty qualified as NonEmpty
 import Data.Map qualified as Map
 import Data.Yaml qualified as Yaml
-import Ormolu.Config (FourmoluConfig (..), ImportGroup (..), ImportGroupRule (..), ImportGrouping (..), ImportModuleMatcher (..), ImportRulePriority (ImportRulePriority), PrinterOpts (..), QualifiedImportMatcher (MatchBothQualifiedAndUnqualified, MatchQualifiedOnly, MatchUnqualifiedOnly), defaultImportRulePriority, resolvePrinterOpts)
+import Ormolu.Config (FourmoluConfig (..), ImportGroup (..), ImportGroupRule (..), ImportGrouping (..), ImportModuleMatcher (..), ImportRulePriority (ImportRulePriority), PrinterOpts (..), QualifiedImportMatcher (MatchBothQualifiedAndUnqualified, MatchQualifiedOnly, MatchUnqualifiedOnly), defaultImportRulePriority, matchAllRulePriority, resolvePrinterOpts)
 import Ormolu.Fixity (ModuleReexports (..))
 import Ormolu.Utils.Glob (mkGlob)
 import Test.Hspec
@@ -83,7 +83,7 @@ spec = do
                           [ ImportGroupRule
                               { igrModuleMatcher = MatchAllModules,
                                 igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
-                                igrPriority = defaultImportRulePriority
+                                igrPriority = matchAllRulePriority
                               }
                           ]
                     }
@@ -224,7 +224,7 @@ spec = do
                           [ ImportGroupRule
                               { igrModuleMatcher = MatchAllModules,
                                 igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
-                                igrPriority = defaultImportRulePriority
+                                igrPriority = matchAllRulePriority
                               }
                           ]
                     }

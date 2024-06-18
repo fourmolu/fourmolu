@@ -6,6 +6,8 @@ module Ormolu.Config.Types
     ImportGroupRule (..),
     ImportModuleMatcher (..),
     ImportRulePriority (..),
+    matchAllRulePriority,
+    matchLocalRulePriority,
     defaultImportRulePriority,
     QualifiedImportMatcher (..),
   )
@@ -33,7 +35,6 @@ instance Aeson.FromJSON ImportGroup where
 
 data ImportGroupRule = ImportGroupRule
   { igrModuleMatcher :: !ImportModuleMatcher,
-    -- | 'Just True' to match qualified declarations, 'Just False' to match unqualified ones and 'Nothing' to match both
     igrQualifiedMatcher :: !QualifiedImportMatcher,
     igrPriority :: !ImportRulePriority
   }
@@ -52,7 +53,10 @@ instance Aeson.FromJSON ImportGroupRule where
       Just False -> pure MatchUnqualifiedOnly
       Nothing -> pure MatchBothQualifiedAndUnqualified
 
-    igrPriority <- o .:? "priority" .!= defaultImportRulePriority
+    let defaultPriority
+          | MatchAllModules <- igrModuleMatcher = matchAllRulePriority
+          | otherwise = defaultImportRulePriority
+    igrPriority <- o .:? "priority" .!= defaultPriority
 
     pure ImportGroupRule {..}
 
@@ -61,6 +65,12 @@ newtype ImportRulePriority = ImportRulePriority Word8
 
 instance Aeson.FromJSON ImportRulePriority where
   parseJSON = fmap ImportRulePriority . Aeson.parseJSON
+
+matchAllRulePriority :: ImportRulePriority
+matchAllRulePriority = ImportRulePriority 100
+
+matchLocalRulePriority :: ImportRulePriority
+matchLocalRulePriority = ImportRulePriority 60 -- Lower priority than "all" but higher than the default.
 
 defaultImportRulePriority :: ImportRulePriority
 defaultImportRulePriority = ImportRulePriority 50

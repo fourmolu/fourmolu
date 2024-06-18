@@ -96,7 +96,7 @@ matchAllImportRule =
   ImportGroupRule
     { igrModuleMatcher = MatchAllModules,
       igrQualifiedMatcher = Config.MatchBothQualifiedAndUnqualified,
-      igrPriority = Config.ImportRulePriority 100
+      igrPriority = Config.matchAllRulePriority
     }
 
 matchLocalModulesRule :: ImportGroupRule
@@ -104,7 +104,7 @@ matchLocalModulesRule =
   ImportGroupRule
     { igrModuleMatcher = MatchLocalModules,
       igrQualifiedMatcher = Config.MatchBothQualifiedAndUnqualified,
-      igrPriority = Config.ImportRulePriority 60 -- Lower priority than "all" but higher than the default.
+      igrPriority = Config.matchLocalRulePriority
     }
 
 withQualifiedOnly :: ImportGroupRule -> ImportGroupRule

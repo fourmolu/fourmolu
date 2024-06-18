@@ -16,7 +16,7 @@ Predefined presets:
 Predefined matchers:
 
 - `match: all`: matches all modules
-- `match: local-modules`: matches modules defined in the current Cabal project. Those modules are automatically detected. Developers can add custom modules through the `--local-modules` CLI option.
+- `match: local-modules`: matches modules defined in the current Cabal project. Those modules are automatically detected. Developers can add custom modules through the `--local-modules` CLI option. See [`local-modules`](/config/local-modules) for more information.
 - `glob: pattern`: matches modules matching the provided `pattern`. `*` can be any character on the same module level. `**` can be any character and can span multiple module levels.
 
 Here's an example used in the `custom` configuration:
@@ -45,12 +45,6 @@ import-grouping:
   - name: "Specific monads"
     rules:
       - glob: Control.Monad.**
-```
-
-Here's an example of using the import grouping feature using the CLI:
-
-```shell
-fourmolu Main.hs --import-grouping by-scope --local-modules SomeInternal.Module1 --local-modules SomeModule
 ```
 
 ## Examples
