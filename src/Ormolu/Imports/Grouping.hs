@@ -76,8 +76,8 @@ importGroupByScopeThenQualifiedStrategy =
           { igName = Nothing,
             igRules = pure $ withQualified matchModule
           }
-        | matchModule <- [matchAllImportRule, matchLocalModulesRule],
-          withQualified <- [withUnqualifiedOnly, withQualifiedOnly]
+      | matchModule <- [matchAllImportRule, matchLocalModulesRule],
+        withQualified <- [withUnqualifiedOnly, withQualifiedOnly]
       ]
 
 groupsFromConfig :: Config.ImportGrouping -> ImportGroups
