@@ -12,9 +12,11 @@ module Ormolu.Diff.ParseResult
 where
 
 import Data.ByteString (ByteString)
+import Data.Char (isSpace)
 import Data.Foldable
 import Data.Function
 import Data.Generics
+import Data.Text qualified as T
 import GHC.Hs
 import GHC.Types.SourceText
 import GHC.Types.SrcLoc
@@ -143,7 +145,7 @@ diffHsModule = genericQuery
         f x x' = x == x'
 
     hsDocStringEq :: HsDocString -> GenericQ ParseResultDiff
-    hsDocStringEq = considerEqualVia' ((==) `on` splitDocString True)
+    hsDocStringEq = considerEqualVia' ((==) `on` (map (T.dropWhile isSpace) . splitDocString True))
 
     forLocated ::
       (Data e0, Data e1) =>
