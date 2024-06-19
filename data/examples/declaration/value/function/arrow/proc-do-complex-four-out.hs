@@ -7,9 +7,9 @@ foo
     ma =
         proc
             ( (a, b)
-                , (c, d)
-                , (e, f)
-                )
+             , (c, d)
+             , (e, f)
+             )
         -> do
             -- Begin do
             (x, y) <- -- GHC parser fails if layed out over multiple lines
@@ -28,8 +28,8 @@ foo
                 then case e of -- Only left case is relevant
                     Left
                         ( z
-                            , w
-                            ) -> \u ->
+                         , w
+                         ) -> \u ->
                             -- Procs can have lambdas
                             let
                                 v =

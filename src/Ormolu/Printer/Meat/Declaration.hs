@@ -209,7 +209,7 @@ declSeries (L _ x) (L _ y) =
   case (x, y) of
     ( SigD _ (TypeSig _ _ _),
       SigD _ (TypeSig _ _ _)
-      ) -> True
+     ) -> True
     _ -> False
 
 intersects :: (Ord a) => [a] -> [a] -> Bool

@@ -9,7 +9,7 @@ g ((f, _), f -> 4) = True
 
 multiline
     ( t ->
-            Foo
-                bar
-                baz
-        ) = True
+        Foo
+            bar
+            baz
+     ) = True
