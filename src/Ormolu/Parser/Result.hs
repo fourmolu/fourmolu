@@ -5,9 +5,11 @@ module Ormolu.Parser.Result
   )
 where
 
+import Data.Set (Set)
 import Data.Text (Text)
+import Distribution.ModuleName (ModuleName)
 import GHC.Data.EnumSet (EnumSet)
-import GHC.Hs
+import GHC.Hs (GhcPs, HsModule)
 import GHC.LanguageExtensions.Type
 import Ormolu.Config (SourceType)
 import Ormolu.Fixity (ModuleFixityMap)
@@ -34,5 +36,7 @@ data ParseResult = ParseResult
     -- | Fixity map for operators
     prModuleFixityMap :: ModuleFixityMap,
     -- | Indentation level, can be non-zero in case of region formatting
-    prIndent :: Int
+    prIndent :: Int,
+    -- | Local modules
+    prLocalModules :: Set ModuleName
   }

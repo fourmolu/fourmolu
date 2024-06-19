@@ -50,8 +50,10 @@ p_hsModule mstackHeader pragmas hsmod@HsModule {..} = do
     newline
     mapM_ (p_hsModuleHeader hsmod) hsmodName
     newline
-    preserveGroups <- getPrinterOpt poRespectful
-    forM_ (normalizeImports preserveGroups hsmodImports) $ \importGroup -> do
+    respectful <- getPrinterOpt poRespectful
+    localModules <- getLocalModules
+    importGrouping <- getPrinterOpt poImportGrouping
+    forM_ (normalizeImports respectful localModules importGrouping hsmodImports) $ \importGroup -> do
       forM_ importGroup (located' p_hsmodImport)
       newline
     declNewline

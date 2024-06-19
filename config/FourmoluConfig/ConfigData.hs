@@ -228,6 +228,26 @@ allOptions =
         ormolu = HsList [],
         sinceVersion = Just "0.13.0.0",
         cliOverrides = emptyOverrides
+      },
+    Option
+      { name = "import-grouping",
+        fieldName = Just "poImportGrouping",
+        description = "Rules for grouping import declarations",
+        type_ = "ImportGrouping",
+        default_ = HsExpr "ImportGroupLegacy",
+        ormolu = HsExpr "ImportGroupLegacy",
+        sinceVersion = Nothing,
+        cliOverrides = emptyOverrides
+      },
+    Option
+      { name = "local-modules",
+        fieldName = Nothing,
+        description = "Modules defined by the current Cabal package for import grouping",
+        type_ = "[String]",
+        default_ = HsList [],
+        ormolu = HsList [],
+        sinceVersion = Nothing,
+        cliOverrides = emptyOverrides
       }
   ]
 
@@ -430,5 +450,72 @@ allFieldTypes =
             ("DerivingAlways", "always"),
             ("DerivingNever", "never")
           ]
+      },
+    FieldTypeADT
+      { fieldTypeName = "ImportGrouping",
+        adtConstructors =
+          [ "ImportGroupLegacy",
+            "ImportGroupPreserve",
+            "ImportGroupSingle",
+            "ImportGroupByScope",
+            "ImportGroupByQualified",
+            "ImportGroupByScopeThenQualified",
+            "ImportGroupCustom (NonEmpty CT.ImportGroup)"
+          ],
+        adtSchema =
+          ADTSchema
+            { adtOptions =
+                [ ADTOptionLiteral "legacy",
+                  ADTOptionLiteral "preserve",
+                  ADTOptionLiteral "single",
+                  ADTOptionLiteral "by-qualified",
+                  ADTOptionLiteral "by-scope",
+                  ADTOptionLiteral "by-scope-then-qualified"
+                  -- The custom import grouping rules can't be edited on the site yet.
+                ],
+              adtInputType =
+                ADTSchemaInputText
+                  [ ADTSchemaInputParserString
+                  ]
+            },
+        adtRender =
+          [ ("ImportGroupLegacy", "legacy"),
+            ("ImportGroupPreserve", "preserve"),
+            ("ImportGroupSingle", "single"),
+            ("ImportGroupByQualified", "by-qualified"),
+            ("ImportGroupByScope", "by-scope"),
+            ("ImportGroupByScopeThenQualified", "by-scope-then-qualified")
+          ],
+        adtParseJSON =
+          unlines
+            [ "\\case",
+              "  Aeson.String \"legacy\" -> pure ImportGroupLegacy",
+              "  Aeson.String \"preserve\" -> pure ImportGroupPreserve",
+              "  Aeson.String \"single\" -> pure ImportGroupSingle",
+              "  Aeson.String \"by-qualified\" -> pure ImportGroupByQualified",
+              "  Aeson.String \"by-scope\" -> pure ImportGroupByScope",
+              "  Aeson.String \"by-scope-then-qualified\" -> pure ImportGroupByScopeThenQualified",
+              "  arr@(Aeson.Array _) -> ImportGroupCustom <$> Aeson.parseJSON arr",
+              "  other ->",
+              "    fail . unlines $",
+              "      [ \"unknown strategy value: \" <> show other,",
+              "        \"Valid values are: \\\"legacy\\\", \\\"preserve\\\", \\\"single\\\", \\\"by-qualified\\\", \\\"by-scope\\\", \\\"by-scope-then-qualified\\\" or a valid YAML configuration for import groups\"",
+              "      ]"
+            ],
+        adtParsePrinterOptType =
+          unlines
+            [ "\\case",
+              "  \"legacy\" -> Right ImportGroupLegacy",
+              "  \"preserve\" -> Right ImportGroupPreserve",
+              "  \"single\" -> Right ImportGroupSingle",
+              "  \"by-qualified\" -> Right ImportGroupByQualified",
+              "  \"by-scope\" -> Right ImportGroupByScope",
+              "  \"by-scope-then-qualified\" -> Right ImportGroupByScopeThenQualified",
+              "  s ->",
+              "    Left . unlines $",
+              "      [ \"unknown value: \" <> show s",
+              "      , \"Valid values are: \\\"legacy\\\", \\\"preserve\\\", \\\"single\\\", \\\"by-qualified\\\", \\\"by-scope\\\", \\\"by-scope-then-qualified\\\" or a valid YAML configuration for import groups (see fourmolu.yaml)\"",
+              "      ]"
+            ]
       }
   ]

@@ -11,6 +11,8 @@ import Data.Bifunctor (first)
 import Data.ByteString qualified as ByteString
 import Data.List (intercalate)
 import Data.Map qualified as Map
+import Data.Set qualified as S
+import Data.String (IsString (..))
 import Data.Text (Text)
 import Data.Text qualified as Text
 import Data.Text.Encoding qualified as Text
@@ -132,7 +134,7 @@ getPageInfo = \case
 
 getOptionDemoWidget :: ConfigData.Option -> Maybe String
 getOptionDemoWidget option@ConfigData.Option {..}
-  | name `elem` ["fixities", "reexports"] = Nothing
+  | name `elem` ["fixities", "reexports", "local-modules"] = Nothing
   | otherwise =
       Just . concat $
         [ printf "<label>",
@@ -273,7 +275,14 @@ replaceFourmoluExamples =
             let isActive = isFirst
             let config =
                   Fourmolu.defaultConfig
-                    { Fourmolu.cfgPrinterOpts = Fourmolu.resolvePrinterOpts [printerOpts]
+                    { Fourmolu.cfgPrinterOpts = Fourmolu.resolvePrinterOpts [printerOpts],
+                      Fourmolu.cfgLocalModules =
+                        S.fromList $
+                          fromString
+                            <$> [ "SomeInternal.Module1",
+                                  "SomeInternal.Module1.SubModuleA",
+                                  "SomeInternal.Module2"
+                                ]
                     }
             output <- Fourmolu.ormolu config "<fourmolu-web>" input
             pure (isActive, label, key, output)

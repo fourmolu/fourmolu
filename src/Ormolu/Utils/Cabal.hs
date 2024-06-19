@@ -20,6 +20,7 @@ import Data.Map.Lazy qualified as M
 import Data.Maybe (maybeToList)
 import Data.Set (Set)
 import Data.Set qualified as Set
+import Distribution.ModuleName (ModuleName)
 import Distribution.ModuleName qualified as ModuleName
 import Distribution.PackageDescription
 import Distribution.PackageDescription.Parsec
@@ -56,7 +57,9 @@ data CabalInfo = CabalInfo
     -- | Direct dependencies
     ciDependencies :: !(Set PackageName),
     -- | Absolute path to the cabal file
-    ciCabalFilePath :: !FilePath
+    ciCabalFilePath :: !FilePath,
+    -- | Local modules
+    ciModules :: ![ModuleName]
   }
   deriving (Eq, Show)
 
@@ -96,7 +99,9 @@ data CachedCabalFile = CachedCabalFile
     genericPackageDescription :: GenericPackageDescription,
     -- | Map from Haskell source file paths (without any extensions) to the
     -- corresponding 'DynOption's and dependencies.
-    extensionsAndDeps :: Map FilePath ([DynOption], [PackageName])
+    extensionsAndDeps :: Map FilePath ([DynOption], [PackageName]),
+    -- | Modules defined in the cabal file
+    localModules :: [ModuleName]
   }
   deriving (Show)
 
@@ -125,6 +130,7 @@ parseCabalInfo cabalFileAsGiven sourceFileAsGiven = liftIO $ do
         throwIO . OrmoluCabalFileParsingFailed cabalFile . snd
     let extensionsAndDeps =
           getExtensionAndDepsMap cabalFile genericPackageDescription
+        localModules = getLocalModules genericPackageDescription
     pure CachedCabalFile {..}
   let (dynOpts, dependencies, mentioned) =
         case M.lookup (dropExtensions sourceFileAbs) extensionsAndDeps of
@@ -137,12 +143,45 @@ parseCabalInfo cabalFileAsGiven sourceFileAsGiven = liftIO $ do
         { ciPackageName = pkgName (package pdesc),
           ciDynOpts = dynOpts,
           ciDependencies = Set.fromList dependencies,
-          ciCabalFilePath = cabalFile
+          ciCabalFilePath = cabalFile,
+          ciModules = localModules
         }
     )
   where
     whenLeft :: (Applicative f) => Either e a -> (e -> f a) -> f a
     whenLeft eitha ma = either ma pure eitha
+
+getLocalModules :: GenericPackageDescription -> [ModuleName]
+getLocalModules = extractPackageModules
+  where
+    extractPackageModules :: GenericPackageDescription -> [ModuleName]
+    extractPackageModules GenericPackageDescription {..} =
+      mconcat
+        [ maybe [] (extractLibraryModules . condTreeData) condLibrary,
+          extractLibraryModules . condTreeData . snd =<< condSubLibraries,
+          extractForeignLibraryModules . condTreeData . snd =<< condForeignLibs,
+          extractExecutableModules . condTreeData . snd =<< condExecutables,
+          extractTestSuiteModules . condTreeData . snd =<< condTestSuites,
+          extractBenchmarkModules . condTreeData . snd =<< condBenchmarks
+        ]
+
+    extractLibraryModules :: Library -> [ModuleName]
+    extractLibraryModules Library {..} = mconcat [exposedModules, extractBuildInfoModules libBuildInfo]
+
+    extractForeignLibraryModules :: ForeignLib -> [ModuleName]
+    extractForeignLibraryModules = extractBuildInfoModules . foreignLibBuildInfo
+
+    extractExecutableModules :: Executable -> [ModuleName]
+    extractExecutableModules = extractBuildInfoModules . buildInfo
+
+    extractTestSuiteModules :: TestSuite -> [ModuleName]
+    extractTestSuiteModules = extractBuildInfoModules . testBuildInfo
+
+    extractBenchmarkModules :: Benchmark -> [ModuleName]
+    extractBenchmarkModules = extractBuildInfoModules . benchmarkBuildInfo
+
+    extractBuildInfoModules :: BuildInfo -> [ModuleName]
+    extractBuildInfoModules BuildInfo {..} = mconcat [otherModules, virtualModules, autogenModules]
 
 -- | Get a map from Haskell source file paths (without any extensions) to
 -- the corresponding 'DynOption's and dependencies.

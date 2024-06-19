@@ -168,7 +168,8 @@ parseModuleSnippet config@Config {..} modFixityMap dynFlags path rawInput = lift
                         prCommentStream = comments,
                         prExtensions = GHC.extensionFlags dynFlags,
                         prModuleFixityMap = modFixityMap,
-                        prIndent = indent
+                        prIndent = indent,
+                        prLocalModules = cfgLocalModules
                       }
   return r
 

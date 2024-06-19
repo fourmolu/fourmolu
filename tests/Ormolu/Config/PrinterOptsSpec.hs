@@ -1,6 +1,5 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
 
 -- | Tests for Fourmolu configuration options. Similar to PrinterSpec.hs
@@ -14,10 +13,13 @@ import Control.Exception (catch)
 import Control.Monad (forM_, when)
 import Data.Algorithm.DiffContext (getContextDiff, prettyContextDiff)
 import Data.Char (isSpace)
+import Data.List.NonEmpty qualified as NonEmpty
 import Data.Maybe (isJust)
+import Data.Set qualified as S
 import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Text.IO.Utf8 qualified as T.Utf8
+import Distribution.ModuleName qualified as ModuleName
 import GHC.Stack (withFrozenCallStack)
 import Ormolu
   ( Config (..),
@@ -28,9 +30,10 @@ import Ormolu
     detectSourceType,
     ormolu,
   )
-import Ormolu.Config (ColumnLimit (..), HaddockPrintStyleModule (..))
+import Ormolu.Config (ColumnLimit (..), HaddockPrintStyleModule (..), ImportGroup (..), ImportGroupRule (..), ImportGrouping (..), ImportModuleMatcher (..), ImportRulePriority (ImportRulePriority), QualifiedImportMatcher (MatchBothQualifiedAndUnqualified, MatchQualifiedOnly, MatchUnqualifiedOnly), defaultImportRulePriority)
 import Ormolu.Exception (OrmoluException, printOrmoluException)
 import Ormolu.Terminal (ColorMode (..), runTerm)
+import Ormolu.Utils.Glob (mkGlob)
 import Path
   ( File,
     Path,
@@ -241,6 +244,80 @@ spec =
           testCaseSuffix = \(respectful, importExportStyle) ->
             suffixWith ["respectful=" ++ show respectful, show importExportStyle],
           checkIdempotence = True
+        },
+      TestGroup
+        { label = "import-grouping",
+          isMulti = False,
+          testCases =
+            [ ImportGroupPreserve,
+              ImportGroupSingle,
+              ImportGroupByQualified,
+              ImportGroupByScope,
+              ImportGroupByScopeThenQualified,
+              ImportGroupCustom . NonEmpty.fromList $
+                [ ImportGroup
+                    { igName = Nothing,
+                      igRules =
+                        NonEmpty.fromList
+                          [ ImportGroupRule
+                              { igrModuleMatcher = MatchGlob (mkGlob "Data.Text"),
+                                igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
+                                igrPriority = defaultImportRulePriority
+                              }
+                          ]
+                    },
+                  ImportGroup
+                    { igName = Nothing,
+                      igRules =
+                        NonEmpty.fromList
+                          [ ImportGroupRule
+                              { igrModuleMatcher = MatchAllModules,
+                                igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
+                                igrPriority = ImportRulePriority 100
+                              }
+                          ]
+                    },
+                  ImportGroup
+                    { igName = Nothing,
+                      igRules =
+                        NonEmpty.fromList
+                          [ ImportGroupRule
+                              { igrModuleMatcher = MatchGlob (mkGlob "SomeInternal.**"),
+                                igrQualifiedMatcher = MatchQualifiedOnly,
+                                igrPriority = defaultImportRulePriority
+                              },
+                            ImportGroupRule
+                              { igrModuleMatcher = MatchGlob (mkGlob "Unknown.**"),
+                                igrQualifiedMatcher = MatchUnqualifiedOnly,
+                                igrPriority = defaultImportRulePriority
+                              }
+                          ]
+                    },
+                  ImportGroup
+                    { igName = Nothing,
+                      igRules =
+                        NonEmpty.fromList
+                          [ ImportGroupRule
+                              { igrModuleMatcher = MatchLocalModules,
+                                igrQualifiedMatcher = MatchUnqualifiedOnly,
+                                igrPriority = defaultImportRulePriority
+                              },
+                            ImportGroupRule
+                              { igrModuleMatcher = MatchAllModules,
+                                igrQualifiedMatcher = MatchQualifiedOnly,
+                                igrPriority = defaultImportRulePriority
+                              }
+                          ]
+                    }
+                ]
+            ],
+          updateConfig = \igs opts ->
+            opts
+              { poImportGrouping = pure igs
+              },
+          showTestCase = showStrategy,
+          testCaseSuffix = \igs -> suffixWith [showStrategy igs],
+          checkIdempotence = True
         }
     ]
 
@@ -281,7 +358,14 @@ runOrmolu opts checkIdempotence inputPath input =
       defaultConfig
         { cfgPrinterOpts = opts,
           cfgSourceType = detectSourceType inputPath,
-          cfgCheckIdempotence = checkIdempotence
+          cfgCheckIdempotence = checkIdempotence,
+          cfgLocalModules =
+            S.fromList $
+              ModuleName.fromString
+                <$> [ "SomeInternal.Module1",
+                      "SomeInternal.Module1.SubModuleA",
+                      "SomeInternal.Module2"
+                    ]
         }
 
 checkResult :: Path Rel File -> Text -> Expectation
@@ -360,3 +444,8 @@ spanEnd :: (a -> Bool) -> [a] -> ([a], [a])
 spanEnd f xs =
   let xs' = reverse xs
    in (reverse $ dropWhile f xs', reverse $ takeWhile f xs')
+
+showStrategy :: ImportGrouping -> String
+showStrategy igs = case igs of
+  ImportGroupCustom _ -> "custom"
+  _ -> show igs

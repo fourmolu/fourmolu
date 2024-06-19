@@ -13,11 +13,12 @@ where
 
 import Data.Bifunctor
 import Data.Char (isAlphaNum)
-import Data.Foldable (toList)
 import Data.Function (on)
 import Data.List (nubBy, sortBy, sortOn)
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as M
+import Data.Set (Set)
+import Distribution.ModuleName qualified as Cabal
 import GHC.Data.FastString
 import GHC.Hs
 import GHC.Hs.ImpExp as GHC
@@ -25,7 +26,9 @@ import GHC.Types.Name.Reader
 import GHC.Types.PkgQual
 import GHC.Types.SourceText
 import GHC.Types.SrcLoc
-import Ormolu.Utils (groupBy', notImplemented, separatedByBlank, showOutputable)
+import Ormolu.Config (ImportGrouping)
+import Ormolu.Imports.Grouping (Import (..), groupImports, prepareExistingGroups)
+import Ormolu.Utils (notImplemented, showOutputable)
 #if !MIN_VERSION_base(4,20,0)
 import Data.List (foldl')
 #endif
@@ -35,18 +38,20 @@ import Data.List (foldl')
 -- Assumes input list is sorted by source location. Output list is not necessarily
 -- sorted by source location, so this function should be called at most once on a
 -- given input list.
-normalizeImports :: Bool -> [LImportDecl GhcPs] -> [[LImportDecl GhcPs]]
-normalizeImports preserveGroups =
-  map
-    ( fmap snd
-        . M.toAscList
-        . M.fromListWith combineImports
-        . fmap (\x -> (importId x, g x))
-    )
-    . if preserveGroups
-      then map toList . groupBy' (\x y -> not $ separatedByBlank getLocA x y)
-      else pure
+normalizeImports :: Bool -> Set Cabal.ModuleName -> ImportGrouping -> [LImportDecl GhcPs] -> [[LImportDecl GhcPs]]
+normalizeImports respectful localModules importGrouping =
+  map (fmap snd)
+    . concatMap
+      ( groupImports importGrouping localModules toImport
+          . M.toAscList
+          . M.fromListWith combineImports
+          . fmap (\x -> (importId x, g x))
+      )
+    . prepareExistingGroups importGrouping respectful
   where
+    toImport :: (ImportId, x) -> Import
+    toImport (ImportId {..}, _) = Import {importName = importIdName, importQualified}
+
     g :: LImportDecl GhcPs -> LImportDecl GhcPs
     g (L l ImportDecl {..}) =
       L

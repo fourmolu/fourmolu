@@ -19,6 +19,7 @@ module Ormolu.Config.Gen
   , SingleConstraintParens (..)
   , ColumnLimit (..)
   , SingleDerivingParens (..)
+  , ImportGrouping (..)
   , emptyPrinterOpts
   , defaultPrinterOpts
   , defaultPrinterOptsYaml
@@ -32,9 +33,11 @@ where
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Types as Aeson
 import Data.Functor.Identity (Identity)
+import Data.List.NonEmpty (NonEmpty)
 import Data.Scientific (floatingOrInteger)
 import qualified Data.Text as Text
 import GHC.Generics (Generic)
+import qualified Ormolu.Config.Types as CT
 import Text.Read (readEither, readMaybe)
 
 -- | Options controlling formatting output.
@@ -72,6 +75,8 @@ data PrinterOpts f =
       poUnicode :: f Unicode
     , -- | Give the programmer more choice on where to insert blank lines
       poRespectful :: f Bool
+    , -- | Rules for grouping import declarations
+      poImportGrouping :: f ImportGrouping
     }
   deriving (Generic)
 
@@ -94,6 +99,7 @@ emptyPrinterOpts =
     , poSingleDerivingParens = Nothing
     , poUnicode = Nothing
     , poRespectful = Nothing
+    , poImportGrouping = Nothing
     }
 
 defaultPrinterOpts :: PrinterOpts Identity
@@ -115,6 +121,7 @@ defaultPrinterOpts =
     , poSingleDerivingParens = pure DerivingAlways
     , poUnicode = pure UnicodeNever
     , poRespectful = pure True
+    , poImportGrouping = pure ImportGroupLegacy
     }
 
 -- | Fill the field values that are 'Nothing' in the first argument
@@ -143,6 +150,7 @@ fillMissingPrinterOpts p1 p2 =
     , poSingleDerivingParens = maybe (poSingleDerivingParens p2) pure (poSingleDerivingParens p1)
     , poUnicode = maybe (poUnicode p2) pure (poUnicode p1)
     , poRespectful = maybe (poRespectful p2) pure (poRespectful p1)
+    , poImportGrouping = maybe (poImportGrouping p2) pure (poImportGrouping p1)
     }
 
 parsePrinterOptsCLI ::
@@ -215,6 +223,10 @@ parsePrinterOptsCLI f =
       "respectful"
       "Give the programmer more choice on where to insert blank lines (default: true)"
       "BOOL"
+    <*> f
+      "import-grouping"
+      "Rules for grouping import declarations (default: legacy)"
+      "OPTION"
 
 parsePrinterOptsJSON ::
   Applicative f =>
@@ -238,6 +250,7 @@ parsePrinterOptsJSON f =
     <*> f "single-deriving-parens"
     <*> f "unicode"
     <*> f "respectful"
+    <*> f "import-grouping"
 
 {---------- PrinterOpts field types ----------}
 
@@ -321,6 +334,16 @@ data SingleDerivingParens
   | DerivingAlways
   | DerivingNever
   deriving (Eq, Show, Enum, Bounded)
+
+data ImportGrouping
+  = ImportGroupLegacy
+  | ImportGroupPreserve
+  | ImportGroupSingle
+  | ImportGroupByScope
+  | ImportGroupByQualified
+  | ImportGroupByScopeThenQualified
+  | ImportGroupCustom (NonEmpty CT.ImportGroup)
+  deriving (Eq, Show)
 
 instance Aeson.FromJSON CommaStyle where
   parseJSON =
@@ -525,6 +548,37 @@ instance PrinterOptsFieldType SingleDerivingParens where
           , "Valid values are: \"auto\", \"always\", or \"never\""
           ]
 
+instance Aeson.FromJSON ImportGrouping where
+  parseJSON =
+    \case
+      Aeson.String "legacy" -> pure ImportGroupLegacy
+      Aeson.String "preserve" -> pure ImportGroupPreserve
+      Aeson.String "single" -> pure ImportGroupSingle
+      Aeson.String "by-qualified" -> pure ImportGroupByQualified
+      Aeson.String "by-scope" -> pure ImportGroupByScope
+      Aeson.String "by-scope-then-qualified" -> pure ImportGroupByScopeThenQualified
+      arr@(Aeson.Array _) -> ImportGroupCustom <$> Aeson.parseJSON arr
+      other ->
+        fail . unlines $
+          [ "unknown strategy value: " <> show other,
+            "Valid values are: \"legacy\", \"preserve\", \"single\", \"by-qualified\", \"by-scope\", \"by-scope-then-qualified\" or a valid YAML configuration for import groups"
+          ]
+
+instance PrinterOptsFieldType ImportGrouping where
+  parsePrinterOptType =
+    \case
+      "legacy" -> Right ImportGroupLegacy
+      "preserve" -> Right ImportGroupPreserve
+      "single" -> Right ImportGroupSingle
+      "by-qualified" -> Right ImportGroupByQualified
+      "by-scope" -> Right ImportGroupByScope
+      "by-scope-then-qualified" -> Right ImportGroupByScopeThenQualified
+      s ->
+        Left . unlines $
+          [ "unknown value: " <> show s
+          , "Valid values are: \"legacy\", \"preserve\", \"single\", \"by-qualified\", \"by-scope\", \"by-scope-then-qualified\" or a valid YAML configuration for import groups (see fourmolu.yaml)"
+          ]
+
 defaultPrinterOptsYaml :: String
 defaultPrinterOptsYaml =
   unlines
@@ -581,4 +635,10 @@ defaultPrinterOptsYaml =
     , ""
     , "# Module reexports Fourmolu should know about"
     , "reexports: []"
+    , ""
+    , "# Rules for grouping import declarations"
+    , "import-grouping: legacy"
+    , ""
+    , "# Modules defined by the current Cabal package for import grouping"
+    , "local-modules: []"
     ]

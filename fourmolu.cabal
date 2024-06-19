@@ -52,6 +52,7 @@ library
         Ormolu.Diff.Text
         Ormolu.Exception
         Ormolu.Imports
+        Ormolu.Imports.Grouping
         Ormolu.Parser
         Ormolu.Parser.CommentStream
         Ormolu.Parser.Pragma
@@ -96,10 +97,12 @@ library
         Ormolu.Utils
         Ormolu.Utils.Cabal
         Ormolu.Utils.Fixity
+        Ormolu.Utils.Glob
         Ormolu.Utils.IO
         Paths_fourmolu
     other-modules:
         Ormolu.Config.Gen
+        Ormolu.Config.Types
 
     hs-source-dirs:   src
     other-modules:    GHC.DynFlags
@@ -214,6 +217,7 @@ test-suite tests
         Ormolu.Integration.FixitySpec
         Ormolu.Integration.RegionSpec
         Ormolu.Integration.Utils
+        Ormolu.Utils.GlobSpec
     build-depends:
         bytestring,
         Diff >=0.3 && <1,
