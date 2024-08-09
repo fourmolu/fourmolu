@@ -428,7 +428,37 @@ inciBy step (R m) = R (local modRC m)
   where
     modRC rc =
       rc
-        { rcIndent = roundDownToNearest step (rcIndent rc) + step
+        { rcIndent =
+            -- Currently, in parenthesized expressions, we keep expressions aligned on
+            -- the left, and increase indentation from that point. But this means that
+            -- all subsequent indentation levels will be misaligned with the indentation,
+            -- assuming the parentheses starts on the indentation column:
+            --
+            --   ( Maybe
+            --         Int ->
+            --     String
+            --   )
+            --     ^^^^ 'Int' is 4 spaces from indentation start
+            --   ^^^^^^ but 6 spaces from start of column
+            --
+            -- To fix this, we mitigated the symptom by rounding down the indentation to
+            -- the indentation first before incrementing.
+            -- https://github.com/fourmolu/fourmolu/pull/37#discussion_r497904191
+            --
+            -- But this causes a regression with 2 space indentation, where a wrapped line
+            -- isn't indented enough if the parentheses does NOT start on the indentation
+            -- column.
+            -- https://github.com/fourmolu/fourmolu/issues/428
+            --
+            -- Ideally, we'd rather indicate that the "current" indentation is shifted,
+            -- while the "next" indentation should increase from the parentheses. However,
+            -- that would probably be a lot of reworking the rcIndent machinery. Instead,
+            -- we'll just restrict this patch to only apply on indentation > 2.
+            let modifyIndent =
+                  if poIndentation (rcPrinterOpts rc) > 2
+                    then roundDownToNearest step
+                    else id
+             in modifyIndent (rcIndent rc) + step
         }
     roundDownToNearest r n = (n `div` r) * r
 

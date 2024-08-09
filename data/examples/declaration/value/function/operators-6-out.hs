@@ -3,9 +3,9 @@ import Servant.API
 type PermuteRef =
   "a"
     :> ( "b" :> "c" :> End
-          :<|> "c" :> "b" :> End
+           :<|> "c" :> "b" :> End
        )
     :<|> "b"
       :> ( "a" :> "c" :> End
-            :<|> "c" :> "a" :> End
+             :<|> "c" :> "a" :> End
          )

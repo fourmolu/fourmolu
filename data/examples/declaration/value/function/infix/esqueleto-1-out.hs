@@ -5,5 +5,5 @@ foo =
     E.table
       `E.innerJoin` E.table
         `E.on` ( \(a :& b) ->
-                  a E.^. AField E.==. b E.^. BField
+                   a E.^. AField E.==. b E.^. BField
                )

@@ -14,7 +14,7 @@ bar x =
 inlineComment :: Int -> Int
 inlineComment =
   let {- join -} go = case () of
-                  () -> undefined
+                   () -> undefined
    in go
 
 implicitParams :: (HasCallStack) => Int
