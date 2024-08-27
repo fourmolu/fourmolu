@@ -9,6 +9,7 @@
 module Ormolu.Config.Gen
   ( PrinterOpts (..)
   , CommaStyle (..)
+  , CloseBracketStyle (..)
   , FunctionArrowsStyle (..)
   , HaddockPrintStyle (..)
   , HaddockPrintStyleModule (..)
@@ -51,6 +52,8 @@ data PrinterOpts f =
       poFunctionArrows :: f FunctionArrowsStyle
     , -- | How to place commas in multi-line lists, records, etc.
       poCommaStyle :: f CommaStyle
+    , -- | How to place close brackets in multi-line lists, records, etc.
+      poCloseBracketStyle :: f CloseBracketStyle
     , -- | Styling of import/export lists
       poImportExportStyle :: f ImportExportStyle
     , -- | Whether to full-indent or half-indent 'where' bindings past the preceding body
@@ -87,6 +90,7 @@ emptyPrinterOpts =
     , poColumnLimit = Nothing
     , poFunctionArrows = Nothing
     , poCommaStyle = Nothing
+    , poCloseBracketStyle = Nothing
     , poImportExportStyle = Nothing
     , poIndentWheres = Nothing
     , poRecordBraceSpace = Nothing
@@ -109,6 +113,7 @@ defaultPrinterOpts =
     , poColumnLimit = pure NoLimit
     , poFunctionArrows = pure TrailingArrows
     , poCommaStyle = pure Leading
+    , poCloseBracketStyle = pure CloseBracketNewline
     , poImportExportStyle = pure ImportExportDiffFriendly
     , poIndentWheres = pure False
     , poRecordBraceSpace = pure False
@@ -138,6 +143,7 @@ fillMissingPrinterOpts p1 p2 =
     , poColumnLimit = maybe (poColumnLimit p2) pure (poColumnLimit p1)
     , poFunctionArrows = maybe (poFunctionArrows p2) pure (poFunctionArrows p1)
     , poCommaStyle = maybe (poCommaStyle p2) pure (poCommaStyle p1)
+    , poCloseBracketStyle = maybe (poCloseBracketStyle p2) pure (poCloseBracketStyle p1)
     , poImportExportStyle = maybe (poImportExportStyle p2) pure (poImportExportStyle p1)
     , poIndentWheres = maybe (poIndentWheres p2) pure (poIndentWheres p1)
     , poRecordBraceSpace = maybe (poRecordBraceSpace p2) pure (poRecordBraceSpace p1)
@@ -174,6 +180,10 @@ parsePrinterOptsCLI f =
     <*> f
       "comma-style"
       "How to place commas in multi-line lists, records, etc. (choices: \"leading\" or \"trailing\") (default: leading)"
+      "OPTION"
+    <*> f
+      "close-bracket-style"
+      "How to place close brackets in multi-line lists, records, etc. (choices: \"newline\" or \"inline\") (default: newline)"
       "OPTION"
     <*> f
       "import-export-style"
@@ -238,6 +248,7 @@ parsePrinterOptsJSON f =
     <*> f "column-limit"
     <*> f "function-arrows"
     <*> f "comma-style"
+    <*> f "close-bracket-style"
     <*> f "import-export-style"
     <*> f "indent-wheres"
     <*> f "record-brace-space"
@@ -274,6 +285,11 @@ instance PrinterOptsFieldType Bool where
 data CommaStyle
   = Leading
   | Trailing
+  deriving (Eq, Show, Enum, Bounded)
+
+data CloseBracketStyle
+  = CloseBracketNewline
+  | CloseBracketInline
   deriving (Eq, Show, Enum, Bounded)
 
 data FunctionArrowsStyle
@@ -360,6 +376,23 @@ instance PrinterOptsFieldType CommaStyle where
         Left . unlines $
           [ "unknown value: " <> show s
           , "Valid values are: \"leading\" or \"trailing\""
+          ]
+
+instance Aeson.FromJSON CloseBracketStyle where
+  parseJSON =
+    Aeson.withText "CloseBracketStyle" $ \s ->
+      either Aeson.parseFail pure $
+        parsePrinterOptType (Text.unpack s)
+
+instance PrinterOptsFieldType CloseBracketStyle where
+  parsePrinterOptType s =
+    case s of
+      "newline" -> Right CloseBracketNewline
+      "inline" -> Right CloseBracketInline
+      _ ->
+        Left . unlines $
+          [ "unknown value: " <> show s
+          , "Valid values are: \"newline\" or \"inline\""
           ]
 
 instance Aeson.FromJSON FunctionArrowsStyle where
@@ -593,6 +626,9 @@ defaultPrinterOptsYaml =
     , ""
     , "# How to place commas in multi-line lists, records, etc. (choices: leading or trailing)"
     , "comma-style: leading"
+    , ""
+    , "# How to place close brackets in multi-line lists, records, etc. (choices: newline or inline)"
+    , "close-bracket-style: newline"
     , ""
     , "# Styling of import/export lists (choices: leading, trailing, or diff-friendly)"
     , "import-export-style: diff-friendly"
