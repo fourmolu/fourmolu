@@ -18,6 +18,7 @@
 * [Troubleshooting](#troubleshooting)
     * [Operators are being formatted weirdly!](#operators-are-being-formatted-weirdly)
 * [Limitations](#limitations)
+* [Breaking changes policy](#breaking-changes-policy)
 * [Contributing](#contributing)
 * [License](#license)
 
@@ -268,7 +269,18 @@ You can see how Ormolu decides the fixity of operators if you use `--debug`.
   declarations. See the [CPP](https://github.com/tweag/ormolu/blob/master/DESIGN.md#cpp) section in the design notes for a
   discussion of the dangers.
 * Various minor idempotence issues, most of them are related to comments or column limits.
-* Fourmolu is in a fairly early stage of development. The implementation should be as stable as Ormolu, as it only makes minimal changes, and is extensively tested. But the default configuration style may change in some minor ways in the near future, as we make more options available. It will always be possible to replicate the old default behaviour with a suitable `fourmolu.yaml`.
+
+## Breaking changes policy
+
+Fourmolu is still in a relatively early stage of development, but it is in wide enough use that stability is a desirable property. Fourmolu aims to uphold the following principles:
+
+1. It will always be possible to replicate Ormolu's formatting with a suitable `fourmolu.yaml`
+
+1. Breaking changes will be avoided where possible, but may still occur in the following circumstances:
+
+  * Fourmolu inherits a breaking change from Ormolu
+  * The change reverts a prior breaking change, which caused a regression
+  * Other exceptional situations, on a case-by-case basis
 
 ## Contributing
 
