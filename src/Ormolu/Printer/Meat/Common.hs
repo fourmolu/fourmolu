@@ -191,30 +191,11 @@ p_hsDoc' poHStyle hstyle needsNewline (L l str) = do
           HaddockMultiLineCompact -> True
   let docStringLines = splitDocString shouldEscapeCommentBraces $ hsDocString str
 
-  mSrcSpan <- getSrcSpan l
-
-  let useSingleLineComments =
-        or
-          [ poHStyle == HaddockSingleLine,
-            length docStringLines <= 1,
-            -- Use multiple single-line comments when the whole comment is indented
-            maybe False ((> 1) . srcSpanStartCol) mSrcSpan
-          ]
-
-  let body sep' =
-        forM_ (zip docStringLines (True : repeat False)) $ \(x, isFirst) -> do
-          if isFirst
-            then do
-              -- prevent trailing space in multi-line comments
-              unless (not useSingleLineComments && T.null x) space
-            else do
-              sep'
-          unless (T.null x) (txt x)
-
-  if useSingleLineComments
+  if poHStyle == HaddockSingleLine || length docStringLines <= 1
     then do
       txt $ "-- " <> haddockDelim
-      body $ newline >> txt "--" >> space
+      space
+      sep (newline >> txt "--" >> space) txt docStringLines
     else do
       txt . T.concat $
         [ "{-",
@@ -223,20 +204,13 @@ p_hsDoc' poHStyle hstyle needsNewline (L l str) = do
             _ -> " ",
           haddockDelim
         ]
-      -- 'newline' doesn't allow multiple blank newlines, which changes the comment
-      -- if the user writes a comment with multiple newlines. So we have to do this
-      -- to force the printer to output a newline. The HaddockSingleLine branch
-      -- doesn't have this problem because each newline has at least "--".
-      --
-      -- 'newline' also takes indentation into account, but since multiline comments
-      -- are never used in an indented context (see useSingleLineComments), this is
-      -- safe
-      body $ txt "\n"
+      space
+      sep multilineCommentNewline txtStripIndent docStringLines
       newline
       txt "-}"
 
   when (Choice.isTrue needsNewline) newline
-  traverse_ (setSpanMark . HaddockSpan hstyle) mSrcSpan
+  traverse_ (setSpanMark . HaddockSpan hstyle) =<< getSrcSpan l
   where
     haddockDelim =
       case hstyle of
