@@ -230,17 +230,17 @@ commentFollowsElt ref mnSpn meSpn mlastMark (L l comment) =
           let startColumn = srcLocCol . realSrcSpanStart
            in startColumn espn > startColumn ref
                 || ( abs (startColumn espn - startColumn l)
-                      >= abs (startColumn ref - startColumn l)
+                       >= abs (startColumn ref - startColumn l)
                    )
     continuation =
       -- A comment is a continuation when it doesn't have non-whitespace
       -- lexemes in front of it and goes right after the previous comment.
       not (hasAtomsBefore comment)
         && ( case mlastMark of
-              Just (HaddockSpan _ _) -> False
-              Just (CommentSpan spn) ->
-                srcSpanEndLine spn + 1 == srcSpanStartLine l
-              _ -> False
+               Just (HaddockSpan _ _) -> False
+               Just (CommentSpan spn) ->
+                 srcSpanEndLine spn + 1 == srcSpanStartLine l
+               _ -> False
            )
     lastInEnclosing =
       case meSpn of
