@@ -258,6 +258,26 @@ allOptions =
         ormolu = HsBool False,
         sinceVersion = Nothing,
         cliOverrides = emptyOverrides
+      },
+    Option
+      { name = "sort-derived-classes",
+        fieldName = Just "poSortDerivedClasses",
+        description = "Whether to sort derived classes",
+        type_ = "Bool",
+        default_ = HsBool False,
+        ormolu = HsBool False,
+        sinceVersion = Nothing,
+        cliOverrides = emptyOverrides
+      },
+    Option
+      { name = "sort-deriving-clauses",
+        fieldName = Just "poSortDerivingClauses",
+        description = "Whether to sort deriving clauses",
+        type_ = "Bool",
+        default_ = HsBool False,
+        ormolu = HsBool False,
+        sinceVersion = Nothing,
+        cliOverrides = emptyOverrides
       }
   ]
 

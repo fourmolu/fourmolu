@@ -16,6 +16,7 @@ where
 import Control.Monad
 import Data.Choice (Choice, pattern Is, pattern Isn't, pattern With)
 import Data.Choice qualified as Choice
+import Data.List (sortOn)
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.List.NonEmpty qualified as NE
 import Data.Maybe (isJust, isNothing, mapMaybe, maybeToList)
@@ -133,7 +134,25 @@ p_dataDecl style name tyVars getTyVarLoc p_tyVar fixity HsDataDefn {..} = do
                   else id
           sep s (sitcc' . located' (p_conDecl singleRecCon)) dd_cons'
   unless (null dd_derivs) breakpoint
-  inci $ sep newline (located' p_hsDerivingClause) dd_derivs
+
+  sortDerivingClauses <- getPrinterOpt poSortDerivingClauses
+  let sortedDeriving = if sortDerivingClauses then sortOn (derivingStrategyKey . fmap unLoc . deriv_clause_strategy . unLoc) dd_derivs else dd_derivs
+  inci $ sep newline (located' p_hsDerivingClause) sortedDeriving
+  where
+    derivingStrategyKey Nothing = ClauseNoStrategy
+    derivingStrategyKey (Just strategy) = case strategy of
+      StockStrategy _ -> ClauseStockStrategy
+      NewtypeStrategy _ -> ClauseNewtypeStrategy
+      AnyclassStrategy _ -> ClauseAnyclassStrategy
+      ViaStrategy ty -> ClauseViaStrategy (showOutputable ty)
+
+data DerivingClauseSortKey
+  = ClauseNoStrategy
+  | ClauseStockStrategy
+  | ClauseNewtypeStrategy
+  | ClauseAnyclassStrategy
+  | ClauseViaStrategy String
+  deriving (Eq, Ord)
 
 p_conDecl :: Choice "singleRecCon" -> ConDecl GhcPs -> R ()
 p_conDecl _ ConDeclGADT {..} = do
@@ -286,12 +305,14 @@ p_hsDerivingClause HsDerivingClause {..} = do
           | [sigTy] <- sigTys,
             DerivingNever <- singleDerivingParens ->
               located sigTy p_hsSigType
-          | otherwise ->
+          | otherwise -> do
+              sortDerivedClasses <- getPrinterOpt poSortDerivedClasses
+              let sort = if sortDerivedClasses then sortOn showOutputable else id
               parens N $
                 sep
                   commaDel
                   (sitcc . located' p_hsSigType)
-                  sigTys
+                  (sort sigTys)
   space
   case deriv_clause_strategy of
     Nothing -> do
