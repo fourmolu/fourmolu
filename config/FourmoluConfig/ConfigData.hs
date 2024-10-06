@@ -248,6 +248,16 @@ allOptions =
         ormolu = HsList [],
         sinceVersion = Nothing,
         cliOverrides = emptyOverrides
+      },
+    Option
+      { name = "sort-constraints",
+        fieldName = Just "poSortConstraints",
+        description = "Whether to sort constraints",
+        type_ = "Bool",
+        default_ = HsBool False,
+        ormolu = HsBool False,
+        sinceVersion = Nothing,
+        cliOverrides = emptyOverrides
       }
   ]
 

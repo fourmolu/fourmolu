@@ -77,6 +77,8 @@ data PrinterOpts f =
       poRespectful :: f Bool
     , -- | Rules for grouping import declarations
       poImportGrouping :: f ImportGrouping
+    , -- | Whether to sort constraints
+      poSortConstraints :: f Bool
     }
   deriving (Generic)
 
@@ -100,6 +102,7 @@ emptyPrinterOpts =
     , poUnicode = Nothing
     , poRespectful = Nothing
     , poImportGrouping = Nothing
+    , poSortConstraints = Nothing
     }
 
 defaultPrinterOpts :: PrinterOpts Identity
@@ -122,6 +125,7 @@ defaultPrinterOpts =
     , poUnicode = pure UnicodeNever
     , poRespectful = pure True
     , poImportGrouping = pure ImportGroupLegacy
+    , poSortConstraints = pure False
     }
 
 -- | Fill the field values that are 'Nothing' in the first argument
@@ -151,6 +155,7 @@ fillMissingPrinterOpts p1 p2 =
     , poUnicode = maybe (poUnicode p2) pure (poUnicode p1)
     , poRespectful = maybe (poRespectful p2) pure (poRespectful p1)
     , poImportGrouping = maybe (poImportGrouping p2) pure (poImportGrouping p1)
+    , poSortConstraints = maybe (poSortConstraints p2) pure (poSortConstraints p1)
     }
 
 parsePrinterOptsCLI ::
@@ -227,6 +232,10 @@ parsePrinterOptsCLI f =
       "import-grouping"
       "Rules for grouping import declarations (default: legacy)"
       "OPTION"
+    <*> f
+      "sort-constraints"
+      "Whether to sort constraints (default: false)"
+      "BOOL"
 
 parsePrinterOptsJSON ::
   Applicative f =>
@@ -251,6 +260,7 @@ parsePrinterOptsJSON f =
     <*> f "unicode"
     <*> f "respectful"
     <*> f "import-grouping"
+    <*> f "sort-constraints"
 
 {---------- PrinterOpts field types ----------}
 
@@ -641,4 +651,7 @@ defaultPrinterOptsYaml =
     , ""
     , "# Modules defined by the current Cabal package for import grouping"
     , "local-modules: []"
+    , ""
+    , "# Whether to sort constraints"
+    , "sort-constraints: false"
     ]

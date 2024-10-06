@@ -318,6 +318,15 @@ spec =
           showTestCase = showStrategy,
           testCaseSuffix = \igs -> suffixWith [showStrategy igs],
           checkIdempotence = True
+        },
+      TestGroup
+        { label = "sort-constraints",
+          isMulti = False,
+          testCases = allOptions,
+          updateConfig = \sortConstraints options -> options {poSortConstraints = pure sortConstraints},
+          showTestCase = show,
+          testCaseSuffix = suffix1,
+          checkIdempotence = True
         }
     ]
 
