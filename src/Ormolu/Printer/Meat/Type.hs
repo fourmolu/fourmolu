@@ -26,6 +26,7 @@ where
 import Control.Monad
 import Data.Choice (pattern With, pattern Without)
 import Data.Functor ((<&>))
+import Data.List (sortOn)
 import GHC.Data.Strict qualified as Strict
 import GHC.Hs hiding (isPromoted)
 import GHC.Types.SourceText
@@ -268,7 +269,10 @@ p_hsContext :: HsContext GhcPs -> R ()
 p_hsContext = \case
   [] -> txt "()"
   [x] -> located x p_hsType
-  xs -> parens N $ sep commaDel (sitcc . located' p_hsType) xs
+  xs -> do
+    shouldSort <- getPrinterOpt poSortConstraints
+    let sort = if shouldSort then sortOn showOutputable else id
+    parens N $ sep commaDel (sitcc . located' p_hsType) (sort xs)
 
 class IsTyVarBndrFlag flag where
   isInferred :: flag -> Bool

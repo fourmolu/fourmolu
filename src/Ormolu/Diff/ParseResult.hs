@@ -15,6 +15,7 @@ import Data.ByteString (ByteString)
 import Data.Foldable
 import Data.Function
 import Data.Generics
+import Data.List (sortOn)
 import GHC.Hs
 import GHC.Types.SourceText
 import GHC.Types.SrcLoc
@@ -100,6 +101,8 @@ diffHsModule = genericQuery
                   `extQ` importDeclQualifiedStyleEq
                   `extQ` classDeclCtxEq
                   `extQ` derivedTyClsParensEq
+                  `extQ` qualTyCtxEq
+                  `extQ` dataDeclEq
                   `extQ` considerEqual @EpAnnComments -- ~ XCGRHSs GhcPs
                   `extQ` considerEqual @TokenLocation -- in LHs(Uni)Token
                   `extQ` considerEqual @EpaLocation
@@ -164,9 +167,33 @@ diffHsModule = genericQuery
         UnhelpfulSpan _ -> d
     appendSpan _ d = d
 
+    -- The order of contexts doesn't matter
+    normalizeContext :: HsContext GhcPs -> HsContext GhcPs
+    normalizeContext = sortOn showOutputable
+
+    normalizeMContext :: Maybe (LHsContext GhcPs) -> Maybe (LHsContext GhcPs)
+    normalizeMContext Nothing = Nothing
+    normalizeMContext (Just (L _ [])) = Nothing
+    normalizeMContext (Just (L ann ctx)) = Just (L ann $ normalizeContext ctx)
+
+    qualTyCtxEq :: HsType GhcPs -> GenericQ ParseResultDiff
+    qualTyCtxEq = considerEqualVia $ \lt rt -> genericQuery (normalizeQualTy lt) (normalizeQualTy rt)
+      where
+        normalizeQualTy :: HsType GhcPs -> HsType GhcPs
+        normalizeQualTy (HsQualTy ann (L ann' ctx) body) = HsQualTy ann (L ann' $ normalizeContext ctx) body
+        normalizeQualTy ty = ty
+
     classDeclCtxEq :: TyClDecl GhcPs -> GenericQ ParseResultDiff
-    classDeclCtxEq ClassDecl {tcdCtxt = Just (L _ []), ..} tc' = genericQuery ClassDecl {tcdCtxt = Nothing, ..} tc'
-    classDeclCtxEq tc tc' = genericQuery tc tc'
+    classDeclCtxEq = considerEqualVia $ \lc rc -> genericQuery (normalizeClassDecl lc) (normalizeClassDecl rc)
+      where
+        normalizeClassDecl ClassDecl {tcdCtxt, ..} = ClassDecl {tcdCtxt = normalizeMContext tcdCtxt, ..}
+        normalizeClassDecl d = d
+
+    dataDeclEq :: HsDataDefn GhcPs -> GenericQ ParseResultDiff
+    dataDeclEq = considerEqualVia $ \dd dd' -> genericQuery (normalizeDataDecl dd) (normalizeDataDecl dd')
+      where
+        normalizeDataDecl :: HsDataDefn GhcPs -> HsDataDefn GhcPs
+        normalizeDataDecl HsDataDefn {dd_ctxt, ..} = HsDataDefn {dd_ctxt = normalizeMContext dd_ctxt, ..}
 
     derivedTyClsParensEq :: DerivClauseTys GhcPs -> GenericQ ParseResultDiff
     derivedTyClsParensEq = considerEqualVia $ curry $ \case

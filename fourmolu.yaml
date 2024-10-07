@@ -21,3 +21,4 @@ fixities: []
 reexports: []
 import-grouping: legacy
 local-modules: []
+sort-constraints: false
