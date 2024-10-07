@@ -192,8 +192,9 @@ diffHsModule = genericQuery
     dataDeclEq :: HsDataDefn GhcPs -> GenericQ ParseResultDiff
     dataDeclEq = considerEqualVia $ \dd dd' -> genericQuery (normalizeDataDecl dd) (normalizeDataDecl dd')
       where
+        -- The order of deriving clauses doesn't matter
         normalizeDataDecl :: HsDataDefn GhcPs -> HsDataDefn GhcPs
-        normalizeDataDecl HsDataDefn {dd_ctxt, ..} = HsDataDefn {dd_ctxt = normalizeMContext dd_ctxt, ..}
+        normalizeDataDecl HsDataDefn {dd_ctxt, dd_derivs, ..} = HsDataDefn {dd_ctxt = normalizeMContext dd_ctxt, dd_derivs = sortOn showOutputable dd_derivs, ..}
 
     derivedTyClsParensEq :: DerivClauseTys GhcPs -> GenericQ ParseResultDiff
     derivedTyClsParensEq = considerEqualVia $ curry $ \case
