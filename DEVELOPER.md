@@ -158,7 +158,7 @@ Fourmolu aims to continue merging upstream changes in Ormolu. Whenever Ormolu ma
     * `flake.nix`
     * `nix/`
     * `ormolu-live/`
-    * `weeder.dhall`
+    * `weeder.toml`
 
 * Conflicts at the following paths should be resolved by throwing out Ormolu's changes and keeping our changes (i.e. if there's a conflict, use `git checkout --ours`):
     * `.github/workflows/ci.yml`
