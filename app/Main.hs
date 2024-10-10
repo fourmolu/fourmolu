@@ -184,10 +184,6 @@ formatOne ConfigFileOpts {..} mode reqSourceType rawConfig mpath =
                     <> sourceFile
               return (Just cabalInfo)
             CabalFound cabalInfo -> return (Just cabalInfo)
-        getDotOrmoluForSourceFile' sourceFile = do
-          if optDoNotUseDotOrmolu
-            then return Nothing
-            else Just <$> getDotOrmoluForSourceFile sourceFile
     case FP.normalise <$> mpath of
       -- input source = STDIN
       Nothing -> do
@@ -195,10 +191,7 @@ formatOne ConfigFileOpts {..} mode reqSourceType rawConfig mpath =
           (_, True) -> return Nothing
           (Nothing, False) -> throwIO OrmoluMissingStdinInputFile
           (Just inputFile, False) -> getCabalInfoForSourceFile' inputFile
-        mdotOrmolu <- case optStdinInputFile of
-          Nothing -> return Nothing
-          Just inputFile -> getDotOrmoluForSourceFile' inputFile
-        config <- patchConfig Nothing mcabalInfo mdotOrmolu
+        config <- patchConfig Nothing mcabalInfo
         case mode of
           Stdout -> do
             ormoluStdin config >>= T.Utf8.putStr
@@ -222,12 +215,10 @@ formatOne ConfigFileOpts {..} mode reqSourceType rawConfig mpath =
           if optDoNotUseCabal
             then return Nothing
             else getCabalInfoForSourceFile' inputFile
-        mdotOrmolu <- getDotOrmoluForSourceFile' inputFile
         config <-
           patchConfig
             (Just (detectSourceType inputFile))
             mcabalInfo
-            mdotOrmolu
         case mode of
           Stdout -> do
             ormoluFile config inputFile >>= T.Utf8.putStr
@@ -247,7 +238,7 @@ formatOne ConfigFileOpts {..} mode reqSourceType rawConfig mpath =
               ormolu config inputFile originalInput
             handleDiff originalInput formattedInput inputFile
   where
-    patchConfig mdetectedSourceType mcabalInfo mdotOrmolu = do
+    patchConfig mdetectedSourceType mcabalInfo = do
       let sourceType =
             fromMaybe
               ModuleSource
@@ -256,13 +247,7 @@ formatOne ConfigFileOpts {..} mode reqSourceType rawConfig mpath =
         refineConfig
           sourceType
           mcabalInfo
-          (Just (cfgFixityOverrides rawConfig))
-          (Just (cfgModuleReexports rawConfig))
-          ( rawConfig
-              { cfgFixityOverrides = maybe defaultFixityOverrides fst mdotOrmolu,
-                cfgModuleReexports = maybe defaultModuleReexports snd mdotOrmolu
-              }
-          )
+          rawConfig
     handleDiff originalInput formattedInput fileRepr =
       case diffText originalInput formattedInput fileRepr of
         Nothing -> return ExitSuccess
@@ -311,8 +296,6 @@ data Mode
 data ConfigFileOpts = ConfigFileOpts
   { -- | DO NOT extract default-extensions and dependencies from .cabal files
     optDoNotUseCabal :: Bool,
-    -- | DO NOT look for @.ormolu@ files
-    optDoNotUseDotOrmolu :: Bool,
     -- | Optional path to a file which will be used to find a .cabal file
     -- when using input from stdin
     optStdinInputFile :: Maybe FilePath
@@ -395,7 +378,6 @@ configFileOptsParser =
       [ long "no-cabal",
         help "Do not extract default-extensions and dependencies from .cabal files"
       ]
-    <*> pure True -- Fourmolu: Don't add the '--no-dot-ormolu' flag, hardcode to never looking for .ormolu files
     <*> (optional . strOption . mconcat)
       [ long "stdin-input-file",
         help "Path which will be used to find the .cabal file when using input from stdin"
