@@ -48,7 +48,6 @@ import Control.Exception
 import Control.Monad
 import Control.Monad.IO.Class (MonadIO (..))
 import Data.Map.Strict qualified as Map
-import Data.Maybe (fromMaybe)
 import Data.Set qualified as Set
 import Data.Text (Text)
 import Data.Text qualified as T
@@ -193,30 +192,24 @@ refineConfig ::
   SourceType ->
   -- | Cabal info for the file, if available
   Maybe CabalUtils.CabalInfo ->
-  -- | Fixity overrides, if available
-  Maybe FixityOverrides ->
-  -- | Module re-exports, if available
-  Maybe ModuleReexports ->
   -- | 'Config' to refine
   Config region ->
   -- | Refined 'Config'
   Config region
-refineConfig sourceType mcabalInfo mfixityOverrides mreexports rawConfig =
+refineConfig sourceType mcabalInfo rawConfig =
   rawConfig
     { cfgDynOptions = cfgDynOptions rawConfig ++ dynOptsFromCabal,
       cfgFixityOverrides =
         FixityOverrides $
           Map.unions
-            [ unFixityOverrides fixityOverrides,
-              unFixityOverrides (cfgFixityOverrides rawConfig),
+            [ unFixityOverrides (cfgFixityOverrides rawConfig),
               unFixityOverrides defaultFixityOverrides
             ],
       cfgModuleReexports =
         ModuleReexports $
           Map.unionsWith
             (<>)
-            [ unModuleReexports reexports,
-              unModuleReexports (cfgModuleReexports rawConfig),
+            [ unModuleReexports (cfgModuleReexports rawConfig),
               unModuleReexports defaultModuleReexports
             ],
       cfgDependencies =
@@ -227,8 +220,6 @@ refineConfig sourceType mcabalInfo mfixityOverrides mreexports rawConfig =
           <> maybe Set.empty (Set.fromList . CabalUtils.ciModules) mcabalInfo
     }
   where
-    fixityOverrides = fromMaybe defaultFixityOverrides mfixityOverrides
-    reexports = fromMaybe defaultModuleReexports mreexports
     (dynOptsFromCabal, depsFromCabal) =
       case mcabalInfo of
         Nothing ->
