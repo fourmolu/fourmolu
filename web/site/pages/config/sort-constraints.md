@@ -16,11 +16,11 @@ f :: (Show a, Eq a) => a
 ```
 ```fourmolu-example-tab
 With sorting
-{ "sort-constraints": "true" }
+{ "sort-constraints": true }
 ```
 ```fourmolu-example-tab
 Without sorting
-{ "sort-constraints": "false" }
+{ "sort-constraints": false }
 ```
 
 For more examples, see the [test files](https://github.com/fourmolu/fourmolu/tree/main/data/fourmolu/sort-constraints).
