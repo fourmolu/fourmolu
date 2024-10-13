@@ -1,3 +1,4 @@
+#include "string.h"
 #include "Rts.h"
 
 #include "Main_stub.h"
