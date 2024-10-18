@@ -4,7 +4,7 @@ packages:
   ../../config/
 
 allow-newer:
-  , hakyll:*
+  , lrucache:containers
 
 package hakyll
   flags: -usePandoc +watchServer
