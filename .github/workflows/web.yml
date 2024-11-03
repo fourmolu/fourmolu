@@ -23,6 +23,7 @@ jobs:
           echo ~/.cabal/bin >> "${GITHUB_PATH}"
       -
         name: Install wasm32-wasi-ghc
+        # TODO: bump to 9.10: https://github.com/digital-asset/ghc-lib/issues/563#issuecomment-2453777392
         run: |
           cd "$(mktemp -d)"
           curl -L https://gitlab.haskell.org/ghc/ghc-wasm-meta/-/archive/master/ghc-wasm-meta-master.tar.gz \
