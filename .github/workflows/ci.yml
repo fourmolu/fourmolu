@@ -113,13 +113,19 @@ jobs:
   build_prod:
     strategy:
       matrix:
-        os:
-          - ubuntu-latest
-          # disable mac for now, since mac can be either x86 or arm, and we
-          # don't have control over which
-          # - macos-latest
+        include:
+          # https://github.com/actions/runner-images?tab=readme-ov-file#available-images
+          -
+            target: linux-x86_64
+            os: ubuntu-latest
+          -
+            target: osx-x86_64
+            os: macos-13
+          -
+            target: osx-arm64
+            os: macos-latest
 
-    name: 'build_prod: ${{ matrix.os }}'
+    name: 'build_prod: ${{ matrix.target }}'
     runs-on: ${{ matrix.os }}
     env:
       FOURMOLU_REV: ${{ github.sha }}
@@ -127,6 +133,24 @@ jobs:
     steps:
       -
         uses: actions/checkout@v4
+      -
+        name: Verify platform
+        run: |
+          set -x
+          case ${{ runner.os }} in
+            (Linux) os=linux ;;
+            (macOS) os=osx ;;
+            (*) echo 'Unknown OS' >&1; exit 1 ;;
+          esac
+          case ${{ runner.arch }} in
+            (X64) arch=x86_64 ;;
+            (ARM64) arch=arm64 ;;
+            (*) echo 'Unknown architecture' >&1; exit 1 ;;
+          esac
+          if [[ $os-$arch != ${{ matrix.target }} ]]; then
+            echo "Incorrect platform: $os-$arch" >&2
+            exit 1
+          fi
       -
         uses: haskell-actions/setup@v2
         with:
@@ -153,25 +177,14 @@ jobs:
           cabal_file: fourmolu.cabal
       -
         name: Rename binary
-        run: |
-          set -x
-          case ${{ runner.os }} in
-            (Linux) os=linux ;;
-            (macOS) os=osx ;;
-            (*) echo 'Unknown OS' >&1; exit 1 ;;
-          esac
-          case ${{ runner.arch }} in
-            (X64) arch=x86_64 ;;
-            (*) echo 'Unknown architecture' >&1; exit 1 ;;
-          esac
-          cp bin/fourmolu bin/fourmolu-$version-$os-$arch
+        run: cp bin/fourmolu bin/fourmolu-$version-${{ matrix.target }}
         env:
           version: ${{ steps.cabal_file.outputs.version }}
       -
         name: Store binary
         uses: actions/upload-artifact@v4
         with:
-          name: fourmolu-binary-${{ matrix.os }}
+          name: fourmolu-binary-${{ matrix.target }}
           path: bin/fourmolu-*
 
     outputs:
