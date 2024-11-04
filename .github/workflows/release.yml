@@ -19,7 +19,17 @@ jobs:
       -
         uses: actions/download-artifact@v4
         with:
-          name: fourmolu-binary-ubuntu-latest
+          name: fourmolu-binary-linux-x86_64
+          path: ./bin/
+      -
+        uses: actions/download-artifact@v4
+        with:
+          name: fourmolu-binary-osx-x86_64
+          path: ./bin/
+      -
+        uses: actions/download-artifact@v4
+        with:
+          name: fourmolu-binary-osx-arm64
           path: ./bin/
       -
         uses: actions/download-artifact@v4
@@ -54,4 +64,6 @@ jobs:
           target_commitish: ${{ github.sha }}
           files: |
             bin/fourmolu-${{ env.VERSION }}-linux-x86_64
+            bin/fourmolu-${{ env.VERSION }}-osx-x86_64
+            bin/fourmolu-${{ env.VERSION }}-osx-arm64
           fail_on_unmatched_files: true
