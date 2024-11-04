@@ -327,6 +327,24 @@ spec =
           showTestCase = show,
           testCaseSuffix = suffix1,
           checkIdempotence = True
+        },
+      TestGroup
+        { label = "sort-derived-classes",
+          isMulti = False,
+          testCases = allOptions,
+          updateConfig = \sortDerivedClasses opts -> opts {poSortDerivedClasses = pure sortDerivedClasses},
+          showTestCase = show,
+          testCaseSuffix = suffix1,
+          checkIdempotence = True
+        },
+      TestGroup
+        { label = "sort-deriving-clauses",
+          isMulti = False,
+          testCases = allOptions,
+          updateConfig = \sortDerivingClauses opts -> opts {poSortDerivingClauses = pure sortDerivingClauses},
+          showTestCase = show,
+          testCaseSuffix = suffix1,
+          checkIdempotence = True
         }
     ]
 

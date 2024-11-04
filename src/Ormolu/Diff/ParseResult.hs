@@ -100,7 +100,7 @@ diffHsModule = genericQuery
                   `extQ` hsDocStringEq
                   `extQ` importDeclQualifiedStyleEq
                   `extQ` classDeclCtxEq
-                  `extQ` derivedTyClsParensEq
+                  `extQ` derivedTyClsEq
                   `extQ` qualTyCtxEq
                   `extQ` dataDeclEq
                   `extQ` considerEqual @EpAnnComments -- ~ XCGRHSs GhcPs
@@ -180,7 +180,7 @@ diffHsModule = genericQuery
     qualTyCtxEq = considerEqualVia $ \lt rt -> genericQuery (normalizeQualTy lt) (normalizeQualTy rt)
       where
         normalizeQualTy :: HsType GhcPs -> HsType GhcPs
-        normalizeQualTy (HsQualTy ann (L ann' ctx) body) = HsQualTy ann (L ann' $ normalizeContext ctx) body
+        normalizeQualTy (HsQualTy ann ctx body) = HsQualTy ann (fmap normalizeContext ctx) body
         normalizeQualTy ty = ty
 
     classDeclCtxEq :: TyClDecl GhcPs -> GenericQ ParseResultDiff
@@ -191,15 +191,29 @@ diffHsModule = genericQuery
 
     dataDeclEq :: HsDataDefn GhcPs -> GenericQ ParseResultDiff
     dataDeclEq = considerEqualVia $ \dd dd' -> genericQuery (normalizeDataDecl dd) (normalizeDataDecl dd')
-      where
-        normalizeDataDecl :: HsDataDefn GhcPs -> HsDataDefn GhcPs
-        normalizeDataDecl HsDataDefn {dd_ctxt, ..} = HsDataDefn {dd_ctxt = normalizeMContext dd_ctxt, ..}
 
-    derivedTyClsParensEq :: DerivClauseTys GhcPs -> GenericQ ParseResultDiff
-    derivedTyClsParensEq = considerEqualVia $ curry $ \case
-      (DctSingle _ ty, DctMulti _ [ty']) -> genericQuery ty ty'
-      (DctMulti _ [ty], DctSingle _ ty') -> genericQuery ty ty'
-      (x, y) -> genericQuery x y
+    normalizeDataDecl :: HsDataDefn GhcPs -> HsDataDefn GhcPs
+    normalizeDataDecl HsDataDefn {dd_ctxt, dd_derivs, ..} =
+      HsDataDefn
+        { -- The order of classes in the context doesn't matter
+          dd_ctxt = normalizeMContext dd_ctxt,
+          -- The order of deriving clauses doesn't matter. Note: need to normalize before sorting, otherwise
+          -- we'll get a different sort order!
+          dd_derivs = sortOn showOutputable ((fmap . fmap) normalizeDerivingClause dd_derivs),
+          ..
+        }
+
+    normalizeDerivingClause :: HsDerivingClause GhcPs -> HsDerivingClause GhcPs
+    normalizeDerivingClause HsDerivingClause {deriv_clause_tys, ..} =
+      HsDerivingClause {deriv_clause_tys = fmap normalizeDerivClauseTys deriv_clause_tys, ..}
+
+    normalizeDerivClauseTys :: DerivClauseTys GhcPs -> DerivClauseTys GhcPs
+    normalizeDerivClauseTys (DctSingle ann ty) = DctMulti ann [ty]
+    -- The order of types in deriving clauses doesn't matter
+    normalizeDerivClauseTys (DctMulti ann tys) = DctMulti ann (sortOn showOutputable tys)
+
+    derivedTyClsEq :: DerivClauseTys GhcPs -> GenericQ ParseResultDiff
+    derivedTyClsEq = considerEqualVia $ \lc rc -> genericQuery (normalizeDerivClauseTys lc) (normalizeDerivClauseTys rc)
 
     compareAnnKeywordId x y =
       let go = curry $ \case

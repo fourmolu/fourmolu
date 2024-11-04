@@ -79,6 +79,10 @@ data PrinterOpts f =
       poImportGrouping :: f ImportGrouping
     , -- | Whether to sort constraints
       poSortConstraints :: f Bool
+    , -- | Whether to sort derived classes
+      poSortDerivedClasses :: f Bool
+    , -- | Whether to sort deriving clauses
+      poSortDerivingClauses :: f Bool
     }
   deriving (Generic)
 
@@ -103,6 +107,8 @@ emptyPrinterOpts =
     , poRespectful = Nothing
     , poImportGrouping = Nothing
     , poSortConstraints = Nothing
+    , poSortDerivedClasses = Nothing
+    , poSortDerivingClauses = Nothing
     }
 
 defaultPrinterOpts :: PrinterOpts Identity
@@ -126,6 +132,8 @@ defaultPrinterOpts =
     , poRespectful = pure True
     , poImportGrouping = pure ImportGroupLegacy
     , poSortConstraints = pure False
+    , poSortDerivedClasses = pure False
+    , poSortDerivingClauses = pure False
     }
 
 -- | Fill the field values that are 'Nothing' in the first argument
@@ -156,6 +164,8 @@ fillMissingPrinterOpts p1 p2 =
     , poRespectful = maybe (poRespectful p2) pure (poRespectful p1)
     , poImportGrouping = maybe (poImportGrouping p2) pure (poImportGrouping p1)
     , poSortConstraints = maybe (poSortConstraints p2) pure (poSortConstraints p1)
+    , poSortDerivedClasses = maybe (poSortDerivedClasses p2) pure (poSortDerivedClasses p1)
+    , poSortDerivingClauses = maybe (poSortDerivingClauses p2) pure (poSortDerivingClauses p1)
     }
 
 parsePrinterOptsCLI ::
@@ -236,6 +246,14 @@ parsePrinterOptsCLI f =
       "sort-constraints"
       "Whether to sort constraints (default: false)"
       "BOOL"
+    <*> f
+      "sort-derived-classes"
+      "Whether to sort derived classes (default: false)"
+      "BOOL"
+    <*> f
+      "sort-deriving-clauses"
+      "Whether to sort deriving clauses (default: false)"
+      "BOOL"
 
 parsePrinterOptsJSON ::
   Applicative f =>
@@ -261,6 +279,8 @@ parsePrinterOptsJSON f =
     <*> f "respectful"
     <*> f "import-grouping"
     <*> f "sort-constraints"
+    <*> f "sort-derived-classes"
+    <*> f "sort-deriving-clauses"
 
 {---------- PrinterOpts field types ----------}
 
@@ -654,4 +674,10 @@ defaultPrinterOptsYaml =
     , ""
     , "# Whether to sort constraints"
     , "sort-constraints: false"
+    , ""
+    , "# Whether to sort derived classes"
+    , "sort-derived-classes: false"
+    , ""
+    , "# Whether to sort deriving clauses"
+    , "sort-deriving-clauses: false"
     ]

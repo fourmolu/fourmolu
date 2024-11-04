@@ -22,3 +22,5 @@ reexports: []
 import-grouping: legacy
 local-modules: []
 sort-constraints: false
+sort-derived-classes: false
+sort-deriving-clauses: false
