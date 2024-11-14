@@ -24,3 +24,4 @@ local-modules: []
 sort-constraints: false
 sort-derived-classes: false
 sort-deriving-clauses: false
+trailing-section-operators: true
