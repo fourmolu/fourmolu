@@ -20,19 +20,12 @@ import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Text.IO.Utf8 qualified as T.Utf8
 import Distribution.ModuleName qualified as ModuleName
+import Distribution.Types.PackageName (mkPackageName)
 import GHC.Stack (withFrozenCallStack)
-import Ormolu
-  ( Config (..),
-    PrinterOpts (..),
-    PrinterOptsTotal,
-    defaultConfig,
-    defaultPrinterOpts,
-    detectSourceType,
-    ormolu,
-  )
-import Ormolu.Config (ColumnLimit (..), HaddockPrintStyleModule (..), ImportGroup (..), ImportGroupRule (..), ImportGrouping (..), ImportModuleMatcher (..), ImportRulePriority (ImportRulePriority), QualifiedImportMatcher (MatchBothQualifiedAndUnqualified, MatchQualifiedOnly, MatchUnqualifiedOnly), defaultImportRulePriority)
+import Ormolu (detectSourceType, ormolu)
+import Ormolu.Config
 import Ormolu.Exception (OrmoluException, printOrmoluException)
-import Ormolu.Terminal (ColorMode (..), runTerm)
+import Ormolu.Terminal (runTerm)
 import Ormolu.Utils.Glob (mkGlob)
 import Path
   ( File,
@@ -386,6 +379,7 @@ runOrmolu opts checkIdempotence inputPath input =
         { cfgPrinterOpts = opts,
           cfgSourceType = detectSourceType inputPath,
           cfgCheckIdempotence = checkIdempotence,
+          cfgDependencies = S.fromList [mkPackageName "base"],
           cfgLocalModules =
             S.fromList $
               ModuleName.fromString
