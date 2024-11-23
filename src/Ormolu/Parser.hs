@@ -217,6 +217,7 @@ normalizeModule Config {..} hsmod =
       [x@(L _ (HsParTy _ inner))]
         | L _ HsForAllTy {} <- inner -> [x]
         | L _ HsQualTy {} <- inner -> [x]
+        | L _ HsIParamTy {} <- inner -> [x]
         | ConstraintNever <- constraintParens -> [inner]
         | otherwise -> [x]
       [x@(L lx _)]
