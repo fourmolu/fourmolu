@@ -5,6 +5,7 @@ indentation: 2
 column-limit: none
 function-arrows: trailing
 comma-style: trailing
+close-bracket-style: newline
 import-export-style: trailing
 indent-wheres: true
 record-brace-space: true
