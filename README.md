@@ -245,7 +245,7 @@ operator.
 * If this is a custom operator, see the instructions in the [Language
   extensions, dependencies, and
   fixities](#language-extensions-dependencies-and-fixities) section to
-  specify the correct fixities in a `.ormolu` file.
+  specify the correct fixities in a `fourmolu.yaml` file.
 
 * If this is a third-party operator (e.g. from `base` or some other package
   from Hackage), Ormolu probably doesn't recognize that the operator is the
@@ -257,7 +257,7 @@ operator.
     * You might have `-XNoImplicitPrelude` turned on
 
   If any of these are true, make sure to specify the reexports correctly in
-  a `.ormolu` file.
+  a `fourmolu.yaml` file.
 
 You can see how Ormolu decides the fixity of operators if you use `--debug`.
 
