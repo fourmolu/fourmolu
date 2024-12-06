@@ -9,10 +9,10 @@ This option determines if "section" operators (those that are `infixr 0`, such a
 ```fourmolu-example-input
 foo :: IO ()
 foo =
-  $ bar
-  $ baz
-  $ bat
-  $ quiz x
+  $$ bar
+  $$ baz
+  $$ bat
+  $$ quiz x
 ```
 ```fourmolu-example-tab
 With trailing section operators
