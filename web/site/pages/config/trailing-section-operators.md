@@ -2,8 +2,7 @@
 
 $info$
 
-This option determine if "section" operators (those that are `infixr 0`, such as
-`$`) are left in a trailing position or not.
+This option determines if "section" operators (those that are `infixr 0`, such as `$`) are left in a trailing position or not.
 
 ## Examples
 
