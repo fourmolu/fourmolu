@@ -22,7 +22,7 @@ import GHC.Types.Fixity
 import GHC.Types.Name (occNameString)
 import GHC.Types.Name.Reader (RdrName, rdrNameOcc)
 import GHC.Types.SrcLoc
-import Ormolu.Config (poTrailingSectionOperators, poIndentation)
+import Ormolu.Config (poIndentation, poTrailingSectionOperators)
 import Ormolu.Printer.Combinators
 import Ormolu.Printer.Meat.Common (p_rdrName)
 import Ormolu.Printer.Meat.Declaration.Value
