@@ -22,7 +22,7 @@ import GHC.Types.Fixity
 import GHC.Types.Name (occNameString)
 import GHC.Types.Name.Reader (RdrName, rdrNameOcc)
 import GHC.Types.SrcLoc
-import Ormolu.Config (poIndentation)
+import Ormolu.Config (poIndentation, poTrailingSectionOperators)
 import Ormolu.Printer.Combinators
 import Ormolu.Printer.Meat.Common (p_rdrName)
 import Ormolu.Printer.Meat.Declaration.Value
@@ -96,6 +96,8 @@ p_exprOpTree ::
   R ()
 p_exprOpTree s (OpNode x) = located x (p_hsExpr' NotApplicand s)
 p_exprOpTree s t@(OpBranches exprs@(firstExpr :| otherExprs) ops) = do
+  trailingSectionOperators <- getPrinterOpt poTrailingSectionOperators
+
   let placement =
         opBranchPlacement
           exprPlacement
@@ -113,9 +115,11 @@ p_exprOpTree s t@(OpBranches exprs@(firstExpr :| otherExprs) ops) = do
       -- Whether we could place the operator in a trailing position,
       -- followed by a breakpoint before the RHS
       couldBeTrailing (prevExpr, opi) =
-        -- An operator with fixity InfixR 0, like seq, $, and $ variants,
-        -- is required
-        isHardSplitterOp (opiFixityApproximation opi)
+        -- Enabled by config
+        trailingSectionOperators
+          -- An operator with fixity InfixR 0, like seq, $, and $ variants,
+          -- is required
+          && isHardSplitterOp (opiFixityApproximation opi)
           -- the LHS must be single-line
           && isOneLineSpan (opTreeLoc prevExpr)
           -- can only happen when a breakpoint would have been added anyway
