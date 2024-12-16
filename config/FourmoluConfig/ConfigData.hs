@@ -278,6 +278,16 @@ allOptions =
         ormolu = HsBool False,
         sinceVersion = Nothing,
         cliOverrides = emptyOverrides
+      },
+    Option
+      { name = "trailing-section-operators",
+        fieldName = Just "poTrailingSectionOperators",
+        description = "Whether to place section operators (those that are infixr 0, such as $) in trailing position, continuing the expression indented below",
+        type_ = "Bool",
+        default_ = HsBool True,
+        ormolu = HsBool True,
+        sinceVersion = Nothing,
+        cliOverrides = emptyOverrides
       }
   ]
 
