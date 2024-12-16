@@ -11,3 +11,8 @@ someLongFunction
   $ someLongFunction
   $ someLongFunction $ someLongFunction $ \x -> do
     putStrLn x
+
+someLongFunction $ someLongFunction $ someLongFunction $ someLongFunction $ \x -> putStrLn x
+
+someLongFunction $ someLongFunction $ someLongFunction $ someLongFunction $ \x -> do
+    putStrLn x
