@@ -100,6 +100,16 @@ allOptions =
         cliOverrides = emptyOverrides
       },
     Option
+      { name = "import-grouping",
+        fieldName = Just "poImportGrouping",
+        description = "Rules for grouping import declarations",
+        type_ = "ImportGrouping",
+        default_ = HsExpr "ImportGroupLegacy",
+        ormolu = HsExpr "ImportGroupLegacy",
+        sinceVersion = Just "0.17.0.0",
+        cliOverrides = emptyOverrides
+      },
+    Option
       { name = "indent-wheres",
         fieldName = Just "poIndentWheres",
         description = "Whether to full-indent or half-indent 'where' bindings past the preceding body",
@@ -190,6 +200,46 @@ allOptions =
         cliOverrides = emptyOverrides
       },
     Option
+      { name = "sort-constraints",
+        fieldName = Just "poSortConstraints",
+        description = "Whether to sort constraints",
+        type_ = "Bool",
+        default_ = HsBool False,
+        ormolu = HsBool False,
+        sinceVersion = Just "0.17.0.0",
+        cliOverrides = emptyOverrides
+      },
+    Option
+      { name = "sort-derived-classes",
+        fieldName = Just "poSortDerivedClasses",
+        description = "Whether to sort derived classes",
+        type_ = "Bool",
+        default_ = HsBool False,
+        ormolu = HsBool False,
+        sinceVersion = Just "0.17.0.0",
+        cliOverrides = emptyOverrides
+      },
+    Option
+      { name = "sort-deriving-clauses",
+        fieldName = Just "poSortDerivingClauses",
+        description = "Whether to sort deriving clauses",
+        type_ = "Bool",
+        default_ = HsBool False,
+        ormolu = HsBool False,
+        sinceVersion = Just "0.17.0.0",
+        cliOverrides = emptyOverrides
+      },
+    Option
+      { name = "trailing-section-operators",
+        fieldName = Just "poTrailingSectionOperators",
+        description = "Whether to place section operators (those that are infixr 0, such as $) in trailing position, continuing the expression indented below",
+        type_ = "Bool",
+        default_ = HsBool True,
+        ormolu = HsBool True,
+        sinceVersion = Just "0.17.0.0",
+        cliOverrides = emptyOverrides
+      },
+    Option
       { name = "unicode",
         fieldName = Just "poUnicode",
         description = "Output Unicode syntax",
@@ -230,62 +280,12 @@ allOptions =
         cliOverrides = emptyOverrides
       },
     Option
-      { name = "import-grouping",
-        fieldName = Just "poImportGrouping",
-        description = "Rules for grouping import declarations",
-        type_ = "ImportGrouping",
-        default_ = HsExpr "ImportGroupLegacy",
-        ormolu = HsExpr "ImportGroupLegacy",
-        sinceVersion = Just "0.17.0.0",
-        cliOverrides = emptyOverrides
-      },
-    Option
       { name = "local-modules",
         fieldName = Nothing,
         description = "Modules defined by the current Cabal package for import grouping",
         type_ = "[String]",
         default_ = HsList [],
         ormolu = HsList [],
-        sinceVersion = Just "0.17.0.0",
-        cliOverrides = emptyOverrides
-      },
-    Option
-      { name = "sort-constraints",
-        fieldName = Just "poSortConstraints",
-        description = "Whether to sort constraints",
-        type_ = "Bool",
-        default_ = HsBool False,
-        ormolu = HsBool False,
-        sinceVersion = Just "0.17.0.0",
-        cliOverrides = emptyOverrides
-      },
-    Option
-      { name = "sort-derived-classes",
-        fieldName = Just "poSortDerivedClasses",
-        description = "Whether to sort derived classes",
-        type_ = "Bool",
-        default_ = HsBool False,
-        ormolu = HsBool False,
-        sinceVersion = Just "0.17.0.0",
-        cliOverrides = emptyOverrides
-      },
-    Option
-      { name = "sort-deriving-clauses",
-        fieldName = Just "poSortDerivingClauses",
-        description = "Whether to sort deriving clauses",
-        type_ = "Bool",
-        default_ = HsBool False,
-        ormolu = HsBool False,
-        sinceVersion = Just "0.17.0.0",
-        cliOverrides = emptyOverrides
-      },
-    Option
-      { name = "trailing-section-operators",
-        fieldName = Just "poTrailingSectionOperators",
-        description = "Whether to place section operators (those that are infixr 0, such as $) in trailing position, continuing the expression indented below",
-        type_ = "Bool",
-        default_ = HsBool True,
-        ormolu = HsBool True,
         sinceVersion = Just "0.17.0.0",
         cliOverrides = emptyOverrides
       }
