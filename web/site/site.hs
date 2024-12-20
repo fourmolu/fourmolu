@@ -17,6 +17,7 @@ import Data.Text (Text)
 import Data.Text qualified as Text
 import Data.Text.Encoding qualified as Text
 import Data.Version (showVersion)
+import Distribution.Types.PackageName (mkPackageName)
 import FourmoluConfig.ConfigData qualified as ConfigData
 import FourmoluConfig.GenerateUtils (fieldTypesMap, getOptionSchema, hs2yaml)
 import GHC.SyntaxHighlighter.Themed.HighlightJS qualified as HighlightJS
@@ -276,6 +277,7 @@ replaceFourmoluExamples =
             let config =
                   Fourmolu.defaultConfig
                     { Fourmolu.cfgPrinterOpts = Fourmolu.resolvePrinterOpts [printerOpts],
+                      Fourmolu.cfgDependencies = S.fromList [mkPackageName "base"],
                       Fourmolu.cfgLocalModules =
                         S.fromList $
                           fromString

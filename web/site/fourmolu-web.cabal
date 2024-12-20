@@ -13,6 +13,7 @@ executable fourmolu-web
         , aeson
         , base
         , bytestring
+        , Cabal-syntax
         , cmark-gfm-simple
         , containers
         , filepath
