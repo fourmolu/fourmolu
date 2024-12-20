@@ -2,8 +2,6 @@
 
 $info$
 
-This option determines if "section" operators (those that are `infixr 0`, such as `$$`) are left in a trailing position or not.
-
 ## Examples
 
 ```fourmolu-example-input

@@ -6,6 +6,7 @@ column-limit: none
 function-arrows: trailing
 comma-style: trailing
 import-export-style: trailing
+import-grouping: legacy
 indent-wheres: true
 record-brace-space: true
 newlines-between-decls: 1
@@ -15,13 +16,12 @@ let-style: inline
 in-style: right-align
 single-constraint-parens: always
 single-deriving-parens: always
-unicode: never
-respectful: false
-fixities: []
-reexports: []
-import-grouping: legacy
-local-modules: []
 sort-constraints: false
 sort-derived-classes: false
 sort-deriving-clauses: false
 trailing-section-operators: true
+unicode: never
+respectful: false
+fixities: []
+reexports: []
+local-modules: []

@@ -125,6 +125,80 @@ spec =
           checkIdempotence = True
         },
       TestGroup
+        { label = "import-grouping",
+          isMulti = False,
+          testCases =
+            [ ImportGroupPreserve,
+              ImportGroupSingle,
+              ImportGroupByQualified,
+              ImportGroupByScope,
+              ImportGroupByScopeThenQualified,
+              ImportGroupCustom . NonEmpty.fromList $
+                [ ImportGroup
+                    { igName = Nothing,
+                      igRules =
+                        NonEmpty.fromList
+                          [ ImportGroupRule
+                              { igrModuleMatcher = MatchGlob (mkGlob "Data.Text"),
+                                igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
+                                igrPriority = defaultImportRulePriority
+                              }
+                          ]
+                    },
+                  ImportGroup
+                    { igName = Nothing,
+                      igRules =
+                        NonEmpty.fromList
+                          [ ImportGroupRule
+                              { igrModuleMatcher = MatchAllModules,
+                                igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
+                                igrPriority = ImportRulePriority 100
+                              }
+                          ]
+                    },
+                  ImportGroup
+                    { igName = Nothing,
+                      igRules =
+                        NonEmpty.fromList
+                          [ ImportGroupRule
+                              { igrModuleMatcher = MatchGlob (mkGlob "SomeInternal.**"),
+                                igrQualifiedMatcher = MatchQualifiedOnly,
+                                igrPriority = defaultImportRulePriority
+                              },
+                            ImportGroupRule
+                              { igrModuleMatcher = MatchGlob (mkGlob "Unknown.**"),
+                                igrQualifiedMatcher = MatchUnqualifiedOnly,
+                                igrPriority = defaultImportRulePriority
+                              }
+                          ]
+                    },
+                  ImportGroup
+                    { igName = Nothing,
+                      igRules =
+                        NonEmpty.fromList
+                          [ ImportGroupRule
+                              { igrModuleMatcher = MatchLocalModules,
+                                igrQualifiedMatcher = MatchUnqualifiedOnly,
+                                igrPriority = defaultImportRulePriority
+                              },
+                            ImportGroupRule
+                              { igrModuleMatcher = MatchAllModules,
+                                igrQualifiedMatcher = MatchQualifiedOnly,
+                                igrPriority = defaultImportRulePriority
+                              }
+                          ]
+                    }
+                ]
+            ],
+          updateConfig = \igs opts ->
+            opts
+              { poImportGrouping = pure igs
+              },
+          showTestCase = showStrategy,
+          testCaseSuffix = \igs -> suffixWith [showStrategy igs],
+          checkIdempotence = True
+        },
+      TestGroup
         { label = "record-brace-space",
           isMulti = False,
           testCases = allOptions,
@@ -206,113 +280,6 @@ spec =
           checkIdempotence = True
         },
       TestGroup
-        { label = "unicode-syntax",
-          isMulti = False,
-          testCases = allOptions,
-          updateConfig = \unicodePreference options -> options {poUnicode = pure unicodePreference},
-          showTestCase = show,
-          testCaseSuffix = suffix1,
-          checkIdempotence = True
-        },
-      TestGroup
-        { label = "respectful",
-          isMulti = False,
-          testCases = allOptions,
-          updateConfig = \respectful opts -> opts {poRespectful = pure respectful},
-          showTestCase = show,
-          testCaseSuffix = suffix1,
-          checkIdempotence = True
-        },
-      TestGroup
-        { label = "respectful-module-where",
-          isMulti = True,
-          testCases = (,) <$> allOptions <*> allOptions,
-          updateConfig = \(respectful, importExportStyle) opts ->
-            opts
-              { poRespectful = pure respectful,
-                poImportExportStyle = pure importExportStyle
-              },
-          showTestCase = \(respectful, importExportStyle) ->
-            (if respectful then "respectful" else "not respectful") ++ " + " ++ show importExportStyle,
-          testCaseSuffix = \(respectful, importExportStyle) ->
-            suffixWith ["respectful=" ++ show respectful, show importExportStyle],
-          checkIdempotence = True
-        },
-      TestGroup
-        { label = "import-grouping",
-          isMulti = False,
-          testCases =
-            [ ImportGroupPreserve,
-              ImportGroupSingle,
-              ImportGroupByQualified,
-              ImportGroupByScope,
-              ImportGroupByScopeThenQualified,
-              ImportGroupCustom . NonEmpty.fromList $
-                [ ImportGroup
-                    { igName = Nothing,
-                      igRules =
-                        NonEmpty.fromList
-                          [ ImportGroupRule
-                              { igrModuleMatcher = MatchGlob (mkGlob "Data.Text"),
-                                igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
-                                igrPriority = defaultImportRulePriority
-                              }
-                          ]
-                    },
-                  ImportGroup
-                    { igName = Nothing,
-                      igRules =
-                        NonEmpty.fromList
-                          [ ImportGroupRule
-                              { igrModuleMatcher = MatchAllModules,
-                                igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
-                                igrPriority = ImportRulePriority 100
-                              }
-                          ]
-                    },
-                  ImportGroup
-                    { igName = Nothing,
-                      igRules =
-                        NonEmpty.fromList
-                          [ ImportGroupRule
-                              { igrModuleMatcher = MatchGlob (mkGlob "SomeInternal.**"),
-                                igrQualifiedMatcher = MatchQualifiedOnly,
-                                igrPriority = defaultImportRulePriority
-                              },
-                            ImportGroupRule
-                              { igrModuleMatcher = MatchGlob (mkGlob "Unknown.**"),
-                                igrQualifiedMatcher = MatchUnqualifiedOnly,
-                                igrPriority = defaultImportRulePriority
-                              }
-                          ]
-                    },
-                  ImportGroup
-                    { igName = Nothing,
-                      igRules =
-                        NonEmpty.fromList
-                          [ ImportGroupRule
-                              { igrModuleMatcher = MatchLocalModules,
-                                igrQualifiedMatcher = MatchUnqualifiedOnly,
-                                igrPriority = defaultImportRulePriority
-                              },
-                            ImportGroupRule
-                              { igrModuleMatcher = MatchAllModules,
-                                igrQualifiedMatcher = MatchQualifiedOnly,
-                                igrPriority = defaultImportRulePriority
-                              }
-                          ]
-                    }
-                ]
-            ],
-          updateConfig = \igs opts ->
-            opts
-              { poImportGrouping = pure igs
-              },
-          showTestCase = showStrategy,
-          testCaseSuffix = \igs -> suffixWith [showStrategy igs],
-          checkIdempotence = True
-        },
-      TestGroup
         { label = "sort-constraints",
           isMulti = False,
           testCases = allOptions,
@@ -346,6 +313,39 @@ spec =
           updateConfig = \trailingSectionOperators opts -> opts {poTrailingSectionOperators = pure trailingSectionOperators},
           showTestCase = show,
           testCaseSuffix = suffix1,
+          checkIdempotence = True
+        },
+      TestGroup
+        { label = "unicode-syntax",
+          isMulti = False,
+          testCases = allOptions,
+          updateConfig = \unicodePreference options -> options {poUnicode = pure unicodePreference},
+          showTestCase = show,
+          testCaseSuffix = suffix1,
+          checkIdempotence = True
+        },
+      TestGroup
+        { label = "respectful",
+          isMulti = False,
+          testCases = allOptions,
+          updateConfig = \respectful opts -> opts {poRespectful = pure respectful},
+          showTestCase = show,
+          testCaseSuffix = suffix1,
+          checkIdempotence = True
+        },
+      TestGroup
+        { label = "respectful-module-where",
+          isMulti = True,
+          testCases = (,) <$> allOptions <*> allOptions,
+          updateConfig = \(respectful, importExportStyle) opts ->
+            opts
+              { poRespectful = pure respectful,
+                poImportExportStyle = pure importExportStyle
+              },
+          showTestCase = \(respectful, importExportStyle) ->
+            (if respectful then "respectful" else "not respectful") ++ " + " ++ show importExportStyle,
+          testCaseSuffix = \(respectful, importExportStyle) ->
+            suffixWith ["respectful=" ++ show respectful, show importExportStyle],
           checkIdempotence = True
         }
     ]
