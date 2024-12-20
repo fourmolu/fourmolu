@@ -1,3 +1,22 @@
+## Fourmolu 0.17.0.0
+
+* Add new `import-grouping` option to group imports with grouping rules specified in configuration ([#403](https://github.com/fourmolu/fourmolu/pull/403))
+
+* Add new `sort-constraints` option to sort constraints alphabetically ([#433](https://github.com/fourmolu/fourmolu/pull/433))
+
+* Add new `sort-derived-classes` option to sort classes in deriving clauses ([#434](https://github.com/fourmolu/fourmolu/pull/434))
+
+* Add new `sort-derived-clauses` option to sort classes deriving clauses ([#434](https://github.com/fourmolu/fourmolu/pull/434))
+
+* Add new `trailing-section-operators` option to disable trailing "section" operators (those that are `infixr 0`, such as `$`) ([#444](https://github.com/fourmolu/fourmolu/pull/444))
+
+* Fix issue where `single-constraint-parens: never` would drop parentheses around implicit parameters ([#446](https://github.com/fourmolu/fourmolu/issues/446))
+
+* Fix indentation for parenthesized expressions that start off the indentation column ([#428](https://github.com/fourmolu/fourmolu/issues/428))
+
+* Allow multiline comments in indented contexts ([#65](https://github.com/fourmolu/fourmolu/issues/65))
+
+
 ## Fourmolu 0.16.2.0
 
 ### Upstream changes:
