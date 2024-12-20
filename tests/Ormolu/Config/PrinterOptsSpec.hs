@@ -338,6 +338,15 @@ spec =
           showTestCase = show,
           testCaseSuffix = suffix1,
           checkIdempotence = True
+        },
+      TestGroup
+        { label = "trailing-section-operators",
+          isMulti = False,
+          testCases = allOptions,
+          updateConfig = \trailingSectionOperators opts -> opts {poTrailingSectionOperators = pure trailingSectionOperators},
+          showTestCase = show,
+          testCaseSuffix = suffix1,
+          checkIdempotence = True
         }
     ]
 

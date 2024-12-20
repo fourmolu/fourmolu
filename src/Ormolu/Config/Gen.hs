@@ -83,6 +83,8 @@ data PrinterOpts f =
       poSortDerivedClasses :: f Bool
     , -- | Whether to sort deriving clauses
       poSortDerivingClauses :: f Bool
+    , -- | Whether to place section operators (those that are infixr 0, such as $) in trailing position, continuing the expression indented below
+      poTrailingSectionOperators :: f Bool
     }
   deriving (Generic)
 
@@ -109,6 +111,7 @@ emptyPrinterOpts =
     , poSortConstraints = Nothing
     , poSortDerivedClasses = Nothing
     , poSortDerivingClauses = Nothing
+    , poTrailingSectionOperators = Nothing
     }
 
 defaultPrinterOpts :: PrinterOpts Identity
@@ -134,6 +137,7 @@ defaultPrinterOpts =
     , poSortConstraints = pure False
     , poSortDerivedClasses = pure False
     , poSortDerivingClauses = pure False
+    , poTrailingSectionOperators = pure True
     }
 
 -- | Fill the field values that are 'Nothing' in the first argument
@@ -166,6 +170,7 @@ fillMissingPrinterOpts p1 p2 =
     , poSortConstraints = maybe (poSortConstraints p2) pure (poSortConstraints p1)
     , poSortDerivedClasses = maybe (poSortDerivedClasses p2) pure (poSortDerivedClasses p1)
     , poSortDerivingClauses = maybe (poSortDerivingClauses p2) pure (poSortDerivingClauses p1)
+    , poTrailingSectionOperators = maybe (poTrailingSectionOperators p2) pure (poTrailingSectionOperators p1)
     }
 
 parsePrinterOptsCLI ::
@@ -254,6 +259,10 @@ parsePrinterOptsCLI f =
       "sort-deriving-clauses"
       "Whether to sort deriving clauses (default: false)"
       "BOOL"
+    <*> f
+      "trailing-section-operators"
+      "Whether to place section operators (those that are infixr 0, such as $) in trailing position, continuing the expression indented below (default: true)"
+      "BOOL"
 
 parsePrinterOptsJSON ::
   Applicative f =>
@@ -281,6 +290,7 @@ parsePrinterOptsJSON f =
     <*> f "sort-constraints"
     <*> f "sort-derived-classes"
     <*> f "sort-deriving-clauses"
+    <*> f "trailing-section-operators"
 
 {---------- PrinterOpts field types ----------}
 
@@ -680,4 +690,7 @@ defaultPrinterOptsYaml =
     , ""
     , "# Whether to sort deriving clauses"
     , "sort-deriving-clauses: false"
+    , ""
+    , "# Whether to place section operators (those that are infixr 0, such as $) in trailing position, continuing the expression indented below"
+    , "trailing-section-operators: true"
     ]
