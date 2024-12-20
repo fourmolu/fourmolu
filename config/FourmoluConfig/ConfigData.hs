@@ -236,7 +236,7 @@ allOptions =
         type_ = "ImportGrouping",
         default_ = HsExpr "ImportGroupLegacy",
         ormolu = HsExpr "ImportGroupLegacy",
-        sinceVersion = Nothing,
+        sinceVersion = Just "0.17.0.0",
         cliOverrides = emptyOverrides
       },
     Option
@@ -246,7 +246,7 @@ allOptions =
         type_ = "[String]",
         default_ = HsList [],
         ormolu = HsList [],
-        sinceVersion = Nothing,
+        sinceVersion = Just "0.17.0.0",
         cliOverrides = emptyOverrides
       },
     Option
@@ -256,7 +256,7 @@ allOptions =
         type_ = "Bool",
         default_ = HsBool False,
         ormolu = HsBool False,
-        sinceVersion = Nothing,
+        sinceVersion = Just "0.17.0.0",
         cliOverrides = emptyOverrides
       },
     Option
@@ -266,7 +266,7 @@ allOptions =
         type_ = "Bool",
         default_ = HsBool False,
         ormolu = HsBool False,
-        sinceVersion = Nothing,
+        sinceVersion = Just "0.17.0.0",
         cliOverrides = emptyOverrides
       },
     Option
@@ -276,7 +276,7 @@ allOptions =
         type_ = "Bool",
         default_ = HsBool False,
         ormolu = HsBool False,
-        sinceVersion = Nothing,
+        sinceVersion = Just "0.17.0.0",
         cliOverrides = emptyOverrides
       },
     Option
@@ -286,7 +286,7 @@ allOptions =
         type_ = "Bool",
         default_ = HsBool True,
         ormolu = HsBool True,
-        sinceVersion = Nothing,
+        sinceVersion = Just "0.17.0.0",
         cliOverrides = emptyOverrides
       }
   ]
