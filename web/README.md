@@ -13,7 +13,7 @@ This directory contains files that are served at `fourmolu.github.io`.
 
 ### Build locally
 
-1. Follow the steps at https://gitlab.haskell.org/ghc/ghc-wasm-meta to install GHC with the WASM backend
+1. Follow the steps at https://gitlab.haskell.org/haskell-wasm/ghc-wasm-meta to install GHC with the WASM backend
 
 1. Install [Wizer](https://github.com/bytecodealliance/wizer)
 

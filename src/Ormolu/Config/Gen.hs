@@ -53,6 +53,8 @@ data PrinterOpts f =
       poCommaStyle :: f CommaStyle
     , -- | Styling of import/export lists
       poImportExportStyle :: f ImportExportStyle
+    , -- | Rules for grouping import declarations
+      poImportGrouping :: f ImportGrouping
     , -- | Whether to full-indent or half-indent 'where' bindings past the preceding body
       poIndentWheres :: f Bool
     , -- | Whether to leave a space before an opening record brace
@@ -71,12 +73,6 @@ data PrinterOpts f =
       poSingleConstraintParens :: f SingleConstraintParens
     , -- | Whether to put parentheses around a single deriving class
       poSingleDerivingParens :: f SingleDerivingParens
-    , -- | Output Unicode syntax
-      poUnicode :: f Unicode
-    , -- | Give the programmer more choice on where to insert blank lines
-      poRespectful :: f Bool
-    , -- | Rules for grouping import declarations
-      poImportGrouping :: f ImportGrouping
     , -- | Whether to sort constraints
       poSortConstraints :: f Bool
     , -- | Whether to sort derived classes
@@ -85,6 +81,10 @@ data PrinterOpts f =
       poSortDerivingClauses :: f Bool
     , -- | Whether to place section operators (those that are infixr 0, such as $) in trailing position, continuing the expression indented below
       poTrailingSectionOperators :: f Bool
+    , -- | Output Unicode syntax
+      poUnicode :: f Unicode
+    , -- | Give the programmer more choice on where to insert blank lines
+      poRespectful :: f Bool
     }
   deriving (Generic)
 
@@ -96,6 +96,7 @@ emptyPrinterOpts =
     , poFunctionArrows = Nothing
     , poCommaStyle = Nothing
     , poImportExportStyle = Nothing
+    , poImportGrouping = Nothing
     , poIndentWheres = Nothing
     , poRecordBraceSpace = Nothing
     , poNewlinesBetweenDecls = Nothing
@@ -105,13 +106,12 @@ emptyPrinterOpts =
     , poInStyle = Nothing
     , poSingleConstraintParens = Nothing
     , poSingleDerivingParens = Nothing
-    , poUnicode = Nothing
-    , poRespectful = Nothing
-    , poImportGrouping = Nothing
     , poSortConstraints = Nothing
     , poSortDerivedClasses = Nothing
     , poSortDerivingClauses = Nothing
     , poTrailingSectionOperators = Nothing
+    , poUnicode = Nothing
+    , poRespectful = Nothing
     }
 
 defaultPrinterOpts :: PrinterOpts Identity
@@ -122,6 +122,7 @@ defaultPrinterOpts =
     , poFunctionArrows = pure TrailingArrows
     , poCommaStyle = pure Leading
     , poImportExportStyle = pure ImportExportDiffFriendly
+    , poImportGrouping = pure ImportGroupLegacy
     , poIndentWheres = pure False
     , poRecordBraceSpace = pure False
     , poNewlinesBetweenDecls = pure 1
@@ -131,13 +132,12 @@ defaultPrinterOpts =
     , poInStyle = pure InRightAlign
     , poSingleConstraintParens = pure ConstraintAlways
     , poSingleDerivingParens = pure DerivingAlways
-    , poUnicode = pure UnicodeNever
-    , poRespectful = pure True
-    , poImportGrouping = pure ImportGroupLegacy
     , poSortConstraints = pure False
     , poSortDerivedClasses = pure False
     , poSortDerivingClauses = pure False
     , poTrailingSectionOperators = pure True
+    , poUnicode = pure UnicodeNever
+    , poRespectful = pure True
     }
 
 -- | Fill the field values that are 'Nothing' in the first argument
@@ -155,6 +155,7 @@ fillMissingPrinterOpts p1 p2 =
     , poFunctionArrows = maybe (poFunctionArrows p2) pure (poFunctionArrows p1)
     , poCommaStyle = maybe (poCommaStyle p2) pure (poCommaStyle p1)
     , poImportExportStyle = maybe (poImportExportStyle p2) pure (poImportExportStyle p1)
+    , poImportGrouping = maybe (poImportGrouping p2) pure (poImportGrouping p1)
     , poIndentWheres = maybe (poIndentWheres p2) pure (poIndentWheres p1)
     , poRecordBraceSpace = maybe (poRecordBraceSpace p2) pure (poRecordBraceSpace p1)
     , poNewlinesBetweenDecls = maybe (poNewlinesBetweenDecls p2) pure (poNewlinesBetweenDecls p1)
@@ -164,13 +165,12 @@ fillMissingPrinterOpts p1 p2 =
     , poInStyle = maybe (poInStyle p2) pure (poInStyle p1)
     , poSingleConstraintParens = maybe (poSingleConstraintParens p2) pure (poSingleConstraintParens p1)
     , poSingleDerivingParens = maybe (poSingleDerivingParens p2) pure (poSingleDerivingParens p1)
-    , poUnicode = maybe (poUnicode p2) pure (poUnicode p1)
-    , poRespectful = maybe (poRespectful p2) pure (poRespectful p1)
-    , poImportGrouping = maybe (poImportGrouping p2) pure (poImportGrouping p1)
     , poSortConstraints = maybe (poSortConstraints p2) pure (poSortConstraints p1)
     , poSortDerivedClasses = maybe (poSortDerivedClasses p2) pure (poSortDerivedClasses p1)
     , poSortDerivingClauses = maybe (poSortDerivingClauses p2) pure (poSortDerivingClauses p1)
     , poTrailingSectionOperators = maybe (poTrailingSectionOperators p2) pure (poTrailingSectionOperators p1)
+    , poUnicode = maybe (poUnicode p2) pure (poUnicode p1)
+    , poRespectful = maybe (poRespectful p2) pure (poRespectful p1)
     }
 
 parsePrinterOptsCLI ::
@@ -198,6 +198,10 @@ parsePrinterOptsCLI f =
     <*> f
       "import-export-style"
       "Styling of import/export lists (choices: \"leading\", \"trailing\", or \"diff-friendly\") (default: diff-friendly)"
+      "OPTION"
+    <*> f
+      "import-grouping"
+      "Rules for grouping import declarations (default: legacy)"
       "OPTION"
     <*> f
       "indent-wheres"
@@ -236,18 +240,6 @@ parsePrinterOptsCLI f =
       "Whether to put parentheses around a single deriving class (choices: \"auto\", \"always\", or \"never\") (default: always)"
       "OPTION"
     <*> f
-      "unicode"
-      "Output Unicode syntax (choices: \"detect\", \"always\", or \"never\") (default: never)"
-      "OPTION"
-    <*> f
-      "respectful"
-      "Give the programmer more choice on where to insert blank lines (default: true)"
-      "BOOL"
-    <*> f
-      "import-grouping"
-      "Rules for grouping import declarations (default: legacy)"
-      "OPTION"
-    <*> f
       "sort-constraints"
       "Whether to sort constraints (default: false)"
       "BOOL"
@@ -263,6 +255,14 @@ parsePrinterOptsCLI f =
       "trailing-section-operators"
       "Whether to place section operators (those that are infixr 0, such as $) in trailing position, continuing the expression indented below (default: true)"
       "BOOL"
+    <*> f
+      "unicode"
+      "Output Unicode syntax (choices: \"detect\", \"always\", or \"never\") (default: never)"
+      "OPTION"
+    <*> f
+      "respectful"
+      "Give the programmer more choice on where to insert blank lines (default: true)"
+      "BOOL"
 
 parsePrinterOptsJSON ::
   Applicative f =>
@@ -275,6 +275,7 @@ parsePrinterOptsJSON f =
     <*> f "function-arrows"
     <*> f "comma-style"
     <*> f "import-export-style"
+    <*> f "import-grouping"
     <*> f "indent-wheres"
     <*> f "record-brace-space"
     <*> f "newlines-between-decls"
@@ -284,13 +285,12 @@ parsePrinterOptsJSON f =
     <*> f "in-style"
     <*> f "single-constraint-parens"
     <*> f "single-deriving-parens"
-    <*> f "unicode"
-    <*> f "respectful"
-    <*> f "import-grouping"
     <*> f "sort-constraints"
     <*> f "sort-derived-classes"
     <*> f "sort-deriving-clauses"
     <*> f "trailing-section-operators"
+    <*> f "unicode"
+    <*> f "respectful"
 
 {---------- PrinterOpts field types ----------}
 
@@ -637,6 +637,9 @@ defaultPrinterOptsYaml =
     , "# Styling of import/export lists (choices: leading, trailing, or diff-friendly)"
     , "import-export-style: diff-friendly"
     , ""
+    , "# Rules for grouping import declarations"
+    , "import-grouping: legacy"
+    , ""
     , "# Whether to full-indent or half-indent 'where' bindings past the preceding body"
     , "indent-wheres: false"
     , ""
@@ -664,6 +667,18 @@ defaultPrinterOptsYaml =
     , "# Whether to put parentheses around a single deriving class (choices: auto, always, or never)"
     , "single-deriving-parens: always"
     , ""
+    , "# Whether to sort constraints"
+    , "sort-constraints: false"
+    , ""
+    , "# Whether to sort derived classes"
+    , "sort-derived-classes: false"
+    , ""
+    , "# Whether to sort deriving clauses"
+    , "sort-deriving-clauses: false"
+    , ""
+    , "# Whether to place section operators (those that are infixr 0, such as $) in trailing position, continuing the expression indented below"
+    , "trailing-section-operators: true"
+    , ""
     , "# Output Unicode syntax (choices: detect, always, or never)"
     , "unicode: never"
     , ""
@@ -676,21 +691,6 @@ defaultPrinterOptsYaml =
     , "# Module reexports Fourmolu should know about"
     , "reexports: []"
     , ""
-    , "# Rules for grouping import declarations"
-    , "import-grouping: legacy"
-    , ""
     , "# Modules defined by the current Cabal package for import grouping"
     , "local-modules: []"
-    , ""
-    , "# Whether to sort constraints"
-    , "sort-constraints: false"
-    , ""
-    , "# Whether to sort derived classes"
-    , "sort-derived-classes: false"
-    , ""
-    , "# Whether to sort deriving clauses"
-    , "sort-deriving-clauses: false"
-    , ""
-    , "# Whether to place section operators (those that are infixr 0, such as $) in trailing position, continuing the expression indented below"
-    , "trailing-section-operators: true"
     ]

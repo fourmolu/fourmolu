@@ -26,7 +26,7 @@ jobs:
       matrix:
         ghc_version:
           - '9.6'
-          - '9.8'
+          - '9.8.2' # https://gitlab.haskell.org/ghc/ghc/-/issues/25576
           - '9.10'
 
     name: 'cabal_test: ghc-${{ matrix.ghc_version }}'

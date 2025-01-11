@@ -5,6 +5,9 @@ on:
     branches:
       - main
 
+env:
+  GHC_VERSION: '9.10'
+
 jobs:
   build_wasm:
     runs-on: ubuntu-latest
@@ -23,12 +26,11 @@ jobs:
           echo ~/.cabal/bin >> "${GITHUB_PATH}"
       -
         name: Install wasm32-wasi-ghc
-        # TODO: bump to 9.10: https://github.com/digital-asset/ghc-lib/issues/563#issuecomment-2453777392
         run: |
           cd "$(mktemp -d)"
           curl -L https://gitlab.haskell.org/ghc/ghc-wasm-meta/-/archive/master/ghc-wasm-meta-master.tar.gz \
             | tar xz --strip-components=1
-          FLAVOUR=9.8 ./setup.sh
+          FLAVOUR=${GHC_VERSION} ./setup.sh
           ~/.ghc-wasm/add_to_github_path.sh
       -
         run: wasm32-wasi-cabal update
@@ -78,6 +80,10 @@ jobs:
     steps:
       -
         uses: actions/checkout@v4
+      -
+        uses: haskell-actions/setup@v2
+        with:
+          ghc-version: ${{ env.GHC_VERSION }}
       -
         run: cabal update
       -
