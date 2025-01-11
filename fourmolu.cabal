@@ -103,6 +103,8 @@ library
     other-modules:
         Ormolu.Config.Gen
         Ormolu.Config.Types
+    autogen-modules:
+        Paths_fourmolu
 
     hs-source-dirs:   src
     other-modules:    GHC.DynFlags
