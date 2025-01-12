@@ -99,6 +99,9 @@ jobs:
           restore-keys: |
                ${{ runner.os }}-hakyll-cache-${{ env.CURR_MONTH }}-
       -
+        # refresh Hackage index-state after restoring cache
+        run: cabal update
+      -
         name: Build site
         run: cabal run fourmolu-web --ghc-options='-Werror' -- build
         env:

@@ -11,7 +11,7 @@ module Ormolu.Config.PrinterOptsSpec (spec) where
 
 import Control.Exception (catch)
 import Control.Monad (forM_, when)
-import Data.Algorithm.DiffContext (getContextDiff, prettyContextDiff)
+import Data.Algorithm.DiffContext qualified as Diff
 import Data.Char (isSpace)
 import Data.List.NonEmpty qualified as NonEmpty
 import Data.Maybe (isJust)
@@ -446,8 +446,8 @@ getFileContents path = do
 getDiff :: (String, Text) -> (String, Text) -> Text
 getDiff (s1Name, s1) (s2Name, s2) =
   T.pack . Doc.render $
-    prettyContextDiff (Doc.text s1Name) (Doc.text s2Name) (Doc.text . T.unpack) $
-      getContextDiff 2 (T.lines s1) (T.lines s2)
+    Diff.prettyContextDiff (Doc.text s1Name) (Doc.text s2Name) (Doc.text . T.unpack . Diff.unnumber) $
+      Diff.getContextDiff (Just 2) (T.lines s1) (T.lines s2)
 
 renderOrmoluException :: OrmoluException -> IO String
 renderOrmoluException e =

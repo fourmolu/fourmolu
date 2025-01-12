@@ -103,13 +103,15 @@ library
     other-modules:
         Ormolu.Config.Gen
         Ormolu.Config.Types
+    autogen-modules:
+        Paths_fourmolu
 
     hs-source-dirs:   src
     other-modules:    GHC.DynFlags
     default-language: GHC2021
     build-depends:
         Cabal-syntax >=3.12 && <3.13,
-        Diff >=0.4 && <1,
+        Diff >=0.4 && <2,
         MemoTrie >=0.6 && <0.7,
         ansi-terminal >=0.10 && <1.2,
         array >=0.5 && <0.6,
@@ -220,7 +222,7 @@ test-suite tests
         Ormolu.Utils.GlobSpec
     build-depends:
         bytestring,
-        Diff >=0.3 && <1,
+        Diff >=1 && <2,
         pretty >=1.0 && <2.0,
         process >=1.6 && <2.0,
         yaml,
