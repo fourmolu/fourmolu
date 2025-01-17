@@ -19,10 +19,9 @@ import Data.Choice qualified as Choice
 import Data.List (sortOn)
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.List.NonEmpty qualified as NE
-import Data.Maybe (isJust, isNothing, mapMaybe, maybeToList)
+import Data.Maybe (isJust, isNothing, maybeToList)
 import Data.Text qualified as Text
 import Data.Void
-import GHC.Data.Strict qualified as Strict
 import GHC.Hs
 import GHC.Types.Fixity
 import GHC.Types.ForeignCall
@@ -256,10 +255,7 @@ p_conDecl singleRecCon ConDeclH98 {..} =
         forM_ con_mb_cxt p_lhsContext
 
     conNameWithContextSpn =
-      [ RealSrcSpan real Strict.Nothing
-      | EpaSpan (RealSrcSpan real _) <-
-          mapMaybe (matchAddEpAnn AnnForall) con_ext
-      ]
+      [getHasLoc $ acdh_forall con_ext]
         <> fmap getLocA con_ex_tvs
         <> maybeToList (fmap getLocA con_mb_cxt)
         <> [conNameSpn]

@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeepSubsumption #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ViewPatterns #-}
@@ -18,6 +19,7 @@ import Data.Function
 import Data.Generics
 import Data.List (sortOn)
 import Data.Text qualified as T
+import GHC.Data.FastString (FastString)
 import GHC.Hs
 import GHC.Types.SourceText
 import GHC.Types.SrcLoc
@@ -26,6 +28,7 @@ import Ormolu.Imports (normalizeImports)
 import Ormolu.Parser.CommentStream
 import Ormolu.Parser.Result
 import Ormolu.Utils
+import Type.Reflection qualified as TR
 
 -- | Result of comparing two 'ParseResult's.
 data ParseResultDiff
@@ -69,16 +72,8 @@ diffCommentStream (CommentStream cs) (CommentStream cs')
   where
     commentLines = concatMap (toList . unComment . unLoc)
 
--- | Compare two modules for equality disregarding the following aspects:
---
---     * 'SrcSpan's
---     * ordering of import lists
---     * style (ASCII vs Unicode) of arrows, colons
---     * LayoutInfo (brace style) in extension fields
---     * Empty contexts in type classes
---     * Parens around derived type classes
---     * 'TokenLocation' (in 'LHsToken'/'LHsUniToken')
---     * 'EpaLocation'
+-- | Compare two modules for equality disregarding certain semantically
+-- irrelevant features like exact print annotations.
 diffHsModule :: HsModule GhcPs -> HsModule GhcPs -> ParseResultDiff
 diffHsModule = genericQuery
   where
@@ -91,17 +86,28 @@ diffHsModule = genericQuery
           if x' == (y' :: ByteString)
             then Same
             else Different []
+      | Just rep <- isEpTokenish x,
+        Just rep' <- isEpTokenish y =
+          -- Only check whether the Ep(Uni)Tokens are of the same type; don't
+          -- look at the actual payload (e.g. the location).
+          if rep == rep' then Same else Different []
       | typeOf x == typeOf y,
         toConstr x == toConstr y =
           mconcat $
             gzipWithQ
               ( genericQuery
+                  -- EPA-related
                   `extQ` considerEqual @SrcSpan
                   `ext1Q` epAnnEq
                   `extQ` considerEqual @SourceText
-                  `extQ` hsDocStringEq
-                  `extQ` importDeclQualifiedStyleEq
-                  `extQ` classDeclCtxEq
+                  `extQ` considerEqual @EpAnnComments -- ~ XCGRHSs GhcPs
+                  `extQ` considerEqual @EpaLocation
+                  `extQ` considerEqual @EpLayout
+                  `extQ` considerEqual @AnnSig
+                  `extQ` considerEqual @HsRuleAnn
+                  `extQ` considerEqual @EpLinearArrow
+                  `extQ` considerEqual @AnnSynDecl
+                  -- Sort
                   `extQ` derivedTyClsEq
                   `extQ` typeEq
                   `extQ` dataDeclEq
@@ -110,9 +116,19 @@ diffHsModule = genericQuery
                   `extQ` considerEqual @TokenLocation -- in LHs(Uni)Token
                   `extQ` considerEqual @EpaLocation
                   `extQ` considerEqual @EpLayout
-                  `extQ` considerEqual @[AddEpAnn]
                   `extQ` considerEqual @AnnSig
                   `extQ` considerEqual @HsRuleAnn
+                  -- FastString (for example for string literals)
+                  `extQ` considerEqualVia' ((==) @FastString)
+                  -- Haddock strings
+                  `extQ` hsDocStringEq
+                  -- Whether imports are pre- or post-qualified
+                  `extQ` importDeclQualifiedStyleEq
+                  -- Whether a class has an empty context
+                  `extQ` classDeclCtxEq
+                  -- Whether there are parens around a derived type class
+                  `extQ` derivedTyClsParensEq
+                  -- For better error messages
                   `ext2Q` forLocated
                   -- unicode-related
                   `extQ` considerEqual @(EpUniToken "->" "→")
@@ -123,6 +139,22 @@ diffHsModule = genericQuery
               x
               y
       | otherwise = Different []
+
+    -- Return the 'TR.SomeTypeRep' of the type of the given value if it is an
+    -- 'EpToken', an 'EpUniToken', or a list of these.
+    isEpTokenish :: (Typeable a) => a -> Maybe TR.SomeTypeRep
+    isEpTokenish = fmap TR.SomeTypeRep . go . TR.typeOf
+      where
+        go :: TR.TypeRep a -> Maybe (TR.TypeRep a)
+        go rep = case rep of
+          TR.App t t'
+            | Just HRefl <- TR.eqTypeRep t (TR.typeRep @[]) ->
+                TR.App t <$> go t'
+          TR.App (TR.App t _) _ ->
+            rep <$ TR.eqTypeRep t (TR.typeRep @EpUniToken)
+          TR.App t _ ->
+            rep <$ TR.eqTypeRep t (TR.typeRep @EpToken)
+          _ -> Nothing
 
     considerEqualVia ::
       forall a.
@@ -186,6 +218,10 @@ diffHsModule = genericQuery
     normalizeMContext (Just (L _ [])) = Nothing
     normalizeMContext (Just (L ann ctx)) = Just (L ann $ normalizeContext ctx)
 
+    derivedTyClsParensEq :: DerivClauseTys GhcPs -> GenericQ ParseResultDiff
+    derivedTyClsParensEq (DctSingle NoExtField sigTy) dct' = genericQuery (DctMulti NoExtField [sigTy]) dct'
+    derivedTyClsParensEq dct dct' = genericQuery dct dct'
+
     typeEq :: HsType GhcPs -> GenericQ ParseResultDiff
     typeEq = considerEqualOn $ \case
       HsQualTy ann ctx body -> HsQualTy ann (fmap normalizeContext ctx) body
@@ -227,18 +263,18 @@ diffHsModule = genericQuery
 
     compareAnnKeywordId x y =
       let go = curry $ \case
-            (AnnCloseB, AnnCloseBU) -> True
-            (AnnCloseQ, AnnCloseQU) -> True
-            (AnnDarrow, AnnDarrowU) -> True
-            (AnnDcolon, AnnDcolonU) -> True
-            (AnnForall, AnnForallU) -> True
-            (AnnLarrow, AnnLarrowU) -> True
-            (AnnOpenB, AnnOpenBU) -> True
-            (AnnOpenEQ, AnnOpenEQU) -> True
-            (AnnRarrow, AnnRarrowU) -> True
-            (Annlarrowtail, AnnlarrowtailU) -> True
-            (Annrarrowtail, AnnrarrowtailU) -> True
-            (AnnLarrowtail, AnnLarrowtailU) -> True
-            (AnnRarrowtail, AnnRarrowtailU) -> True
+            ("|)", "⦈") -> True
+            ("|]", "⟧") -> True
+            ("=>", "⇒") -> True
+            ("::", "∷") -> True
+            ("forall", "∀") -> True
+            ("<-", "←") -> True
+            ("(|", "⦇") -> True
+            ("[|", "⟦") -> True
+            ("->", "→") -> True
+            ("-<", "⤙") -> True
+            (">-", "⤚") -> True
+            ("-<<", "⤛") -> True
+            (">>-", "⤜") -> True
             (_, _) -> False
-       in go x y || go y x || x == y
+      in go x y || go y x || x == y

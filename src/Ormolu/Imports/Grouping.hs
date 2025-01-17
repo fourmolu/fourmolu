@@ -12,7 +12,7 @@ import Data.Bifunctor (Bifunctor (..))
 import Data.Foldable (toList)
 import Data.Function (on)
 import Data.List (groupBy, minimumBy, sortOn)
-import Data.List.NonEmpty (NonEmpty)
+import Data.List.NonEmpty (NonEmpty (..))
 import Data.List.NonEmpty qualified as NonEmpty
 import Data.Set (Set)
 import Data.Set qualified as Set
@@ -21,7 +21,7 @@ import GHC.Hs (GhcPs, getLocA)
 import Language.Haskell.Syntax (LImportDecl, ModuleName, moduleNameString)
 import Ormolu.Config (ImportGroup (..), ImportGroupRule (..), ImportGrouping (..), ImportModuleMatcher (..))
 import Ormolu.Config qualified as Config
-import Ormolu.Utils (ghcModuleNameToCabal, groupBy', separatedByBlank)
+import Ormolu.Utils (ghcModuleNameToCabal, separatedByBlank)
 import Ormolu.Utils.Glob (matchesGlob)
 
 newtype ImportGroups = ImportGroups (NonEmpty ImportGroup)
@@ -76,8 +76,8 @@ importGroupByScopeThenQualifiedStrategy =
           { igName = Nothing,
             igRules = pure $ withQualified matchModule
           }
-      | matchModule <- [matchAllImportRule, matchLocalModulesRule],
-        withQualified <- [withUnqualifiedOnly, withQualifiedOnly]
+        | matchModule <- [matchAllImportRule, matchLocalModulesRule],
+          withQualified <- [withUnqualifiedOnly, withQualifiedOnly]
       ]
 
 groupsFromConfig :: Config.ImportGrouping -> ImportGroups
@@ -142,6 +142,16 @@ prepareExistingGroups ig respectful =
   where
     preserveGroups = map toList . groupBy' (\x y -> not $ separatedByBlank getLocA x y)
     flattenGroups = pure
+
+-- | A generalisation of 'groupBy' to functions which aren't equivalences - a group ends
+-- when comparison fails with the previous element, rather than the first of the group.
+groupBy' :: (a -> a -> Bool) -> [a] -> [NonEmpty a]
+groupBy' eq = flip foldr [] $ \x -> \case
+  [] -> [pure x]
+  (y :| ys) : zs ->
+    if x `eq` y
+      then (x :| y : ys) : zs
+      else pure x : (y :| ys) : zs
 
 groupImports :: forall x. ImportGrouping -> Set Cabal.ModuleName -> (x -> Import) -> [x] -> [[x]]
 groupImports ig localModules fToImport = regroup . fmap (breakTies . matchRules)

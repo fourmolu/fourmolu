@@ -131,15 +131,18 @@ that should be used as the starting point for searching for `.cabal` files.
 
 Here is an example of the `fixities` configuration:
 
-```yaml
-fixities:
-  - infixr 9  .
-  - infixr 5  ++
-  - infixl 4  <$
-  - infixl 1  >>, >>=
-  - infixr 1  =<<
-  - infixr 0  $, $!
-  - infixl 4 <*>, <*, *>, <**>
+```haskell
+infixr 9  .
+infixr 5  ++
+infixl 4  <$
+infixl 1  >>, >>=
+infixr 1  =<<
+infixr 0  $, $!
+infixl 4 <*>, <*, *>, <**>
+
+infixr 3 >~<
+infixr 3.3 |~|
+infixr 3.7 <~>
 ```
 
 It uses exactly the same syntax as usual Haskell fixity declarations to make
