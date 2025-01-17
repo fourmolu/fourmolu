@@ -103,8 +103,9 @@ diffHsModule = genericQuery
                   `extQ` importDeclQualifiedStyleEq
                   `extQ` classDeclCtxEq
                   `extQ` derivedTyClsEq
-                  `extQ` qualTyCtxEq
+                  `extQ` typeEq
                   `extQ` dataDeclEq
+                  `extQ` conDeclEq
                   `extQ` considerEqual @EpAnnComments -- ~ XCGRHSs GhcPs
                   `extQ` considerEqual @TokenLocation -- in LHs(Uni)Token
                   `extQ` considerEqual @EpaLocation
@@ -134,6 +135,13 @@ diffHsModule = genericQuery
 
     considerEqualVia' f =
       considerEqualVia $ \x x' -> if f x x' then Same else Different []
+
+    considerEqualOn ::
+      (Typeable a, Data b) =>
+      (a -> b) ->
+      a ->
+      GenericQ ParseResultDiff
+    considerEqualOn f = considerEqualVia (genericQuery `on` f)
 
     considerEqual :: forall a. (Typeable a) => a -> GenericQ ParseResultDiff
     considerEqual = considerEqualVia $ \_ _ -> Same
@@ -178,32 +186,32 @@ diffHsModule = genericQuery
     normalizeMContext (Just (L _ [])) = Nothing
     normalizeMContext (Just (L ann ctx)) = Just (L ann $ normalizeContext ctx)
 
-    qualTyCtxEq :: HsType GhcPs -> GenericQ ParseResultDiff
-    qualTyCtxEq = considerEqualVia $ \lt rt -> genericQuery (normalizeQualTy lt) (normalizeQualTy rt)
-      where
-        normalizeQualTy :: HsType GhcPs -> HsType GhcPs
-        normalizeQualTy (HsQualTy ann ctx body) = HsQualTy ann (fmap normalizeContext ctx) body
-        normalizeQualTy ty = ty
+    typeEq :: HsType GhcPs -> GenericQ ParseResultDiff
+    typeEq = considerEqualOn $ \case
+      HsQualTy ann ctx body -> HsQualTy ann (fmap normalizeContext ctx) body
+      ty -> ty
 
     classDeclCtxEq :: TyClDecl GhcPs -> GenericQ ParseResultDiff
-    classDeclCtxEq = considerEqualVia $ \lc rc -> genericQuery (normalizeClassDecl lc) (normalizeClassDecl rc)
-      where
-        normalizeClassDecl ClassDecl {tcdCtxt, ..} = ClassDecl {tcdCtxt = normalizeMContext tcdCtxt, ..}
-        normalizeClassDecl d = d
+    classDeclCtxEq = considerEqualOn $ \case
+      ClassDecl {..} -> ClassDecl {tcdCtxt = normalizeMContext tcdCtxt, ..}
+      d -> d
 
     dataDeclEq :: HsDataDefn GhcPs -> GenericQ ParseResultDiff
-    dataDeclEq = considerEqualVia $ \dd dd' -> genericQuery (normalizeDataDecl dd) (normalizeDataDecl dd')
+    dataDeclEq = considerEqualOn $ \case
+      HsDataDefn {..} ->
+        HsDataDefn
+          { -- The order of classes in the context doesn't matter
+            dd_ctxt = normalizeMContext dd_ctxt,
+            -- The order of deriving clauses doesn't matter. Note: need to normalize before sorting, otherwise
+            -- we'll get a different sort order!
+            dd_derivs = sortOn showOutputable ((fmap . fmap) normalizeDerivingClause dd_derivs),
+            ..
+          }
 
-    normalizeDataDecl :: HsDataDefn GhcPs -> HsDataDefn GhcPs
-    normalizeDataDecl HsDataDefn {dd_ctxt, dd_derivs, ..} =
-      HsDataDefn
-        { -- The order of classes in the context doesn't matter
-          dd_ctxt = normalizeMContext dd_ctxt,
-          -- The order of deriving clauses doesn't matter. Note: need to normalize before sorting, otherwise
-          -- we'll get a different sort order!
-          dd_derivs = sortOn showOutputable ((fmap . fmap) normalizeDerivingClause dd_derivs),
-          ..
-        }
+    conDeclEq :: ConDecl GhcPs -> GenericQ ParseResultDiff
+    conDeclEq = considerEqualOn $ \case
+      ConDeclGADT {..} -> ConDeclGADT {con_mb_cxt = normalizeMContext con_mb_cxt, ..}
+      ConDeclH98 {..} -> ConDeclH98 {con_mb_cxt = normalizeMContext con_mb_cxt, ..}
 
     normalizeDerivingClause :: HsDerivingClause GhcPs -> HsDerivingClause GhcPs
     normalizeDerivingClause HsDerivingClause {deriv_clause_tys, ..} =
