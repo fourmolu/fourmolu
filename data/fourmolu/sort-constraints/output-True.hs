@@ -43,3 +43,6 @@ deriving instance (Eq a, Show a) => Class1 Int
 -- We can't know this is a constraint tuple type rather than a normal
 -- tuple type without type information
 type MyConstraints a = (Show a, Eq a)
+
+-- https://github.com/fourmolu/fourmolu/issues/451
+data Foo = forall a. (A a, B) => Foo a
