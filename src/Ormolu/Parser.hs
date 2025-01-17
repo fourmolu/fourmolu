@@ -178,7 +178,11 @@ parseModuleSnippet config@Config {..} modFixityMap dynFlags path rawInput = lift
 normalizeModule :: Config RegionDeltas -> HsModule GhcPs -> HsModule GhcPs
 normalizeModule Config {..} hsmod =
   everywhere
-    (mkT dropBlankTypeHaddocks `extT` dropBlankDataDeclHaddocks `extT` patchContext)
+    ( mkT dropBlankTypeHaddocks
+        `extT` dropBlankDataDeclHaddocks
+        `extT` patchContext
+        `extT` patchExprContext
+    )
     hsmod
       { hsmodImports =
           hsmodImports hsmod,
@@ -212,6 +216,8 @@ normalizeModule Config {..} hsmod =
         | isBlankDocString s -> ConDeclH98 {con_doc = Nothing, ..}
       a -> a
 
+    -- For constraint contexts (both in types and in expressions), normalize
+    -- parenthesis as decided in https://github.com/tweag/ormolu/issues/264.
     patchContext :: LHsContext GhcPs -> LHsContext GhcPs
     patchContext = fmap $ \case
       [x@(L _ (HsParTy _ inner))]
@@ -225,6 +231,11 @@ normalizeModule Config {..} hsmod =
         | otherwise -> [x]
       xs -> xs
     constraintParens = runIdentity (poSingleConstraintParens cfgPrinterOpts)
+    patchExprContext :: LHsExpr GhcPs -> LHsExpr GhcPs
+    patchExprContext = fmap $ \case
+      x@(HsQual _ (L _ [L _ HsPar {}]) _) -> x
+      HsQual l0 (L l1 [x@(L lx _)]) e -> HsQual l0 (L l1 [L lx (HsPar noAnn x)]) e
+      x -> x
 
 -- | Enable all language extensions that we think should be enabled by
 -- default for ease of use.
@@ -264,7 +275,8 @@ manualExts =
     OverloadedRecordDot, -- f.g parses differently
     OverloadedRecordUpdate, -- qualified fields are not supported
     OverloadedLabels, -- a#b is parsed differently
-    ExtendedLiterals -- 1#Word32 is parsed differently
+    ExtendedLiterals, -- 1#Word32 is parsed differently
+    MultilineStrings -- """""" is parsed differently
   ]
 
 -- | Run a 'GHC.P' computation.

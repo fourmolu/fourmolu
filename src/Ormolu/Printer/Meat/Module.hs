@@ -10,11 +10,13 @@ module Ormolu.Printer.Meat.Module
   )
 where
 
+import Control.Applicative
 import Control.Monad
 import Data.Choice (pattern With)
+import Data.Maybe
+import GHC.Driver.Ppr
 import GHC.Hs hiding (comment)
 import GHC.Types.SrcLoc
-import GHC.Utils.Outputable (ppr, showSDocUnsafe)
 import Ormolu.Config
 import Ormolu.Imports (normalizeImports)
 import Ormolu.Parser.CommentStream
@@ -87,8 +89,8 @@ p_hsModuleHeader HsModule {hsmodExt = XModulePs {..}, ..} moduleName = do
           _ -> breakpoint
       breakpointBeforeWhere
         | not isRespectful = breakpointBeforeExportList
-        | isOnSameLine moduleKeyword whereKeyword = space
-        | Just closeParen <- exportClosePSpan, isOnSameLine closeParen whereKeyword = space
+        | isOnSameLine moduleStartRealSpan moduleEndRealSpan = space
+        | Just closeParen <- exportClosePSpan, isOnSameLine closeParen moduleEndRealSpan = space
         | otherwise = newline
 
   case hsmodExports of
@@ -102,13 +104,26 @@ p_hsModuleHeader HsModule {hsmodExt = XModulePs {..}, ..} moduleName = do
   txt "where"
   newline
   where
-    (moduleKeyword, whereKeyword) =
-      case am_main (anns hsmodAnn) of
-        -- [AnnModule, AnnWhere] or [AnnSignature, AnnWhere]
-        [AddEpAnn _ moduleLoc, AddEpAnn AnnWhere whereLoc] ->
-          (epaLocationRealSrcSpan moduleLoc, epaLocationRealSrcSpan whereLoc)
-        anns -> error $ "Module had unexpected annotations: " ++ showSDocUnsafe (ppr anns)
+    -- `epaLocationRealSrcSpan` throw exception, so I'm avoid it.
+    moduleStartRealSpan =
+      -- Do not execute functions for `UnhelpfulSpan`.
+      -- There may be room for other exceptions just by missing them.
+      let safeEpaLocationRealSrcSpan
+            (EpaDelta (UnhelpfulSpan _) _ _) = Nothing
+          safeEpaLocationRealSrcSpan
+            loc = Just $ epaLocationRealSrcSpan loc
+          moduleSpan moduleToToken = safeEpaLocationRealSrcSpan $ getEpTokenLoc $ moduleToToken $ anns hsmodAnn
+          sigLoc = moduleSpan am_sig
+          modLoc = moduleSpan am_mod
+       in fromMaybe (error $ "Module had unexpected annotations: " ++ showPprUnsafe modLoc) $ sigLoc <|> modLoc
+    moduleEndRealSpan = epaLocationRealSrcSpan $ getEpTokenLoc $ am_where $ anns hsmodAnn
     exportClosePSpan = do
-      AddEpAnn AnnCloseP loc <- al_close . anns . getLoc =<< hsmodExports
+      exports <- hsmodExports
+      loc <- case al_brackets $ anns $ getLoc exports of
+        ListParens _ closeToken -> Just $ getEpTokenLoc closeToken
+        ListBraces _ closeToken -> Just $ getEpTokenLoc closeToken
+        ListSquare _ closeToken -> Just $ getEpTokenLoc closeToken
+        ListBanana _ closeToken -> Just $ getEpUniTokenLoc closeToken
+        ListNone -> Nothing
       Just $ epaLocationRealSrcSpan loc
     isOnSameLine token1 token2 = srcSpanEndLine token1 == srcSpanStartLine token2

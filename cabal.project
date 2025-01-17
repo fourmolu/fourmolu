@@ -1,3 +1,14 @@
 packages: .
 
 tests: True
+multi-repl: True
+
+constraints: fourmolu +dev
+
+if impl (ghc >= 9.12)
+  -- The path released to Hackage does not allow newer versions of hashable.
+  source-repository-package
+    type: git
+    location: https://github.com/commercialhaskell/path
+    tag: db0c9954a251d062de296d980cf067dfa1ca52a3
+    subdir: path

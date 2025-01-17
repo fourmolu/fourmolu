@@ -13,10 +13,8 @@ jobs:
   check_generated_files:
     runs-on: ubuntu-latest
     steps:
-      -
-        uses: actions/checkout@v4
-      -
-        name: Check that generated files are up-to-date
+      - uses: actions/checkout@v4
+      - name: Check that generated files are up-to-date
         run: |
           config/generate.sh
           git diff --exit-code
@@ -25,42 +23,34 @@ jobs:
     strategy:
       matrix:
         ghc_version:
-          - '9.6'
-          - '9.8.2' # https://gitlab.haskell.org/ghc/ghc/-/issues/25576
-          - '9.10'
+          - "9.6"
+          - "9.8.2" # https://gitlab.haskell.org/ghc/ghc/-/issues/25576
+          - "9.10"
+          - "9.12"
 
-    name: 'cabal_test: ghc-${{ matrix.ghc_version }}'
+    name: "cabal_test: ghc-${{ matrix.ghc_version }}"
     runs-on: ubuntu-latest
     steps:
-      -
-        uses: actions/checkout@v4
-      -
-        uses: haskell-actions/setup@v2
+      - uses: actions/checkout@v4
+      - uses: haskell-actions/setup@v2
         with:
           ghc-version: ${{ matrix.ghc_version }}
-      -
-        name: cabal configure
-        run:
-          cabal configure
-            --enable-tests
-            --test-show-details=streaming
-            --flag dev
-      -
-        run: cabal update
-      -
-        run: cabal build --dry-run
-      -
-        name: Invalidate cache every month
+      - name: cabal configure
+        run: cabal configure
+          --enable-tests
+          --test-show-details=streaming
+          --flag dev
+      - run: cabal update
+      - run: cabal build --dry-run
+      - name: Invalidate cache every month
         run: echo "CURR_MONTH=$(date +%B)" | tee -a "$GITHUB_ENV"
-      -
-        uses: actions/cache@v4
+      - uses: actions/cache@v4
         with:
           path: ~/.cabal/store
           key: ${{ runner.os }}-cabal-cache-${{ env.CURR_MONTH }}-${{ matrix.ghc_version }}-${{ hashFiles('dist-newstyle/cache/plan.json') }}
           restore-keys: |
-               ${{ runner.os }}-cabal-cache-${{ env.CURR_MONTH }}-${{ matrix.ghc_version }}-
-      -
-        run: cabal test
+            ${{ runner.os }}-cabal-cache-${{ env.CURR_MONTH }}-${{ matrix.ghc_version }}-
+      - run: cabal test
 
   stack_test:
     strategy:
@@ -69,72 +59,57 @@ jobs:
           - ubuntu-latest
           - macos-latest
 
-    name: 'stack_test: ${{ matrix.os }}'
+    name: "stack_test: ${{ matrix.os }}"
     runs-on: ${{ matrix.os }}
     steps:
-      -
-        uses: actions/checkout@v4
-      -
-        uses: haskell-actions/setup@v2
+      - uses: actions/checkout@v4
+      - uses: haskell-actions/setup@v2
         with:
           enable-stack: true
-      -
-        uses: actions/cache@v4
+      - uses: actions/cache@v4
         with:
           path: ~/.stack
           key: ${{ runner.os }}-stack_test-${{ hashFiles('stack.yaml', 'fourmolu.cabal') }}
-      -
-        run: stack test --fast
+      - run: stack test --fast
 
   build_haddock:
     runs-on: ubuntu-latest
     steps:
-      -
-        uses: actions/checkout@v4
-      -
-        uses: actions/cache@v4
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
         with:
           path: ~/.stack
           key: ${{ runner.os }}-build_haddock-${{ hashFiles('stack.yaml', 'fourmolu.cabal') }}
-      -
-        name: Build haddock
+      - name: Build haddock
         # just a sanity check, so no need to build third-party docs
         run: stack haddock --fast --no-haddock-deps
-      -
-        name: Bundle haddock docs
+      - name: Bundle haddock docs
         run: tar czf fourmolu-docs.tar.gz -C "$(find .stack-work/dist -regex '.*/doc/html/[^/]*')" .
-      -
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: fourmolu-docs
           path: fourmolu-docs.tar.gz
-
 
   build_prod:
     strategy:
       matrix:
         include:
           # https://github.com/actions/runner-images?tab=readme-ov-file#available-images
-          -
-            target: linux-x86_64
+          - target: linux-x86_64
             os: ubuntu-latest
-          -
-            target: osx-x86_64
+          - target: osx-x86_64
             os: macos-13
-          -
-            target: osx-arm64
+          - target: osx-arm64
             os: macos-latest
 
-    name: 'build_prod: ${{ matrix.target }}'
+    name: "build_prod: ${{ matrix.target }}"
     runs-on: ${{ matrix.os }}
     env:
       FOURMOLU_REV: ${{ github.sha }}
 
     steps:
-      -
-        uses: actions/checkout@v4
-      -
-        name: Verify platform
+      - uses: actions/checkout@v4
+      - name: Verify platform
         run: |
           set -x
           case ${{ runner.os }} in
@@ -151,17 +126,14 @@ jobs:
             echo "Incorrect platform: $os-$arch" >&2
             exit 1
           fi
-      -
-        uses: haskell-actions/setup@v2
+      - uses: haskell-actions/setup@v2
         with:
           enable-stack: true
-      -
-        uses: actions/cache@v4
+      - uses: actions/cache@v4
         with:
           path: ~/.stack
           key: ${{ runner.os }}-build_prod-${{ hashFiles('stack.yaml', 'fourmolu.cabal') }}
-      -
-        name: Build
+      - name: Build
         run: |
           ARGS=(
               # install binary to ./bin/
@@ -170,18 +142,15 @@ jobs:
               # not using `dev` flag or testing; done in `stack_test` + `os_test`
           )
           stack build "${ARGS[@]}"
-      -
-        uses: haskell-actions/parse-cabal-file@v1
+      - uses: haskell-actions/parse-cabal-file@v1
         id: cabal_file
         with:
           cabal_file: fourmolu.cabal
-      -
-        name: Rename binary
+      - name: Rename binary
         run: cp bin/fourmolu bin/fourmolu-$version-${{ matrix.target }}
         env:
           version: ${{ steps.cabal_file.outputs.version }}
-      -
-        name: Store binary
+      - name: Store binary
         uses: actions/upload-artifact@v4
         with:
           name: fourmolu-binary-${{ matrix.target }}
@@ -193,43 +162,33 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      -
-        uses: actions/checkout@v4
-      -
-        uses: actions/cache@v4
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
         with:
           path: ~/.stack
           key: ${{ runner.os }}-lint-stack-${{ hashFiles('stack.yaml', 'fourmolu.cabal') }}
-      -
-        name: Build Fourmolu executable
+      - name: Build Fourmolu executable
         run: stack build --fast :fourmolu
-      -
-        uses: actions/cache@v4
+      - uses: actions/cache@v4
         with:
           path: ~/.cache/pre-commit
           key: ${{ runner.os }}-lint-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
-      -
-        name: Install pre-commit
+      - name: Install pre-commit
         run: pip install pre-commit
-      -
-        name: Run pre-commit
+      - name: Run pre-commit
         run: pre-commit run --all-files --show-diff-on-failure
 
   check_sdist:
     runs-on: ubuntu-latest
     steps:
-      -
-        uses: actions/checkout@v4
-      -
-        uses: actions/cache@v4
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
         with:
           path: ~/.stack
           key: ${{ runner.os }}-check_sdist-${{ hashFiles('stack.yaml') }}
-      -
-        name: Create sdist bundle
+      - name: Create sdist bundle
         run: stack sdist --test-tarball --tar-dir .
-      -
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: fourmolu-sdist
           path: fourmolu-*.tar.gz
@@ -237,9 +196,6 @@ jobs:
   check_redundant_examples:
     runs-on: ubuntu-latest
     steps:
-      -
-        uses: actions/checkout@v4
-      -
-        run: scripts/clean_redundant_examples.py
-      -
-        run: git diff --exit-code data/examples/
+      - uses: actions/checkout@v4
+      - run: scripts/clean_redundant_examples.py
+      - run: git diff --exit-code data/examples/

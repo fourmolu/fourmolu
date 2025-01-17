@@ -13,8 +13,6 @@ module Ormolu.Utils
     separatedByBlank,
     separatedByBlankNE,
     onTheSameLine,
-    groupBy',
-    matchAddEpAnn,
     textToStringBuffer,
     ghcModuleNameToCabal,
   )
@@ -153,23 +151,6 @@ separatedByBlankNE loc a b = separatedByBlank loc (NE.last a) (NE.head b)
 onTheSameLine :: SrcSpan -> SrcSpan -> Bool
 onTheSameLine a b =
   isOneLineSpan (mkSrcSpan (srcSpanEnd a) (srcSpanStart b))
-
--- | A generalisation of 'groupBy' to functions which aren't equivalences - a group ends
--- when comparison fails with the previous element, rather than the first of the group.
-groupBy' :: (a -> a -> Bool) -> [a] -> [NonEmpty a]
-groupBy' eq = flip foldr [] $ \x -> \case
-  [] -> [pure x]
-  (y :| ys) : zs ->
-    if x `eq` y
-      then (x :| y : ys) : zs
-      else pure x : (y :| ys) : zs
-
--- | Check whether the given 'AnnKeywordId' or its Unicode variant is in an
--- 'AddEpAnn', and return the 'EpaLocation' if so.
-matchAddEpAnn :: AnnKeywordId -> AddEpAnn -> Maybe EpaLocation
-matchAddEpAnn annId (AddEpAnn annId' loc)
-  | annId == annId' || unicodeAnn annId == annId' = Just loc
-  | otherwise = Nothing
 
 -- | Convert 'Text' to a 'StringBuffer' by making a copy.
 textToStringBuffer :: Text -> StringBuffer

@@ -30,8 +30,10 @@ module Ormolu.Fixity.Internal
   )
 where
 
-import Control.DeepSeq (NFData)
 import Data.Binary (Binary)
+import Data.Binary qualified as Binary
+import Data.Binary.Get qualified as Binary
+import Data.Binary.Put qualified as Binary
 import Data.ByteString.Short (ShortByteString)
 import Data.ByteString.Short qualified as SBS
 import Data.Choice (Choice)
@@ -59,7 +61,7 @@ newtype OpName = MkOpName
   { -- | Invariant: UTF-8 encoded
     getOpName :: ShortByteString
   }
-  deriving newtype (Eq, Ord, Binary, NFData)
+  deriving newtype (Eq, Ord, Binary)
 
 -- | Convert an 'OpName' to 'Text'.
 unOpName :: OpName -> Text
@@ -88,7 +90,7 @@ data FixityDirection
   | InfixR
   | InfixN
   deriving stock (Eq, Ord, Show, Generic)
-  deriving anyclass (Binary, NFData)
+  deriving anyclass (Binary)
 
 -- | Fixity information about an infix operator. This type provides precise
 -- information as opposed to 'FixityApproximation'.
@@ -96,10 +98,19 @@ data FixityInfo = FixityInfo
   { -- | Fixity direction
     fiDirection :: FixityDirection,
     -- | Precedence
-    fiPrecedence :: Int
+    fiPrecedence :: Double
   }
   deriving stock (Eq, Ord, Show, Generic)
-  deriving anyclass (Binary, NFData)
+
+instance Binary FixityInfo where
+  put FixityInfo {..} = do
+    Binary.put fiDirection
+    Binary.putDoublele fiPrecedence
+
+  get = do
+    fiDirection <- Binary.get
+    fiPrecedence <- Binary.getDoublele
+    pure FixityInfo {..}
 
 -- | Fixity info of the built-in colon data constructor.
 colonFixityInfo :: FixityInfo
@@ -116,13 +127,24 @@ data FixityApproximation = FixityApproximation
     faDirection :: Maybe FixityDirection,
     -- | Minimum precedence level found in the (maybe conflicting)
     -- definitions for the operator (inclusive)
-    faMinPrecedence :: Int,
+    faMinPrecedence :: Double,
     -- | Maximum precedence level found in the (maybe conflicting)
     -- definitions for the operator (inclusive)
-    faMaxPrecedence :: Int
+    faMaxPrecedence :: Double
   }
   deriving stock (Eq, Ord, Show, Generic)
-  deriving anyclass (Binary, NFData)
+
+instance Binary FixityApproximation where
+  put FixityApproximation {..} = do
+    Binary.put faDirection
+    Binary.putDoublele faMinPrecedence
+    Binary.putDoublele faMaxPrecedence
+
+  get = do
+    faDirection <- Binary.get
+    faMinPrecedence <- Binary.getDoublele
+    faMaxPrecedence <- Binary.getDoublele
+    pure FixityApproximation {..}
 
 -- | Gives the ability to merge two (maybe conflicting) definitions for an
 -- operator, keeping the higher level of compatible information from both.
@@ -156,7 +178,7 @@ fixityInfoToApproximation FixityInfo {..} =
 newtype HackageInfo
   = HackageInfo (Map PackageName (Map ModuleName (Map OpName FixityInfo)))
   deriving stock (Generic)
-  deriving anyclass (Binary, NFData)
+  deriving anyclass (Binary)
 
 -- | Map from the operator name to its 'FixityInfo'.
 newtype FixityOverrides = FixityOverrides

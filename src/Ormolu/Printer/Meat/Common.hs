@@ -15,6 +15,7 @@ module Ormolu.Printer.Meat.Common
     p_hsDoc',
     p_sourceText,
     p_namespaceSpec,
+    p_arrow,
   )
 where
 
@@ -34,6 +35,7 @@ import GHC.Types.Name.Occurrence (OccName (..), occNameString)
 import GHC.Types.Name.Reader
 import GHC.Types.SourceText
 import GHC.Types.SrcLoc
+import Language.Haskell.Syntax (HsArrowOf (..))
 import Language.Haskell.Syntax.Module.Name
 import Ormolu.Config
 import Ormolu.Printer.Combinators
@@ -59,6 +61,10 @@ p_hsmodName mname = do
 p_ieWrappedName :: IEWrappedName GhcPs -> R ()
 p_ieWrappedName = \case
   IEName _ x -> p_rdrName x
+  IEDefault _ x -> do
+    txt "default"
+    space
+    p_rdrName x
   IEPattern _ x -> do
     txt "pattern"
     space
@@ -74,13 +80,13 @@ p_rdrName l = located l $ \x -> do
   unboxedSums <- isExtensionEnabled UnboxedSums
   let wrapper EpAnn {anns} = case anns of
         NameAnnQuote {nann_quoted} -> tickPrefix . wrapper nann_quoted
-        NameAnn {nann_adornment = NameParens} ->
+        NameAnn {nann_adornment = NameParens {}} ->
           parens N . handleUnboxedSumsAndHashInteraction
-        NameAnn {nann_adornment = NameBackquotes} -> backticks
+        NameAnn {nann_adornment = NameBackquotes {}} -> backticks
         -- whether the `->` identifier is parenthesized
         NameAnnRArrow {nann_mopen = Just _} -> parens N
         -- special case for unboxed unit tuples
-        NameAnnOnly {nann_adornment = NameParensHash} -> const $ txt "(# #)"
+        NameAnnOnly {nann_adornment = NameParensHash {}} -> const $ txt "(# #)"
         _ -> id
 
       -- When UnboxedSums is enabled, `(#` is a single lexeme, so we have to
@@ -235,3 +241,13 @@ p_namespaceSpec = \case
   NoNamespaceSpecifier -> pure ()
   TypeNamespaceSpecifier _ -> txt "type" *> space
   DataNamespaceSpecifier _ -> txt "data" *> space
+
+p_arrow :: (mult -> R ()) -> HsArrowOf mult GhcPs -> R ()
+p_arrow p_mult = \case
+  HsUnrestrictedArrow _ -> token'rarrow
+  HsLinearArrow _ -> token'lolly
+  HsExplicitMult _ mult -> do
+    txt "%"
+    p_mult mult
+    space
+    token'rarrow
