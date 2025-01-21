@@ -177,6 +177,9 @@ jobs:
               # install binary to ./bin/
               --copy-bins --local-bin-path ./bin/
 
+              # statically link
+              --ghc-options='-static -threaded -fPIC -optc-static -optl-static -optl-pthread'
+
               # not using `dev` flag or testing; done in `stack_test` + `os_test`
           )
           stack build "${ARGS[@]}"
