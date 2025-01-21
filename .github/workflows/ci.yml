@@ -172,7 +172,7 @@ jobs:
             (ARM64) arch=arm64 ;;
             (*) echo 'Unknown architecture' >&1; exit 1 ;;
           esac
-          if [[ $os-$arch != ${{ matrix.target }} ]]; then
+          if [[ $os-$arch != ${{ matrix.platform }} ]]; then
             echo "Incorrect platform: $os-$arch" >&2
             exit 1
           fi
@@ -199,6 +199,20 @@ jobs:
 
               # not using `dev` flag or testing; done in `stack_test` + `os_test`
           )
+          if [[ ${{ matrix.dynamic }} = false ]]; then
+            # statically link
+            ARGS+=(
+              --ghc-options='-static -threaded -fPIC -optc-static -optl-static -optl-pthread -split-sections'
+            )
+            {
+              echo 'ghc-options:'
+              echo '  "$everything": -fPIC'
+            } >> stack.yaml
+            if [[ ${{ runner.arch }} = ARM64 ]]; then
+              # Default ld.gold linker has trouble with aarch64: unsupported TLSLE reloc
+              ARGS+=('--ghc-options=-optl-fuse-ld=bfd')
+            fi
+          fi
           stack build "${ARGS[@]}"
           strip bin/fourmolu
       -
