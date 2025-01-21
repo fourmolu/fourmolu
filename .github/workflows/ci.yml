@@ -115,6 +115,7 @@ jobs:
     uses: ./.github/workflows/build-prod-binary.yml
     with:
       platforms: '["linux-x86_64"]'
+      static: '[false]'
       version: ${{ github.sha }}
 
   lint:

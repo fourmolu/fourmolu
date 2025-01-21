@@ -5,6 +5,9 @@ on:
       platforms:
         type: string
         required: true
+      static:
+        type: string
+        required: true
       version:
         type: string
         required: true
@@ -14,6 +17,7 @@ jobs:
     strategy:
       matrix:
         platform: ${{ fromJSON(inputs.platforms) }}
+        static: ${{ fromJSON(inputs.static) }}
 
     name: ${{ matrix.platform }}
     runs-on:
@@ -30,6 +34,8 @@ jobs:
       FOURMOLU_REV: ${{ github.sha }}
       version: ${{ inputs.version }}
       platform: ${{ matrix.platform }}
+      static: ${{ matrix.static }}
+      target: ${{ matrix.platform }}${{ matrix.static && '-static' || '' }}
 
     steps:
       -
@@ -61,18 +67,32 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/.stack
-          key: ${{ matrix.platform }}-build-prod-binary-${{ hashFiles('stack.yaml', 'fourmolu.cabal') }}
+          key: ${{ env.target }}-build-prod-binary-${{ hashFiles('stack.yaml', 'fourmolu.cabal') }}
           restore-keys: |
-               ${{ matrix.platform }}-build-prod-binary-
+               ${{ env.target }}-build-prod-binary-
       -
         name: Build
         run: |
-          stack install :fourmolu --local-bin-path ./bin/
+          ARGS=(--local-bin-path ./bin/)
+
+          if [[ ${{ matrix.static }} = true ]]; then
+            ARGS+=(--ghc-options='-static -threaded -fPIC -optc-static -optl-static -optl-pthread -split-sections')
+            {
+              echo 'ghc-options:'
+              echo '  "$everything": -fPIC'
+            } >> stack.yaml
+            if [[ ${{ runner.arch }} = ARM64 ]]; then
+              # Default ld.gold linker has trouble with aarch64: unsupported TLSLE reloc
+              ARGS+=(--ghc-options='-optl-fuse-ld=bfd')
+            fi
+          fi
+
+          stack install "${ARGS[@]}" :fourmolu
           strip bin/fourmolu
-          cp bin/fourmolu bin/fourmolu-${version}-${platform}
+          cp bin/fourmolu bin/fourmolu-${version}-${target}
       -
         name: Store binary
         uses: actions/upload-artifact@v7
         with:
-          name: fourmolu-binary-${{ matrix.platform }}
+          name: fourmolu-binary-${{ env.target }}
           path: bin/fourmolu-*
