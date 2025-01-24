@@ -1,6 +1,8 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ViewPatterns #-}
@@ -20,11 +22,12 @@ where
 
 import Control.Monad
 import Data.Bool (bool)
+import Data.Choice (pattern Isn't)
 import Data.Data hiding (Infix, Prefix)
 import Data.Function (on)
 import Data.Functor ((<&>))
 import Data.Generics.Schemes (everything)
-import Data.List (find, intersperse, sortBy, unsnoc)
+import Data.List (intersperse, sortBy, unsnoc)
 import Data.List.NonEmpty (NonEmpty (..), (<|))
 import Data.List.NonEmpty qualified as NE
 import Data.Maybe
@@ -856,23 +859,17 @@ p_hsExpr' isApp s = \case
     located hswc_body p_hsType
   -- similar to HsForAllTy
   HsForAll _ tele e -> do
-    p_hsForAllTelescope tele
-    breakpoint
+    p_hsForAllTelescope (Isn't #multiline) tele
     located e p_hsExpr
   -- similar to HsQualTy
   HsQual _ qs e -> do
     located qs $ p_hsContext' p_hsExpr
-    space
-    txt "=>"
-    breakpoint
+    p_hsQualArrow (Isn't #multiline)
     located e p_hsExpr
   -- similar to HsFunTy
   HsFunArr _ arrow x y -> do
     located x p_hsExpr
-    space
-    p_arrow (located' p_hsExpr) arrow
-    breakpoint
-    located y p_hsExpr
+    p_hsFun (Isn't #multiline) p_hsExpr arrow y
 
 -- | Print a list comprehension.
 --
