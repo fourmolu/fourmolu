@@ -448,12 +448,7 @@ p_stmt' s placer render = \case
     switchLayout [loc, l] $
       placeHanging placement (located f (render N))
   BodyStmt _ body _ _ -> located body (render s)
-  LetStmt epAnnLet binds -> do
-    let letLoc =
-          fmap (\(AddEpAnn _ loc) -> loc)
-            . find (\(AddEpAnn ann _) -> ann == AnnLet)
-            $ epAnnLet
-    p_let' True letLoc binds Nothing
+  LetStmt epAnnLet binds -> p_let' True epAnnLet binds Nothing
   ParStmt {} ->
     -- 'ParStmt' should always be eliminated in 'gatherStmts' already, such
     -- that it never occurs in 'p_stmt''. Consequently, handling it here
@@ -1157,18 +1152,13 @@ p_let ::
   HsLocalBinds GhcPs ->
   LocatedA body ->
   R ()
-p_let inDo render letToken localBinds e = p_let' inDo letLoc localBinds $ Just (located e render)
-  where
-    letLoc =
-      case letToken of
-        EpTok loc -> Just loc
-        NoEpTok -> Nothing
+p_let inDo render letToken localBinds e = p_let' inDo letToken localBinds $ Just (located e render)
 
 p_let' ::
   -- | True if in do-block
   Bool ->
   -- | Annotation for the `let` block
-  Maybe EpaLocation ->
+  EpToken "let" ->
   -- | Let bindings
   HsLocalBinds GhcPs ->
   -- | Optional 'in' body
@@ -1188,7 +1178,10 @@ p_let' inDo letLoc localBinds mBody = do
             -- check if local binds are on the same line as the "let" keyword;
             -- if we can't figure out the positions, just fallback to `inline` style
             fromMaybe True $ do
-              letStartLine <- srcSpanStartLine . epaLocationRealSrcSpan <$> letLoc
+              letStartLine <-
+                case letLoc of
+                  EpTok loc -> pure . srcSpanStartLine . epaLocationRealSrcSpan $ loc
+                  NoEpTok -> Nothing
               localBindsStartLine <- localBindsEpAnns localBinds >>= epAnnsStartLine
               pure $
                 -- special case when let has zero local binds

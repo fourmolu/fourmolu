@@ -106,8 +106,8 @@ diffHsModule = genericQuery
                   `extQ` considerEqual @AnnSig
                   `extQ` considerEqual @HsRuleAnn
                   `extQ` considerEqual @EpLinearArrow
-                  `extQ` considerEqualVia' compareAnnKeywordId
                   `extQ` considerEqual @AnnSynDecl
+                  `extQ` considerEqual @IsUnicodeSyntax
                   -- FastString (for example for string literals)
                   `extQ` considerEqualVia' ((==) @FastString)
                   -- Haddock strings
@@ -244,21 +244,3 @@ diffHsModule = genericQuery
 
     derivedTyClsEq :: DerivClauseTys GhcPs -> GenericQ ParseResultDiff
     derivedTyClsEq = considerEqualVia $ \lc rc -> genericQuery (normalizeDerivClauseTys lc) (normalizeDerivClauseTys rc)
-
-    compareAnnKeywordId x y =
-      let go = curry $ \case
-            (AnnCloseB, AnnCloseBU) -> True
-            (AnnCloseQ, AnnCloseQU) -> True
-            (AnnDarrow, AnnDarrowU) -> True
-            (AnnDcolon, AnnDcolonU) -> True
-            (AnnForall, AnnForallU) -> True
-            (AnnLarrow, AnnLarrowU) -> True
-            (AnnOpenB, AnnOpenBU) -> True
-            (AnnOpenEQ, AnnOpenEQU) -> True
-            (AnnRarrow, AnnRarrowU) -> True
-            (Annlarrowtail, AnnlarrowtailU) -> True
-            (Annrarrowtail, AnnrarrowtailU) -> True
-            (AnnLarrowtail, AnnLarrowtailU) -> True
-            (AnnRarrowtail, AnnRarrowtailU) -> True
-            (_, _) -> False
-       in go x y || go y x || x == y

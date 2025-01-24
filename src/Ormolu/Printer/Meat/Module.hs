@@ -14,7 +14,6 @@ import Control.Monad
 import Data.Choice (pattern With)
 import GHC.Hs hiding (comment)
 import GHC.Types.SrcLoc
-import GHC.Utils.Outputable (ppr, showSDocUnsafe)
 import Ormolu.Config
 import Ormolu.Imports (normalizeImports)
 import Ormolu.Parser.CommentStream
@@ -87,8 +86,8 @@ p_hsModuleHeader HsModule {hsmodExt = XModulePs {..}, ..} moduleName = do
           _ -> breakpoint
       breakpointBeforeWhere
         | not isRespectful = breakpointBeforeExportList
-        | isOnSameLine moduleKeyword whereKeyword = space
-        | Just closeParen <- exportClosePSpan, isOnSameLine closeParen whereKeyword = space
+        | isOnSameLine am_mod am_where || isOnSameLine am_sig am_where = space
+        | Just closeParen <- mCloseParen, isOnSameLine closeParen am_where = space
         | otherwise = newline
 
   case hsmodExports of
@@ -102,13 +101,15 @@ p_hsModuleHeader HsModule {hsmodExt = XModulePs {..}, ..} moduleName = do
   txt "where"
   newline
   where
-    (moduleKeyword, whereKeyword) =
-      case am_main (anns hsmodAnn) of
-        -- [AnnModule, AnnWhere] or [AnnSignature, AnnWhere]
-        [AddEpAnn _ moduleLoc, AddEpAnn AnnWhere whereLoc] ->
-          (epaLocationRealSrcSpan moduleLoc, epaLocationRealSrcSpan whereLoc)
-        anns -> error $ "Module had unexpected annotations: " ++ showSDocUnsafe (ppr anns)
-    exportClosePSpan = do
-      AddEpAnn AnnCloseP loc <- al_close . anns . getLoc =<< hsmodExports
-      Just $ epaLocationRealSrcSpan loc
-    isOnSameLine token1 token2 = srcSpanEndLine token1 == srcSpanStartLine token2
+    AnnsModule {am_sig, am_mod, am_where} = anns hsmodAnn
+    mCloseParen = do
+      AnnList {al_brackets} <- anns . getLoc <$> hsmodExports
+      case al_brackets of
+        ListParens _ closeParen -> pure closeParen
+        _ -> error "Unexpectedly got a different kind of bracket in module export list"
+    isOnSameLine = curry $ \case
+      (EpTok token1, EpTok token2) ->
+        let loc1 = epaLocationRealSrcSpan token1
+            loc2 = epaLocationRealSrcSpan token2
+         in srcSpanEndLine loc1 == srcSpanStartLine loc2
+      _ -> False
