@@ -34,6 +34,7 @@ import GHC.Hs hiding (isPromoted)
 import GHC.Types.SourceText
 import GHC.Types.SrcLoc
 import GHC.Types.Var
+import GHC.Utils.Outputable (Outputable)
 import Ormolu.Config
 import Ormolu.Printer.Combinators
 import Ormolu.Printer.Meat.Common
@@ -264,7 +265,11 @@ hasDocStrings = \case
 p_hsContext :: HsContext GhcPs -> R ()
 p_hsContext = p_hsContext' p_hsType
 
-p_hsContext' :: (HasLoc (Anno a)) => (a -> R ()) -> [XRec GhcPs a] -> R ()
+p_hsContext' ::
+  (Outputable (GenLocated (Anno a) a), HasLoc (Anno a)) =>
+  (a -> R ()) ->
+  [XRec GhcPs a] ->
+  R ()
 p_hsContext' f = \case
   [] -> txt "()"
   [x] -> located x f

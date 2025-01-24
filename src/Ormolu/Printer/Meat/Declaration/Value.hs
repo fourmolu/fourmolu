@@ -29,6 +29,7 @@ import Data.List.NonEmpty (NonEmpty (..), (<|))
 import Data.List.NonEmpty qualified as NE
 import Data.Maybe
 import Data.Text (Text)
+import Data.Text qualified as Text
 import Data.Void
 import GHC.Data.Strict qualified as Strict
 import GHC.Hs
