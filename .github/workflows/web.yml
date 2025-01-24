@@ -6,7 +6,7 @@ on:
       - main
 
 env:
-  GHC_VERSION: '9.10'
+  GHC_VERSION: '9.12'
 
 jobs:
   build_wasm:
@@ -28,7 +28,7 @@ jobs:
         name: Install wasm32-wasi-ghc
         run: |
           cd "$(mktemp -d)"
-          curl -L https://gitlab.haskell.org/ghc/ghc-wasm-meta/-/archive/master/ghc-wasm-meta-master.tar.gz \
+          curl -L https://gitlab.haskell.org/haskell-wasm/ghc-wasm-meta/-/archive/master/ghc-wasm-meta-master.tar.gz \
             | tar xz --strip-components=1
           FLAVOUR=${GHC_VERSION} ./setup.sh
           ~/.ghc-wasm/add_to_github_path.sh
