@@ -12,12 +12,14 @@ module Ormolu.Printer.Meat.Type
     startTypeAnnotationDecl,
     hasDocStrings,
     p_hsContext,
+    p_hsContext',
     p_hsTyVarBndr,
     ForAllVisibility (..),
     p_forallBndrs,
     p_conDeclFields,
     p_lhsTypeArg,
     p_hsSigType,
+    p_hsForAllTelescope,
     hsOuterTyVarBndrsToHsType,
     lhsTypeToSigType,
   )
@@ -36,7 +38,8 @@ import Ormolu.Config
 import Ormolu.Printer.Combinators
 import Ormolu.Printer.Meat.Common
 import {-# SOURCE #-} Ormolu.Printer.Meat.Declaration.OpTree (p_tyOpTree, tyOpTree)
-import {-# SOURCE #-} Ormolu.Printer.Meat.Declaration.Value (p_hsUntypedSplice, p_stringLit)
+import Ormolu.Printer.Meat.Declaration.StringLiteral
+import {-# SOURCE #-} Ormolu.Printer.Meat.Declaration.Value (p_hsUntypedSplice)
 import Ormolu.Printer.Operators
 import Ormolu.Utils
 
@@ -48,10 +51,7 @@ p_hsType t = do
 p_hsType' :: Bool -> HsType GhcPs -> R ()
 p_hsType' multilineArgs = \case
   HsForAllTy _ tele t -> do
-    vis <-
-      case tele of
-        HsForAllInvis _ bndrs -> p_forallBndrsStart p_hsTyVarBndr bndrs >> pure ForAllInvis
-        HsForAllVis _ bndrs -> p_forallBndrsStart p_hsTyVarBndr bndrs >> pure ForAllVis
+    vis <- p_hsForAllTelescope tele
     getPrinterOpt poFunctionArrows >>= \case
       LeadingArrows | multilineArgs -> interArgBreak >> txt " " >> p_forallBndrsEnd vis
       _ -> p_forallBndrsEnd vis >> interArgBreak
@@ -99,20 +99,12 @@ p_hsType' multilineArgs = \case
       txt "@"
       located kd p_hsType
   HsFunTy _ arrow x y -> do
-    let p_arrow =
-          case arrow of
-            HsUnrestrictedArrow _ -> token'rarrow
-            HsLinearArrow _ -> token'lolly
-            HsExplicitMult _ mult -> do
-              txt "%"
-              p_hsTypeR (unLoc mult)
-              space
-              token'rarrow
+    let p_arrow' = p_arrow (located' p_hsTypeR) arrow
     located x p_hsType
     getPrinterOpt poFunctionArrows >>= \case
-      LeadingArrows -> interArgBreak >> located y (\y' -> p_arrow >> space >> p_hsTypeR y')
-      TrailingArrows -> space >> p_arrow >> interArgBreak >> located y p_hsTypeR
-      LeadingArgsArrows -> interArgBreak >> located y (\y' -> p_arrow >> space >> p_hsTypeR y')
+      LeadingArrows -> interArgBreak >> located y (\y' -> p_arrow' >> space >> p_hsTypeR y')
+      TrailingArrows -> space >> p_arrow' >> interArgBreak >> located y p_hsTypeR
+      LeadingArgsArrows -> interArgBreak >> located y (\y' -> p_arrow' >> space >> p_hsTypeR y')
   HsListTy _ t ->
     located t (brackets N . p_hsType)
   HsTupleTy _ tsort xs ->
@@ -157,7 +149,7 @@ p_hsType' multilineArgs = \case
         located t p_hsType
         newline
         p_hsDoc Caret (Without #endNewline) str
-  HsBangTy _ (HsSrcBang _ u s) t -> do
+  HsBangTy _ (HsBang u s) t -> do
     case u of
       SrcUnpack -> txt "{-# UNPACK #-}" >> space
       SrcNoUnpack -> txt "{-# NOUNPACK #-}" >> space
@@ -180,11 +172,15 @@ p_hsType' multilineArgs = \case
         (IsPromoted, L _ t : _) | startsWithSingleQuote t -> space
         _ -> return ()
       sep commaDel (sitcc . located' p_hsType) xs
-  HsExplicitTupleTy _ xs -> do
-    txt "'"
+  HsExplicitTupleTy _ p xs -> do
+    case p of
+      IsPromoted -> txt "'"
+      NotPromoted -> return ()
     parens N $ do
-      case xs of
-        L _ t : _ | startsWithSingleQuote t -> space
+      -- If this tuple is promoted and the first element starts with a single
+      -- quote, we need to put a space in between or it fails to parse.
+      case (p, xs) of
+        (IsPromoted, L _ t : _) | startsWithSingleQuote t -> space
         _ -> return ()
       sep commaDel (located' p_hsType) xs
   HsTyLit _ t ->
@@ -266,13 +262,16 @@ hasDocStrings = \case
   _ -> False
 
 p_hsContext :: HsContext GhcPs -> R ()
-p_hsContext = \case
+p_hsContext = p_hsContext' p_hsType
+
+p_hsContext' :: (HasLoc (Anno a)) => (a -> R ()) -> [XRec GhcPs a] -> R ()
+p_hsContext' f = \case
   [] -> txt "()"
-  [x] -> located x p_hsType
+  [x] -> located x f
   xs -> do
     shouldSort <- getPrinterOpt poSortConstraints
     let sort = if shouldSort then sortOn showOutputable else id
-    parens N $ sep commaDel (sitcc . located' p_hsType) (sort xs)
+    parens N $ sep commaDel (sitcc . located' f) (sort xs)
 
 class IsTyVarBndrFlag flag where
   isInferred :: flag -> Bool
@@ -294,15 +293,20 @@ instance IsTyVarBndrFlag (HsBndrVis GhcPs) where
     HsBndrInvisible _ -> txt "@"
 
 p_hsTyVarBndr :: (IsTyVarBndrFlag flag) => HsTyVarBndr flag GhcPs -> R ()
-p_hsTyVarBndr = \case
-  UserTyVar _ flag x -> do
-    p_tyVarBndrFlag flag
-    (if isInferred flag then braces N else id) $ p_rdrName x
-  KindedTyVar _ flag l k -> do
-    p_tyVarBndrFlag flag
-    (if isInferred flag then braces else parens) N . sitcc $ do
-      located l atom
-      inci $ startTypeAnnotation k p_hsType
+p_hsTyVarBndr HsTvb {..} = do
+  p_tyVarBndrFlag tvb_flag
+  let wrap
+        | isInferred tvb_flag = braces N
+        | otherwise = case tvb_kind of
+            HsBndrKind {} -> parens N
+            HsBndrNoKind {} -> id
+  wrap $ do
+    case tvb_var of
+      HsBndrVar _ x -> p_rdrName x
+      HsBndrWildCard _ -> txt "_"
+    case tvb_kind of
+      HsBndrKind _ k -> inci $ startTypeAnnotation k p_hsType
+      HsBndrNoKind _ -> pure ()
 
 data ForAllVisibility = ForAllInvis | ForAllVis
 
@@ -375,6 +379,11 @@ p_lhsTypeArg = \case
 p_hsSigType :: HsSigType GhcPs -> R ()
 p_hsSigType HsSig {..} =
   p_hsType $ hsOuterTyVarBndrsToHsType sig_bndrs sig_body
+
+p_hsForAllTelescope :: HsForAllTelescope GhcPs -> R ForAllVisibility
+p_hsForAllTelescope = \case
+  HsForAllInvis _ bndrs -> p_forallBndrsStart p_hsTyVarBndr bndrs >> pure ForAllInvis
+  HsForAllVis _ bndrs -> p_forallBndrsStart p_hsTyVarBndr bndrs >> pure ForAllVis
 
 ----------------------------------------------------------------------------
 -- Conversion functions
