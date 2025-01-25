@@ -4,9 +4,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
-import Control.DeepSeq (force)
-import Control.Exception (SomeException, catch, evaluate, try)
-import Control.Monad (void)
+import Control.Exception (SomeException, catch, try)
 import Data.Aeson qualified as Aeson
 import Data.ByteString qualified as ByteString
 import Data.ByteString.Unsafe
@@ -39,9 +37,6 @@ import Ormolu.Terminal (runTermPure)
 
 foreign export ccall
   runFourmolu :: Ptr CChar -> Int -> IO (Ptr StringWithLen)
-
-foreign export ccall
-  evaluateFixityInfo :: IO ()
 
 foreign export ccall
   getString :: Ptr StringWithLen -> IO (Ptr CChar)
@@ -80,11 +75,6 @@ runFourmolu inputPtr inputLen = do
           outputAST = "",
           formatError = Just . Text.pack . show $ (e :: SomeException)
         }
-
--- See comments in Ormolu.Fixity
-evaluateFixityInfo :: IO ()
-evaluateFixityInfo =
-  void . evaluate $ force (Fixity.hackageInfo, demoDependencies)
 
 {----- StringWithLen -----}
 

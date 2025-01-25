@@ -5,6 +5,20 @@
 
 packages:
 - completed:
+    hackage: ghc-lib-parser-9.12.1.20250105@sha256:fbc4b4dfec61c3d04c9fe8030c1521dbc390202a63d747095278bba06854ac72,18342
+    pantry-tree:
+      sha256: c432861131a5a9dfe0006abb2d31e953788cb15cadaab40ae660c81bddc3d348
+      size: 38745
+  original:
+    hackage: ghc-lib-parser-9.12.1.20250105
+- completed:
+    hackage: Cabal-syntax-3.14.1.0@sha256:557a2b20dc85f052c86c5a06dcbd7c6995f2d0391bbff8e62c90b4b5975211da,7380
+    pantry-tree:
+      sha256: b515a5cfb9da09c0aae57ca223281d06dad9d11dfc466fc47d2e83720a078fea
+      size: 10977
+  original:
+    hackage: Cabal-syntax-3.14.1.0
+- completed:
     hackage: path-0.9.6@sha256:63c2783d76c425514b2904e392f487921de823d883dcc629d7eaad36930198ce,5531
     pantry-tree:
       sha256: c791fe08026c1856bfd8fe4ae6b93e86ffcfbd59b3b4644560a71b734dd4b20e
@@ -20,7 +34,7 @@ packages:
     hackage: path-io-1.8.2
 snapshots:
 - completed:
-    sha256: 776b860cca4e9106b51f401ddbc6d8d95ba417ec326d9c869013fef1086a9a17
-    size: 621385
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2025/1/11.yaml
-  original: nightly-2025-01-11
+    sha256: 0912f90a954fb38f32372b0f8ec802421ba9ec9ee735c7c1517aee7124325463
+    size: 629580
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2025/1/15.yaml
+  original: nightly-2025-01-15

@@ -14,7 +14,6 @@ module Ormolu.Utils
     separatedByBlankNE,
     onTheSameLine,
     groupBy',
-    matchAddEpAnn,
     textToStringBuffer,
     ghcModuleNameToCabal,
   )
@@ -163,13 +162,6 @@ groupBy' eq = flip foldr [] $ \x -> \case
     if x `eq` y
       then (x :| y : ys) : zs
       else pure x : (y :| ys) : zs
-
--- | Check whether the given 'AnnKeywordId' or its Unicode variant is in an
--- 'AddEpAnn', and return the 'EpaLocation' if so.
-matchAddEpAnn :: AnnKeywordId -> AddEpAnn -> Maybe EpaLocation
-matchAddEpAnn annId (AddEpAnn annId' loc)
-  | annId == annId' || unicodeAnn annId == annId' = Just loc
-  | otherwise = Nothing
 
 -- | Convert 'Text' to a 'StringBuffer' by making a copy.
 textToStringBuffer :: Text -> StringBuffer

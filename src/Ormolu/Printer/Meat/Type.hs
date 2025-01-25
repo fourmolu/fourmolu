@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -12,19 +13,24 @@ module Ormolu.Printer.Meat.Type
     startTypeAnnotationDecl,
     hasDocStrings,
     p_hsContext,
+    p_hsContext',
     p_hsTyVarBndr,
     ForAllVisibility (..),
     p_forallBndrs,
     p_conDeclFields,
     p_lhsTypeArg,
     p_hsSigType,
+    p_hsForAllTelescope,
+    p_hsQualArrow,
+    p_hsFun,
     hsOuterTyVarBndrsToHsType,
     lhsTypeToSigType,
   )
 where
 
 import Control.Monad
-import Data.Choice (pattern With, pattern Without)
+import Data.Choice (Choice, pattern With, pattern Without)
+import Data.Choice qualified as Choice
 import Data.Functor ((<&>))
 import Data.List (sortOn)
 import GHC.Data.Strict qualified as Strict
@@ -32,36 +38,29 @@ import GHC.Hs hiding (isPromoted)
 import GHC.Types.SourceText
 import GHC.Types.SrcLoc
 import GHC.Types.Var
+import GHC.Utils.Outputable (Outputable)
 import Ormolu.Config
 import Ormolu.Printer.Combinators
 import Ormolu.Printer.Meat.Common
 import {-# SOURCE #-} Ormolu.Printer.Meat.Declaration.OpTree (p_tyOpTree, tyOpTree)
-import {-# SOURCE #-} Ormolu.Printer.Meat.Declaration.Value (p_hsUntypedSplice, p_stringLit)
+import Ormolu.Printer.Meat.Declaration.StringLiteral
+import {-# SOURCE #-} Ormolu.Printer.Meat.Declaration.Value (p_hsUntypedSplice)
 import Ormolu.Printer.Operators
 import Ormolu.Utils
 
 p_hsType :: HsType GhcPs -> R ()
 p_hsType t = do
   layout <- getLayout
-  p_hsType' (hasDocStrings t || layout == MultiLine) t
+  p_hsType' (Choice.fromBool $ hasDocStrings t || layout == MultiLine) t
 
-p_hsType' :: Bool -> HsType GhcPs -> R ()
-p_hsType' multilineArgs = \case
+p_hsType' :: Choice "multiline" -> HsType GhcPs -> R ()
+p_hsType' isMultiline = \case
   HsForAllTy _ tele t -> do
-    vis <-
-      case tele of
-        HsForAllInvis _ bndrs -> p_forallBndrsStart p_hsTyVarBndr bndrs >> pure ForAllInvis
-        HsForAllVis _ bndrs -> p_forallBndrsStart p_hsTyVarBndr bndrs >> pure ForAllVis
-    getPrinterOpt poFunctionArrows >>= \case
-      LeadingArrows | multilineArgs -> interArgBreak >> txt " " >> p_forallBndrsEnd vis
-      _ -> p_forallBndrsEnd vis >> interArgBreak
+    p_hsForAllTelescope isMultiline tele
     located t p_hsType
   HsQualTy _ qs t -> do
     located qs p_hsContext
-    getPrinterOpt poFunctionArrows >>= \case
-      LeadingArrows -> interArgBreak >> token'darrow >> space
-      TrailingArrows -> space >> token'darrow >> interArgBreak
-      LeadingArgsArrows -> space >> token'darrow >> interArgBreak
+    p_hsQualArrow isMultiline
     case unLoc t of
       HsQualTy {} -> p_hsTypeR (unLoc t)
       HsFunTy {} -> located t p_hsType
@@ -99,20 +98,8 @@ p_hsType' multilineArgs = \case
       txt "@"
       located kd p_hsType
   HsFunTy _ arrow x y -> do
-    let p_arrow =
-          case arrow of
-            HsUnrestrictedArrow _ -> token'rarrow
-            HsLinearArrow _ -> token'lolly
-            HsExplicitMult _ mult -> do
-              txt "%"
-              p_hsTypeR (unLoc mult)
-              space
-              token'rarrow
     located x p_hsType
-    getPrinterOpt poFunctionArrows >>= \case
-      LeadingArrows -> interArgBreak >> located y (\y' -> p_arrow >> space >> p_hsTypeR y')
-      TrailingArrows -> space >> p_arrow >> interArgBreak >> located y p_hsTypeR
-      LeadingArgsArrows -> interArgBreak >> located y (\y' -> p_arrow >> space >> p_hsTypeR y')
+    p_hsFun isMultiline p_hsTypeR arrow y
   HsListTy _ t ->
     located t (brackets N . p_hsType)
   HsTupleTy _ tsort xs ->
@@ -157,7 +144,7 @@ p_hsType' multilineArgs = \case
         located t p_hsType
         newline
         p_hsDoc Caret (Without #endNewline) str
-  HsBangTy _ (HsSrcBang _ u s) t -> do
+  HsBangTy _ (HsBang u s) t -> do
     case u of
       SrcUnpack -> txt "{-# UNPACK #-}" >> space
       SrcNoUnpack -> txt "{-# NOUNPACK #-}" >> space
@@ -180,11 +167,15 @@ p_hsType' multilineArgs = \case
         (IsPromoted, L _ t : _) | startsWithSingleQuote t -> space
         _ -> return ()
       sep commaDel (sitcc . located' p_hsType) xs
-  HsExplicitTupleTy _ xs -> do
-    txt "'"
+  HsExplicitTupleTy _ p xs -> do
+    case p of
+      IsPromoted -> txt "'"
+      NotPromoted -> return ()
     parens N $ do
-      case xs of
-        L _ t : _ | startsWithSingleQuote t -> space
+      -- If this tuple is promoted and the first element starts with a single
+      -- quote, we need to put a space in between or it fails to parse.
+      case (p, xs) of
+        (IsPromoted, L _ t : _) | startsWithSingleQuote t -> space
         _ -> return ()
       sep commaDel (located' p_hsType) xs
   HsTyLit _ t ->
@@ -201,11 +192,7 @@ p_hsType' multilineArgs = \case
       HsExplicitListTy {} -> True
       HsTyLit _ HsCharTy {} -> True
       _ -> False
-    interArgBreak =
-      if multilineArgs
-        then newline
-        else breakpoint
-    p_hsTypeR m = p_hsType' multilineArgs m
+    p_hsTypeR m = p_hsType' isMultiline m
 
 startTypeAnnotation ::
   (HasLoc l) =>
@@ -266,13 +253,20 @@ hasDocStrings = \case
   _ -> False
 
 p_hsContext :: HsContext GhcPs -> R ()
-p_hsContext = \case
+p_hsContext = p_hsContext' p_hsType
+
+p_hsContext' ::
+  (Outputable (GenLocated (Anno a) a), HasLoc (Anno a)) =>
+  (a -> R ()) ->
+  [XRec GhcPs a] ->
+  R ()
+p_hsContext' f = \case
   [] -> txt "()"
-  [x] -> located x p_hsType
+  [x] -> located x f
   xs -> do
     shouldSort <- getPrinterOpt poSortConstraints
     let sort = if shouldSort then sortOn showOutputable else id
-    parens N $ sep commaDel (sitcc . located' p_hsType) (sort xs)
+    parens N $ sep commaDel (sitcc . located' f) (sort xs)
 
 class IsTyVarBndrFlag flag where
   isInferred :: flag -> Bool
@@ -294,15 +288,20 @@ instance IsTyVarBndrFlag (HsBndrVis GhcPs) where
     HsBndrInvisible _ -> txt "@"
 
 p_hsTyVarBndr :: (IsTyVarBndrFlag flag) => HsTyVarBndr flag GhcPs -> R ()
-p_hsTyVarBndr = \case
-  UserTyVar _ flag x -> do
-    p_tyVarBndrFlag flag
-    (if isInferred flag then braces N else id) $ p_rdrName x
-  KindedTyVar _ flag l k -> do
-    p_tyVarBndrFlag flag
-    (if isInferred flag then braces else parens) N . sitcc $ do
-      located l atom
-      inci $ startTypeAnnotation k p_hsType
+p_hsTyVarBndr HsTvb {..} = do
+  p_tyVarBndrFlag tvb_flag
+  let wrap
+        | isInferred tvb_flag = braces N
+        | otherwise = case tvb_kind of
+            HsBndrKind {} -> parens N
+            HsBndrNoKind {} -> id
+  wrap $ do
+    case tvb_var of
+      HsBndrVar _ x -> p_rdrName x
+      HsBndrWildCard _ -> txt "_"
+    case tvb_kind of
+      HsBndrKind _ k -> inci $ startTypeAnnotation k p_hsType
+      HsBndrNoKind _ -> pure ()
 
 data ForAllVisibility = ForAllInvis | ForAllVis
 
@@ -375,6 +374,71 @@ p_lhsTypeArg = \case
 p_hsSigType :: HsSigType GhcPs -> R ()
 p_hsSigType HsSig {..} =
   p_hsType $ hsOuterTyVarBndrsToHsType sig_bndrs sig_body
+
+p_hsForAllTelescope ::
+  Choice "multiline" ->
+  HsForAllTelescope GhcPs ->
+  R ()
+p_hsForAllTelescope isMultiline tele = do
+  vis <-
+    case tele of
+      HsForAllInvis _ bndrs -> do
+        p_forallBndrsStart p_hsTyVarBndr bndrs
+        pure ForAllInvis
+      HsForAllVis _ bndrs -> do
+        p_forallBndrsStart p_hsTyVarBndr bndrs
+        pure ForAllVis
+
+  getPrinterOpt poFunctionArrows >>= \case
+    LeadingArrows | Choice.isTrue isMultiline -> do
+      interArgBreak
+      txt " "
+      p_forallBndrsEnd vis
+    _ -> do
+      p_forallBndrsEnd vis
+      interArgBreak
+  where
+    interArgBreak = if Choice.isTrue isMultiline then newline else breakpoint
+
+p_hsQualArrow :: Choice "multiline" -> R ()
+p_hsQualArrow isMultiline =
+  getPrinterOpt poFunctionArrows >>= \case
+    LeadingArrows -> interArgBreak >> token'darrow >> space
+    TrailingArrows -> space >> token'darrow >> interArgBreak
+    LeadingArgsArrows -> space >> token'darrow >> interArgBreak
+  where
+    interArgBreak = if Choice.isTrue isMultiline then newline else breakpoint
+
+p_hsFun ::
+  (HasLoc l) =>
+  Choice "multiline" ->
+  (a -> R ()) ->
+  HsArrowOf (GenLocated l a) GhcPs ->
+  GenLocated l a ->
+  R ()
+p_hsFun isMultiline renderItem arrow rhsLoc =
+  getPrinterOpt poFunctionArrows >>= \case
+    LeadingArrows -> do
+      interArgBreak
+      located rhsLoc $ \rhs -> do
+        renderArrow
+        space
+        renderItem rhs
+    TrailingArrows -> do
+      space
+      renderArrow
+      interArgBreak
+      located rhsLoc $ \rhs -> do
+        renderItem rhs
+    LeadingArgsArrows -> do
+      interArgBreak
+      located rhsLoc $ \rhs -> do
+        renderArrow
+        space
+        renderItem rhs
+  where
+    interArgBreak = if Choice.isTrue isMultiline then newline else breakpoint
+    renderArrow = p_arrow (located' renderItem) arrow
 
 ----------------------------------------------------------------------------
 -- Conversion functions

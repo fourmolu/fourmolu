@@ -30,7 +30,6 @@ executable fourmolu-wasm
         , bytestring
         , Cabal-syntax
         , containers
-        , deepseq
         , fourmolu
         , ghc-lib-parser
         , ghc-syntax-highlighter-themed
