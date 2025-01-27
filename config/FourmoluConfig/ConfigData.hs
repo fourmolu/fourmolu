@@ -90,6 +90,16 @@ allOptions =
         cliOverrides = emptyOverrides
       },
     Option
+      { name = "close-bracket-style",
+        fieldName = Just "poCloseBracketStyle",
+        description = "How to place close brackets in multi-line lists, records, etc.",
+        type_ = "CloseBracketStyle",
+        default_ = HsExpr "CloseBracketNewline",
+        ormolu = HsExpr "CloseBracketNewline",
+        sinceVersion = Nothing,
+        cliOverrides = emptyOverrides
+      },
+    Option
       { name = "import-export-style",
         fieldName = Just "poImportExportStyle",
         description = "Styling of import/export lists",
@@ -341,6 +351,13 @@ allFieldTypes =
         enumOptions =
           [ ("Leading", "leading"),
             ("Trailing", "trailing")
+          ]
+      },
+    FieldTypeEnum
+      { fieldTypeName = "CloseBracketStyle",
+        enumOptions =
+          [ ("CloseBracketNewline", "newline"),
+            ("CloseBracketInline", "inline")
           ]
       },
     FieldTypeEnum
