@@ -179,10 +179,15 @@ jobs:
         with:
           enable-stack: true
       -
+        name: Invalidate cache every month
+        run: echo "CURR_MONTH=$(date +%B)" | tee -a "$GITHUB_ENV"
+      -
         uses: actions/cache@v5
         with:
           path: ~/.stack
-          key: ${{ runner.os }}-build_prod-${{ hashFiles('stack.yaml', 'fourmolu.cabal') }}
+          key: ${{ runner.os }}-build_prod-${{ env.CURR_MONTH }}-${{ hashFiles('stack.yaml', 'fourmolu.cabal') }}
+          restore-keys: |
+               ${{ runner.os }}-build_prod-${{ env.CURR_MONTH }}-
       -
         name: Build
         run: |
