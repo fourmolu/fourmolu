@@ -170,6 +170,7 @@ jobs:
               # not using `dev` flag or testing; done in `stack_test` + `os_test`
           )
           stack build "${ARGS[@]}"
+          strip bin/fourmolu
       -
         uses: haskell-actions/parse-cabal-file@v1
         id: cabal_file
