@@ -19,6 +19,7 @@ module Ormolu.Printer.Internal
     space,
     newline,
     declNewline,
+    declNewline',
     multilineCommentNewline,
     askSourceType,
     askModuleFixityMap,
@@ -358,7 +359,12 @@ space = R . modify $ \sc ->
     }
 
 declNewline :: R ()
-declNewline = newlineRawN =<< getPrinterOpt poNewlinesBetweenDecls
+declNewline = declNewline' 0
+
+declNewline' :: Int -> R ()
+declNewline' n = do
+  minNewlinesBetweenDecls <- getPrinterOpt poNewlinesBetweenDecls
+  newlineRawN $ max minNewlinesBetweenDecls n
 
 -- | Add a newline in a multiline comment.
 --
