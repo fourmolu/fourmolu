@@ -1,9 +1,5 @@
 packages: . ../..
 
-allow-newer:
-  -- https://github.com/haskell/time/issues/266
-  , time-compat:time
-
 package fourmolu
   flags: -internal-bundle-fixities
 
