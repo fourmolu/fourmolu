@@ -19,10 +19,5 @@ source-repository-package
 
 source-repository-package
   type: git
-  location: https://github.com/haskell-fswatch/hfsnotify
-  tag: 51e3beddb26b542a60526f4b8d1790115a425a4d
-
-source-repository-package
-  type: git
   location: https://github.com/brandonchinn178/cmark-gfm-simple
   tag: becf10f4f9c6700f2a8e5a4712b0fada87acf57d
