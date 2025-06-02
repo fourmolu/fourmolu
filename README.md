@@ -117,7 +117,7 @@ Fourmolu can be integrated with your editor via the [Haskell Language Server](ht
 
 ### GitHub actions
 
-[`run-fourmolu`][https://github.com/haskell-actions/run-fourmolu] is the recommended way to ensure that a project is formatted with Fourmolu.
+[`run-fourmolu`](https://github.com/haskell-actions/run-fourmolu) is the recommended way to ensure that a project is formatted with Fourmolu.
 
 ### Language extensions, dependencies, and fixities
 
