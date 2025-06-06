@@ -366,7 +366,10 @@ brackets_ needBreaks open close style m = sitcc (vlayout singleLine multiLine)
           if needBreaks
             then newline >> inci m
             else space >> sitcc m
-      newline
+      closeBracketStyle <- getPrinterOpt poCloseBracketStyle
+      case closeBracketStyle of
+        CloseBracketNewline -> newline
+        CloseBracketInline -> space
       inciIf (style == S) close
 
 ----------------------------------------------------------------------------
