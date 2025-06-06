@@ -78,7 +78,7 @@ p_hsDecls' grouping style decls = do
           if separatedByBlankNE getLocA prev curr
             || isDocumented prev
             || isDocumented curr
-            then declNewline : renderGroup curr
+            then declNewline' (numSeparatedByBlankNE getLocA prev curr) : renderGroup curr
             else renderGroup curr
 
 -- | Is a declaration group documented?

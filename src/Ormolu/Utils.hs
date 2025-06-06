@@ -10,7 +10,9 @@ module Ormolu.Utils
     showOutputable,
     splitDocString,
     incSpanLine,
+    numSeparatedByBlank,
     separatedByBlank,
+    numSeparatedByBlankNE,
     separatedByBlankNE,
     onTheSameLine,
     groupBy',
@@ -136,13 +138,21 @@ incSpanLine i = \case
      in RealSrcSpan (mkRealSrcSpan (incLine start) (incLine end)) Strict.Nothing
   UnhelpfulSpan x -> UnhelpfulSpan x
 
--- | Do two declarations have a blank between them?
-separatedByBlank :: (a -> SrcSpan) -> a -> a -> Bool
-separatedByBlank loc a b =
-  fromMaybe False $ do
+-- | Number of blank lines separating two declarations
+numSeparatedByBlank :: (a -> SrcSpan) -> a -> a -> Int
+numSeparatedByBlank loc a b =
+  fromMaybe 0 $ do
     endA <- srcSpanEndLine <$> srcSpanToRealSrcSpan (loc a)
     startB <- srcSpanStartLine <$> srcSpanToRealSrcSpan (loc b)
-    pure (startB - endA >= 2)
+    pure (startB - endA - 1)
+
+-- | Do two declarations have a blank between them?
+separatedByBlank :: (a -> SrcSpan) -> a -> a -> Bool
+separatedByBlank loc a b = numSeparatedByBlank loc a b >= 1
+
+-- | Number of lines between two declaration groups
+numSeparatedByBlankNE :: (a -> SrcSpan) -> NonEmpty a -> NonEmpty a -> Int
+numSeparatedByBlankNE loc a b = numSeparatedByBlank loc (NE.last a) (NE.head b)
 
 -- | Do two declaration groups have a blank between them?
 separatedByBlankNE :: (a -> SrcSpan) -> NonEmpty a -> NonEmpty a -> Bool
