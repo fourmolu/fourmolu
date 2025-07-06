@@ -32,6 +32,7 @@ configGenHs =
       "  , parsePrinterOptsCLI",
       "  , parsePrinterOptsJSON",
       "  , parsePrinterOptType",
+      "  , renderPrinterOpt",
       "  )",
       "where",
       "",
@@ -124,6 +125,15 @@ configGenHs =
       "            \"Valid values are: \\\"false\\\" or \\\"true\\\"\"",
       "          ]",
       "",
+      "class RenderPrinterOpt a where",
+      "  renderPrinterOpt :: a -> String",
+      "",
+      "instance RenderPrinterOpt Int where",
+      "  renderPrinterOpt = show",
+      "",
+      "instance RenderPrinterOpt Bool where",
+      "  renderPrinterOpt = show",
+      "",
       unlines_
         [ unlines_ $
             case fieldType of
@@ -161,6 +171,13 @@ configGenHs =
                   printf "          [ \"unknown value: \" <> show s",
                   printf "          , \"Valid values are: %s\"" (renderEnumOptions enumOptions),
                   printf "          ]",
+                  printf "",
+                  printf "instance RenderPrinterOpt %s where" fieldTypeName,
+                  printf "  renderPrinterOpt = \\case",
+                  unlines_
+                    [ printf "    %s -> \"%s\"" con val
+                    | (con, val) <- enumOptions
+                    ],
                   printf ""
                 ]
               FieldTypeADT {..} ->

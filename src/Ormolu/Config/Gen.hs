@@ -27,6 +27,7 @@ module Ormolu.Config.Gen
   , parsePrinterOptsCLI
   , parsePrinterOptsJSON
   , parsePrinterOptType
+  , renderPrinterOpt
   )
 where
 
@@ -311,6 +312,15 @@ instance PrinterOptsFieldType Bool where
             "Valid values are: \"false\" or \"true\""
           ]
 
+class RenderPrinterOpt a where
+  renderPrinterOpt :: a -> String
+
+instance RenderPrinterOpt Int where
+  renderPrinterOpt = show
+
+instance RenderPrinterOpt Bool where
+  renderPrinterOpt = show
+
 data CommaStyle
   = Leading
   | Trailing
@@ -402,6 +412,11 @@ instance PrinterOptsFieldType CommaStyle where
           , "Valid values are: \"leading\" or \"trailing\""
           ]
 
+instance RenderPrinterOpt CommaStyle where
+  renderPrinterOpt = \case
+    Leading -> "leading"
+    Trailing -> "trailing"
+
 instance Aeson.FromJSON FunctionArrowsStyle where
   parseJSON =
     Aeson.withText "FunctionArrowsStyle" $ \s ->
@@ -420,6 +435,12 @@ instance PrinterOptsFieldType FunctionArrowsStyle where
           , "Valid values are: \"trailing\", \"leading\", or \"leading-args\""
           ]
 
+instance RenderPrinterOpt FunctionArrowsStyle where
+  renderPrinterOpt = \case
+    TrailingArrows -> "trailing"
+    LeadingArrows -> "leading"
+    LeadingArgsArrows -> "leading-args"
+
 instance Aeson.FromJSON HaddockPrintStyle where
   parseJSON =
     Aeson.withText "HaddockPrintStyle" $ \s ->
@@ -437,6 +458,12 @@ instance PrinterOptsFieldType HaddockPrintStyle where
           [ "unknown value: " <> show s
           , "Valid values are: \"single-line\", \"multi-line\", or \"multi-line-compact\""
           ]
+
+instance RenderPrinterOpt HaddockPrintStyle where
+  renderPrinterOpt = \case
+    HaddockSingleLine -> "single-line"
+    HaddockMultiLine -> "multi-line"
+    HaddockMultiLineCompact -> "multi-line-compact"
 
 instance Aeson.FromJSON HaddockPrintStyleModule where
   parseJSON =
@@ -469,6 +496,12 @@ instance PrinterOptsFieldType ImportExportStyle where
           , "Valid values are: \"leading\", \"trailing\", or \"diff-friendly\""
           ]
 
+instance RenderPrinterOpt ImportExportStyle where
+  renderPrinterOpt = \case
+    ImportExportLeading -> "leading"
+    ImportExportTrailing -> "trailing"
+    ImportExportDiffFriendly -> "diff-friendly"
+
 instance Aeson.FromJSON LetStyle where
   parseJSON =
     Aeson.withText "LetStyle" $ \s ->
@@ -488,6 +521,13 @@ instance PrinterOptsFieldType LetStyle where
           , "Valid values are: \"auto\", \"inline\", \"newline\", or \"mixed\""
           ]
 
+instance RenderPrinterOpt LetStyle where
+  renderPrinterOpt = \case
+    LetAuto -> "auto"
+    LetInline -> "inline"
+    LetNewline -> "newline"
+    LetMixed -> "mixed"
+
 instance Aeson.FromJSON InStyle where
   parseJSON =
     Aeson.withText "InStyle" $ \s ->
@@ -505,6 +545,12 @@ instance PrinterOptsFieldType InStyle where
           [ "unknown value: " <> show s
           , "Valid values are: \"left-align\", \"right-align\", or \"no-space\""
           ]
+
+instance RenderPrinterOpt InStyle where
+  renderPrinterOpt = \case
+    InLeftAlign -> "left-align"
+    InRightAlign -> "right-align"
+    InNoSpace -> "no-space"
 
 instance Aeson.FromJSON Unicode where
   parseJSON =
@@ -524,6 +570,12 @@ instance PrinterOptsFieldType Unicode where
           , "Valid values are: \"detect\", \"always\", or \"never\""
           ]
 
+instance RenderPrinterOpt Unicode where
+  renderPrinterOpt = \case
+    UnicodeDetect -> "detect"
+    UnicodeAlways -> "always"
+    UnicodeNever -> "never"
+
 instance Aeson.FromJSON SingleConstraintParens where
   parseJSON =
     Aeson.withText "SingleConstraintParens" $ \s ->
@@ -541,6 +593,12 @@ instance PrinterOptsFieldType SingleConstraintParens where
           [ "unknown value: " <> show s
           , "Valid values are: \"auto\", \"always\", or \"never\""
           ]
+
+instance RenderPrinterOpt SingleConstraintParens where
+  renderPrinterOpt = \case
+    ConstraintAuto -> "auto"
+    ConstraintAlways -> "always"
+    ConstraintNever -> "never"
 
 instance Aeson.FromJSON ColumnLimit where
   parseJSON =
@@ -587,6 +645,12 @@ instance PrinterOptsFieldType SingleDerivingParens where
           [ "unknown value: " <> show s
           , "Valid values are: \"auto\", \"always\", or \"never\""
           ]
+
+instance RenderPrinterOpt SingleDerivingParens where
+  renderPrinterOpt = \case
+    DerivingAuto -> "auto"
+    DerivingAlways -> "always"
+    DerivingNever -> "never"
 
 instance Aeson.FromJSON ImportGrouping where
   parseJSON =
