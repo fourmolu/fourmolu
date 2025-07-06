@@ -12,6 +12,7 @@ module Ormolu.Config.Gen
   , FunctionArrowsStyle (..)
   , HaddockPrintStyle (..)
   , HaddockPrintStyleModule (..)
+  , HaddockLocSignature (..)
   , ImportExportStyle (..)
   , LetStyle (..)
   , InStyle (..)
@@ -66,6 +67,8 @@ data PrinterOpts f =
       poHaddockStyle :: f HaddockPrintStyle
     , -- | How to print module docstring
       poHaddockStyleModule :: f HaddockPrintStyleModule
+    , -- | Where to put docstring comments in function signatures
+      poHaddockLocSignature :: f HaddockLocSignature
     , -- | Styling of let blocks
       poLetStyle :: f LetStyle
     , -- | How to align the 'in' keyword with respect to the 'let' keyword
@@ -103,6 +106,7 @@ emptyPrinterOpts =
     , poNewlinesBetweenDecls = Nothing
     , poHaddockStyle = Nothing
     , poHaddockStyleModule = Nothing
+    , poHaddockLocSignature = Nothing
     , poLetStyle = Nothing
     , poInStyle = Nothing
     , poSingleConstraintParens = Nothing
@@ -129,6 +133,7 @@ defaultPrinterOpts =
     , poNewlinesBetweenDecls = pure 1
     , poHaddockStyle = pure HaddockMultiLine
     , poHaddockStyleModule = pure PrintStyleInherit
+    , poHaddockLocSignature = pure HaddockLocSigAuto
     , poLetStyle = pure LetAuto
     , poInStyle = pure InRightAlign
     , poSingleConstraintParens = pure ConstraintAlways
@@ -162,6 +167,7 @@ fillMissingPrinterOpts p1 p2 =
     , poNewlinesBetweenDecls = maybe (poNewlinesBetweenDecls p2) pure (poNewlinesBetweenDecls p1)
     , poHaddockStyle = maybe (poHaddockStyle p2) pure (poHaddockStyle p1)
     , poHaddockStyleModule = maybe (poHaddockStyleModule p2) pure (poHaddockStyleModule p1)
+    , poHaddockLocSignature = maybe (poHaddockLocSignature p2) pure (poHaddockLocSignature p1)
     , poLetStyle = maybe (poLetStyle p2) pure (poLetStyle p1)
     , poInStyle = maybe (poInStyle p2) pure (poInStyle p1)
     , poSingleConstraintParens = maybe (poSingleConstraintParens p2) pure (poSingleConstraintParens p1)
@@ -225,6 +231,10 @@ parsePrinterOptsCLI f =
       "How to print module docstring (default: same as 'haddock-style')"
       "OPTION"
     <*> f
+      "haddock-location-signature"
+      "Where to put docstring comments in function signatures (choices: \"auto\", \"leading\", or \"trailing\") (default: leading if function-arrows is trailing, or vice-versa)"
+      "OPTION"
+    <*> f
       "let-style"
       "Styling of let blocks (choices: \"auto\", \"inline\", \"newline\", or \"mixed\") (default: auto)"
       "OPTION"
@@ -282,6 +292,7 @@ parsePrinterOptsJSON f =
     <*> f "newlines-between-decls"
     <*> f "haddock-style"
     <*> f "haddock-style-module"
+    <*> f "haddock-location-signature"
     <*> f "let-style"
     <*> f "in-style"
     <*> f "single-constraint-parens"
@@ -342,6 +353,12 @@ data HaddockPrintStyleModule
   = PrintStyleInherit
   | PrintStyleOverride HaddockPrintStyle
   deriving (Eq, Show)
+
+data HaddockLocSignature
+  = HaddockLocSigAuto
+  | HaddockLocSigLeading
+  | HaddockLocSigTrailing
+  deriving (Eq, Show, Enum, Bounded)
 
 data ImportExportStyle
   = ImportExportLeading
@@ -477,6 +494,30 @@ instance PrinterOptsFieldType HaddockPrintStyleModule where
     \s -> case s of
       "" -> pure PrintStyleInherit
       _ -> PrintStyleOverride <$> parsePrinterOptType s
+
+instance Aeson.FromJSON HaddockLocSignature where
+  parseJSON =
+    Aeson.withText "HaddockLocSignature" $ \s ->
+      either Aeson.parseFail pure $
+        parsePrinterOptType (Text.unpack s)
+
+instance PrinterOptsFieldType HaddockLocSignature where
+  parsePrinterOptType s =
+    case s of
+      "auto" -> Right HaddockLocSigAuto
+      "leading" -> Right HaddockLocSigLeading
+      "trailing" -> Right HaddockLocSigTrailing
+      _ ->
+        Left . unlines $
+          [ "unknown value: " <> show s
+          , "Valid values are: \"auto\", \"leading\", or \"trailing\""
+          ]
+
+instance RenderPrinterOpt HaddockLocSignature where
+  renderPrinterOpt = \case
+    HaddockLocSigAuto -> "auto"
+    HaddockLocSigLeading -> "leading"
+    HaddockLocSigTrailing -> "trailing"
 
 instance Aeson.FromJSON ImportExportStyle where
   parseJSON =
@@ -718,6 +759,9 @@ defaultPrinterOptsYaml =
     , ""
     , "# How to print module docstring"
     , "haddock-style-module: null"
+    , ""
+    , "# Where to put docstring comments in function signatures (choices: auto, leading, or trailing)"
+    , "haddock-location-signature: auto"
     , ""
     , "# Styling of let blocks (choices: auto, inline, newline, or mixed)"
     , "let-style: auto"

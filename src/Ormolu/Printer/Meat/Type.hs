@@ -534,7 +534,7 @@ p_hsFunParsed' arrowsStyle fun0 = Cont.evalContT . (`State.evalStateT` initialSt
 
       overArgs args $ \(L _ (larg, doc, arrow)) -> do
         let renderArrow = p_arrow (located' renderFunItem) arrow
-        withHaddocks doc $ do
+        withHaddocks (Isn't #end) doc $ do
           withApplyLeadingDelim $ \applyLeadingDelim' ->
             liftR . located larg $ \arg -> do
               traverse_ id applyLeadingDelim'
@@ -549,15 +549,30 @@ p_hsFunParsed' arrowsStyle fun0 = Cont.evalContT . (`State.evalStateT` initialSt
 
     p_parsedFunReturn (ret, doc) = do
       void $ setLocated ret
-      withHaddocks doc $ do
+      withHaddocks (Is #end) doc $ do
         applyLeadingDelim
         liftR $ located ret renderFunItem
 
-    withHaddocks doc m = do
-      let isLeadingHaddock = if isTrailing (Is #argDelim) then With #pipe else Without #pipe
+    withHaddocks isEnd doc m = do
+      isLeadingHaddock <-
+        liftR $
+          getPrinterOpt poHaddockLocSignature <&> \case
+            HaddockLocSigAuto ->
+              if isTrailing (Is #argDelim) then With #pipe else Without #pipe
+            HaddockLocSigLeading ->
+              With #pipe
+            HaddockLocSigTrailing ->
+              Without #pipe
+
       if Choice.isTrue isLeadingHaddock
-        then traverse (liftR . p_hsDoc Pipe (With #endNewline)) doc *> m
-        else m <* traverse (liftR . p_hsDoc Caret (With #endNewline)) doc
+        then do
+          traverse (liftR . p_hsDoc Pipe (With #endNewline)) doc *> m
+        else do
+          let (pre, endNewline) =
+                if Choice.isTrue isEnd
+                  then (when (isJust doc) (liftR newline), Without #endNewline)
+                  else (pure (), With #endNewline)
+          m <* pre <* traverse (liftR . p_hsDoc Caret endNewline) doc
 
     interArgBreak = do
       isMultiline <- getIsMultiline
