@@ -19,8 +19,8 @@ module Ormolu.Printer.Meat.Type
     p_conDeclFields,
     p_lhsTypeArg,
     p_hsSigType,
-    p_hsForAllTelescope,
-    p_hsQualArrow,
+    FunRepr (..),
+    ParsedFunRepr (..),
     p_hsFun,
     hsOuterTyVarBndrsToHsType,
     hsSigTypeToType,
@@ -29,10 +29,15 @@ module Ormolu.Printer.Meat.Type
 where
 
 import Control.Monad
-import Data.Choice (Choice, pattern With, pattern Without)
+import Control.Monad.Cont qualified as Cont
+import Control.Monad.State qualified as State
+import Control.Monad.Trans qualified as Trans
+import Data.Choice (Choice, pattern Is, pattern Isn't, pattern With, pattern Without)
 import Data.Choice qualified as Choice
+import Data.Foldable (traverse_)
 import Data.Functor ((<&>))
 import Data.List (sortOn)
+import Data.Maybe (isJust)
 import GHC.Data.Strict qualified as Strict
 import GHC.Hs hiding (isPromoted)
 import GHC.Types.SourceText
@@ -49,22 +54,11 @@ import Ormolu.Printer.Operators
 import Ormolu.Utils
 
 p_hsType :: HsType GhcPs -> R ()
-p_hsType t = do
-  layout <- getLayout
-  p_hsType' (Choice.fromBool $ hasDocStrings t || layout == MultiLine) t
-
-p_hsType' :: Choice "multiline" -> HsType GhcPs -> R ()
-p_hsType' isMultiline = \case
-  HsForAllTy _ tele t -> do
-    p_hsForAllTelescope isMultiline tele
-    located t p_hsType
-  HsQualTy _ qs t -> do
-    located qs p_hsContext
-    p_hsQualArrow isMultiline
-    case unLoc t of
-      HsQualTy {} -> p_hsTypeR (unLoc t)
-      HsFunTy {} -> located t p_hsType
-      _ -> located t p_hsTypeR
+p_hsType = \case
+  ty@HsForAllTy {} ->
+    p_hsFun ty
+  ty@HsQualTy {} ->
+    p_hsFun ty
   HsTyVar _ p n -> do
     case p of
       IsPromoted -> do
@@ -97,9 +91,8 @@ p_hsType' isMultiline = \case
     inci $ do
       txt "@"
       located kd p_hsType
-  HsFunTy _ arrow x y -> do
-    located x p_hsType
-    p_hsFun isMultiline p_hsTypeR arrow y
+  ty@HsFunTy {} ->
+    p_hsFun ty
   HsListTy _ t ->
     located t (brackets N . p_hsType)
   HsTupleTy _ tsort xs ->
@@ -131,6 +124,19 @@ p_hsType' isMultiline = \case
     inci $ p_hsTypeAnnotation k
   HsSpliceTy _ splice -> p_hsUntypedSplice DollarSplice splice
   HsDocTy _ t str -> do
+    -- Usually handled by p_hsFun, but it's possible to have a bare type
+    -- with docstrings, e.g.
+    --
+    --   type Name =
+    --     -- | The name of a user as a string
+    --     String
+    --
+    --   data User =
+    --     User
+    --       -- | Name
+    --       String
+    --       -- | Age
+    --       Int
     usePipe <-
       getPrinterOpt poFunctionArrows <&> \case
         TrailingArrows -> True
@@ -192,33 +198,9 @@ p_hsType' isMultiline = \case
       HsExplicitListTy {} -> True
       HsTyLit _ HsCharTy {} -> True
       _ -> False
-    p_hsTypeR m = p_hsType' isMultiline m
 
 p_hsTypeAnnotation :: LHsType GhcPs -> R ()
-p_hsTypeAnnotation lItem =
-  getPrinterOpt poFunctionArrows >>= \case
-    TrailingArrows -> do
-      space
-      token'dcolon
-      breakTrailing
-      located lItem p_hsType
-    LeadingArrows -> do
-      breakLeading
-      located lItem $ \item -> do
-        token'dcolon
-        space
-        p_hsType item
-    LeadingArgsArrows -> do
-      space
-      token'dcolon
-      breakTrailing
-      located lItem p_hsType
-  where
-    breakTrailing =
-      if hasDocStrings $ unLoc lItem
-        then newline
-        else breakpoint
-    breakLeading = breakpoint
+p_hsTypeAnnotation = p_hsFunParsed . ParsedFunSig . parseFunRepr
 
 -- | Return 'True' if at least one argument in 'HsType' has a doc string
 -- attached to it.
@@ -292,7 +274,7 @@ p_forallBndrs ::
   R ()
 p_forallBndrs vis p tyvars = do
   p_forallBndrsStart p tyvars
-  p_forallBndrsEnd vis
+  p_forallBndrsEnd (Without #extraSpace) vis
 
 p_forallBndrsStart :: (HasLoc l) => (a -> R ()) -> [GenLocated l a] -> R ()
 p_forallBndrsStart _ [] = token'forall
@@ -303,9 +285,12 @@ p_forallBndrsStart p tyvars = do
     inci $ do
       sitcc $ sep breakpoint (sitcc . located' p) tyvars
 
-p_forallBndrsEnd :: ForAllVisibility -> R ()
-p_forallBndrsEnd ForAllInvis = txt "." >> space
-p_forallBndrsEnd ForAllVis = space >> token'rarrow
+p_forallBndrsEnd :: Choice "extraSpace" -> ForAllVisibility -> R ()
+p_forallBndrsEnd extraSpace = \case
+  ForAllInvis -> txt dot >> space
+  ForAllVis -> space >> token'rarrow
+  where
+    dot = if Choice.isTrue extraSpace then " ." else "."
 
 p_conDeclFields :: [LConDeclField GhcPs] -> R ()
 p_conDeclFields xs =
@@ -337,70 +322,259 @@ p_lhsTypeArg = \case
 p_hsSigType :: HsSigType GhcPs -> R ()
 p_hsSigType = p_hsType . hsSigTypeToType
 
-p_hsForAllTelescope ::
-  Choice "multiline" ->
-  HsForAllTelescope GhcPs ->
+----------------------------------------------------------------------------
+-- Rendering function types
+
+-- | The parsed representation of a function
+data ParsedFunRepr a
+  = ParsedFunSig (ParsedFunRepr a)
+  | ParsedFunForall
+      (LocatedA (HsForAllTelescope GhcPs))
+      (ParsedFunRepr a)
+  | ParsedFunQuals
+      [LocatedA (LocatedC [LocatedA a])]
+      (ParsedFunRepr a)
+  | -- | The argument, its optional docstring, and the arrow going to the next arg/return
+    ParsedFunArgs
+      [ LocatedA
+          ( LocatedA a,
+            Maybe (LHsDoc GhcPs),
+            HsArrowOf (LocatedA a) GhcPs
+          )
+      ]
+      (ParsedFunRepr a)
+  | ParsedFunReturn
+      ( LocatedA a,
+        Maybe (LHsDoc GhcPs)
+      )
+
+class (Anno a ~ SrcSpanAnnA, Outputable a) => FunRepr a where
+  renderFunItem :: a -> R ()
+
+  -- | Workaround for https://github.com/tweag/ormolu/pull/1170
+  setLocatedBetweenArgs :: a -> Bool
+
+  parseFunRepr :: LocatedA a -> ParsedFunRepr a
+
+instance FunRepr (HsType GhcPs) where
+  renderFunItem = p_hsType
+  setLocatedBetweenArgs _ = False
+  parseFunRepr = \case
+    -- `forall a. _`
+    L ann (HsForAllTy _ tele ty) ->
+      ParsedFunForall (L ann tele) (parseFunRepr ty)
+    -- `HasCallStack => _`
+    ty@(L _ HsQualTy {}) ->
+      let (ctxs, rest) = getContexts ty
+       in ParsedFunQuals ctxs (parseFunRepr rest)
+    -- `Int -> _`
+    ty@(L _ HsFunTy {}) ->
+      let (args, ret) = getArgsAndReturn ty
+       in ParsedFunArgs args (parseFunRepr ret)
+    -- `_ -> Int`
+    L _ (HsDocTy _ ty doc) -> ParsedFunReturn (ty, Just doc)
+    ty -> ParsedFunReturn (ty, Nothing)
+    where
+      getContexts =
+        let go ctxs = \case
+              L ann (HsQualTy _ ctx ty) ->
+                go (L ann ctx : ctxs) ty
+              ty ->
+                (reverse ctxs, ty)
+         in go []
+      getArgsAndReturn =
+        let go args = \case
+              L ann (HsFunTy _ arrow (L _ (HsDocTy _ l doc)) r) ->
+                go (L ann (l, Just doc, arrow) : args) r
+              L ann (HsFunTy _ arrow l r) ->
+                go (L ann (l, Nothing, arrow) : args) r
+              ty ->
+                (reverse args, ty)
+         in go []
+
+-- | For implementing function-arrows and related configuration, we'll collect
+-- all the components of the function type first, then render as a block instead
+-- of rendering each part independently, which will let us track local state
+-- within a function type.
+--
+-- This function should be passed the first function-related construct we find;
+-- see FunRepr for more details.
+p_hsFun :: (FunRepr a) => a -> R ()
+p_hsFun = p_hsFunParsed . parseFunRepr . L (noAnn @SrcSpanAnnA)
+
+p_hsFunParsed :: (FunRepr a) => ParsedFunRepr a -> R ()
+p_hsFunParsed fun = do
+  arrowsStyle <- getPrinterOpt poFunctionArrows
+  p_hsFunParsed' arrowsStyle fun
+
+type PrintHsFun x = State.StateT PrintHsFunState (Cont.ContT () R) x
+
+type PrintHsFunState =
+  ( Maybe (R ()), -- The leading delimiter to output at the next line
+    Choice "forceMultiline"
+  )
+
+p_hsFunParsed' ::
+  (FunRepr a) =>
+  FunctionArrowsStyle ->
+  ParsedFunRepr a ->
   R ()
-p_hsForAllTelescope isMultiline tele = do
-  vis <-
-    case tele of
-      HsForAllInvis _ bndrs -> do
-        p_forallBndrsStart p_hsTyVarBndr bndrs
-        pure ForAllInvis
-      HsForAllVis _ bndrs -> do
-        p_forallBndrsStart p_hsTyVarBndr bndrs
-        pure ForAllVis
-
-  getPrinterOpt poFunctionArrows >>= \case
-    LeadingArrows | Choice.isTrue isMultiline -> do
-      interArgBreak
-      txt " "
-      p_forallBndrsEnd vis
-    _ -> do
-      p_forallBndrsEnd vis
-      interArgBreak
+p_hsFunParsed' arrowsStyle fun0 = Cont.evalContT . (`State.evalStateT` initialState) . go $ fun0
   where
-    interArgBreak = if Choice.isTrue isMultiline then newline else breakpoint
+    go = \case
+      ParsedFunSig fun' -> do
+        -- Should only happen at the very beginning, if at all
+        p_parsedFunSig
+        setMultilineContext fun'
+        go fun'
+      ParsedFunForall tele fun' -> do
+        p_parsedFunForall tele
+        setMultilineContext fun'
+        go fun'
+      ParsedFunQuals ctxs fun' -> do
+        p_parsedFunQuals ctxs
+        setMultilineContext fun'
+        go fun'
+      ParsedFunArgs args fun' -> do
+        p_parsedFunArgs args
+        go fun'
+      ParsedFunReturn ret -> do
+        p_parsedFunReturn ret
 
-p_hsQualArrow :: Choice "multiline" -> R ()
-p_hsQualArrow isMultiline =
-  getPrinterOpt poFunctionArrows >>= \case
-    LeadingArrows -> interArgBreak >> token'darrow >> space
-    TrailingArrows -> space >> token'darrow >> interArgBreak
-    LeadingArgsArrows -> space >> token'darrow >> interArgBreak
-  where
-    interArgBreak = if Choice.isTrue isMultiline then newline else breakpoint
+    liftR = Trans.lift . Trans.lift
+    initialState = (Nothing, Without #forceMultiline)
 
-p_hsFun ::
-  (HasLoc l) =>
-  Choice "multiline" ->
-  (a -> R ()) ->
-  HsArrowOf (GenLocated l a) GhcPs ->
-  GenLocated l a ->
-  R ()
-p_hsFun isMultiline renderItem arrow rhsLoc =
-  getPrinterOpt poFunctionArrows >>= \case
-    LeadingArrows -> do
-      interArgBreak
-      located rhsLoc $ \rhs -> do
-        renderArrow
-        space
-        renderItem rhs
-    TrailingArrows -> do
-      space
-      renderArrow
-      interArgBreak
-      located rhsLoc $ \rhs -> do
-        renderItem rhs
-    LeadingArgsArrows -> do
-      interArgBreak
-      located rhsLoc $ \rhs -> do
-        renderArrow
-        space
-        renderItem rhs
-  where
-    interArgBreak = if Choice.isTrue isMultiline then newline else breakpoint
-    renderArrow = p_arrow (located' renderItem) arrow
+    withApplyLeadingDelim f = do
+      (leadingDelim, _) <- State.get
+      a <- f leadingDelim
+      State.modify $ \(_, x) -> (Nothing, x)
+      pure a
+    applyLeadingDelim = withApplyLeadingDelim (traverse_ liftR)
+
+    setLeadingDelim delim =
+      State.modify $ \(_, x) -> (Just delim, x)
+
+    getIsMultiline = do
+      (_, forceMultiline) <- State.get
+      layout <- liftR getLayout
+      pure $ Choice.toBool forceMultiline || layout == MultiLine
+
+    setMultilineContext fun =
+      State.modify $ \(x, _) -> (x, Choice.fromBool $ hasDocs fun)
+
+    -- Make everything afterwards occur within a located block, with the
+    -- magic of ContT. `item <- setLocated litem; ...` is equivalent to
+    -- `located litem $ \item -> ...`.
+    setLocated :: (HasLoc ann) => GenLocated ann x -> PrintHsFun x
+    setLocated litem = Trans.lift $ Cont.ContT (located litem)
+
+    p_parsedFunSig = do
+      if isTrailing (Isn't #argDelim)
+        then liftR $ do
+          space >> token'dcolon
+          if hasDocs fun0 then newline else breakpoint
+        else do
+          liftR breakpoint
+          setLeadingDelim (token'dcolon >> space)
+
+    p_parsedFunForall x@(L _ tele) = do
+      void $ setLocated x
+      applyLeadingDelim
+      vis <-
+        case tele of
+          HsForAllInvis _ bndrs -> do
+            liftR $ p_forallBndrsStart p_hsTyVarBndr bndrs
+            pure ForAllInvis
+          HsForAllVis _ bndrs -> do
+            liftR $ p_forallBndrsStart p_hsTyVarBndr bndrs
+            pure ForAllVis
+      isMultiline <- getIsMultiline
+      if isTrailing (Isn't #argDelim) || not isMultiline
+        then do
+          liftR $ p_forallBndrsEnd (Without #extraSpace) vis
+          interArgBreak
+        else do
+          interArgBreak
+          let extraSpace = if isMultiline then With #extraSpace else Without #extraSpace
+          setLeadingDelim (p_forallBndrsEnd extraSpace vis)
+
+    p_parsedFunQuals ctxs = do
+      -- we only want to set located on the first context
+      case ctxs of
+        ctx : _ -> void $ setLocated ctx
+        _ -> pure ()
+
+      forM_ ctxs $ \(L _ lctx) -> do
+        applyLeadingDelim
+        liftR $ located lctx (p_hsContext' renderFunItem)
+        if isTrailing (Isn't #argDelim)
+          then do
+            liftR $ space >> token'darrow
+            interArgBreak
+          else do
+            interArgBreak
+            setLeadingDelim (token'darrow >> space)
+
+    p_parsedFunArgs args = do
+      -- we only want to set located on the first arg
+      case args of
+        arg : _ -> void $ setLocated arg
+        _ -> pure ()
+
+      -- replace with forM_ after setLocatedBetweenArgs goes away
+      let overArgs as f = do
+            let doSetLocated a@(L _ (L _ arg, _, _)) =
+                  if setLocatedBetweenArgs arg
+                    then void (setLocated a)
+                    else pure ()
+            sequence_
+              [ f a >> post
+              | (a, post) <- zip as (drop 1 (map doSetLocated as) ++ [pure ()])
+              ]
+
+      overArgs args $ \(L _ (larg, doc, arrow)) -> do
+        let renderArrow = p_arrow (located' renderFunItem) arrow
+        withHaddocks doc $ do
+          withApplyLeadingDelim $ \applyLeadingDelim' ->
+            liftR . located larg $ \arg -> do
+              traverse_ id applyLeadingDelim'
+              renderFunItem arg
+          if isTrailing (Is #argDelim)
+            then do
+              liftR $ space >> renderArrow
+              interArgBreak
+            else do
+              interArgBreak
+              setLeadingDelim (renderArrow >> space)
+
+    p_parsedFunReturn (ret, doc) = do
+      void $ setLocated ret
+      withHaddocks doc $ do
+        applyLeadingDelim
+        liftR $ located ret renderFunItem
+
+    withHaddocks doc m = do
+      let isLeadingHaddock = if isTrailing (Is #argDelim) then With #pipe else Without #pipe
+      if Choice.isTrue isLeadingHaddock
+        then traverse (liftR . p_hsDoc Pipe (With #endNewline)) doc *> m
+        else m <* traverse (liftR . p_hsDoc Caret (With #endNewline)) doc
+
+    interArgBreak = do
+      isMultiline <- getIsMultiline
+      liftR $ if isMultiline then newline else breakpoint
+
+    hasDocs = \case
+      ParsedFunSig fun -> hasDocs fun
+      ParsedFunForall _ fun -> hasDocs fun
+      ParsedFunQuals _ fun -> hasDocs fun
+      ParsedFunArgs args fun -> or [isJust doc | L _ (_, doc, _) <- args] || hasDocs fun
+      ParsedFunReturn (_, doc) -> isJust doc
+
+    isTrailing isArgDelim =
+      case arrowsStyle of
+        TrailingArrows -> True
+        LeadingArgsArrows -> not $ Choice.isTrue isArgDelim
+        LeadingArrows -> False
 
 ----------------------------------------------------------------------------
 -- Conversion functions
