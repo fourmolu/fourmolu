@@ -24,6 +24,7 @@ module Ormolu.Printer.Meat.Type
     p_hsQualArrow,
     p_hsFun,
     hsOuterTyVarBndrsToHsType,
+    hsSigTypeToType,
     lhsTypeToSigType,
   )
 where
@@ -124,11 +125,11 @@ p_hsType' isMultiline = \case
       parens N (sitcc $ located t p_hsType)
   HsIParamTy _ n t -> sitcc $ do
     located n atom
-    inci $ startTypeAnnotation t p_hsType
+    inci $ startTypeAnnotation t
   HsStarTy _ _ -> token'star
   HsKindSig _ t k -> sitcc $ do
     located t p_hsType
-    inci $ startTypeAnnotation k p_hsType
+    inci $ startTypeAnnotation k
   HsSpliceTy _ splice -> p_hsUntypedSplice DollarSplice splice
   HsDocTy _ t str -> do
     usePipe <-
@@ -196,20 +197,21 @@ p_hsType' isMultiline = \case
 
 startTypeAnnotation ::
   (HasLoc l) =>
-  GenLocated l a ->
-  (a -> R ()) ->
+  GenLocated l (HsType GhcPs) ->
   R ()
-startTypeAnnotation = startTypeAnnotation' breakpoint breakpoint
+startTypeAnnotation lItem =
+  startTypeAnnotation'
+    breakpoint
+    breakpoint
+    lItem
 
 startTypeAnnotationDecl ::
   (HasLoc l) =>
-  GenLocated l a ->
-  (a -> HsType GhcPs) ->
-  (a -> R ()) ->
+  GenLocated l (HsType GhcPs) ->
   R ()
-startTypeAnnotationDecl lItem getType =
+startTypeAnnotationDecl lItem =
   startTypeAnnotation'
-    ( if hasDocStrings $ getType $ unLoc lItem
+    ( if hasDocStrings $ unLoc lItem
         then newline
         else breakpoint
     )
@@ -220,27 +222,26 @@ startTypeAnnotation' ::
   (HasLoc l) =>
   R () ->
   R () ->
-  GenLocated l a ->
-  (a -> R ()) ->
+  GenLocated l (HsType GhcPs) ->
   R ()
-startTypeAnnotation' breakTrailing breakLeading lItem renderItem =
+startTypeAnnotation' breakTrailing breakLeading lItem =
   getPrinterOpt poFunctionArrows >>= \case
     TrailingArrows -> do
       space
       token'dcolon
       breakTrailing
-      located lItem renderItem
+      located lItem p_hsType
     LeadingArrows -> do
       breakLeading
       located lItem $ \item -> do
         token'dcolon
         space
-        renderItem item
+        p_hsType item
     LeadingArgsArrows -> do
       space
       token'dcolon
       breakTrailing
-      located lItem renderItem
+      located lItem p_hsType
 
 -- | Return 'True' if at least one argument in 'HsType' has a doc string
 -- attached to it.
@@ -300,7 +301,7 @@ p_hsTyVarBndr HsTvb {..} = do
       HsBndrVar _ x -> p_rdrName x
       HsBndrWildCard _ -> txt "_"
     case tvb_kind of
-      HsBndrKind _ k -> inci $ startTypeAnnotation k p_hsType
+      HsBndrKind _ k -> inci $ startTypeAnnotation k
       HsBndrNoKind _ -> pure ()
 
 data ForAllVisibility = ForAllInvis | ForAllVis
@@ -372,8 +373,7 @@ p_lhsTypeArg = \case
   HsArgPar _ -> notImplemented "HsArgPar"
 
 p_hsSigType :: HsSigType GhcPs -> R ()
-p_hsSigType HsSig {..} =
-  p_hsType $ hsOuterTyVarBndrsToHsType sig_bndrs sig_body
+p_hsSigType = p_hsType . hsSigTypeToType
 
 p_hsForAllTelescope ::
   Choice "multiline" ->
@@ -442,6 +442,9 @@ p_hsFun isMultiline renderItem arrow rhsLoc =
 
 ----------------------------------------------------------------------------
 -- Conversion functions
+
+hsSigTypeToType :: HsSigType GhcPs -> HsType GhcPs
+hsSigTypeToType HsSig {..} = hsOuterTyVarBndrsToHsType sig_bndrs sig_body
 
 -- could be generalized to also handle () instead of Specificity
 hsOuterTyVarBndrsToHsType ::

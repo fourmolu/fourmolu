@@ -800,7 +800,7 @@ p_hsExpr' isApp s = \case
     p_dotFieldOccs (NE.toList proj_flds)
   ExprWithTySig _ x HsWC {hswc_body} -> sitcc $ do
     located x p_hsExpr
-    inci $ startTypeAnnotation hswc_body p_hsSigType
+    inci $ startTypeAnnotation (hsSigTypeToType <$> hswc_body)
   ArithSeq _ _ x ->
     case x of
       From from -> brackets s $ do

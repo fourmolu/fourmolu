@@ -63,7 +63,7 @@ p_familyResultSigL ::
 p_familyResultSigL (L _ a) = case a of
   NoSig NoExtField -> Nothing
   KindSig NoExtField k -> Just $ do
-    startTypeAnnotation k p_hsType
+    startTypeAnnotation k
   TyVarSig NoExtField bndr -> Just $ do
     equals
     breakpoint

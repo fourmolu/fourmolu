@@ -18,7 +18,6 @@ import GHC.Types.Basic
 import GHC.Types.Fixity
 import GHC.Types.Name.Reader
 import GHC.Types.SourceText
-import GHC.Types.SrcLoc
 import Ormolu.Printer.Combinators
 import Ormolu.Printer.Meat.Common
 import Ormolu.Printer.Meat.Type
@@ -59,7 +58,7 @@ p_typeAscription ::
   LHsSigType GhcPs ->
   R ()
 p_typeAscription lsigType =
-  inci $ startTypeAnnotationDecl lsigType (unLoc . sig_body) p_hsSigType
+  inci $ startTypeAnnotationDecl (hsSigTypeToType <$> lsigType)
 
 p_patSynSig ::
   [LocatedN RdrName] ->
@@ -221,4 +220,4 @@ p_standaloneKindSig (StandaloneKindSig _ name sigTy) = do
   inci $ do
     space
     p_rdrName name
-    startTypeAnnotation sigTy p_hsSigType
+    startTypeAnnotation (hsSigTypeToType <$> sigTy)
