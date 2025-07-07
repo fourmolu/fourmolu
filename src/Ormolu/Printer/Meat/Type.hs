@@ -321,22 +321,7 @@ p_conDeclField ConDeclField {..} = do
       commaDel
       (located' (p_rdrName . foLabel))
       cd_fld_names
-  getPrinterOpt poFunctionArrows >>= \case
-    LeadingArrows -> inci $ do
-      breakpoint
-      token'dcolon
-      space
-      p_hsType (unLoc cd_fld_type)
-    TrailingArrows -> do
-      space
-      token'dcolon
-      breakpoint
-      sitcc . inci $ p_hsType (unLoc cd_fld_type)
-    LeadingArgsArrows -> do
-      space
-      token'dcolon
-      breakpoint
-      sitcc . inci $ p_hsType (unLoc cd_fld_type)
+  inci $ p_hsTypeAnnotation cd_fld_type
   when (commaStyle == Leading) $
     mapM_ (inciByFrac (-1) . (newline >>) . p_hsDoc Caret (Without #endNewline)) cd_fld_doc
 
