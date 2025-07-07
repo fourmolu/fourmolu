@@ -58,7 +58,7 @@ p_typeAscription ::
   LHsSigType GhcPs ->
   R ()
 p_typeAscription lsigType =
-  inci $ startTypeAnnotationDecl (hsSigTypeToType <$> lsigType)
+  inci $ p_hsTypeAnnotation (hsSigTypeToType <$> lsigType)
 
 p_patSynSig ::
   [LocatedN RdrName] ->
@@ -220,4 +220,4 @@ p_standaloneKindSig (StandaloneKindSig _ name sigTy) = do
   inci $ do
     space
     p_rdrName name
-    startTypeAnnotation (hsSigTypeToType <$> sigTy)
+    p_hsTypeAnnotation (hsSigTypeToType <$> sigTy)

@@ -9,8 +9,7 @@
 -- | Rendering of types.
 module Ormolu.Printer.Meat.Type
   ( p_hsType,
-    startTypeAnnotation,
-    startTypeAnnotationDecl,
+    p_hsTypeAnnotation,
     hasDocStrings,
     p_hsContext,
     p_hsContext',
@@ -125,11 +124,11 @@ p_hsType' isMultiline = \case
       parens N (sitcc $ located t p_hsType)
   HsIParamTy _ n t -> sitcc $ do
     located n atom
-    inci $ startTypeAnnotation t
+    inci $ p_hsTypeAnnotation t
   HsStarTy _ _ -> token'star
   HsKindSig _ t k -> sitcc $ do
     located t p_hsType
-    inci $ startTypeAnnotation k
+    inci $ p_hsTypeAnnotation k
   HsSpliceTy _ splice -> p_hsUntypedSplice DollarSplice splice
   HsDocTy _ t str -> do
     usePipe <-
@@ -195,36 +194,8 @@ p_hsType' isMultiline = \case
       _ -> False
     p_hsTypeR m = p_hsType' isMultiline m
 
-startTypeAnnotation ::
-  (HasLoc l) =>
-  GenLocated l (HsType GhcPs) ->
-  R ()
-startTypeAnnotation lItem =
-  startTypeAnnotation'
-    breakpoint
-    breakpoint
-    lItem
-
-startTypeAnnotationDecl ::
-  (HasLoc l) =>
-  GenLocated l (HsType GhcPs) ->
-  R ()
-startTypeAnnotationDecl lItem =
-  startTypeAnnotation'
-    ( if hasDocStrings $ unLoc lItem
-        then newline
-        else breakpoint
-    )
-    breakpoint
-    lItem
-
-startTypeAnnotation' ::
-  (HasLoc l) =>
-  R () ->
-  R () ->
-  GenLocated l (HsType GhcPs) ->
-  R ()
-startTypeAnnotation' breakTrailing breakLeading lItem =
+p_hsTypeAnnotation :: LHsType GhcPs -> R ()
+p_hsTypeAnnotation lItem =
   getPrinterOpt poFunctionArrows >>= \case
     TrailingArrows -> do
       space
@@ -242,6 +213,12 @@ startTypeAnnotation' breakTrailing breakLeading lItem =
       token'dcolon
       breakTrailing
       located lItem p_hsType
+  where
+    breakTrailing =
+      if hasDocStrings $ unLoc lItem
+        then newline
+        else breakpoint
+    breakLeading = breakpoint
 
 -- | Return 'True' if at least one argument in 'HsType' has a doc string
 -- attached to it.
@@ -301,7 +278,7 @@ p_hsTyVarBndr HsTvb {..} = do
       HsBndrVar _ x -> p_rdrName x
       HsBndrWildCard _ -> txt "_"
     case tvb_kind of
-      HsBndrKind _ k -> inci $ startTypeAnnotation k
+      HsBndrKind _ k -> inci $ p_hsTypeAnnotation k
       HsBndrNoKind _ -> pure ()
 
 data ForAllVisibility = ForAllInvis | ForAllVis
