@@ -703,4 +703,7 @@ defaultPrinterOptsYaml =
     , ""
     , "# Modules defined by the current Cabal package for import grouping"
     , "local-modules: []"
+    , ""
+    , "# Use one-level if-then-else statements instead of two-level"
+    , "one-level-ifs: false"
     ]
