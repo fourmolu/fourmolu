@@ -55,6 +55,7 @@ module Ormolu.Config
     SingleDerivingParens (..),
     parsePrinterOptsCLI,
     parsePrinterOptType,
+    renderPrinterOpt,
 
     -- ** Loading Fourmolu configuration
     ConfigNotFound (..),

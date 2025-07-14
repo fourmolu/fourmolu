@@ -44,7 +44,6 @@ import System.IO.Temp (withSystemTempFile)
 import System.IO.Unsafe (unsafePerformIO)
 import Test.Hspec
 import Text.PrettyPrint qualified as Doc
-import Text.Printf (printf)
 
 data TestGroup
   = forall a.
@@ -56,8 +55,7 @@ data TestGroup
     isMulti :: Bool,
     testCases :: [a],
     updateConfig :: a -> PrinterOptsTotal -> PrinterOptsTotal,
-    showTestCase :: a -> String,
-    testCaseSuffix :: a -> String,
+    showTestCase :: a -> [String],
     checkIdempotence :: Bool
   }
 
@@ -76,9 +74,9 @@ spec =
                 poIndentWheres = pure indentWheres
               },
           showTestCase = \(indent, indentWheres) ->
-            show indent ++ if indentWheres then " + indent wheres" else "",
-          testCaseSuffix = \(indent, indentWheres) ->
-            suffixWith [show indent, if indentWheres then "indent_wheres" else ""],
+            [ renderPrinterOpt indent,
+              if indentWheres then "indent_wheres" else ""
+            ],
           checkIdempotence = True
         },
       TestGroup
@@ -86,13 +84,9 @@ spec =
           isMulti = True,
           testCases = [NoLimit, ColumnLimit 80, ColumnLimit 100],
           updateConfig = \columnLimit opts -> opts {poColumnLimit = pure columnLimit},
-          showTestCase = show,
-          testCaseSuffix = \columnLimit ->
-            let limitStr =
-                  case columnLimit of
-                    NoLimit -> "none"
-                    ColumnLimit x -> show x
-             in suffixWith ["limit=" ++ limitStr],
+          showTestCase = \columnLimit ->
+            [ "limit=" ++ renderColumnLimit columnLimit
+            ],
           checkIdempotence = False
         },
       TestGroup
@@ -101,8 +95,9 @@ spec =
           testCases = allOptions,
           updateConfig = \functionArrows opts ->
             opts {poFunctionArrows = pure functionArrows},
-          showTestCase = show,
-          testCaseSuffix = suffix1,
+          showTestCase = \functionArrows ->
+            [ renderPrinterOpt functionArrows
+            ],
           checkIdempotence = True
         },
       TestGroup
@@ -110,8 +105,9 @@ spec =
           isMulti = False,
           testCases = allOptions,
           updateConfig = \commaStyle opts -> opts {poCommaStyle = pure commaStyle},
-          showTestCase = show,
-          testCaseSuffix = suffix1,
+          showTestCase = \commaStyle ->
+            [ renderPrinterOpt commaStyle
+            ],
           checkIdempotence = True
         },
       TestGroup
@@ -120,8 +116,9 @@ spec =
           testCases = allOptions,
           updateConfig = \commaStyle opts ->
             opts {poImportExportStyle = pure commaStyle},
-          showTestCase = show,
-          testCaseSuffix = suffix1,
+          showTestCase = \commaStyle ->
+            [ renderPrinterOpt commaStyle
+            ],
           checkIdempotence = True
         },
       TestGroup
@@ -194,8 +191,9 @@ spec =
             opts
               { poImportGrouping = pure igs
               },
-          showTestCase = showStrategy,
-          testCaseSuffix = \igs -> suffixWith [showStrategy igs],
+          showTestCase = \igs ->
+            [ renderImportGrouping igs
+            ],
           checkIdempotence = True
         },
       TestGroup
@@ -203,8 +201,9 @@ spec =
           isMulti = False,
           testCases = allOptions,
           updateConfig = \recordBraceSpace opts -> opts {poRecordBraceSpace = pure recordBraceSpace},
-          showTestCase = show,
-          testCaseSuffix = suffix1,
+          showTestCase = \recordBraceSpace ->
+            [ renderPrinterOpt recordBraceSpace
+            ],
           checkIdempotence = True
         },
       TestGroup
@@ -217,9 +216,9 @@ spec =
                 poRespectful = pure respectful
               },
           showTestCase = \(newlines, respectful) ->
-            show newlines ++ if respectful then " (respectful)" else "",
-          testCaseSuffix = \(newlines, respectful) ->
-            suffixWith [show newlines, if respectful then "respectful" else ""],
+            [ renderPrinterOpt newlines,
+              if respectful then "respectful" else ""
+            ],
           checkIdempotence = True
         },
       TestGroup
@@ -232,17 +231,11 @@ spec =
                 poHaddockStyleModule = pure haddockStyleModule
               },
           showTestCase = \(haddockStyle, haddockStyleModule) ->
-            show haddockStyle
-              ++ case haddockStyleModule of
+            [ renderPrinterOpt haddockStyle,
+              case haddockStyleModule of
                 PrintStyleInherit -> ""
-                PrintStyleOverride style -> " + module=" ++ show style,
-          testCaseSuffix = \(haddockStyle, haddockStyleModule) ->
-            suffixWith
-              [ show haddockStyle,
-                case haddockStyleModule of
-                  PrintStyleInherit -> ""
-                  PrintStyleOverride style -> "module=" ++ show style
-              ],
+                PrintStyleOverride style -> "module=" ++ renderPrinterOpt style
+            ],
           checkIdempotence = True
         },
       TestGroup
@@ -256,9 +249,10 @@ spec =
                 poInStyle = pure inStyle
               },
           showTestCase = \(letStyle, inStyle, indent) ->
-            printf "%s + %s (indent=%d)" (show letStyle) (show inStyle) indent,
-          testCaseSuffix = \(letStyle, inStyle, indent) ->
-            suffixWith [show letStyle, show inStyle, "indent=" ++ show indent],
+            [ "let=" ++ renderPrinterOpt letStyle,
+              "in=" ++ renderPrinterOpt inStyle,
+              "indent=" ++ renderPrinterOpt indent
+            ],
           checkIdempotence = True
         },
       TestGroup
@@ -266,8 +260,9 @@ spec =
           isMulti = False,
           testCases = allOptions,
           updateConfig = \parens opts -> opts {poSingleConstraintParens = pure parens},
-          showTestCase = show,
-          testCaseSuffix = suffix1,
+          showTestCase = \parens ->
+            [ renderPrinterOpt parens
+            ],
           checkIdempotence = True
         },
       TestGroup
@@ -275,8 +270,9 @@ spec =
           isMulti = False,
           testCases = allOptions,
           updateConfig = \parens opts -> opts {poSingleDerivingParens = pure parens},
-          showTestCase = show,
-          testCaseSuffix = suffix1,
+          showTestCase = \parens ->
+            [ renderPrinterOpt parens
+            ],
           checkIdempotence = True
         },
       TestGroup
@@ -284,8 +280,9 @@ spec =
           isMulti = False,
           testCases = allOptions,
           updateConfig = \sortConstraints options -> options {poSortConstraints = pure sortConstraints},
-          showTestCase = show,
-          testCaseSuffix = suffix1,
+          showTestCase = \sortConstraints ->
+            [ renderPrinterOpt sortConstraints
+            ],
           checkIdempotence = True
         },
       TestGroup
@@ -293,8 +290,9 @@ spec =
           isMulti = False,
           testCases = allOptions,
           updateConfig = \sortDerivedClasses opts -> opts {poSortDerivedClasses = pure sortDerivedClasses},
-          showTestCase = show,
-          testCaseSuffix = suffix1,
+          showTestCase = \sortDerivedClasses ->
+            [ renderPrinterOpt sortDerivedClasses
+            ],
           checkIdempotence = True
         },
       TestGroup
@@ -302,8 +300,9 @@ spec =
           isMulti = False,
           testCases = allOptions,
           updateConfig = \sortDerivingClauses opts -> opts {poSortDerivingClauses = pure sortDerivingClauses},
-          showTestCase = show,
-          testCaseSuffix = suffix1,
+          showTestCase = \sortDerivingClauses ->
+            [ renderPrinterOpt sortDerivingClauses
+            ],
           checkIdempotence = True
         },
       TestGroup
@@ -311,8 +310,9 @@ spec =
           isMulti = False,
           testCases = allOptions,
           updateConfig = \trailingSectionOperators opts -> opts {poTrailingSectionOperators = pure trailingSectionOperators},
-          showTestCase = show,
-          testCaseSuffix = suffix1,
+          showTestCase = \trailingSectionOperators ->
+            [ renderPrinterOpt trailingSectionOperators
+            ],
           checkIdempotence = True
         },
       TestGroup
@@ -320,8 +320,9 @@ spec =
           isMulti = False,
           testCases = allOptions,
           updateConfig = \unicodePreference options -> options {poUnicode = pure unicodePreference},
-          showTestCase = show,
-          testCaseSuffix = suffix1,
+          showTestCase = \unicodePreference ->
+            [ renderPrinterOpt unicodePreference
+            ],
           checkIdempotence = True
         },
       TestGroup
@@ -329,8 +330,9 @@ spec =
           isMulti = False,
           testCases = allOptions,
           updateConfig = \respectful opts -> opts {poRespectful = pure respectful},
-          showTestCase = show,
-          testCaseSuffix = suffix1,
+          showTestCase = \respectful ->
+            [ renderPrinterOpt respectful
+            ],
           checkIdempotence = True
         },
       TestGroup
@@ -343,9 +345,9 @@ spec =
                 poImportExportStyle = pure importExportStyle
               },
           showTestCase = \(respectful, importExportStyle) ->
-            (if respectful then "respectful" else "not respectful") ++ " + " ++ show importExportStyle,
-          testCaseSuffix = \(respectful, importExportStyle) ->
-            suffixWith ["respectful=" ++ show respectful, show importExportStyle],
+            [ "respectful=" ++ renderPrinterOpt respectful,
+              renderPrinterOpt importExportStyle
+            ],
           checkIdempotence = True
         }
     ]
@@ -354,10 +356,10 @@ runTestGroup :: TestGroup -> Spec
 runTestGroup TestGroup {..} =
   describe label $
     forM_ testCases $ \testCase ->
-      it ("generates the correct output for: " ++ showTestCase testCase) $ do
+      it ("generates the correct output for: " ++ toTestLabel testCase) $ do
         let inputFile = testDir </> toRelFile (if isMulti then "input-multi.hs" else "input.hs")
             inputPath = fromRelFile inputFile
-            outputFile = testDir </> toRelFile ("output" ++ testCaseSuffix testCase ++ ".hs")
+            outputFile = testDir </> toRelFile ("output-" ++ toTestFileSuffix testCase ++ ".hs")
             opts = updateConfig testCase defaultPrinterOpts
 
         input <- T.Utf8.readFile inputPath
@@ -376,6 +378,10 @@ runTestGroup TestGroup {..} =
       case parseRelFile name of
         Just path -> path
         Nothing -> error $ "Not a valid file name: " ++ show name
+
+    toTestLabel = renderTestCase (T.pack " + ") id
+    toTestFileSuffix = renderTestCase (T.pack "-") (T.replace (T.pack "-") (T.pack "_"))
+    renderTestCase delim f = T.unpack . T.intercalate delim . filter (not . T.null) . map (f . T.pack) . showTestCase
 
 runOrmolu :: PrinterOptsTotal -> Bool -> FilePath -> Text -> IO Text
 runOrmolu opts checkIdempotence inputPath input =
@@ -410,16 +416,27 @@ checkResult outputFile actual
             expectationFailure . T.unpack $
               getDiff ("actual", actual) ("expected", expected)
 
+{--- Renderers ---}
+
+renderImportGrouping :: ImportGrouping -> String
+renderImportGrouping igs = case igs of
+  ImportGroupCustom _ -> "custom"
+  ImportGroupLegacy -> "legacy"
+  ImportGroupPreserve -> "preserve"
+  ImportGroupSingle -> "single"
+  ImportGroupByScope -> "by-scope"
+  ImportGroupByQualified -> "by-qualified"
+  ImportGroupByScopeThenQualified -> "by-scope-then-qualified"
+
+renderColumnLimit :: ColumnLimit -> String
+renderColumnLimit = \case
+  NoLimit -> "none"
+  ColumnLimit x -> show x
+
 {--- Helpers ---}
 
 allOptions :: (Enum a, Bounded a) => [a]
 allOptions = [minBound .. maxBound]
-
-suffixWith :: [String] -> String
-suffixWith xs = concatMap ('-' :) . filter (not . null) $ xs
-
-suffix1 :: (Show a) => a -> String
-suffix1 a1 = suffixWith [show a1]
 
 overSectionsM :: (Monad m) => Text -> (Text -> m Text) -> Text -> m Text
 overSectionsM delim f = go . T.lines
@@ -474,8 +491,3 @@ spanEnd :: (a -> Bool) -> [a] -> ([a], [a])
 spanEnd f xs =
   let xs' = reverse xs
    in (reverse $ dropWhile f xs', reverse $ takeWhile f xs')
-
-showStrategy :: ImportGrouping -> String
-showStrategy igs = case igs of
-  ImportGroupCustom _ -> "custom"
-  _ -> show igs
