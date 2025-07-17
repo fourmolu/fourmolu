@@ -80,14 +80,18 @@ functionName ::
   (a, b, c, d)
 
 functionWithInterleavedCommentsTrailing ::
-  -- arg
+  -- arg1
+  Int ->
+  -- arg2
   Int ->
   -- result
   Bool
 
 functionWithInterleavedCommentsLeading
-  -- arg
+  -- arg1
   :: Int
+  -- arg2
+  -> Int
   -- result
   -> Bool
 
@@ -118,6 +122,13 @@ data Record = Record
               Bool
   , recOther :: Bool
   }
+
+data Foo
+  = Foo
+      -- | arg1
+      Int
+      String
+      -- ^ arg2
 
 foo ::
   Int %1 ->
