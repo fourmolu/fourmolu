@@ -239,6 +239,25 @@ spec =
           checkIdempotence = True
         },
       TestGroup
+        { label = "haddock-location-signature",
+          isMulti = False,
+          testCases = (,,) <$> allOptions <*> allOptions <*> allOptions,
+          updateConfig = \(functionArrows, haddockLocSig, isMulti) opts ->
+            opts
+              { poHaddockStyle = pure $ if isMulti then HaddockMultiLine else HaddockSingleLine,
+                poFunctionArrows = pure functionArrows,
+                poHaddockLocSignature = pure haddockLocSig
+              },
+          showTestCase = \(functionArrows, haddockLocSig, isMulti) ->
+            [ "arrows=" ++ renderPrinterOpt functionArrows,
+              case haddockLocSig of
+                HaddockLocSigAuto -> ""
+                _ -> "haddock=" ++ renderPrinterOpt haddockLocSig,
+              if isMulti then "multi" else ""
+            ],
+          checkIdempotence = True
+        },
+      TestGroup
         { label = "let-style",
           isMulti = False,
           testCases = (,,) <$> allOptions <*> allOptions <*> [2, 4],

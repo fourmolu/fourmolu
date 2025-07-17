@@ -160,6 +160,16 @@ allOptions =
         cliOverrides = emptyOverrides {cliDefault = Just "same as 'haddock-style'"}
       },
     Option
+      { name = "haddock-location-signature",
+        fieldName = Just "poHaddockLocSignature",
+        description = "Where to put docstring comments in function signatures",
+        type_ = "HaddockLocSignature",
+        default_ = HsExpr "HaddockLocSigAuto",
+        ormolu = HsExpr "HaddockLocSigAuto",
+        sinceVersion = Nothing,
+        cliOverrides = emptyOverrides {cliDefault = Just "leading if function-arrows is trailing, or vice-versa"}
+      },
+    Option
       { name = "let-style",
         fieldName = Just "poLetStyle",
         description = "Styling of let blocks",
@@ -393,6 +403,14 @@ allFieldTypes =
               "  \"\" -> pure PrintStyleInherit",
               "  _ -> PrintStyleOverride <$> parsePrinterOptType s"
             ]
+      },
+    FieldTypeEnum
+      { fieldTypeName = "HaddockLocSignature",
+        enumOptions =
+          [ ("HaddockLocSigAuto", "auto"),
+            ("HaddockLocSigLeading", "leading"),
+            ("HaddockLocSigTrailing", "trailing")
+          ]
       },
     FieldTypeEnum
       { fieldTypeName = "ImportExportStyle",

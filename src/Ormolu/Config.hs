@@ -38,6 +38,7 @@ module Ormolu.Config
     FunctionArrowsStyle (..),
     HaddockPrintStyle (..),
     HaddockPrintStyleModule (..),
+    HaddockLocSignature (..),
     ImportExportStyle (..),
     ImportGrouping (..),
     ImportGroup (..),

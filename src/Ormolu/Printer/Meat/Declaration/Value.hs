@@ -1,11 +1,10 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ViewPatterns #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 module Ormolu.Printer.Meat.Declaration.Value
   ( p_valDecl,
@@ -22,7 +21,6 @@ where
 
 import Control.Monad
 import Data.Bool (bool)
-import Data.Choice (pattern Isn't)
 import Data.Data hiding (Infix, Prefix)
 import Data.Function (on)
 import Data.Functor ((<&>))
@@ -800,7 +798,7 @@ p_hsExpr' isApp s = \case
     p_dotFieldOccs (NE.toList proj_flds)
   ExprWithTySig _ x HsWC {hswc_body} -> sitcc $ do
     located x p_hsExpr
-    inci $ startTypeAnnotation hswc_body p_hsSigType
+    inci $ p_hsTypeAnnotation (hsSigTypeToType <$> hswc_body)
   ArithSeq _ _ x ->
     case x of
       From from -> brackets s $ do
@@ -858,18 +856,14 @@ p_hsExpr' isApp s = \case
     space
     located hswc_body p_hsType
   -- similar to HsForAllTy
-  HsForAll _ tele e -> do
-    p_hsForAllTelescope (Isn't #multiline) tele
-    located e p_hsExpr
+  expr@HsForAll {} ->
+    p_hsFun expr
   -- similar to HsQualTy
-  HsQual _ qs e -> do
-    located qs $ p_hsContext' p_hsExpr
-    p_hsQualArrow (Isn't #multiline)
-    located e p_hsExpr
+  expr@HsQual {} ->
+    p_hsFun expr
   -- similar to HsFunTy
-  HsFunArr _ arrow x y -> do
-    located x p_hsExpr
-    p_hsFun (Isn't #multiline) p_hsExpr arrow y
+  expr@HsFunArr {} ->
+    p_hsFun expr
 
 -- | Print a list comprehension.
 --
@@ -1416,6 +1410,40 @@ p_hsQuote = \case
         containsHsStarTy = everything (||) $ \b -> case cast @_ @(HsType GhcPs) b of
           Just HsStarTy {} -> True
           _ -> False
+
+-- | Function types in expressions, e.g. with -XRequiredTypeArguments
+instance FunRepr (HsExpr GhcPs) where
+  renderFunItem = p_hsExpr
+  setLocatedBetweenArgs _ = True
+  parseFunRepr = \case
+    -- `forall a. _`
+    L ann (HsForAll _ tele expr) ->
+      ParsedFunForall (L ann tele) (parseFunRepr expr)
+    -- `HasCallStack => _`
+    expr@(L _ HsQual {}) ->
+      let (ctxs, rest) = getContexts expr
+       in ParsedFunQuals ctxs (parseFunRepr rest)
+    -- `Int -> _`
+    expr@(L _ HsFunArr {}) ->
+      let (args, ret) = getArgsAndReturn expr
+       in ParsedFunArgs args (parseFunRepr ret)
+    -- `_ -> Int`
+    expr -> ParsedFunReturn (expr, Nothing)
+    where
+      getContexts =
+        let go ctxs = \case
+              L ann (HsQual _ ctx expr) ->
+                go (L ann ctx : ctxs) expr
+              expr ->
+                (reverse ctxs, expr)
+         in go []
+      getArgsAndReturn =
+        let go args = \case
+              L ann (HsFunArr _ arrow l r) ->
+                go (L ann (l, Nothing, arrow) : args) r
+              expr ->
+                (reverse args, expr)
+         in go []
 
 ----------------------------------------------------------------------------
 -- Helpers

@@ -183,7 +183,7 @@ p_conDecl _ ConDeclGADT {..} = do
           quantifiedTy =
             addCLocA con_bndrs qualTy $
               hsOuterTyVarBndrsToHsType (unLoc con_bndrs) qualTy
-      startTypeAnnotationDecl quantifiedTy id p_hsType
+      p_hsTypeAnnotation quantifiedTy
   where
     conDeclSpn =
       fmap getLocA (NE.toList con_names)
