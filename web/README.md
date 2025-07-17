@@ -11,6 +11,13 @@ This directory contains files that are served at `fourmolu.github.io`.
 
 ## Build `fourmolu-wasm`
 
+### Get from CI
+
+1. Push a commit to GitHub
+1. Navigate to the "Fourmolu website" workflow
+1. Download the `fourmolu-wasm` artifact
+1. Unzip it and put `fourmou-wasm.wasm` in `web/site/static/`
+
 ### Build locally
 
 1. Follow the steps at https://gitlab.haskell.org/haskell-wasm/ghc-wasm-meta to install GHC with the WASM backend
