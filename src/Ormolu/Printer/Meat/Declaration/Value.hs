@@ -1127,10 +1127,10 @@ p_if placer render anns if' then' else' = do
   if oneLevelIfs
     then do
       space
-      txt "then"
+      locatedToken thenSpan "then"
       placeHangingLocated thenSpan then'
       breakpoint
-      txt "else"
+      locatedToken elseSpan "else"
       placeHangingLocated elseSpan else'
     else do
       breakpoint
