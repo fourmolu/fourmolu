@@ -378,9 +378,10 @@ spec =
               { poIndentation = pure indent,
                 poOneLevelIfs = pure oneLevelIfs
               },
-          showTestCase = show,
-          testCaseSuffix = \(oneLevelIfs, indent) ->
-            suffixWith [show oneLevelIfs, "indent=" ++ show indent],
+          showTestCase = \(oneLevelIfs, indent) ->
+            [ "if=" ++ renderPrinterOpt oneLevelIfs,
+              "indent=" ++ renderPrinterOpt indent
+            ],
           checkIdempotence = True
         }
     ]
