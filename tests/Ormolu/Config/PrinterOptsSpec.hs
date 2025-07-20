@@ -372,10 +372,15 @@ spec =
       TestGroup
         { label = "one-level-ifs",
           isMulti = False,
-          testCases = allOptions,
-          updateConfig = \oneLevelIfs opts -> opts {poOneLevelIfs = pure oneLevelIfs},
+          testCases = (,) <$> allOptions <*> [2, 4],
+          updateConfig = \(oneLevelIfs, indent) opts ->
+            opts
+              { poIndentation = pure indent,
+                poOneLevelIfs = pure oneLevelIfs
+              },
           showTestCase = show,
-          testCaseSuffix = suffix1,
+          testCaseSuffix = \(oneLevelIfs, indent) ->
+            suffixWith [show oneLevelIfs, "indent=" ++ show indent],
           checkIdempotence = True
         }
     ]
