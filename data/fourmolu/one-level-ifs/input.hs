@@ -5,12 +5,14 @@ expr_with_short_branches =
         then e
         else f
 
-expr_with_long_branches =
+expr_with_tall_branches =
         if
         d
         then
         e
+        e
         else
+        f
         f
 
 expr_with_do_blocks =
@@ -28,6 +30,10 @@ expr_with_comments =
         else
         -- comment before false branch
         f -- comment after false expression
+
+expr_with_tall_condition =
+        if      a
+                && b    then e  else f
 
 tuple = (g,
         if

@@ -1126,12 +1126,33 @@ p_if placer render anns if' then' else' = do
   oneLevelIfs <- getPrinterOpt poOneLevelIfs
   if oneLevelIfs
     then do
-      space
+      let conditionSpan = getLocA if'
+          thenBodySpan = getLocA then'
+          elseBodySpan = getLocA else'
+          isWholeOneLine = isOneLineSpanFromTo conditionSpan elseBodySpan
+      if isOneLineSpan conditionSpan then space else breakpoint
       locatedToken thenSpan "then"
-      placeHangingLocated thenSpan then'
-      breakpoint
-      locatedToken elseSpan "else"
-      placeHangingLocated elseSpan else'
+      if isWholeOneLine
+        then do
+          placeHangingLocated thenSpan then'
+          breakpoint
+          locatedToken elseSpan "else"
+          placeHangingLocated elseSpan else'
+        else do
+          if isOneLineSpan thenBodySpan
+            then do
+              breakpoint
+              inci $ located then' render
+            else
+              placeHangingLocated thenSpan then'
+          breakpoint
+          locatedToken elseSpan "else"
+          if isOneLineSpan elseBodySpan
+            then do
+              breakpoint
+              inci $ located else' render
+            else
+              placeHangingLocated elseSpan else'
     else do
       breakpoint
       inci $ do
@@ -1142,6 +1163,10 @@ p_if placer render anns if' then' else' = do
         locatedToken elseSpan "else"
         space
         placeHangingLocated elseSpan else'
+  where
+    isOneLineSpanFromTo (RealSrcSpan a _) (RealSrcSpan b _) =
+      srcSpanStartLine a == srcSpanEndLine b
+    isOneLineSpanFromTo _ _ = False
 
 p_let ::
   -- | True if in do-block

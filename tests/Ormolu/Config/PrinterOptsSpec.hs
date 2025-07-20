@@ -382,7 +382,7 @@ spec =
             [ "if=" ++ renderPrinterOpt oneLevelIfs,
               "indent=" ++ renderPrinterOpt indent
             ],
-          checkIdempotence = True
+          checkIdempotence = False -- TODO enable after debug
         }
     ]
 

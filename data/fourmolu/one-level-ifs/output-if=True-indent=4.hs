@@ -1,14 +1,18 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 expr_with_short_branches =
-    if d then e
-    else f
-
-expr_with_long_branches =
     if d then
         e
     else
         f
+
+expr_with_tall_branches =
+    if d then
+        e
+            e
+    else
+        f
+            f
 
 expr_with_do_blocks =
     if cond then do
@@ -26,6 +30,14 @@ expr_with_comments =
         -- comment before false branch
         f -- comment after false expression
 
+expr_with_tall_condition =
+    if a
+        && b
+    then
+        e
+    else
+        f
+
 tuple =
     ( g
     , if d then
@@ -39,11 +51,15 @@ statement = do
 
     if i then j else k
 
-    if i then j
-    else k
+    if i then
+        j
+    else
+        k
 
-    if i then j
-    else k
+    if i then
+        j
+    else
+        k
 
     if i then
         j
@@ -52,8 +68,10 @@ statement = do
 
 if top_level then m else n
 
-if top_level then m
-else n
+if top_level then
+    m
+else
+    n
 
 if top_level then
     m
@@ -62,8 +80,10 @@ else
 
 $(if top_level then m else n)
 
-$( if top_level then m
-   else n
+$( if top_level then
+    m
+   else
+    n
  )
 
 $( if top_level then
