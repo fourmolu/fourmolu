@@ -1134,11 +1134,18 @@ p_if placer render anns if' then' else' = do
             space
             placeHangingLocated tokenSpan body
 
-  if oneLevelIfs && isOneLineSpan (getLocA if') then space else breakpoint
-  (if oneLevelIfs then id else inci) $ do
-    placeBranch thenSpan "then" then'
-    breakpoint
-    placeBranch elseSpan "else" else'
+      branches = do
+        placeBranch thenSpan "then" then'
+        breakpoint
+        placeBranch elseSpan "else" else'
+
+  if oneLevelIfs
+    then do
+      if isOneLineSpan $ getLocA if' then space else breakpoint
+      branches
+    else do
+      breakpoint
+      inci branches
 
 p_let ::
   -- | True if in do-block
