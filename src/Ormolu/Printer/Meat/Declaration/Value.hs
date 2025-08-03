@@ -1127,28 +1127,24 @@ p_if placer render anns if' then' else' = do
   oneLevelIfs <- getPrinterOpt poOneLevelIfs
   if oneLevelIfs
     then do
-      let conditionSpan = getLocA if'
-          thenBodySpan = getLocA then'
-          elseBodySpan = getLocA else'
-
-          placeBranch keywordSpan keyword bodySpan body = do
+      let placeBranch keywordSpan keyword body = do
             locatedToken keywordSpan keyword
-            if isOneLineSpan bodySpan
+            if isOneLineSpan $ getLocA body
               then do
                 breakpoint
                 inci $ located body render
               else
                 placeHangingLocated keywordSpan body
 
-      if isOneLineSpan conditionSpan then space else breakpoint
-      placeBranch thenSpan "then" thenBodySpan then'
+      if isOneLineSpan $ getLocA if' then space else breakpoint
+      placeBranch thenSpan "then" then'
       breakpoint
-      placeBranch elseSpan "else" elseBodySpan else'
+      placeBranch elseSpan "else" else'
     else do
-      let placeBranch spn keyword body = do
-            locatedToken spn keyword
+      let placeBranch keywordSpan keyword body = do
+            locatedToken keywordSpan keyword
             space
-            placeHangingLocated spn body
+            placeHangingLocated keywordSpan body
 
       breakpoint
       inci $ do
