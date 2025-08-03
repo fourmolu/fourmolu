@@ -1123,50 +1123,38 @@ p_if placer render anns if' then' else' = do
             placement = if hasComments then Normal else placer body
         switchLayout [tokenSpan, bodySpan] $
           placeHanging placement (located bodyLoc render)
+
   oneLevelIfs <- getPrinterOpt poOneLevelIfs
   if oneLevelIfs
     then do
       let conditionSpan = getLocA if'
           thenBodySpan = getLocA then'
           elseBodySpan = getLocA else'
-          isWholeOneLine = isOneLineSpanFromTo conditionSpan elseBodySpan
+
+          placeBranch keywordSpan keyword bodySpan body = do
+            locatedToken keywordSpan keyword
+            if isOneLineSpan bodySpan
+              then do
+                breakpoint
+                inci $ located body render
+              else
+                placeHangingLocated keywordSpan body
+
       if isOneLineSpan conditionSpan then space else breakpoint
-      locatedToken thenSpan "then"
-      if isWholeOneLine
-        then do
-          placeHangingLocated thenSpan then'
-          breakpoint
-          locatedToken elseSpan "else"
-          placeHangingLocated elseSpan else'
-        else do
-          if isOneLineSpan thenBodySpan
-            then do
-              breakpoint
-              inci $ located then' render
-            else
-              placeHangingLocated thenSpan then'
-          breakpoint
-          locatedToken elseSpan "else"
-          if isOneLineSpan elseBodySpan
-            then do
-              breakpoint
-              inci $ located else' render
-            else
-              placeHangingLocated elseSpan else'
+      placeBranch thenSpan "then" thenBodySpan then'
+      breakpoint
+      placeBranch elseSpan "else" elseBodySpan else'
     else do
+      let placeBranch spn keyword body = do
+            locatedToken spn keyword
+            space
+            placeHangingLocated spn body
+
       breakpoint
       inci $ do
-        locatedToken thenSpan "then"
-        space
-        placeHangingLocated thenSpan then'
+        placeBranch thenSpan "then" then'
         breakpoint
-        locatedToken elseSpan "else"
-        space
-        placeHangingLocated elseSpan else'
-  where
-    isOneLineSpanFromTo (RealSrcSpan a _) (RealSrcSpan b _) =
-      srcSpanStartLine a == srcSpanEndLine b
-    isOneLineSpanFromTo _ _ = False
+        placeBranch elseSpan "else" else'
 
 p_let ::
   -- | True if in do-block
