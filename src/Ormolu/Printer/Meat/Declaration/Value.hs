@@ -1109,9 +1109,6 @@ p_if placer render anns if' then' else' = do
         where
           AnnsIf {aiThen, aiElse} = anns
 
-      locatedToken tokenSpan token =
-        located (L tokenSpan ()) $ \_ -> txt token
-
       betweenSpans spanA spanB s = spanA < s && s < spanB
 
       placeHangingLocated tokenSpan bodyLoc@(L _ body) = do
@@ -1125,32 +1122,23 @@ p_if placer render anns if' then' else' = do
           placeHanging placement (located bodyLoc render)
 
   oneLevelIfs <- getPrinterOpt poOneLevelIfs
-  if oneLevelIfs
-    then do
-      let placeBranch keywordSpan keyword body = do
-            locatedToken keywordSpan keyword
+
+  let placeBranch tokenSpan token body = do
+        located (L tokenSpan ()) $ \_ -> txt token
+        if oneLevelIfs
+          then do
             if isOneLineSpan $ getLocA body
-              then do
-                breakpoint
-                inci $ located body render
-              else
-                placeHangingLocated keywordSpan body
-
-      if isOneLineSpan $ getLocA if' then space else breakpoint
-      placeBranch thenSpan "then" then'
-      breakpoint
-      placeBranch elseSpan "else" else'
-    else do
-      let placeBranch keywordSpan keyword body = do
-            locatedToken keywordSpan keyword
+              then breakpoint >> inci (located body render)
+              else placeHangingLocated tokenSpan body
+          else do
             space
-            placeHangingLocated keywordSpan body
+            placeHangingLocated tokenSpan body
 
-      breakpoint
-      inci $ do
-        placeBranch thenSpan "then" then'
-        breakpoint
-        placeBranch elseSpan "else" else'
+  if oneLevelIfs && isOneLineSpan (getLocA if') then space else breakpoint
+  (if oneLevelIfs then id else inci) $ do
+    placeBranch thenSpan "then" then'
+    breakpoint
+    placeBranch elseSpan "else" else'
 
 p_let ::
   -- | True if in do-block
