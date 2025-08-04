@@ -1128,7 +1128,9 @@ p_if placer render anns if' then' else' = do
         if oneLevelIfs
           then do
             if isOneLineSpan $ getLocA body
-              then breakpoint >> inci (located body render)
+              then do
+                breakpoint
+                inci (located body render)
               else placeHangingLocated tokenSpan body
           else do
             space
