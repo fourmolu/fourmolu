@@ -1414,7 +1414,6 @@ p_hsQuote = \case
 -- | Function types in expressions, e.g. with -XRequiredTypeArguments
 instance FunRepr (HsExpr GhcPs) where
   renderFunItem = p_hsExpr
-  setLocatedBetweenArgs _ = True
   parseFunRepr = \case
     -- `forall a. _`
     L ann (HsForAll _ tele expr) ->
