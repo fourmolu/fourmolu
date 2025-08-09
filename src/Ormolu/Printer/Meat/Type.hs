@@ -351,14 +351,10 @@ data ParsedFunRepr a
 class (Anno a ~ SrcSpanAnnA, Outputable a) => FunRepr a where
   renderFunItem :: a -> R ()
 
-  -- | Workaround for https://github.com/tweag/ormolu/pull/1170
-  setLocatedBetweenArgs :: a -> Bool
-
   parseFunRepr :: LocatedA a -> ParsedFunRepr a
 
 instance FunRepr (HsType GhcPs) where
   renderFunItem = p_hsType
-  setLocatedBetweenArgs _ = False
   parseFunRepr = \case
     -- `forall a. _`
     L ann (HsForAllTy _ tele ty) ->
@@ -521,18 +517,7 @@ p_hsFunParsed' arrowsStyle fun0 = Cont.evalContT . (`State.evalStateT` initialSt
         arg : _ -> void $ setLocated arg
         _ -> pure ()
 
-      -- replace with forM_ after setLocatedBetweenArgs goes away
-      let overArgs as f = do
-            let doSetLocated a@(L _ (L _ arg, _, _)) =
-                  if setLocatedBetweenArgs arg
-                    then void (setLocated a)
-                    else pure ()
-            sequence_
-              [ f a >> post
-              | (a, post) <- zip as (drop 1 (map doSetLocated as) ++ [pure ()])
-              ]
-
-      overArgs args $ \(L _ (larg, doc, arrow)) -> do
+      forM_ args $ \(L _ (larg, doc, arrow)) -> do
         let renderArrow = p_arrow (located' renderFunItem) arrow
         withHaddocks (Isn't #end) doc $ do
           withApplyLeadingDelim $ \applyLeadingDelim' ->
