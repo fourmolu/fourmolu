@@ -102,6 +102,7 @@ diffHsModule = genericQuery
                   `extQ` considerEqual @SourceText
                   `extQ` considerEqual @EpAnnComments -- ~ XCGRHSs GhcPs
                   `extQ` considerEqual @EpaLocation
+                  `extQ` considerEqual @(Maybe EpaLocation)
                   `extQ` considerEqual @EpLayout
                   `extQ` considerEqual @AnnSig
                   `extQ` considerEqual @HsRuleAnn

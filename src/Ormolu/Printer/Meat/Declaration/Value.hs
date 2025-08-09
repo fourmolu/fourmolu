@@ -749,7 +749,7 @@ p_hsExpr' isApp s = \case
   HsMultiIf _ guards -> do
     txt "if"
     breakpoint
-    inciApplicand isApp $ sep newline (located' (p_grhs RightArrow)) guards
+    inciApplicand isApp $ sep breakpoint (located' (p_grhs RightArrow)) guards
   HsLet (letToken, _) localBinds e ->
     p_let (s == S) p_hsExpr letToken localBinds e
   HsDo _ doFlavor es -> do
