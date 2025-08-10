@@ -26,4 +26,4 @@ respectful: false
 fixities: []
 reexports: []
 local-modules: []
-one-level-ifs: false
+shifted-ifs: false

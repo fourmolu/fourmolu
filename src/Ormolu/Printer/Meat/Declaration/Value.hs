@@ -1121,11 +1121,11 @@ p_if placer render anns if' then' else' = do
         switchLayout [tokenSpan, bodySpan] $
           placeHanging placement (located bodyLoc render)
 
-  oneLevelIfs <- getPrinterOpt poOneLevelIfs
+  shiftedIfs <- getPrinterOpt poShiftedIfs
 
   let placeBranch tokenSpan token body = do
         located (L tokenSpan ()) $ \_ -> txt token
-        if oneLevelIfs
+        if shiftedIfs
           then do
             if isOneLineSpan $ getLocA body
               then do
@@ -1141,7 +1141,7 @@ p_if placer render anns if' then' else' = do
         breakpoint
         placeBranch elseSpan "else" else'
 
-  if oneLevelIfs
+  if shiftedIfs
     then do
       if isOneLineSpan $ getLocA if' then space else breakpoint
       branches

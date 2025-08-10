@@ -300,9 +300,9 @@ allOptions =
         cliOverrides = emptyOverrides
       },
     Option
-      { name = "one-level-ifs",
-        fieldName = Just "poOneLevelIfs",
-        description = "Use one-level if-then-else statements instead of two-level",
+      { name = "shifted-ifs",
+        fieldName = Just "poShiftedIfs",
+        description = "Remove extra indentation for `then` and `else`",
         type_ = "Bool",
         default_ = HsBool False,
         ormolu = HsBool False,

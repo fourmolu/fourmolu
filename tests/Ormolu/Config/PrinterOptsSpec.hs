@@ -370,19 +370,19 @@ spec =
           checkIdempotence = True
         },
       TestGroup
-        { label = "one-level-ifs",
+        { label = "shifted-ifs",
           isMulti = False,
           testCases = (,) <$> allOptions <*> [2, 4],
-          updateConfig = \(oneLevelIfs, indent) opts ->
+          updateConfig = \(shiftedIfs, indent) opts ->
             opts
               { poIndentation = pure indent,
-                poOneLevelIfs = pure oneLevelIfs
+                poShiftedIfs = pure shiftedIfs
               },
-          showTestCase = \(oneLevelIfs, indent) ->
-            [ "if=" ++ renderPrinterOpt oneLevelIfs,
+          showTestCase = \(shiftedIfs, indent) ->
+            [ "if=" ++ renderPrinterOpt shiftedIfs,
               "indent=" ++ renderPrinterOpt indent
             ],
-          checkIdempotence = False -- TODO enable after debug
+          checkIdempotence = True
         }
     ]
 
