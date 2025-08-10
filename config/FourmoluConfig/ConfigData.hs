@@ -196,7 +196,7 @@ allOptions =
         type_ = "IfStyle",
         default_ = HsExpr "IfIndented",
         ormolu = HsExpr "IfIndented",
-        sinceVersion = Nothing,
+        sinceVersion = Just "0.19.0.0",
         cliOverrides = emptyOverrides
       },
     Option
