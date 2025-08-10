@@ -38,6 +38,18 @@ expr_with_tall_condition =
     else
         f
 
+expr_chain =
+    if a then
+        b
+    else
+        if c then
+            d
+        else
+            if e then
+                f
+            else
+                g
+
 tuple =
     ( g
     , if d then

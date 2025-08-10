@@ -12,12 +12,15 @@ This option determines whether the keywords `then` and `else` should have their 
 
 ```fourmolu-example-input
 testUser =
-    if condition
-        then do
-            first
+    if condition then do
+        first
+        branch
+    else
+        if another condition then do
+            second
             branch
         else do
-            second
+            third
             branch
 ```
 ```fourmolu-example-tab
