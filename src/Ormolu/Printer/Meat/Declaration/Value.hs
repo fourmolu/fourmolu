@@ -1101,6 +1101,8 @@ p_if ::
   LocatedA body ->
   R ()
 p_if placer render anns if' then' else' = do
+  shiftedIfs <- getPrinterOpt poShiftedIfs
+
   txt "if"
   space
   located if' p_hsExpr
@@ -1108,6 +1110,9 @@ p_if placer render anns if' then' else' = do
   let (thenSpan, elseSpan) = (locA aiThen, locA aiElse)
         where
           AnnsIf {aiThen, aiElse} = anns
+
+      locatedToken tokenSpan token =
+        located (L tokenSpan ()) $ \_ -> txt token
 
       betweenSpans spanA spanB s = spanA < s && s < spanB
 
@@ -1121,33 +1126,24 @@ p_if placer render anns if' then' else' = do
         switchLayout [tokenSpan, bodySpan] $
           placeHanging placement (located bodyLoc render)
 
-  shiftedIfs <- getPrinterOpt poShiftedIfs
+      placeBranch tokenSpan body =
+        if shiftedIfs && isOneLineSpan (getLocA body)
+          then placeHanging Normal (located body render)
+          else placeHangingLocated tokenSpan body
 
-  let placeBranch tokenSpan token body = do
-        located (L tokenSpan ()) $ \_ -> txt token
+      hangIf m =
         if shiftedIfs
-          then do
-            if isOneLineSpan $ getLocA body
-              then do
-                breakpoint
-                inci (located body render)
-              else placeHangingLocated tokenSpan body
-          else do
-            space
-            placeHangingLocated tokenSpan body
+          then switchLayout [getLocA if'] breakpoint >> m
+          else breakpoint >> inci m
 
-      branches = do
-        placeBranch thenSpan "then" then'
-        breakpoint
-        placeBranch elseSpan "else" else'
-
-  if shiftedIfs
-    then do
-      if isOneLineSpan $ getLocA if' then space else breakpoint
-      branches
-    else do
-      breakpoint
-      inci branches
+  hangIf $ do
+    locatedToken thenSpan "then"
+    space
+    placeBranch thenSpan then'
+    breakpoint
+    locatedToken elseSpan "else"
+    space
+    placeBranch elseSpan else'
 
 p_let ::
   -- | True if in do-block
