@@ -379,7 +379,7 @@ spec =
                 poShiftedIfs = pure shiftedIfs
               },
           showTestCase = \(shiftedIfs, indent) ->
-            [ "if=" ++ renderPrinterOpt shiftedIfs,
+            [ "shifted=" ++ renderPrinterOpt shiftedIfs,
               "indent=" ++ renderPrinterOpt indent
             ],
           checkIdempotence = True
@@ -428,7 +428,6 @@ runOrmolu opts checkIdempotence inputPath input =
         { cfgPrinterOpts = opts,
           cfgSourceType = detectSourceType inputPath,
           cfgCheckIdempotence = checkIdempotence,
-          cfgUnsafe = not checkIdempotence, -- TODO remove after debug?
           cfgDependencies = S.fromList [mkPackageName "base"],
           cfgLocalModules =
             S.fromList $
