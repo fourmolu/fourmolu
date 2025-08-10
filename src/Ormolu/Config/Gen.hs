@@ -89,6 +89,8 @@ data PrinterOpts f =
       poUnicode :: f Unicode
     , -- | Give the programmer more choice on where to insert blank lines
       poRespectful :: f Bool
+    , -- | Remove extra indentation for `then` and `else`
+      poShiftedIfs :: f Bool
     }
   deriving (Generic)
 
@@ -117,6 +119,7 @@ emptyPrinterOpts =
     , poTrailingSectionOperators = Nothing
     , poUnicode = Nothing
     , poRespectful = Nothing
+    , poShiftedIfs = Nothing
     }
 
 defaultPrinterOpts :: PrinterOpts Identity
@@ -144,6 +147,7 @@ defaultPrinterOpts =
     , poTrailingSectionOperators = pure True
     , poUnicode = pure UnicodeNever
     , poRespectful = pure True
+    , poShiftedIfs = pure False
     }
 
 -- | Fill the field values that are 'Nothing' in the first argument
@@ -178,6 +182,7 @@ fillMissingPrinterOpts p1 p2 =
     , poTrailingSectionOperators = maybe (poTrailingSectionOperators p2) pure (poTrailingSectionOperators p1)
     , poUnicode = maybe (poUnicode p2) pure (poUnicode p1)
     , poRespectful = maybe (poRespectful p2) pure (poRespectful p1)
+    , poShiftedIfs = maybe (poShiftedIfs p2) pure (poShiftedIfs p1)
     }
 
 parsePrinterOptsCLI ::
@@ -274,6 +279,10 @@ parsePrinterOptsCLI f =
       "respectful"
       "Give the programmer more choice on where to insert blank lines (default: true)"
       "BOOL"
+    <*> f
+      "shifted-ifs"
+      "Remove extra indentation for `then` and `else` (default: false)"
+      "BOOL"
 
 parsePrinterOptsJSON ::
   Applicative f =>
@@ -303,6 +312,7 @@ parsePrinterOptsJSON f =
     <*> f "trailing-section-operators"
     <*> f "unicode"
     <*> f "respectful"
+    <*> f "shifted-ifs"
 
 {---------- PrinterOpts field types ----------}
 
@@ -801,4 +811,7 @@ defaultPrinterOptsYaml =
     , ""
     , "# Modules defined by the current Cabal package for import grouping"
     , "local-modules: []"
+    , ""
+    , "# Remove extra indentation for `then` and `else`"
+    , "shifted-ifs: false"
     ]

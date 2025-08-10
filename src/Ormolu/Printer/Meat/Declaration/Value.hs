@@ -1101,10 +1101,11 @@ p_if ::
   LocatedA body ->
   R ()
 p_if placer render anns if' then' else' = do
+  shiftedIfs <- getPrinterOpt poShiftedIfs
+
   txt "if"
   space
   located if' p_hsExpr
-  breakpoint
   commentSpans <- fmap getLoc <$> getEnclosingComments
   let (thenSpan, elseSpan) = (locA aiThen, locA aiElse)
         where
@@ -1124,14 +1125,25 @@ p_if placer render anns if' then' else' = do
             placement = if hasComments then Normal else placer body
         switchLayout [tokenSpan, bodySpan] $
           placeHanging placement (located bodyLoc render)
-  inci $ do
+
+      placeBranch tokenSpan body =
+        if shiftedIfs && isOneLineSpan (getLocA body)
+          then placeHanging Normal (located body render)
+          else placeHangingLocated tokenSpan body
+
+      hangIf m =
+        if shiftedIfs
+          then switchLayout [getLocA if'] breakpoint >> m
+          else breakpoint >> inci m
+
+  hangIf $ do
     locatedToken thenSpan "then"
     space
-    placeHangingLocated thenSpan then'
+    placeBranch thenSpan then'
     breakpoint
     locatedToken elseSpan "else"
     space
-    placeHangingLocated elseSpan else'
+    placeBranch elseSpan else'
 
 p_let ::
   -- | True if in do-block
