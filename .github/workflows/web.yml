@@ -16,7 +16,7 @@ jobs:
         working-directory: web/fourmolu-wasm/
     steps:
       -
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       -
         name: Install preprocessors
         run: |
@@ -61,7 +61,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       -
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       -
         name: Build web worker
         run: web/worker/build.sh --mode=production
@@ -79,7 +79,7 @@ jobs:
         working-directory: web/site/
     steps:
       -
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       -
         uses: haskell-actions/setup@v2
         with:
@@ -131,7 +131,7 @@ jobs:
     if: github.ref_name == 'main'
     steps:
       -
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       -
         name: Set deploy key
         run: |
