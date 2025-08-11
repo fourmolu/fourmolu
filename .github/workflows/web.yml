@@ -110,12 +110,12 @@ jobs:
         name: Copy files to staging area
         run: mv _site ~/out
       -
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: fourmolu-wasm
           path: ~/out/static/
       -
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: fourmolu-web-worker
           path: ~/out/static/
@@ -147,7 +147,7 @@ jobs:
           cd ~/deploy
           git ls-files | xargs rm -rf
       -
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: fourmolu-web
           path: ~/deploy
