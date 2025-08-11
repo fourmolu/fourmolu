@@ -73,6 +73,8 @@ data PrinterOpts f =
       poLetStyle :: f LetStyle
     , -- | How to align the 'in' keyword with respect to the 'let' keyword
       poInStyle :: f InStyle
+    , -- | Remove extra indentation for `then` and `else`
+      poShiftedIfs :: f Bool
     , -- | Whether to put parentheses around a single constraint
       poSingleConstraintParens :: f SingleConstraintParens
     , -- | Whether to put parentheses around a single deriving class
@@ -89,8 +91,6 @@ data PrinterOpts f =
       poUnicode :: f Unicode
     , -- | Give the programmer more choice on where to insert blank lines
       poRespectful :: f Bool
-    , -- | Remove extra indentation for `then` and `else`
-      poShiftedIfs :: f Bool
     }
   deriving (Generic)
 
@@ -111,6 +111,7 @@ emptyPrinterOpts =
     , poHaddockLocSignature = Nothing
     , poLetStyle = Nothing
     , poInStyle = Nothing
+    , poShiftedIfs = Nothing
     , poSingleConstraintParens = Nothing
     , poSingleDerivingParens = Nothing
     , poSortConstraints = Nothing
@@ -119,7 +120,6 @@ emptyPrinterOpts =
     , poTrailingSectionOperators = Nothing
     , poUnicode = Nothing
     , poRespectful = Nothing
-    , poShiftedIfs = Nothing
     }
 
 defaultPrinterOpts :: PrinterOpts Identity
@@ -139,6 +139,7 @@ defaultPrinterOpts =
     , poHaddockLocSignature = pure HaddockLocSigAuto
     , poLetStyle = pure LetAuto
     , poInStyle = pure InRightAlign
+    , poShiftedIfs = pure False
     , poSingleConstraintParens = pure ConstraintAlways
     , poSingleDerivingParens = pure DerivingAlways
     , poSortConstraints = pure False
@@ -147,7 +148,6 @@ defaultPrinterOpts =
     , poTrailingSectionOperators = pure True
     , poUnicode = pure UnicodeNever
     , poRespectful = pure True
-    , poShiftedIfs = pure False
     }
 
 -- | Fill the field values that are 'Nothing' in the first argument
@@ -174,6 +174,7 @@ fillMissingPrinterOpts p1 p2 =
     , poHaddockLocSignature = maybe (poHaddockLocSignature p2) pure (poHaddockLocSignature p1)
     , poLetStyle = maybe (poLetStyle p2) pure (poLetStyle p1)
     , poInStyle = maybe (poInStyle p2) pure (poInStyle p1)
+    , poShiftedIfs = maybe (poShiftedIfs p2) pure (poShiftedIfs p1)
     , poSingleConstraintParens = maybe (poSingleConstraintParens p2) pure (poSingleConstraintParens p1)
     , poSingleDerivingParens = maybe (poSingleDerivingParens p2) pure (poSingleDerivingParens p1)
     , poSortConstraints = maybe (poSortConstraints p2) pure (poSortConstraints p1)
@@ -182,7 +183,6 @@ fillMissingPrinterOpts p1 p2 =
     , poTrailingSectionOperators = maybe (poTrailingSectionOperators p2) pure (poTrailingSectionOperators p1)
     , poUnicode = maybe (poUnicode p2) pure (poUnicode p1)
     , poRespectful = maybe (poRespectful p2) pure (poRespectful p1)
-    , poShiftedIfs = maybe (poShiftedIfs p2) pure (poShiftedIfs p1)
     }
 
 parsePrinterOptsCLI ::
@@ -248,6 +248,10 @@ parsePrinterOptsCLI f =
       "How to align the 'in' keyword with respect to the 'let' keyword (choices: \"left-align\", \"right-align\", or \"no-space\") (default: right-align)"
       "OPTION"
     <*> f
+      "shifted-ifs"
+      "Remove extra indentation for `then` and `else` (default: false)"
+      "BOOL"
+    <*> f
       "single-constraint-parens"
       "Whether to put parentheses around a single constraint (choices: \"auto\", \"always\", or \"never\") (default: always)"
       "OPTION"
@@ -279,10 +283,6 @@ parsePrinterOptsCLI f =
       "respectful"
       "Give the programmer more choice on where to insert blank lines (default: true)"
       "BOOL"
-    <*> f
-      "shifted-ifs"
-      "Remove extra indentation for `then` and `else` (default: false)"
-      "BOOL"
 
 parsePrinterOptsJSON ::
   Applicative f =>
@@ -304,6 +304,7 @@ parsePrinterOptsJSON f =
     <*> f "haddock-location-signature"
     <*> f "let-style"
     <*> f "in-style"
+    <*> f "shifted-ifs"
     <*> f "single-constraint-parens"
     <*> f "single-deriving-parens"
     <*> f "sort-constraints"
@@ -312,7 +313,6 @@ parsePrinterOptsJSON f =
     <*> f "trailing-section-operators"
     <*> f "unicode"
     <*> f "respectful"
-    <*> f "shifted-ifs"
 
 {---------- PrinterOpts field types ----------}
 
@@ -779,6 +779,9 @@ defaultPrinterOptsYaml =
     , "# How to align the 'in' keyword with respect to the 'let' keyword (choices: left-align, right-align, or no-space)"
     , "in-style: right-align"
     , ""
+    , "# Remove extra indentation for `then` and `else`"
+    , "shifted-ifs: false"
+    , ""
     , "# Whether to put parentheses around a single constraint (choices: auto, always, or never)"
     , "single-constraint-parens: always"
     , ""
@@ -811,7 +814,4 @@ defaultPrinterOptsYaml =
     , ""
     , "# Modules defined by the current Cabal package for import grouping"
     , "local-modules: []"
-    , ""
-    , "# Remove extra indentation for `then` and `else`"
-    , "shifted-ifs: false"
     ]

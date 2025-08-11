@@ -190,6 +190,16 @@ allOptions =
         cliOverrides = emptyOverrides
       },
     Option
+      { name = "shifted-ifs",
+        fieldName = Just "poShiftedIfs",
+        description = "Remove extra indentation for `then` and `else`",
+        type_ = "Bool",
+        default_ = HsBool False,
+        ormolu = HsBool False,
+        sinceVersion = Nothing,
+        cliOverrides = emptyOverrides
+      },
+    Option
       { name = "single-constraint-parens",
         fieldName = Just "poSingleConstraintParens",
         description = "Whether to put parentheses around a single constraint",
@@ -297,16 +307,6 @@ allOptions =
         default_ = HsList [],
         ormolu = HsList [],
         sinceVersion = Just "0.17.0.0",
-        cliOverrides = emptyOverrides
-      },
-    Option
-      { name = "shifted-ifs",
-        fieldName = Just "poShiftedIfs",
-        description = "Remove extra indentation for `then` and `else`",
-        type_ = "Bool",
-        default_ = HsBool False,
-        ormolu = HsBool False,
-        sinceVersion = Nothing,
         cliOverrides = emptyOverrides
       }
   ]
