@@ -275,16 +275,16 @@ spec =
           checkIdempotence = True
         },
       TestGroup
-        { label = "shifted-ifs",
+        { label = "if-style",
           isMulti = False,
           testCases = (,) <$> allOptions <*> [2, 4],
-          updateConfig = \(shiftedIfs, indent) opts ->
+          updateConfig = \(ifStyle, indent) opts ->
             opts
               { poIndentation = pure indent,
-                poShiftedIfs = pure shiftedIfs
+                poIfStyle = pure ifStyle
               },
-          showTestCase = \(shiftedIfs, indent) ->
-            [ "shifted=" ++ renderPrinterOpt shiftedIfs,
+          showTestCase = \(ifStyle, indent) ->
+            [ renderPrinterOpt ifStyle,
               "indent=" ++ renderPrinterOpt indent
             ],
           checkIdempotence = True

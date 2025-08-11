@@ -16,6 +16,7 @@ module Ormolu.Config.Gen
   , ImportExportStyle (..)
   , LetStyle (..)
   , InStyle (..)
+  , IfStyle (..)
   , Unicode (..)
   , SingleConstraintParens (..)
   , ColumnLimit (..)
@@ -73,8 +74,8 @@ data PrinterOpts f =
       poLetStyle :: f LetStyle
     , -- | How to align the 'in' keyword with respect to the 'let' keyword
       poInStyle :: f InStyle
-    , -- | Remove extra indentation for `then` and `else`
-      poShiftedIfs :: f Bool
+    , -- | Styling of if-statements
+      poIfStyle :: f IfStyle
     , -- | Whether to put parentheses around a single constraint
       poSingleConstraintParens :: f SingleConstraintParens
     , -- | Whether to put parentheses around a single deriving class
@@ -111,7 +112,7 @@ emptyPrinterOpts =
     , poHaddockLocSignature = Nothing
     , poLetStyle = Nothing
     , poInStyle = Nothing
-    , poShiftedIfs = Nothing
+    , poIfStyle = Nothing
     , poSingleConstraintParens = Nothing
     , poSingleDerivingParens = Nothing
     , poSortConstraints = Nothing
@@ -139,7 +140,7 @@ defaultPrinterOpts =
     , poHaddockLocSignature = pure HaddockLocSigAuto
     , poLetStyle = pure LetAuto
     , poInStyle = pure InRightAlign
-    , poShiftedIfs = pure False
+    , poIfStyle = pure IfIndented
     , poSingleConstraintParens = pure ConstraintAlways
     , poSingleDerivingParens = pure DerivingAlways
     , poSortConstraints = pure False
@@ -174,7 +175,7 @@ fillMissingPrinterOpts p1 p2 =
     , poHaddockLocSignature = maybe (poHaddockLocSignature p2) pure (poHaddockLocSignature p1)
     , poLetStyle = maybe (poLetStyle p2) pure (poLetStyle p1)
     , poInStyle = maybe (poInStyle p2) pure (poInStyle p1)
-    , poShiftedIfs = maybe (poShiftedIfs p2) pure (poShiftedIfs p1)
+    , poIfStyle = maybe (poIfStyle p2) pure (poIfStyle p1)
     , poSingleConstraintParens = maybe (poSingleConstraintParens p2) pure (poSingleConstraintParens p1)
     , poSingleDerivingParens = maybe (poSingleDerivingParens p2) pure (poSingleDerivingParens p1)
     , poSortConstraints = maybe (poSortConstraints p2) pure (poSortConstraints p1)
@@ -248,9 +249,9 @@ parsePrinterOptsCLI f =
       "How to align the 'in' keyword with respect to the 'let' keyword (choices: \"left-align\", \"right-align\", or \"no-space\") (default: right-align)"
       "OPTION"
     <*> f
-      "shifted-ifs"
-      "Remove extra indentation for `then` and `else` (default: false)"
-      "BOOL"
+      "if-style"
+      "Styling of if-statements (choices: \"indented\" or \"hanging\") (default: indented)"
+      "OPTION"
     <*> f
       "single-constraint-parens"
       "Whether to put parentheses around a single constraint (choices: \"auto\", \"always\", or \"never\") (default: always)"
@@ -304,7 +305,7 @@ parsePrinterOptsJSON f =
     <*> f "haddock-location-signature"
     <*> f "let-style"
     <*> f "in-style"
-    <*> f "shifted-ifs"
+    <*> f "if-style"
     <*> f "single-constraint-parens"
     <*> f "single-deriving-parens"
     <*> f "sort-constraints"
@@ -387,6 +388,11 @@ data InStyle
   = InLeftAlign
   | InRightAlign
   | InNoSpace
+  deriving (Eq, Show, Enum, Bounded)
+
+data IfStyle
+  = IfIndented
+  | IfHanging
   deriving (Eq, Show, Enum, Bounded)
 
 data Unicode
@@ -603,6 +609,28 @@ instance RenderPrinterOpt InStyle where
     InRightAlign -> "right-align"
     InNoSpace -> "no-space"
 
+instance Aeson.FromJSON IfStyle where
+  parseJSON =
+    Aeson.withText "IfStyle" $ \s ->
+      either Aeson.parseFail pure $
+        parsePrinterOptType (Text.unpack s)
+
+instance PrinterOptsFieldType IfStyle where
+  parsePrinterOptType s =
+    case s of
+      "indented" -> Right IfIndented
+      "hanging" -> Right IfHanging
+      _ ->
+        Left . unlines $
+          [ "unknown value: " <> show s
+          , "Valid values are: \"indented\" or \"hanging\""
+          ]
+
+instance RenderPrinterOpt IfStyle where
+  renderPrinterOpt = \case
+    IfIndented -> "indented"
+    IfHanging -> "hanging"
+
 instance Aeson.FromJSON Unicode where
   parseJSON =
     Aeson.withText "Unicode" $ \s ->
@@ -779,8 +807,8 @@ defaultPrinterOptsYaml =
     , "# How to align the 'in' keyword with respect to the 'let' keyword (choices: left-align, right-align, or no-space)"
     , "in-style: right-align"
     , ""
-    , "# Remove extra indentation for `then` and `else`"
-    , "shifted-ifs: false"
+    , "# Styling of if-statements (choices: indented or hanging)"
+    , "if-style: indented"
     , ""
     , "# Whether to put parentheses around a single constraint (choices: auto, always, or never)"
     , "single-constraint-parens: always"

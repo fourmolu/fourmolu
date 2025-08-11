@@ -15,7 +15,7 @@ haddock-style-module: null
 haddock-location-signature: auto
 let-style: inline
 in-style: right-align
-shifted-ifs: false
+if-style: indented
 single-constraint-parens: always
 single-deriving-parens: always
 sort-constraints: false
