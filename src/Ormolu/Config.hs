@@ -51,6 +51,7 @@ module Ormolu.Config
     QualifiedImportMatcher (..),
     LetStyle (..),
     InStyle (..),
+    IfStyle (..),
     Unicode (..),
     ColumnLimit (..),
     SingleDerivingParens (..),

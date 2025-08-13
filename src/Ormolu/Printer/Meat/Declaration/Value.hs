@@ -1101,7 +1101,7 @@ p_if ::
   LocatedA body ->
   R ()
 p_if placer render anns if' then' else' = do
-  shiftedIfs <- getPrinterOpt poShiftedIfs
+  ifStyle <- getPrinterOpt poIfStyle
 
   txt "if"
   space
@@ -1127,14 +1127,17 @@ p_if placer render anns if' then' else' = do
           placeHanging placement (located bodyLoc render)
 
       placeBranch tokenSpan body =
-        if shiftedIfs && isOneLineSpan (getLocA body)
-          then placeHanging Normal (located body render)
-          else placeHangingLocated tokenSpan body
+        case ifStyle of
+          IfHanging
+            | isOneLineSpan (getLocA body) ->
+                placeHanging Normal (located body render)
+          _ ->
+            placeHangingLocated tokenSpan body
 
       hangIf m =
-        if shiftedIfs
-          then switchLayout [getLocA if'] breakpoint >> m
-          else breakpoint >> inci m
+        case ifStyle of
+          IfIndented -> breakpoint >> inci m
+          IfHanging -> switchLayout [getLocA if'] breakpoint >> m
 
   hangIf $ do
     locatedToken thenSpan "then"
