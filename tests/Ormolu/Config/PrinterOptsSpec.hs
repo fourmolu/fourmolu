@@ -275,6 +275,21 @@ spec =
           checkIdempotence = True
         },
       TestGroup
+        { label = "if-style",
+          isMulti = False,
+          testCases = (,) <$> allOptions <*> [2, 4],
+          updateConfig = \(ifStyle, indent) opts ->
+            opts
+              { poIndentation = pure indent,
+                poIfStyle = pure ifStyle
+              },
+          showTestCase = \(ifStyle, indent) ->
+            [ renderPrinterOpt ifStyle,
+              "indent=" ++ renderPrinterOpt indent
+            ],
+          checkIdempotence = True
+        },
+      TestGroup
         { label = "single-constraint-parens",
           isMulti = False,
           testCases = allOptions,
@@ -366,21 +381,6 @@ spec =
           showTestCase = \(respectful, importExportStyle) ->
             [ "respectful=" ++ renderPrinterOpt respectful,
               renderPrinterOpt importExportStyle
-            ],
-          checkIdempotence = True
-        },
-      TestGroup
-        { label = "shifted-ifs",
-          isMulti = False,
-          testCases = (,) <$> allOptions <*> [2, 4],
-          updateConfig = \(shiftedIfs, indent) opts ->
-            opts
-              { poIndentation = pure indent,
-                poShiftedIfs = pure shiftedIfs
-              },
-          showTestCase = \(shiftedIfs, indent) ->
-            [ "shifted=" ++ renderPrinterOpt shiftedIfs,
-              "indent=" ++ renderPrinterOpt indent
             ],
           checkIdempotence = True
         }

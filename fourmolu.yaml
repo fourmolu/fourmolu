@@ -15,6 +15,7 @@ haddock-style-module: null
 haddock-location-signature: auto
 let-style: inline
 in-style: right-align
+if-style: indented
 single-constraint-parens: always
 single-deriving-parens: always
 sort-constraints: false
@@ -26,4 +27,3 @@ respectful: false
 fixities: []
 reexports: []
 local-modules: []
-shifted-ifs: false
