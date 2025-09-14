@@ -58,6 +58,7 @@ module Ormolu.Printer.Combinators
     backticks,
     banana,
     braces,
+    recordBraces,
     brackets,
     parens,
     parensHash,
@@ -368,6 +369,32 @@ brackets_ needBreaks open close style m = sitcc (vlayout singleLine multiLine)
             else space >> sitcc m
       newline
       inciIf (style == S) close
+
+recordBraces :: R () -> R ()
+recordBraces m = do
+  style <- getPrinterOpt poRecordStyle
+  case style of
+    KnR -> knrBraces m
+    Break -> braces N m
+
+knrBraces :: R () -> R ()
+knrBraces m = (vlayout singleLine multiLine)
+  where
+    open = txt "{"
+    close = txt "}"
+    singleLine = do
+      open
+      space
+      m
+      space
+      close
+    multiLine = do
+      open
+      commaStyle <- getPrinterOpt poCommaStyle
+      case commaStyle of
+        Leading -> inci $ newline >> m
+        Trailing -> newline >> sitcc m
+      newline >> inciByFrac (-1) close
 
 ----------------------------------------------------------------------------
 -- Literals
