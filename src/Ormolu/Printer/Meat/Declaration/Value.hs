@@ -1531,6 +1531,10 @@ withGuards = any (checkOne . unLoc)
 -- | For use before record braces. Collapse to empty if not 'poRecordBraceSpace'.
 breakpointPreRecordBrace :: R ()
 breakpointPreRecordBrace = do
+  recordStyle <- getPrinterOpt poRecordStyle
+  if recordStyle == KnR
+    then space
+    else do
   useSpace <- getPrinterOpt poRecordBraceSpace
   if useSpace
     then breakpoint
