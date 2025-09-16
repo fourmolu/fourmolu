@@ -384,17 +384,16 @@ knrBraces m = (vlayout singleLine multiLine)
     close = txt "}"
     singleLine = do
       open
-      space
       m
-      space
       close
     multiLine = do
       open
       commaStyle <- getPrinterOpt poCommaStyle
       case commaStyle of
-        Leading -> inci $ newline >> m
-        Trailing -> newline >> sitcc m
-      newline >> inciByFrac (-1) close
+        Leading -> space >> sitcc m
+        Trailing -> inci (newline >> m)
+      newline
+      close
 
 ----------------------------------------------------------------------------
 -- Literals
