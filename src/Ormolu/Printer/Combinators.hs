@@ -295,23 +295,23 @@ backticks m = do
 
 -- | Surround given entity by banana brackets (i.e., from arrow notation.)
 banana :: BracketStyle -> R () -> R ()
-banana = brackets_ True token'oparenbar token'cparenbar
+banana = brackets_ True True token'oparenbar token'cparenbar
 
 -- | Surround given entity by curly braces @{@ and  @}@.
 braces :: BracketStyle -> R () -> R ()
-braces = brackets_ False (txt "{") (txt "}")
+braces = brackets_ True False (txt "{") (txt "}")
 
 -- | Surround given entity by square brackets @[@ and @]@.
 brackets :: BracketStyle -> R () -> R ()
-brackets = brackets_ False (txt "[") (txt "]")
+brackets = brackets_ True False (txt "[") (txt "]")
 
 -- | Surround given entity by parentheses @(@ and @)@.
 parens :: BracketStyle -> R () -> R ()
-parens = brackets_ False (txt "(") (txt ")")
+parens = brackets_ True False (txt "(") (txt ")")
 
 -- | Surround given entity by @(# @ and @ #)@.
 parensHash :: BracketStyle -> R () -> R ()
-parensHash = brackets_ True (txt "(#") (txt "#)")
+parensHash = brackets_ True True (txt "(#") (txt "#)")
 
 -- | Braces as used for pragmas: @{\-#@ and @#-\}@.
 pragmaBraces :: R () -> R ()
@@ -336,6 +336,8 @@ pragma pragmaText body = pragmaBraces $ do
 
 -- | A helper for defining wrappers like 'parens' and 'braces'.
 brackets_ ::
+  -- | Set indent level
+  Bool ->
   -- | Insert breakpoints around brackets
   Bool ->
   -- | Opening bracket
@@ -347,8 +349,11 @@ brackets_ ::
   -- | Inner expression
   R () ->
   R ()
-brackets_ needBreaks open close style m = sitcc (vlayout singleLine multiLine)
+brackets_ setIndentLevel needBreaks open close style m =
+  indentLevelFunction (vlayout singleLine multiLine)
   where
+    indentLevelFunction =
+      if setIndentLevel then sitcc else id
     singleLine = do
       open
       when needBreaks space
@@ -364,7 +369,7 @@ brackets_ needBreaks open close style m = sitcc (vlayout singleLine multiLine)
             then inci $ newline >> m
             else inciIf (style == S) $ space >> m
         Trailing ->
-          if needBreaks
+          if needBreaks || (not setIndentLevel)
             then newline >> inci m
             else space >> sitcc m
       newline
@@ -374,26 +379,8 @@ recordBraces :: R () -> R ()
 recordBraces m = do
   style <- getPrinterOpt poRecordStyle
   case style of
-    KnR -> knrBraces m
-    Break -> braces N m
-
-knrBraces :: R () -> R ()
-knrBraces m = (vlayout singleLine multiLine)
-  where
-    open = txt "{"
-    close = txt "}"
-    singleLine = do
-      open
-      m
-      close
-    multiLine = do
-      open
-      commaStyle <- getPrinterOpt poCommaStyle
-      case commaStyle of
-        Leading -> space >> sitcc m
-        Trailing -> inci (newline >> m)
-      newline
-      close
+    KnR -> brackets_ False False (txt "{") (txt "}") N m
+    Aligned -> brackets_ True False (txt "{") (txt "}") N m
 
 ----------------------------------------------------------------------------
 -- Literals
