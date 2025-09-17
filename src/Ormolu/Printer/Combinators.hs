@@ -374,9 +374,6 @@ recordBraces :: R () -> R ()
 recordBraces m = do
   style <- getPrinterOpt poRecordStyle
   commaStyle <- getPrinterOpt poCommaStyle
-  -- With leading commas align the close brace with commas
-  -- otherwise move the close brace back to the left
-  let dedent = if commaStyle == Leading then -1 / 2 else -1
   case style of
     RecordStyleAligned -> braces N m
     RecordStyleDiffFriendly ->
@@ -387,7 +384,12 @@ recordBraces m = do
           newline
           sitcc m
           newline
-          inciByFrac dedent (txt "}"))
+          -- With leading commas align the close brace with commas
+          -- otherwise move the close brace back to the left
+          if commaStyle == Leading
+            then txt "}"
+            else inciByFrac (-1) (txt "}")
+        )
 
 ----------------------------------------------------------------------------
 -- Literals
