@@ -379,8 +379,8 @@ recordBraces :: R () -> R ()
 recordBraces m = do
   style <- getPrinterOpt poRecordStyle
   case style of
-    KnR -> brackets_ False False (txt "{") (txt "}") N m
-    Aligned -> brackets_ True False (txt "{") (txt "}") N m
+    RecordStyleDiffFriendly -> brackets_ False False (txt "{") (txt "}") N m
+    RecordStyleAligned -> brackets_ True False (txt "{") (txt "}") N m
 
 ----------------------------------------------------------------------------
 -- Literals

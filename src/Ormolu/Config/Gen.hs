@@ -134,7 +134,7 @@ defaultPrinterOpts =
     , poColumnLimit = pure NoLimit
     , poFunctionArrows = pure TrailingArrows
     , poCommaStyle = pure Leading
-    , poRecordStyle = pure Aligned
+    , poRecordStyle = pure RecordStyleAligned
     , poImportExportStyle = pure ImportExportDiffFriendly
     , poImportGrouping = pure ImportGroupLegacy
     , poIndentWheres = pure False
@@ -216,7 +216,7 @@ parsePrinterOptsCLI f =
       "OPTION"
     <*> f
       "record-style"
-      "How to place braces in records (choices: \"aligned\" or \"knr\") (default: aligned)"
+      "How to place braces in records (choices: \"aligned\" or \"diff-friendly\") (default: aligned)"
       "OPTION"
     <*> f
       "import-export-style"
@@ -360,8 +360,8 @@ data CommaStyle
   deriving (Eq, Show, Enum, Bounded)
 
 data RecordStyle
-  = Aligned
-  | KnR
+  = RecordStyleAligned
+  | RecordStyleDiffFriendly
   deriving (Eq, Show, Enum, Bounded)
 
 data FunctionArrowsStyle
@@ -475,18 +475,18 @@ instance Aeson.FromJSON RecordStyle where
 instance PrinterOptsFieldType RecordStyle where
   parsePrinterOptType s =
     case s of
-      "aligned" -> Right Aligned
-      "knr" -> Right KnR
+      "aligned" -> Right RecordStyleAligned
+      "diff-friendly" -> Right RecordStyleDiffFriendly
       _ ->
         Left . unlines $
           [ "unknown value: " <> show s
-          , "Valid values are: \"aligned\" or \"knr\""
+          , "Valid values are: \"aligned\" or \"diff-friendly\""
           ]
 
 instance RenderPrinterOpt RecordStyle where
   renderPrinterOpt = \case
-    Aligned -> "Aligned"
-    KnR -> "knr"
+    RecordStyleAligned -> "aligned"
+    RecordStyleDiffFriendly -> "diff-friendly"
 
 instance Aeson.FromJSON FunctionArrowsStyle where
   parseJSON =
