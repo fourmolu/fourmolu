@@ -111,6 +111,22 @@ spec =
           checkIdempotence = True
         },
       TestGroup
+        { label = "record-style",
+          isMulti = False,
+          testCases = allOptions,
+          updateConfig = \recordStyle opts -> opts
+            { poRecordStyle = pure recordStyle,
+              -- The low column limit forces breakpoints in the records
+              poColumnLimit = 60,
+              -- This makes the indentation more visible
+              poIndentation = 4,
+            },
+          showTestCase = \recordStyle ->
+            [ renderPrinterOpt recordStyle
+            ],
+          checkIdempotence = False
+        },
+      TestGroup
         { label = "import-export",
           isMulti = True,
           testCases = allOptions,
