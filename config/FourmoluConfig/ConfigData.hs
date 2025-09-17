@@ -374,6 +374,13 @@ allFieldTypes =
           ]
       },
     FieldTypeEnum
+      { fieldTypeName = "RecordStyle",
+        enumOptions =
+          [ ("RecordStyleAligned", "aligned"),
+            ("RecordStyleDiffFriendly", "diff-friendly")
+          ]
+      },
+    FieldTypeEnum
       { fieldTypeName = "FunctionArrowsStyle",
         enumOptions =
           [ ("TrailingArrows", "trailing"),
