@@ -113,16 +113,19 @@ spec =
       TestGroup
         { label = "record-style",
           isMulti = False,
-          testCases = allOptions,
-          updateConfig = \recordStyle opts -> opts
+          -- Test record style in combination with comma style
+          testCases = liftA2 (,) allOptions allOptions,
+          updateConfig = \(recordStyle, commaStyle) opts -> opts
             { poRecordStyle = pure recordStyle,
+              poCommaStyle = pure commaStyle,
               -- The low column limit forces breakpoints in the records
-              poColumnLimit = 60,
+              poColumnLimit = pure (ColumnLimit 60),
               -- This makes the indentation more visible
-              poIndentation = 4,
+              poIndentation = pure 4
             },
-          showTestCase = \recordStyle ->
-            [ renderPrinterOpt recordStyle
+          showTestCase = \(recordStyle, commaStyle) ->
+            [ renderPrinterOpt recordStyle,
+              renderPrinterOpt commaStyle
             ],
           checkIdempotence = False
         },
