@@ -1532,13 +1532,14 @@ withGuards = any (checkOne . unLoc)
 breakpointPreRecordBrace :: R ()
 breakpointPreRecordBrace = do
   recordStyle <- getPrinterOpt poRecordStyle
-  if recordStyle == KnR
-    then space
-    else do
   useSpace <- getPrinterOpt poRecordBraceSpace
-  if useSpace
-    then breakpoint
-    else breakpoint'
+  if recordStyle == KnR
+    then
+      space
+    else
+      if useSpace
+        then breakpoint
+        else breakpoint'
 
 -- | For nested lists/tuples, pad with whitespace so that we always indent correctly,
 -- rather than sometimes indenting by 2 regardless of 'poIndentation'.
