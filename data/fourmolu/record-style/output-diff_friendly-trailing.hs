@@ -23,7 +23,7 @@ x Foo {
     a = possiblyLongName,
     b = anotherLongName,
     c = longNameAsWell
-} = [possiblyLongName, anotherLongName, longNameAsWell]
+    } = [possiblyLongName, anotherLongName, longNameAsWell]
 
 y :: Int -> Int -> Int -> Foo
 y possiblyLongName anotherLongName longNameAsWell =
