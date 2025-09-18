@@ -1284,7 +1284,7 @@ p_pat = \case
         let f = \case
               Nothing -> txt ".."
               Just x -> located x p_pat_hsFieldBind
-        inci . recordBraces . sep commaDel f $
+        inci . recordPatternBraces . sep commaDel f $
           case dotdot of
             Nothing -> Just <$> fields
             Just (L _ (RecFieldsDotDot n)) -> (Just <$> take n fields) ++ [Nothing]
