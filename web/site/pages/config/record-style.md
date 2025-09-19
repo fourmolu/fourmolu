@@ -19,11 +19,11 @@ defaultUser = User
 ```
 ```fourmolu-example-tab
 aligned
-{ "record-style": "aligned" }
+{ "record-style": "aligned", "comma-style": "trailing" }
 ```
 ```fourmolu-example-tab
 knr
-{ "record-style": "knr" }
+{ "record-style": "knr", "comma-style": "trailing" }
 ```
 
 For more examples, see the [test files](https://github.com/fourmolu/fourmolu/tree/main/data/fourmolu/record-style).
