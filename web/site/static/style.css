@@ -1,3 +1,8 @@
+body {
+    /* TODO: make properly responsive */
+    min-width: 800px;
+}
+
 main {
     padding: 0 5em;
 
