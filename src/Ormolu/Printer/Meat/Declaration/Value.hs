@@ -1535,7 +1535,7 @@ breakpointPreRecordBrace = do
   recordStyle <- getPrinterOpt poRecordStyle
   useSpace <- getPrinterOpt poRecordBraceSpace
   if
-    | recordStyle == RecordStyleDiffFriendly -> space
+    | recordStyle == RecordStyleKnr -> space
     | useSpace -> breakpoint
     | otherwise -> breakpoint'
 

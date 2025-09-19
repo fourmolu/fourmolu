@@ -212,7 +212,7 @@ p_conDecl singleRecCon ConDeclH98 {..} =
       switchLayout conDeclSpn $ do
         p_rdrName con_name
         recordStyle <- getPrinterOpt poRecordStyle
-        if recordStyle == RecordStyleDiffFriendly then space else breakpoint
+        if recordStyle == RecordStyleKnr then space else breakpoint
         inciIf (Choice.isFalse singleRecCon) (located l p_conDeclFields)
     InfixCon (HsScaled _ l) (HsScaled _ r) -> do
       -- manually render these

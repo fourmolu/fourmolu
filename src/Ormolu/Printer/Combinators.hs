@@ -388,7 +388,7 @@ recordBraces_ moveBraceBack m = do
   style <- getPrinterOpt poRecordStyle
   case style of
     RecordStyleAligned -> braces N m
-    RecordStyleDiffFriendly ->
+    RecordStyleKnr ->
       vlayout
         (txt "{" >> m >> txt "}")
         (do

@@ -377,7 +377,7 @@ allFieldTypes =
       { fieldTypeName = "RecordStyle",
         enumOptions =
           [ ("RecordStyleAligned", "aligned"),
-            ("RecordStyleDiffFriendly", "diff-friendly")
+            ("RecordStyleKnr", "knr")
           ]
       },
     FieldTypeEnum

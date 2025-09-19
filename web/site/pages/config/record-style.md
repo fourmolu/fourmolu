@@ -22,8 +22,8 @@ aligned
 { "record-style": "aligned" }
 ```
 ```fourmolu-example-tab
-diff-friendly
-{ "record-style": "diff-friendly" }
+knr
+{ "record-style": "knr" }
 ```
 
 For more examples, see the [test files](https://github.com/fourmolu/fourmolu/tree/main/data/fourmolu/record-style).
