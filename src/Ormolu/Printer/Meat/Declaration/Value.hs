@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -1533,13 +1534,10 @@ breakpointPreRecordBrace :: R ()
 breakpointPreRecordBrace = do
   recordStyle <- getPrinterOpt poRecordStyle
   useSpace <- getPrinterOpt poRecordBraceSpace
-  if recordStyle == RecordStyleDiffFriendly
-    then
-      space
-    else
-      if useSpace
-        then breakpoint
-        else breakpoint'
+  if
+    | recordStyle == RecordStyleDiffFriendly -> space
+    | useSpace -> breakpoint
+    | otherwise -> breakpoint'
 
 -- | For nested lists/tuples, pad with whitespace so that we always indent correctly,
 -- rather than sometimes indenting by 2 regardless of 'poIndentation'.
