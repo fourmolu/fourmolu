@@ -1,3 +1,8 @@
+## Fourmolu 0.19.0.1
+
+* Fixed a performance regression introduced in 0.8.0.0. [Issue
+  1176](https://github.com/tweag/ormolu/issues/1176).
+
 ## Fourmolu 0.19.0.0
 
 * Add `haddock-location-signature`, to configure haddock location independently of `function-arrows` ([#376](https://github.com/fourmolu/fourmolu/issues/376))
