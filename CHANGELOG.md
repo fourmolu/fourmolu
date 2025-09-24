@@ -17,7 +17,7 @@
   1166](https://github.com/tweag/ormolu/issues/1166).
 
 * Make multiline function signatures in RequiredTypeArguments consistent with
-  types [PR 1170](https://github.com/tweag/ormolu/pull/1170)
+  types [PR 1170](https://github.com/tweag/ormolu/pull/1170).
 
 * Correctly format single-line `MultiWayIf`s. [Issue
   1171](https://github.com/tweag/ormolu/issues/1171).
