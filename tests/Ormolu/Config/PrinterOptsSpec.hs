@@ -113,21 +113,19 @@ spec =
       TestGroup
         { label = "record-style",
           isMulti = False,
-          -- Test record style in combination with comma style
           testCases = liftA2 (,) allOptions allOptions,
           updateConfig = \(recordStyle, commaStyle) opts -> opts
             { poRecordStyle = pure recordStyle,
+              -- Test record style in combination with comma style
               poCommaStyle = pure commaStyle,
-              -- The low column limit forces breakpoints in the records
-              poColumnLimit = pure (ColumnLimit 60),
-              -- This makes the indentation more visible
+              -- Makes the indentation more visible
               poIndentation = pure 4
             },
           showTestCase = \(recordStyle, commaStyle) ->
             [ renderPrinterOpt recordStyle,
               renderPrinterOpt commaStyle
             ],
-          checkIdempotence = False
+          checkIdempotence = True
         },
       TestGroup
         { label = "import-export",
