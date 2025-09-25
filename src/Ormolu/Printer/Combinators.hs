@@ -59,7 +59,6 @@ module Ormolu.Printer.Combinators
     banana,
     braces,
     recordBraces,
-    recordPatternBraces,
     brackets,
     parens,
     parensHash,
@@ -377,11 +376,6 @@ recordBraces :: R () -> R ()
 recordBraces m = do
   commaStyle <- getPrinterOpt poCommaStyle
   recordBraces_ (commaStyle == Trailing) m
-
--- Never move record braces back in a pattern context,
--- otherwise declarations might look odd
-recordPatternBraces :: R () -> R ()
-recordPatternBraces = recordBraces_ False
 
 recordBraces_ :: Bool -> R () -> R ()
 recordBraces_ moveBraceBack m = do
