@@ -19,11 +19,12 @@ data Client
         }
 
 x :: Foo -> [Int]
-x Foo
-    { a = possiblyLongName,
-      b = anotherLongName,
-      c = longNameAsWell
-    } = [possiblyLongName, anotherLongName, longNameAsWell]
+x
+    Foo
+        { a = possiblyLongName,
+          b = anotherLongName,
+          c = longNameAsWell
+        } = [possiblyLongName, anotherLongName, longNameAsWell]
 
 y :: Int -> Int -> Int -> Foo
 y possiblyLongName anotherLongName longNameAsWell =
