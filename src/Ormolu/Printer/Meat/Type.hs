@@ -294,7 +294,7 @@ p_forallBndrsEnd extraSpace = \case
 
 p_conDeclFields :: [LConDeclField GhcPs] -> R ()
 p_conDeclFields xs =
-  braces N $ sep commaDel (sitcc . located' p_conDeclField) xs
+  recordBraces $ sep commaDel (sitcc . located' p_conDeclField) xs
 
 p_conDeclField :: ConDeclField GhcPs -> R ()
 p_conDeclField ConDeclField {..} = do

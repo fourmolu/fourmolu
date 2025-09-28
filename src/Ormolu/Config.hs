@@ -35,6 +35,7 @@ module Ormolu.Config
     fillMissingPrinterOpts,
     resolvePrinterOpts,
     CommaStyle (..),
+    RecordStyle (..),
     FunctionArrowsStyle (..),
     HaddockPrintStyle (..),
     HaddockPrintStyleModule (..),

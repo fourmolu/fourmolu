@@ -9,6 +9,7 @@
 module Ormolu.Config.Gen
   ( PrinterOpts (..)
   , CommaStyle (..)
+  , RecordStyle (..)
   , FunctionArrowsStyle (..)
   , HaddockPrintStyle (..)
   , HaddockPrintStyleModule (..)
@@ -54,6 +55,8 @@ data PrinterOpts f =
       poFunctionArrows :: f FunctionArrowsStyle
     , -- | How to place commas in multi-line lists, records, etc.
       poCommaStyle :: f CommaStyle
+    , -- | How to place braces in records
+      poRecordStyle :: f RecordStyle
     , -- | Styling of import/export lists
       poImportExportStyle :: f ImportExportStyle
     , -- | Rules for grouping import declarations
@@ -102,6 +105,7 @@ emptyPrinterOpts =
     , poColumnLimit = Nothing
     , poFunctionArrows = Nothing
     , poCommaStyle = Nothing
+    , poRecordStyle = Nothing
     , poImportExportStyle = Nothing
     , poImportGrouping = Nothing
     , poIndentWheres = Nothing
@@ -130,6 +134,7 @@ defaultPrinterOpts =
     , poColumnLimit = pure NoLimit
     , poFunctionArrows = pure TrailingArrows
     , poCommaStyle = pure Leading
+    , poRecordStyle = pure RecordStyleAligned
     , poImportExportStyle = pure ImportExportDiffFriendly
     , poImportGrouping = pure ImportGroupLegacy
     , poIndentWheres = pure False
@@ -165,6 +170,7 @@ fillMissingPrinterOpts p1 p2 =
     , poColumnLimit = maybe (poColumnLimit p2) pure (poColumnLimit p1)
     , poFunctionArrows = maybe (poFunctionArrows p2) pure (poFunctionArrows p1)
     , poCommaStyle = maybe (poCommaStyle p2) pure (poCommaStyle p1)
+    , poRecordStyle = maybe (poRecordStyle p2) pure (poRecordStyle p1)
     , poImportExportStyle = maybe (poImportExportStyle p2) pure (poImportExportStyle p1)
     , poImportGrouping = maybe (poImportGrouping p2) pure (poImportGrouping p1)
     , poIndentWheres = maybe (poIndentWheres p2) pure (poIndentWheres p1)
@@ -207,6 +213,10 @@ parsePrinterOptsCLI f =
     <*> f
       "comma-style"
       "How to place commas in multi-line lists, records, etc. (choices: \"leading\" or \"trailing\") (default: leading)"
+      "OPTION"
+    <*> f
+      "record-style"
+      "How to place braces in records (choices: \"aligned\" or \"knr\") (default: aligned)"
       "OPTION"
     <*> f
       "import-export-style"
@@ -295,6 +305,7 @@ parsePrinterOptsJSON f =
     <*> f "column-limit"
     <*> f "function-arrows"
     <*> f "comma-style"
+    <*> f "record-style"
     <*> f "import-export-style"
     <*> f "import-grouping"
     <*> f "indent-wheres"
@@ -346,6 +357,11 @@ instance RenderPrinterOpt Bool where
 data CommaStyle
   = Leading
   | Trailing
+  deriving (Eq, Show, Enum, Bounded)
+
+data RecordStyle
+  = RecordStyleAligned
+  | RecordStyleKnr
   deriving (Eq, Show, Enum, Bounded)
 
 data FunctionArrowsStyle
@@ -449,6 +465,28 @@ instance RenderPrinterOpt CommaStyle where
   renderPrinterOpt = \case
     Leading -> "leading"
     Trailing -> "trailing"
+
+instance Aeson.FromJSON RecordStyle where
+  parseJSON =
+    Aeson.withText "RecordStyle" $ \s ->
+      either Aeson.parseFail pure $
+        parsePrinterOptType (Text.unpack s)
+
+instance PrinterOptsFieldType RecordStyle where
+  parsePrinterOptType s =
+    case s of
+      "aligned" -> Right RecordStyleAligned
+      "knr" -> Right RecordStyleKnr
+      _ ->
+        Left . unlines $
+          [ "unknown value: " <> show s
+          , "Valid values are: \"aligned\" or \"knr\""
+          ]
+
+instance RenderPrinterOpt RecordStyle where
+  renderPrinterOpt = \case
+    RecordStyleAligned -> "aligned"
+    RecordStyleKnr -> "knr"
 
 instance Aeson.FromJSON FunctionArrowsStyle where
   parseJSON =
@@ -776,6 +814,9 @@ defaultPrinterOptsYaml =
     , ""
     , "# How to place commas in multi-line lists, records, etc. (choices: leading or trailing)"
     , "comma-style: leading"
+    , ""
+    , "# How to place braces in records (choices: aligned or knr)"
+    , "record-style: aligned"
     , ""
     , "# Styling of import/export lists (choices: leading, trailing, or diff-friendly)"
     , "import-export-style: diff-friendly"

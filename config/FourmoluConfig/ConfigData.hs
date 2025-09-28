@@ -90,6 +90,16 @@ allOptions =
         cliOverrides = emptyOverrides
       },
     Option
+      { name = "record-style",
+        fieldName = Just "poRecordStyle",
+        description = "How to place braces in records",
+        type_ = "RecordStyle",
+        default_ = HsExpr "RecordStyleAligned",
+        ormolu = HsExpr "RecordStyleAligned",
+        sinceVersion = Nothing,
+        cliOverrides = emptyOverrides
+      },
+    Option
       { name = "import-export-style",
         fieldName = Just "poImportExportStyle",
         description = "Styling of import/export lists",
@@ -361,6 +371,13 @@ allFieldTypes =
         enumOptions =
           [ ("Leading", "leading"),
             ("Trailing", "trailing")
+          ]
+      },
+    FieldTypeEnum
+      { fieldTypeName = "RecordStyle",
+        enumOptions =
+          [ ("RecordStyleAligned", "aligned"),
+            ("RecordStyleKnr", "knr")
           ]
       },
     FieldTypeEnum

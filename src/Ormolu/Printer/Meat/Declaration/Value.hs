@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -775,7 +776,7 @@ p_hsExpr' isApp s = \case
         dotdot = case rec_dotdot of
           Just {} -> [txt ".."]
           Nothing -> []
-    inci . braces N $
+    inci . recordBraces $
       sep commaDel sitcc (fields <> dotdot)
   RecordUpd {..} -> do
     located rupd_expr p_hsExpr
@@ -784,7 +785,7 @@ p_hsExpr' isApp s = \case
           sep commaDel (sitcc . located' (p_hsFieldBind p_lbl))
         p_fieldLabelStrings (FieldLabelStrings flss) =
           p_dotFieldOccs $ unLoc <$> flss
-    inci . braces N $ case rupd_flds of
+    inci . recordBraces $ case rupd_flds of
       RegularRecUpdFields {..} ->
         p_recFields (located' p_fieldOcc) recUpdFields
       OverloadedRecUpdFields {..} ->
@@ -1020,7 +1021,7 @@ p_patSynBind PSB {..} = do
         let conSpans = getLocA . recordPatSynPatVar <$> xs
         switchLayout conSpans $ do
           unless (null xs) breakpointPreRecordBrace
-          braces N $
+          recordBraces $
             sep commaDel (p_rdrName . recordPatSynPatVar) xs
         rhs conSpans
     InfixCon l r -> do
@@ -1284,7 +1285,7 @@ p_pat = \case
         let f = \case
               Nothing -> txt ".."
               Just x -> located x p_pat_hsFieldBind
-        inci . braces N . sep commaDel f $
+        inci . recordBraces . sep commaDel f $
           case dotdot of
             Nothing -> Just <$> fields
             Just (L _ (RecFieldsDotDot n)) -> (Just <$> take n fields) ++ [Nothing]
@@ -1531,10 +1532,12 @@ withGuards = any (checkOne . unLoc)
 -- | For use before record braces. Collapse to empty if not 'poRecordBraceSpace'.
 breakpointPreRecordBrace :: R ()
 breakpointPreRecordBrace = do
+  recordStyle <- getPrinterOpt poRecordStyle
   useSpace <- getPrinterOpt poRecordBraceSpace
-  if useSpace
-    then breakpoint
-    else breakpoint'
+  if
+    | recordStyle == RecordStyleKnr -> space
+    | useSpace -> breakpoint
+    | otherwise -> breakpoint'
 
 -- | For nested lists/tuples, pad with whitespace so that we always indent correctly,
 -- rather than sometimes indenting by 2 regardless of 'poIndentation'.
