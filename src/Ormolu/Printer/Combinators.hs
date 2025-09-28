@@ -385,14 +385,14 @@ recordBraces_ moveBraceBack m = do
     RecordStyleKnr ->
       vlayout
         (txt "{" >> m >> txt "}")
-        (do
-          txt "{"
-          newline
-          sitcc m
-          newline
-          if moveBraceBack
-            then inciByFrac (-1) (txt "}")
-            else txt "}"
+        ( do
+            txt "{"
+            newline
+            sitcc m
+            newline
+            if moveBraceBack
+              then inciByFrac (-1) (txt "}")
+              else txt "}"
         )
 
 ----------------------------------------------------------------------------

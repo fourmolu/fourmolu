@@ -114,13 +114,14 @@ spec =
         { label = "record-style",
           isMulti = False,
           testCases = liftA2 (,) allOptions allOptions,
-          updateConfig = \(recordStyle, commaStyle) opts -> opts
-            { poRecordStyle = pure recordStyle,
-              -- Test record style in combination with comma style
-              poCommaStyle = pure commaStyle,
-              -- Makes the indentation more visible
-              poIndentation = pure 4
-            },
+          updateConfig = \(recordStyle, commaStyle) opts ->
+            opts
+              { poRecordStyle = pure recordStyle,
+                -- Test record style in combination with comma style
+                poCommaStyle = pure commaStyle,
+                -- Makes the indentation more visible
+                poIndentation = pure 4
+              },
           showTestCase = \(recordStyle, commaStyle) ->
             [ renderPrinterOpt recordStyle,
               renderPrinterOpt commaStyle
