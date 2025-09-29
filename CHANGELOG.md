@@ -1,5 +1,9 @@
 ## Fourmolu 0.19.0.1
 
+### Upstream changed:
+
+#### Ormolu 0.8.0.2
+
 * Fixed a performance regression introduced in 0.8.0.0. [Issue
   1176](https://github.com/tweag/ormolu/issues/1176).
 
