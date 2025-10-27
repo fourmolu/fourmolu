@@ -55,7 +55,7 @@ jobs:
         # remove no-x-partial after ormolu updated for GHC 9.8
         run: ./build.sh --ghc-options='-Werror -Wno-x-partial'
       -
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: fourmolu-wasm
           path: web/fourmolu-wasm/dist/fourmolu-wasm.wasm
@@ -69,7 +69,7 @@ jobs:
         name: Build web worker
         run: web/worker/build.sh --mode=production
       -
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: fourmolu-web-worker
           path: web/worker/dist/worker.js
@@ -123,7 +123,7 @@ jobs:
           name: fourmolu-web-worker
           path: ~/out/static/
       -
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: fourmolu-web
           path: ~/out

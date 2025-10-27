@@ -62,7 +62,7 @@ jobs:
         run: diff -u fourmolu/compat-tests/${{ matrix.name }}.diff target/${{ matrix.name }}.diff
       -
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ${{ matrix.name }}-compat-diff
           path: target/${{ matrix.name }}.diff
