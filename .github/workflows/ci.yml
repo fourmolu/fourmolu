@@ -118,16 +118,16 @@ jobs:
           # https://github.blog/changelog/2025-01-16-linux-arm64-hosted-runners-now-available-for-free-in-public-repositories-public-preview/
           -
             target: linux-x86_64
-            runner: ubuntu-24.04
+            os: ubuntu-24.04
           -
             target: linux-arm64
-            runner: ubuntu-24.04-arm
+            os: ubuntu-24.04-arm
           -
             target: osx-x86_64
-            runner: macos-15-intel
+            os: macos-15-intel
           -
             target: osx-arm64
-            runner: macos-15
+            os: macos-15
 
     name: 'build_prod: ${{ matrix.target }}'
     runs-on: ${{ matrix.os }}
