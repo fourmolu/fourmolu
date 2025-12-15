@@ -43,7 +43,7 @@ jobs:
         name: Invalidate the cache every month
         run: echo "CURR_MONTH=$(date +%B)" | tee -a "${GITHUB_ENV}"
       -
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           # https://gitlab.haskell.org/ghc/ghc-wasm-meta/-/blob/56d8e171e3dc6acb63c2d10fbbd6f226d8126683/setup.sh#L147
           path: ~/.ghc-wasm/.cabal/store
@@ -95,7 +95,7 @@ jobs:
         name: Invalidate the cache every month
         run: echo "CURR_MONTH=$(date +%B)" | tee -a "${GITHUB_ENV}"
       -
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cabal
           key: ${{ runner.os }}-hakyll-cache-${{ env.CURR_MONTH }}-${{ hashFiles('web/site/cabal.project.freeze') }}
