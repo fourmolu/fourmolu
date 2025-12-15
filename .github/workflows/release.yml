@@ -17,22 +17,22 @@ jobs:
       -
         uses: actions/checkout@v6
       -
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v7
         with:
           name: fourmolu-binary-linux-x86_64
           path: ./bin/
       -
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v7
         with:
           name: fourmolu-binary-osx-x86_64
           path: ./bin/
       -
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v7
         with:
           name: fourmolu-binary-osx-arm64
           path: ./bin/
       -
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v7
         with:
           name: fourmolu-sdist
           path: ./sdist/
