@@ -115,15 +115,19 @@ jobs:
       matrix:
         include:
           # https://github.com/actions/runner-images?tab=readme-ov-file#available-images
+          # https://github.blog/changelog/2025-01-16-linux-arm64-hosted-runners-now-available-for-free-in-public-repositories-public-preview/
           -
             target: linux-x86_64
-            os: ubuntu-latest
+            runner: ubuntu-24.04
+          -
+            target: linux-arm64
+            runner: ubuntu-24.04-arm
           -
             target: osx-x86_64
-            os: macos-13
+            runner: macos-15-intel
           -
             target: osx-arm64
-            os: macos-latest
+            runner: macos-15
 
     name: 'build_prod: ${{ matrix.target }}'
     runs-on: ${{ matrix.os }}
