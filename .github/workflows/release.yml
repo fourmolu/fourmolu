@@ -4,6 +4,8 @@ on: workflow_dispatch
 jobs:
   ci:
     uses: ./.github/workflows/ci.yml
+    with:
+      is_release: true
 
   release:
     runs-on: ubuntu-latest
@@ -43,13 +45,11 @@ jobs:
           USERNAME="$(echo "${GITHUB_ACTOR}" | tr '[:lower:]' '[:upper:]' | tr '-' '_')"
           echo "name=HACKAGE_TOKEN_${USERNAME}" >> "${GITHUB_OUTPUT}"
       -
-        name: Get CHANGELOG section
-        run: |
-          if [[ "$(head -n 1 CHANGELOG.md)" != "## Fourmolu ${VERSION}" ]]; then
-            echo "CHANGELOG doesn't look updated" >&2
-            exit 1
-          fi
-          sed '1 d; /^## Fourmolu/,$ d' CHANGELOG.md > .release/changelog-body
+        name: Generate release notes
+        run:
+          scripts/release_notes.py generate
+            --output .release/release-notes.md
+            --fourmolu-version "${VERSION}"
       -
         uses: haskell-actions/hackage-publish@v1
         with:
@@ -59,7 +59,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.VERSION }}
-          body_path: .release/changelog-body
+          body_path: .release/release-notes.md
           draft: true
           target_commitish: ${{ github.sha }}
           files: |

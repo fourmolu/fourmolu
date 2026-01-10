@@ -5,6 +5,10 @@ on:
     branches:
       - main
   workflow_call:
+    inputs:
+      is_release:
+        type: boolean
+        default: false
     outputs:
       version:
         value: ${{ jobs.cabal_file.outputs.version }}
@@ -253,3 +257,19 @@ jobs:
         run: scripts/clean_redundant_examples.py
       -
         run: git diff --exit-code data/examples/
+
+  check_changelog:
+    if: ${{ inputs.is_release }}
+    runs-on: ubuntu-latest
+    needs:
+      - cabal_file
+    env:
+      VERSION: ${{ needs.cabal_file.outputs.version }}
+    steps:
+      -
+        uses: actions/checkout@v6
+      -
+        name: Validate CHANGELOG
+        run:
+          scripts/release_notes.py validate-changelog
+            --fourmolu-version "${VERSION}"
