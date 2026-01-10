@@ -56,6 +56,8 @@ $ cabal install fourmolu
 $ stack install fourmolu
 ```
 
+Alternatively, you can use [dotslash](https://dotslash-cli.com/docs/) using the configuration in the release notes.
+
 ## Building from source
 
 ```console
