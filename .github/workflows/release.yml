@@ -55,6 +55,10 @@ jobs:
           scripts/release_notes.py generate
             --output .release/release-notes.md
             --fourmolu-version "${VERSION}"
+            --bin.linux-x86_64 .release/fourmolu-${VERSION}-linux-x86_64
+            --bin.linux-aarch64 .release/fourmolu-${VERSION}-linux-arm64
+            --bin.macos-x86_64 .release/fourmolu-${VERSION}-osx-x86_64
+            --bin.macos-aarch64 .release/fourmolu-${VERSION}-osx-arm64
       -
         uses: haskell-actions/hackage-publish@v1
         with:
