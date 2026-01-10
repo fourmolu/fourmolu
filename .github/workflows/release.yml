@@ -20,22 +20,22 @@ jobs:
         uses: actions/download-artifact@v7
         with:
           name: fourmolu-binary-linux-x86_64
-          path: ./bin/
+          path: ./.release/
       -
         uses: actions/download-artifact@v7
         with:
           name: fourmolu-binary-osx-x86_64
-          path: ./bin/
+          path: ./.release/
       -
         uses: actions/download-artifact@v7
         with:
           name: fourmolu-binary-osx-arm64
-          path: ./bin/
+          path: ./.release/
       -
         uses: actions/download-artifact@v7
         with:
           name: fourmolu-sdist
-          path: ./sdist/
+          path: ./.release/sdist/
       -
         name: Load Hackage token secret name
         id: hackage_token_secret
@@ -49,21 +49,21 @@ jobs:
             echo "CHANGELOG doesn't look updated" >&2
             exit 1
           fi
-          sed '1 d; /^## Fourmolu/,$ d' CHANGELOG.md > /tmp/changelog-body
+          sed '1 d; /^## Fourmolu/,$ d' CHANGELOG.md > .release/changelog-body
       -
         uses: haskell-actions/hackage-publish@v1
         with:
           hackageToken: ${{ secrets[steps.hackage_token_secret.outputs.name] }}
-          packagesPath: ./sdist
+          packagesPath: ./.release/sdist
       -
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.VERSION }}
-          body_path: /tmp/changelog-body
+          body_path: .release/changelog-body
           draft: true
           target_commitish: ${{ github.sha }}
           files: |
-            bin/fourmolu-${{ env.VERSION }}-linux-x86_64
-            bin/fourmolu-${{ env.VERSION }}-osx-x86_64
-            bin/fourmolu-${{ env.VERSION }}-osx-arm64
+            .release/fourmolu-${{ env.VERSION }}-linux-x86_64
+            .release/fourmolu-${{ env.VERSION }}-osx-x86_64
+            .release/fourmolu-${{ env.VERSION }}-osx-arm64
           fail_on_unmatched_files: true
