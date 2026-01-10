@@ -26,6 +26,11 @@ jobs:
       -
         uses: actions/download-artifact@v7
         with:
+          name: fourmolu-binary-linux-arm64
+          path: ./.release/
+      -
+        uses: actions/download-artifact@v7
+        with:
           name: fourmolu-binary-osx-x86_64
           path: ./.release/
       -
@@ -64,6 +69,7 @@ jobs:
           target_commitish: ${{ github.sha }}
           files: |
             .release/fourmolu-${{ env.VERSION }}-linux-x86_64
+            .release/fourmolu-${{ env.VERSION }}-linux-arm64
             .release/fourmolu-${{ env.VERSION }}-osx-x86_64
             .release/fourmolu-${{ env.VERSION }}-osx-arm64
           fail_on_unmatched_files: true
