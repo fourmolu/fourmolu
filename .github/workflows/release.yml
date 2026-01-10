@@ -77,3 +77,4 @@ jobs:
             .release/fourmolu-${{ env.VERSION }}-osx-x86_64
             .release/fourmolu-${{ env.VERSION }}-osx-arm64
           fail_on_unmatched_files: true
+          overwrite_files: false
