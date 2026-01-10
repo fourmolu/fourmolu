@@ -7,7 +7,7 @@ on:
   workflow_call:
     outputs:
       version:
-        value: ${{ jobs.build_prod.outputs.version }}
+        value: ${{ jobs.cabal_file.outputs.version }}
 
 jobs:
   check_generated_files:
@@ -109,6 +109,18 @@ jobs:
           name: fourmolu-docs
           path: fourmolu-docs.tar.gz
 
+  cabal_file:
+    runs-on: ubuntu-latest
+    steps:
+      -
+        uses: actions/checkout@v6
+      -
+        uses: haskell-actions/parse-cabal-file@v1
+        id: cabal_file
+        with:
+          cabal_file: fourmolu.cabal
+    outputs:
+      version: ${{ steps.cabal_file.outputs.version }}
 
   build_prod:
     strategy:
@@ -131,8 +143,11 @@ jobs:
 
     name: 'build_prod: ${{ matrix.target }}'
     runs-on: ${{ matrix.os }}
+    needs:
+      - cabal_file
     env:
       FOURMOLU_REV: ${{ github.sha }}
+      VERSION: ${{ needs.cabal_file.outputs.version }}
 
     steps:
       -
@@ -176,24 +191,14 @@ jobs:
           stack build "${ARGS[@]}"
           strip bin/fourmolu
       -
-        uses: haskell-actions/parse-cabal-file@v1
-        id: cabal_file
-        with:
-          cabal_file: fourmolu.cabal
-      -
         name: Rename binary
-        run: cp bin/fourmolu bin/fourmolu-$version-${{ matrix.target }}
-        env:
-          version: ${{ steps.cabal_file.outputs.version }}
+        run: cp bin/fourmolu bin/fourmolu-${VERSION}-${{ matrix.target }}
       -
         name: Store binary
         uses: actions/upload-artifact@v6
         with:
           name: fourmolu-binary-${{ matrix.target }}
           path: bin/fourmolu-*
-
-    outputs:
-      version: ${{ steps.cabal_file.outputs.version }}
 
   lint:
     runs-on: ubuntu-latest
