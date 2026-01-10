@@ -23,7 +23,6 @@ def main() -> None:
     )
 
     parser_generate = subparsers.add_parser("generate")
-    parser_generate.add_argument("--output", "-o", type=Path)
     parser_generate.add_argument("--fourmolu-version", required=True)
     parser_generate.add_argument("--bin.linux-x86_64", type=Path, required=True)
     parser_generate.add_argument("--bin.linux-aarch64", type=Path, required=True)
@@ -31,7 +30,6 @@ def main() -> None:
     parser_generate.add_argument("--bin.macos-aarch64", type=Path, required=True)
     parser_generate.set_defaults(
         run=lambda args: generate(
-            output=args.output,
             version=args.fourmolu_version,
             binaries={
                 "linux-x86_64": getattr(args, "bin.linux_x86_64"),
@@ -68,7 +66,7 @@ def get_changelog_for(version: str) -> str:
     )
 
 
-def generate(output: Path | None, version: str, binaries: Mapping[str, Path]) -> None:
+def generate(version: str, binaries: Mapping[str, Path]) -> None:
     release_notes = [
         get_changelog_for(version),
         "## [dotslash](https://dotslash-cli.com/docs/) config",
@@ -80,9 +78,7 @@ def generate(output: Path | None, version: str, binaries: Mapping[str, Path]) ->
         ),
         "```",
     ]
-
-    write = output.write_text if output else print
-    write("\n".join(release_notes))
+    print("\n".join(release_notes))
 
 
 BASE_DOWNLOAD_URL = "https://github.com/fourmolu/fourmolu/releases/download"
