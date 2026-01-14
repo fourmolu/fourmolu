@@ -999,9 +999,10 @@ p_patSynBind PSB {..} = do
               breakpoint
               located psb_def p_pat
             breakpoint
-            txt "where"
+            indentWhere <- getPrinterOpt poIndentWheres
+            bool (inciByFrac (-1 / 2)) id indentWhere $ txt "where"
             breakpoint
-            inci (p_matchGroup (Function psb_id) mgroup)
+            inciIf indentWhere $ p_matchGroup (Function psb_id) mgroup
   txt "pattern"
   case psb_args of
     PrefixCon [] xs -> do

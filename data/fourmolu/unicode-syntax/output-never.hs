@@ -55,8 +55,8 @@ deconstruct :: T1 a %1 -> a
 deconstruct (MkT1 x) = x
 
 pattern HeadC x <- x : xs
-    where
-        HeadC x = [x]
+  where
+    HeadC x = [x]
 
 pattern Point :: Int -> Int -> (Int, Int)
 pattern Point{x, y} = (x, y)

@@ -1,3 +1,4 @@
+{-# LANGUAGE PatternSynonyms #-}
 module Foo (
   asdf,
   bar,
@@ -21,3 +22,7 @@ x = do
 
 class Foo a where
   foo :: a -> Int
+
+pattern HeadC x <- x : xs
+  where
+    HeadC x = [x]
