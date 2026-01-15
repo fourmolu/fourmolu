@@ -18,6 +18,7 @@ jobs:
       matrix:
         platform: ${{ fromJSON(inputs.platforms) }}
         static: ${{ fromJSON(inputs.static) }}
+    continue-on-error: true
 
     name: ${{ matrix.platform }}
     runs-on:

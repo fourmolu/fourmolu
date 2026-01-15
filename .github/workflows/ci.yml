@@ -114,8 +114,14 @@ jobs:
     if: '!inputs' # only run if not called as workflow_call
     uses: ./.github/workflows/build-prod-binary.yml
     with:
-      platforms: '["linux-x86_64"]'
-      static: '[false]'
+      platforms: |
+        [
+          "linux-x86_64",
+          "linux-arm64",
+          "darwin-x86_64",
+          "darwin-arm64"
+        ]
+      static: '[false, true]'
       version: ${{ github.sha }}
 
   lint:
