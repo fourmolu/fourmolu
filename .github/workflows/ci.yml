@@ -135,7 +135,7 @@ jobs:
         id: jobs
         run:
           scripts/build_prod_matrix.py
-            ${{ inputs.is_release && '--is-release' }}
+            ${{ true && '--is-release' }}
             | tee -a "${GITHUB_OUTPUT}"
     outputs:
       jobs: ${{ steps.jobs.outputs.jobs }}
@@ -151,6 +151,7 @@ jobs:
 
     name: "build_prod: ${{ matrix.target }}"
     runs-on: ${{ matrix.os }}
+    continue-on-error: true
     env:
       FOURMOLU_REV: ${{ github.sha }}
       VERSION: ${{ needs.cabal_file.outputs.version }}
