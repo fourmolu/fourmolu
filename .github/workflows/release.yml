@@ -21,23 +21,9 @@ jobs:
       -
         uses: actions/download-artifact@v7
         with:
-          name: fourmolu-binary-linux-x86_64
-          path: ./.release/
-      -
-        uses: actions/download-artifact@v7
-        with:
-          name: fourmolu-binary-linux-arm64
-          path: ./.release/
-      -
-        uses: actions/download-artifact@v7
-        with:
-          name: fourmolu-binary-osx-x86_64
-          path: ./.release/
-      -
-        uses: actions/download-artifact@v7
-        with:
-          name: fourmolu-binary-osx-arm64
-          path: ./.release/
+          path: ./.release/bin/
+          name: fourmolu-binary-*
+          merge-multiple: true
       -
         uses: actions/download-artifact@v7
         with:
@@ -54,10 +40,10 @@ jobs:
         run:
           scripts/release_notes.py generate
             --fourmolu-version "${VERSION}"
-            --bin linux-x86_64 .release/fourmolu-${VERSION}-linux-x86_64
-            --bin linux-aarch64 .release/fourmolu-${VERSION}-linux-arm64
-            --bin macos-x86_64 .release/fourmolu-${VERSION}-osx-x86_64
-            --bin macos-aarch64 .release/fourmolu-${VERSION}-osx-arm64
+            --bin linux-x86_64 .release/bin/fourmolu-${VERSION}-linux-x86_64
+            --bin linux-aarch64 .release/bin/fourmolu-${VERSION}-linux-arm64
+            --bin macos-x86_64 .release/bin/fourmolu-${VERSION}-osx-x86_64
+            --bin macos-aarch64 .release/bin/fourmolu-${VERSION}-osx-arm64
             | tee .release/release-notes.md
       -
         uses: haskell-actions/hackage-publish@v1
@@ -71,10 +57,6 @@ jobs:
           body_path: .release/release-notes.md
           draft: true
           target_commitish: ${{ github.sha }}
-          files: |
-            .release/fourmolu-${{ env.VERSION }}-linux-x86_64
-            .release/fourmolu-${{ env.VERSION }}-linux-arm64
-            .release/fourmolu-${{ env.VERSION }}-osx-x86_64
-            .release/fourmolu-${{ env.VERSION }}-osx-arm64
+          files: .release/bin/*
           fail_on_unmatched_files: true
           overwrite_files: false
