@@ -24,18 +24,13 @@ def main() -> None:
 
     parser_generate = subparsers.add_parser("generate")
     parser_generate.add_argument("--fourmolu-version", required=True)
-    parser_generate.add_argument("--bin.linux-x86_64", type=Path, required=True)
-    parser_generate.add_argument("--bin.linux-aarch64", type=Path, required=True)
-    parser_generate.add_argument("--bin.macos-x86_64", type=Path, required=True)
-    parser_generate.add_argument("--bin.macos-aarch64", type=Path, required=True)
+    parser_generate.add_argument("--bin", required=True, nargs=2, action="append")
     parser_generate.set_defaults(
         run=lambda args: generate(
             version=args.fourmolu_version,
             binaries={
-                "linux-x86_64": getattr(args, "bin.linux_x86_64"),
-                "linux-aarch64": getattr(args, "bin.linux_aarch64"),
-                "macos-x86_64": getattr(args, "bin.macos_x86_64"),
-                "macos-aarch64": getattr(args, "bin.macos_aarch64"),
+                label: Path(bin_path)
+                for label, bin_path in args.bin
             },
         )
     )
