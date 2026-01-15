@@ -126,29 +126,31 @@ jobs:
     outputs:
       version: ${{ steps.cabal_file.outputs.version }}
 
-  build_prod:
-    strategy:
-      matrix:
-        include:
-          # https://github.com/actions/runner-images?tab=readme-ov-file#available-images
-          # https://github.blog/changelog/2025-01-16-linux-arm64-hosted-runners-now-available-for-free-in-public-repositories-public-preview/
-          -
-            target: linux-x86_64
-            os: ubuntu-24.04
-          -
-            target: linux-arm64
-            os: ubuntu-24.04-arm
-          -
-            target: osx-x86_64
-            os: macos-15-intel
-          -
-            target: osx-arm64
-            os: macos-15
+  build_prod_matrix:
+    runs-on: ubuntu-latest
+    steps:
+      -
+        uses: actions/checkout@v6
+      -
+        id: jobs
+        run:
+          scripts/build_prod_matrix.py
+            ${{ inputs.is_release && '--is-release' }}
+            | tee -a "${GITHUB_OUTPUT}"
+    outputs:
+      jobs: ${{ steps.jobs.outputs.jobs }}
 
-    name: 'build_prod: ${{ matrix.target }}'
-    runs-on: ${{ matrix.os }}
+  build_prod:
     needs:
       - cabal_file
+      - build_prod_matrix
+
+    strategy:
+      matrix:
+        include: ${{ fromJSON(needs.build_prod_matrix.outputs.jobs) }}
+
+    name: "build_prod: ${{ matrix.target }}"
+    runs-on: ${{ matrix.os }}
     env:
       FOURMOLU_REV: ${{ github.sha }}
       VERSION: ${{ needs.cabal_file.outputs.version }}
@@ -185,9 +187,9 @@ jobs:
         uses: actions/cache@v5
         with:
           path: ~/.stack
-          key: ${{ runner.os }}-build_prod-${{ env.CURR_MONTH }}-${{ hashFiles('stack.yaml', 'fourmolu.cabal') }}
+          key: ${{ matrix.target }}-build_prod-${{ env.CURR_MONTH }}-${{ hashFiles('stack.yaml', 'fourmolu.cabal') }}
           restore-keys: |
-               ${{ runner.os }}-build_prod-${{ env.CURR_MONTH }}-
+               ${{ matrix.target }}-build_prod-${{ env.CURR_MONTH }}-
       -
         name: Build
         run: |
