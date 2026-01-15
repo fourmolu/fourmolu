@@ -1,13 +1,4 @@
-resolver: nightly-2025-01-15
-
-extra-deps:
-- ghc-lib-parser-9.12.1.20250105
-- Cabal-syntax-3.14.1.0
-- path-0.9.6
-- path-io-1.8.2
-
-allow-newer: true
-allow-newer-deps: [path]
+resolver: nightly-2026-01-15
 
 flags:
   path:

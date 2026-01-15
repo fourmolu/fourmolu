@@ -3,38 +3,10 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/topics/lock_files
 
-packages:
-- completed:
-    hackage: ghc-lib-parser-9.12.1.20250105@sha256:fbc4b4dfec61c3d04c9fe8030c1521dbc390202a63d747095278bba06854ac72,18342
-    pantry-tree:
-      sha256: c432861131a5a9dfe0006abb2d31e953788cb15cadaab40ae660c81bddc3d348
-      size: 38745
-  original:
-    hackage: ghc-lib-parser-9.12.1.20250105
-- completed:
-    hackage: Cabal-syntax-3.14.1.0@sha256:557a2b20dc85f052c86c5a06dcbd7c6995f2d0391bbff8e62c90b4b5975211da,7380
-    pantry-tree:
-      sha256: b515a5cfb9da09c0aae57ca223281d06dad9d11dfc466fc47d2e83720a078fea
-      size: 10977
-  original:
-    hackage: Cabal-syntax-3.14.1.0
-- completed:
-    hackage: path-0.9.6@sha256:63c2783d76c425514b2904e392f487921de823d883dcc629d7eaad36930198ce,5531
-    pantry-tree:
-      sha256: c791fe08026c1856bfd8fe4ae6b93e86ffcfbd59b3b4644560a71b734dd4b20e
-      size: 3146
-  original:
-    hackage: path-0.9.6
-- completed:
-    hackage: path-io-1.8.2@sha256:97725811b06f3fea7c1f2b0b39f21806c2f90470fc571acd75d3606b49b0f0d9,2009
-    pantry-tree:
-      sha256: 14dc5dc9c1f71b2568390ff7f1ad7f8237101ee98a05fe82068e9479468416cb
-      size: 318
-  original:
-    hackage: path-io-1.8.2
+packages: []
 snapshots:
 - completed:
-    sha256: 0912f90a954fb38f32372b0f8ec802421ba9ec9ee735c7c1517aee7124325463
-    size: 629580
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2025/1/15.yaml
-  original: nightly-2025-01-15
+    sha256: a12749e8aabc7527888b3935e9da0997af21c1067f252558f9064a7d710d2bdb
+    size: 719789
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2026/1/15.yaml
+  original: nightly-2026-01-15
