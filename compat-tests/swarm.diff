@@ -20,6 +20,70 @@ index e72dc10..f5cebbd 100644
               )
          <|> uncurry SRequirements <$> (reserved "requirements" *> match parseTerm)
          <|> SLam
+diff --git a/src/Swarm/Language/Syntax.hs b/src/Swarm/Language/Syntax.hs
+index 9f71db4..2985334 100644
+--- a/src/Swarm/Language/Syntax.hs
++++ b/src/Swarm/Language/Syntax.hs
+@@ -963,8 +963,8 @@ noLoc = Syntax mempty
+ pattern STerm :: Term -> Syntax
+ pattern STerm t <-
+   Syntax _ t
+-  where
+-    STerm t = Syntax mempty t
++ where
++  STerm t = Syntax mempty t
+ 
+ pattern TRequirements :: Text -> Term -> Term
+ pattern TRequirements x t = SRequirements x (STerm t)
+@@ -976,8 +976,8 @@ pattern TPair t1 t2 = SPair (STerm t1) (STerm t2)
+ -- | Match a TLam without syntax
+ pattern TLam :: Var -> Maybe Type -> Term -> Term
+ pattern TLam v ty t <- SLam (lvVar -> v) ty (STerm t)
+-  where
+-    TLam v ty t = SLam (LV NoLoc v) ty (STerm t)
++ where
++  TLam v ty t = SLam (LV NoLoc v) ty (STerm t)
+ 
+ -- | Match a TApp without syntax
+ pattern TApp :: Term -> Term -> Term
+@@ -992,20 +992,20 @@ pattern (:$:) t1 s2 = SApp (STerm t1) s2
+ -- | Match a TLet without syntax
+ pattern TLet :: Bool -> Var -> Maybe Polytype -> Term -> Term -> Term
+ pattern TLet r v pt t1 t2 <- SLet r (lvVar -> v) pt (STerm t1) (STerm t2)
+-  where
+-    TLet r v pt t1 t2 = SLet r (LV NoLoc v) pt (STerm t1) (STerm t2)
++ where
++  TLet r v pt t1 t2 = SLet r (LV NoLoc v) pt (STerm t1) (STerm t2)
+ 
+ -- | Match a TDef without syntax
+ pattern TDef :: Bool -> Var -> Maybe Polytype -> Term -> Term
+ pattern TDef r v pt t <- SDef r (lvVar -> v) pt (STerm t)
+-  where
+-    TDef r v pt t = SDef r (LV NoLoc v) pt (STerm t)
++ where
++  TDef r v pt t = SDef r (LV NoLoc v) pt (STerm t)
+ 
+ -- | Match a TBind without syntax
+ pattern TBind :: Maybe Var -> Term -> Term -> Term
+ pattern TBind mv t1 t2 <- SBind (fmap lvVar -> mv) (STerm t1) (STerm t2)
+-  where
+-    TBind mv t1 t2 = SBind (LV NoLoc <$> mv) (STerm t1) (STerm t2)
++ where
++  TBind mv t1 t2 = SBind (LV NoLoc <$> mv) (STerm t1) (STerm t2)
+ 
+ -- | Match a TDelay without syntax
+ pattern TDelay :: DelayType -> Term -> Term
+@@ -1014,8 +1014,8 @@ pattern TDelay m t = SDelay m (STerm t)
+ -- | Match a TRcd without syntax
+ pattern TRcd :: Map Var (Maybe Term) -> Term
+ pattern TRcd m <- SRcd ((fmap . fmap) _sTerm -> m)
+-  where
+-    TRcd m = SRcd ((fmap . fmap) STerm m)
++ where
++  TRcd m = SRcd ((fmap . fmap) STerm m)
+ 
+ pattern TProj :: Term -> Var -> Term
+ pattern TProj t x = SProj (STerm t) x
 diff --git a/src/Swarm/TUI/Controller.hs b/src/Swarm/TUI/Controller.hs
 index 536c50b..8bbddf0 100644
 --- a/src/Swarm/TUI/Controller.hs

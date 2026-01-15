@@ -1,4 +1,5 @@
 {-# LANGUAGE PatternSynonyms #-}
+
 module Foo (
   asdf,
   bar,
