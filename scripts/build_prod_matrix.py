@@ -17,17 +17,22 @@ def main():
     parser.add_argument("--is-release", action="store_true")
     args = parser.parse_args()
 
-    target_options = ["linux-x86_64"]
+    dynamic_options = [False]
+    platform_options = ["linux-x86_64"]
 
     if args.is_release:
-        target_options = IMAGES.keys()
+        dynamic_options.append(True)
+        platform_options = IMAGES.keys()
 
     jobs = [
         {
-            "target": target,
-            "os": IMAGES[target],
+            "platform": platform,
+            "os": IMAGES[platform],
+            "dynamic": dynamic,
+            "target": platform + ("-dynamic" if dynamic else ""),
         }
-        for target in target_options
+        for dynamic in dynamic_options
+        for platform in platform_options
     ]
     print("jobs=" + json.dumps(jobs))
 
