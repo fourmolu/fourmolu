@@ -5,13 +5,10 @@ on:
     branches:
       - main
   workflow_call:
-    inputs:
-      is_release:
-        type: boolean
-        default: false
-    outputs:
-      version:
-        value: ${{ jobs.cabal_file.outputs.version }}
+
+defaults:
+  run:
+    shell: bash -eu -o pipefail {0}
 
 jobs:
   check_generated_files:
@@ -113,103 +110,12 @@ jobs:
           name: fourmolu-docs
           path: fourmolu-docs.tar.gz
 
-  cabal_file:
-    runs-on: ubuntu-latest
-    steps:
-      -
-        uses: actions/checkout@v6
-      -
-        uses: haskell-actions/parse-cabal-file@v1
-        id: cabal_file
-        with:
-          cabal_file: fourmolu.cabal
-    outputs:
-      version: ${{ steps.cabal_file.outputs.version }}
-
-  build_prod_matrix:
-    runs-on: ubuntu-latest
-    steps:
-      -
-        uses: actions/checkout@v6
-      -
-        id: jobs
-        run:
-          scripts/build_prod_matrix.py
-            ${{ inputs.is_release && '--is-release' }}
-            | tee -a "${GITHUB_OUTPUT}"
-    outputs:
-      jobs: ${{ steps.jobs.outputs.jobs }}
-
   build_prod:
-    needs:
-      - cabal_file
-      - build_prod_matrix
-
-    strategy:
-      matrix:
-        include: ${{ fromJSON(needs.build_prod_matrix.outputs.jobs) }}
-
-    name: "build_prod: ${{ matrix.target }}"
-    runs-on: ${{ matrix.os }}
-    env:
-      FOURMOLU_REV: ${{ github.sha }}
-      VERSION: ${{ needs.cabal_file.outputs.version }}
-
-    steps:
-      -
-        uses: actions/checkout@v6
-      -
-        name: Verify platform
-        run: |
-          set -x
-          case ${{ runner.os }} in
-            (Linux) os=linux ;;
-            (macOS) os=osx ;;
-            (*) echo 'Unknown OS' >&1; exit 1 ;;
-          esac
-          case ${{ runner.arch }} in
-            (X64) arch=x86_64 ;;
-            (ARM64) arch=arm64 ;;
-            (*) echo 'Unknown architecture' >&1; exit 1 ;;
-          esac
-          if [[ $os-$arch != ${{ matrix.target }} ]]; then
-            echo "Incorrect platform: $os-$arch" >&2
-            exit 1
-          fi
-      -
-        uses: haskell-actions/setup@v2
-        with:
-          enable-stack: true
-      -
-        name: Invalidate cache every month
-        run: echo "CURR_MONTH=$(date +%B)" | tee -a "$GITHUB_ENV"
-      -
-        uses: actions/cache@v5
-        with:
-          path: ~/.stack
-          key: ${{ matrix.target }}-build_prod-${{ env.CURR_MONTH }}-${{ hashFiles('stack.yaml', 'fourmolu.cabal') }}
-          restore-keys: |
-               ${{ matrix.target }}-build_prod-${{ env.CURR_MONTH }}-
-      -
-        name: Build
-        run: |
-          ARGS=(
-              # install binary to ./bin/
-              --copy-bins --local-bin-path ./bin/
-
-              # not using `dev` flag or testing; done in `stack_test` + `os_test`
-          )
-          stack build "${ARGS[@]}"
-          strip bin/fourmolu
-      -
-        name: Rename binary
-        run: cp bin/fourmolu bin/fourmolu-${VERSION}-${{ matrix.target }}
-      -
-        name: Store binary
-        uses: actions/upload-artifact@v6
-        with:
-          name: fourmolu-binary-${{ matrix.target }}
-          path: bin/fourmolu-*
+    if: '!inputs' # only run if not called as workflow_call
+    uses: ./.github/workflows/build-prod-binary.yml
+    with:
+      platforms: '["linux-x86_64"]'
+      version: ${{ github.sha }}
 
   lint:
     runs-on: ubuntu-latest
@@ -264,19 +170,3 @@ jobs:
         run: scripts/clean_redundant_examples.py
       -
         run: git diff --exit-code data/examples/
-
-  check_changelog:
-    if: ${{ inputs.is_release }}
-    runs-on: ubuntu-latest
-    needs:
-      - cabal_file
-    env:
-      VERSION: ${{ needs.cabal_file.outputs.version }}
-    steps:
-      -
-        uses: actions/checkout@v6
-      -
-        name: Validate CHANGELOG
-        run:
-          scripts/release_notes.py validate-changelog
-            --fourmolu-version "${VERSION}"

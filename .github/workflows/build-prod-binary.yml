@@ -1,0 +1,78 @@
+name: Build Prod Binary
+on:
+  workflow_call:
+    inputs:
+      platforms:
+        type: string
+        required: true
+      version:
+        type: string
+        required: true
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        platform: ${{ fromJSON(inputs.platforms) }}
+
+    name: ${{ matrix.platform }}
+    runs-on:
+      # https://github.com/actions/runner-images?tab=readme-ov-file#available-images
+      # https://github.blog/changelog/2025-01-16-linux-arm64-hosted-runners-now-available-for-free-in-public-repositories-public-preview/
+      ${{
+        (matrix.platform == 'linux-x86_64' && 'ubuntu-24.04') ||
+        (matrix.platform == 'linux-arm64' && 'ubuntu-24.04-arm') ||
+        (matrix.platform == 'darwin-x86_64' && 'macos-15-intel') ||
+        (matrix.platform == 'darwin-arm64' && 'macos-15') ||
+        null
+      }}
+    env:
+      FOURMOLU_REV: ${{ github.sha }}
+      version: ${{ inputs.version }}
+      platform: ${{ matrix.platform }}
+
+    steps:
+      -
+        uses: actions/checkout@v6
+      -
+        name: Verify platform
+        run: |
+          set -x
+          case ${{ runner.os }} in
+            (Linux) os=linux ;;
+            (macOS) os=darwin ;;
+            (*) echo 'Unknown OS' >&1; exit 1 ;;
+          esac
+          case ${{ runner.arch }} in
+            (X64) arch=x86_64 ;;
+            (ARM64) arch=arm64 ;;
+            (*) echo 'Unknown architecture' >&1; exit 1 ;;
+          esac
+          if [[ $os-$arch != ${platform} ]]; then
+            echo "Incorrect platform: $os-$arch" >&2
+            exit 1
+          fi
+      -
+        uses: haskell-actions/setup@v2
+        with:
+          enable-stack: true
+          stack-no-global: true
+      -
+        uses: actions/cache@v5
+        with:
+          path: ~/.stack
+          key: ${{ matrix.platform }}-build-prod-binary-${{ hashFiles('stack.yaml', 'fourmolu.cabal') }}
+          restore-keys: |
+               ${{ matrix.platform }}-build-prod-binary-
+      -
+        name: Build
+        run: |
+          stack install :fourmolu --local-bin-path ./bin/
+          strip bin/fourmolu
+          cp bin/fourmolu bin/fourmolu-${version}-${platform}
+      -
+        name: Store binary
+        uses: actions/upload-artifact@v6
+        with:
+          name: fourmolu-binary-${{ matrix.platform }}
+          path: bin/fourmolu-*
