@@ -1,0 +1,36 @@
+defaults {
+    files \
+        "!region-tests/**" \
+        "!fixity-tests/**" \
+        "!data/examples/**" \
+        "!data/fourmolu/**" \
+        "!data/diff-tests/**" \
+        "!data/parse-failures/**"
+}
+
+hook hooky {
+    command hooky lint {
+        fix_args --fix
+        pass_files file
+    }
+    files *
+}
+
+hook fourmolu {
+    command "scripts/run-fourmolu.sh" {
+        check_args --mode check
+        fix_args --mode inplace
+    }
+    files *.hs *.hs-boot
+}
+
+lint_rules {
+    - check_broken_symlinks
+    - check_case_conflict
+    - check_merge_conflict
+    - end_of_file_fixer
+    - no_commit_to_branch
+    // Do not turn these on, to prevent merge conflicts when
+    // merging upstream ormolu changes
+    // - id: trailing-whitespace
+}
