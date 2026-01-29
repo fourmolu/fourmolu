@@ -36,9 +36,9 @@ This is automatically run on Fourmolu's source code in the pre-commit hooks (see
 
 ### Pre-commit hooks
 
-We highly recommend turning on pre-commit hooks to run checks every time you commit. To do so, install [`pre-commit`](https://pre-commit.com/) and run `pre-commit install` in this directory.
+We highly recommend turning on pre-commit hooks to run checks every time you commit. To do so, install [`hooky`](https://github.com/brandonchinn178/hooky) and run `hooky install` in this directory.
 
-This is optional, but is run in CI regardless.
+This is optional, and is validated in CI regardless.
 
 ### Adding a new configuration option
 

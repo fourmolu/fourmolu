@@ -136,11 +136,17 @@ jobs:
           path: ~/.cache/pre-commit
           key: ${{ runner.os }}-lint-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
       -
-        name: Install pre-commit
-        run: pip install pre-commit
+        name: Install hooky
+        run: |
+          curl -fsSL \
+            https://github.com/brandonchinn178/hooky/releases/download/v1.0.0/hooky-1.0.0-linux-x86_64 \
+            -o /usr/local/bin/hooky
+          chmod +x /usr/local/bin/hooky
       -
-        name: Run pre-commit
-        run: pre-commit run --all-files --show-diff-on-failure
+        name: Run hooky
+        run: hooky run --all --format=verbose
+        env:
+          SKIP: no_commit_to_branch
 
   check_sdist:
     runs-on: ubuntu-latest
