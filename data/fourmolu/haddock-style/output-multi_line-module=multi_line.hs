@@ -37,6 +37,6 @@ foo = 42
 
 {- | This is a haddock containing another haddock
 
-> {\-# LANGUAGE ScopedTypeVariables #-\}
+> {-# LANGUAGE ScopedTypeVariables #-}
 -}
 haddock_in_haddock :: Int

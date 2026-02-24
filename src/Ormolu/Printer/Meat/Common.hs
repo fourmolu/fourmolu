@@ -190,12 +190,7 @@ p_hsDoc' poHStyle hstyle needsNewline (L l str) = do
   -- Make sure the Haddock is separated by a newline from other comments.
   when goesAfterComment newline
 
-  let shouldEscapeCommentBraces =
-        case poHStyle of
-          HaddockSingleLine -> False
-          HaddockMultiLine -> True
-          HaddockMultiLineCompact -> True
-  let docStringLines = splitDocString shouldEscapeCommentBraces $ hsDocString str
+  let docStringLines = splitDocString $ hsDocString str
 
   if poHStyle == HaddockSingleLine || length docStringLines <= 1
     then do
