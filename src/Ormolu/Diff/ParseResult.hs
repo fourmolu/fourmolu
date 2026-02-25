@@ -177,7 +177,7 @@ diffHsModule = genericQuery
         f x x' = x == x'
 
     hsDocStringEq :: HsDocString -> GenericQ ParseResultDiff
-    hsDocStringEq = considerEqualVia' ((==) `on` (map (T.dropWhile isSpace) . splitDocString True))
+    hsDocStringEq = considerEqualVia' ((==) `on` (map (T.dropWhile isSpace) . splitDocString))
 
     forLocated ::
       (Data e0, Data e1) =>
