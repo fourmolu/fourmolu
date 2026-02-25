@@ -25,7 +25,7 @@ jobs:
         run: |
           cd ~
           cabal update
-          cabal install --overwrite-policy=always alex happy
+          cabal install --overwrite-policy=always alex-3.5.4.0 happy-2.1.7
           echo ~/.cabal/bin >> "${GITHUB_PATH}"
       -
         name: Install wasm32-wasi-ghc
