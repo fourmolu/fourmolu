@@ -492,7 +492,6 @@ configParser =
     <*> pure defaultPrinterOpts -- unused; overwritten in resolveConfig
     <*> (fmap Set.fromList . many . strOption . mconcat)
       [ long "local-modules",
-        short 'm',
         metavar "LOCAL_MODULES",
         help "Modules Fourmolu should consider as local by the current Cabal package"
       ]
