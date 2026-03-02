@@ -105,7 +105,7 @@ jobs:
         name: Bundle haddock docs
         run: tar czf fourmolu-docs.tar.gz -C "$(find .stack-work/dist -regex '.*/doc/html/[^/]*')" .
       -
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: fourmolu-docs
           path: fourmolu-docs.tar.gz
@@ -162,7 +162,7 @@ jobs:
         name: Create sdist bundle
         run: stack sdist --test-tarball --tar-dir .
       -
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: fourmolu-sdist
           path: fourmolu-*.tar.gz
