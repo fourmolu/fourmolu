@@ -72,7 +72,7 @@ jobs:
           cp bin/fourmolu bin/fourmolu-${version}-${platform}
       -
         name: Store binary
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: fourmolu-binary-${{ matrix.platform }}
           path: bin/fourmolu-*
