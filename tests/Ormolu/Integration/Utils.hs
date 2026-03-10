@@ -10,15 +10,16 @@ module Ormolu.Integration.Utils
 where
 
 import Control.Monad (when)
-import System.Directory (findExecutable)
+import System.Directory (findExecutable, makeAbsolute)
 import System.Environment (getEnvironment)
 import System.Exit (ExitCode (..))
 import System.Process (CreateProcess (..), readCreateProcessWithExitCode)
 import System.Process qualified as Process
 
 -- | Find a `fourmolu` executable on PATH.
+-- Needs to be absolute to work around https://github.com/haskell/cabal/issues/11598
 getFourmoluExe :: IO FilePath
-getFourmoluExe = findExecutable "fourmolu" >>= maybe (fail "Could not find fourmolu executable") return
+getFourmoluExe = findExecutable "fourmolu" >>= maybe (fail "Could not find fourmolu executable") makeAbsolute
 
 -- | Like 'System.Process.readProcess', except without specifying stdin and
 -- with better failure messages.
