@@ -12,7 +12,7 @@ foo
                 )
         -> do
             -- Begin do
-            (x, y) <- -- GHC parser fails if layed out over multiple lines
+            (x, y) <- -- GHC parser fails if laid out over multiple lines
                 f -- Call into f
                     ( a
                     , c -- Tuple together arguments
@@ -31,12 +31,10 @@ foo
                             , w
                             ) -> \u ->
                             -- Procs can have lambdas
-                            let
-                                v =
+                            let v =
                                     u -- Actually never used
                                         ^ 2
-                             in
-                                ( returnA
+                             in ( returnA
                                     -<
                                         -- Just do the calculation
                                         (x + y * z)

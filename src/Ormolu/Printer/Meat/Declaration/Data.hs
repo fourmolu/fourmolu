@@ -162,7 +162,7 @@ p_conDecl _ ConDeclGADT {..} = do
       commaDel
       sep commaDel p_rdrName cs
     space
-    txt "::"
+    token'dcolon
     delimiter
     inci . switchLayout conSigSpans $ do
       located con_outer_bndrs p_hsOuterTyVarBndrs
@@ -175,7 +175,7 @@ p_conDecl _ ConDeclGADT {..} = do
       forM_ con_mb_cxt $ \qs -> do
         located qs p_hsContext
         space
-        txt "=>"
+        token'darrow
         delimiter
       switchLayout conArgResSpans $ do
         case con_g_args of

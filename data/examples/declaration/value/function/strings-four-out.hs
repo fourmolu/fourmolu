@@ -8,3 +8,5 @@ baz =
     \baz"
 
 weirdGap = "\65\ \0"
+
+weirdEscape = "\^\ "
