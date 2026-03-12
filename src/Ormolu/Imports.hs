@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -30,9 +29,6 @@ import GHC.Types.SrcLoc
 import Ormolu.Config (ImportGrouping)
 import Ormolu.Imports.Grouping (Import (..), groupImports, prepareExistingGroups)
 import Ormolu.Utils (notImplemented, showOutputable)
-#if !MIN_VERSION_base(4,20,0)
-import Data.List (foldl')
-#endif
 
 -- | Sort, group and normalize imports.
 --
@@ -231,6 +227,7 @@ compareIewn = (comparing fst <> (compareRdrName `on` unLoc . snd)) `on` classify
       IEDefault _ x -> (1, x)
       IEPattern _ x -> (2, x)
       IEType _ x -> (3, x)
+      IEData _ x -> (4, x)
 
 compareRdrName :: RdrName -> RdrName -> Ordering
 compareRdrName x y =

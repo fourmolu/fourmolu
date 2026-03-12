@@ -16,13 +16,16 @@ module Ormolu.Printer.Meat.Type
     p_hsTyVarBndr,
     ForAllVisibility (..),
     p_forallBndrs,
-    p_conDeclFields,
+    p_hsConDeclRecFields,
+    p_hsConDeclField,
+    p_hsConDeclFieldWithDoc,
     p_lhsTypeArg,
     p_hsSigType,
     FunRepr (..),
     ParsedFunRepr (..),
     p_hsFun,
-    hsOuterTyVarBndrsToHsType,
+    p_hsForAllTelescope,
+    p_hsOuterTyVarBndrs,
     hsSigTypeToType,
     lhsTypeToSigType,
   )
@@ -150,18 +153,6 @@ p_hsType = \case
         located t p_hsType
         newline
         p_hsDoc Caret (Without #endNewline) str
-  HsBangTy _ (HsBang u s) t -> do
-    case u of
-      SrcUnpack -> txt "{-# UNPACK #-}" >> space
-      SrcNoUnpack -> txt "{-# NOUNPACK #-}" >> space
-      NoSrcUnpack -> return ()
-    case s of
-      SrcLazy -> txt "~"
-      SrcStrict -> txt "!"
-      NoSrcStrict -> return ()
-    located t p_hsType
-  HsRecTy _ fields ->
-    p_conDeclFields fields
   HsExplicitListTy _ p xs -> do
     case p of
       IsPromoted -> txt "'"
@@ -189,7 +180,20 @@ p_hsType = \case
       HsStrTy (SourceText s) _ -> p_stringLit s
       a -> atom a
   HsWildCardTy _ -> txt "_"
-  XHsType t -> atom t
+  XHsType ext -> case ext of
+    HsCoreTy t -> atom @HsCoreTy t
+    HsBangTy _ (HsSrcBang _ u s) t -> do
+      case u of
+        SrcUnpack -> txt "{-# UNPACK #-}" >> space
+        SrcNoUnpack -> txt "{-# NOUNPACK #-}" >> space
+        NoSrcUnpack -> return ()
+      case s of
+        SrcLazy -> txt "~"
+        SrcStrict -> txt "!"
+        NoSrcStrict -> return ()
+      located t p_hsType
+    HsRecTy _ fields ->
+      p_hsConDeclRecFields fields
   where
     startsWithSingleQuote = \case
       HsAppTy _ (L _ f) _ -> startsWithSingleQuote f
@@ -292,23 +296,48 @@ p_forallBndrsEnd extraSpace = \case
   where
     dot = if Choice.isTrue extraSpace then " ." else "."
 
-p_conDeclFields :: [LConDeclField GhcPs] -> R ()
-p_conDeclFields xs =
-  recordBraces $ sep commaDel (sitcc . located' p_conDeclField) xs
+p_hsConDeclRecFields :: [LHsConDeclRecField GhcPs] -> R ()
+p_hsConDeclRecFields xs =
+  recordBraces $ sep commaDel (sitcc . located' p_hsConDeclRecField) xs
 
-p_conDeclField :: ConDeclField GhcPs -> R ()
-p_conDeclField ConDeclField {..} = do
+p_hsConDeclRecField :: HsConDeclRecField GhcPs -> R ()
+p_hsConDeclRecField HsConDeclRecField {..} = do
   commaStyle <- getPrinterOpt poCommaStyle
   when (commaStyle == Trailing) $
-    mapM_ (p_hsDoc Pipe (With #endNewline)) cd_fld_doc
+    mapM_ (p_hsDoc Pipe (With #endNewline)) (cdf_doc cdrf_spec)
   sitcc $
     sep
       commaDel
       (located' (p_rdrName . foLabel))
-      cd_fld_names
-  inci $ p_hsTypeAnnotation cd_fld_type
+      cdrf_names
+  space
+  p_hsMultAnn (located' p_hsType) (cdf_multiplicity cdrf_spec)
+  space
+  token'dcolon
+  breakpoint
+  sitcc . inci $ p_hsConDeclField cdrf_spec
   when (commaStyle == Leading) $
-    mapM_ (inciByFrac (-1) . (newline >>) . p_hsDoc Caret (Without #endNewline)) cd_fld_doc
+    mapM_ (inciByFrac (-1) . (newline >>) . p_hsDoc Caret (Without #endNewline)) (cdf_doc cdrf_spec)
+
+-- | This does not print 'cdf_doc' and 'cdf_multiplicity' as there is no single
+-- strategy for where to print them (see call sites).
+p_hsConDeclField :: HsConDeclField GhcPs -> R ()
+p_hsConDeclField CDF {..} = do
+  case cdf_unpack of
+    SrcUnpack -> txt "{-# UNPACK #-}" *> space
+    SrcNoUnpack -> txt "{-# NOUNPACK #-}" *> space
+    NoSrcUnpack -> pure ()
+  located cdf_type $ \ty -> do
+    case cdf_bang of
+      SrcLazy -> txt "~"
+      SrcStrict -> txt "!"
+      NoSrcStrict -> pure ()
+    p_hsType ty
+
+p_hsConDeclFieldWithDoc :: HsConDeclField GhcPs -> R ()
+p_hsConDeclFieldWithDoc cdf = do
+  mapM_ (p_hsDoc Pipe (With #endNewline)) (cdf_doc cdf)
+  p_hsConDeclField cdf
 
 p_lhsTypeArg :: LHsTypeArg GhcPs -> R ()
 p_lhsTypeArg = \case
@@ -334,12 +363,12 @@ data ParsedFunRepr a
   | ParsedFunQuals
       [LocatedA (LocatedC [LocatedA a])]
       (ParsedFunRepr a)
-  | -- | The argument, its optional docstring, and the arrow going to the next arg/return
+  | -- | The argument, its optional docstring, and the multiplicity annotation going to the next arg/return
     ParsedFunArgs
       [ LocatedA
           ( LocatedA a,
             Maybe (LHsDoc GhcPs),
-            HsArrowOf (LocatedA a) GhcPs
+            HsMultAnnOf (LocatedA a) GhcPs
           )
       ]
       (ParsedFunRepr a)
@@ -380,10 +409,10 @@ instance FunRepr (HsType GhcPs) where
          in go []
       getArgsAndReturn =
         let go args = \case
-              L ann (HsFunTy _ arrow (L _ (HsDocTy _ l doc)) r) ->
-                go (L ann (l, Just doc, arrow) : args) r
-              L ann (HsFunTy _ arrow l r) ->
-                go (L ann (l, Nothing, arrow) : args) r
+              L ann (HsFunTy _ multAnn (L _ (HsDocTy _ l doc)) r) ->
+                go (L ann (l, Just doc, multAnn) : args) r
+              L ann (HsFunTy _ multAnn l r) ->
+                go (L ann (l, Nothing, multAnn) : args) r
               ty ->
                 (reverse args, ty)
          in go []
@@ -517,8 +546,13 @@ p_hsFunParsed' arrowsStyle fun0 = Cont.evalContT . (`State.evalStateT` initialSt
         arg : _ -> void $ setLocated arg
         _ -> pure ()
 
-      forM_ args $ \(L _ (larg, doc, arrow)) -> do
-        let renderArrow = p_arrow (located' renderFunItem) arrow
+      forM_ args $ \(L _ (larg, doc, multAnn)) -> do
+        let renderArrow = do
+              p_hsMultAnn (located' renderFunItem) multAnn
+              case multAnn of
+                HsUnannotated _ -> pure ()
+                _ -> space
+              token'rarrow
         withHaddocks (Isn't #end) doc $ do
           withApplyLeadingDelim $ \applyLeadingDelim' ->
             liftR . located larg $ \arg -> do
@@ -576,6 +610,18 @@ p_hsFunParsed' arrowsStyle fun0 = Cont.evalContT . (`State.evalStateT` initialSt
         LeadingArgsArrows -> not $ Choice.isTrue isArgDelim
         LeadingArrows -> False
 
+p_hsForAllTelescope :: HsForAllTelescope GhcPs -> R ()
+p_hsForAllTelescope = \case
+  HsForAllInvis _ bndrs -> p_forallBndrs ForAllInvis p_hsTyVarBndr bndrs
+  HsForAllVis _ bndrs -> p_forallBndrs ForAllVis p_hsTyVarBndr bndrs
+
+p_hsOuterTyVarBndrs ::
+  HsOuterTyVarBndrs Specificity GhcPs ->
+  R ()
+p_hsOuterTyVarBndrs = \case
+  HsOuterImplicit _ -> pure ()
+  HsOuterExplicit _ bndrs -> p_hsForAllTelescope $ mkHsForAllInvisTele noAnn bndrs
+
 ----------------------------------------------------------------------------
 -- Conversion functions
 
@@ -591,6 +637,7 @@ hsOuterTyVarBndrsToHsType obndrs ty = case obndrs of
   HsOuterImplicit NoExtField -> unLoc ty
   HsOuterExplicit _ bndrs ->
     HsForAllTy NoExtField (mkHsForAllInvisTele noAnn bndrs) ty
+
 
 lhsTypeToSigType :: LHsType GhcPs -> LHsSigType GhcPs
 lhsTypeToSigType ty =

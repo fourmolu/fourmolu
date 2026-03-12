@@ -1,4 +1,12 @@
-resolver: nightly-2026-01-15
+resolver: lts-24.6
+
+packages:
+- '.'
+- extract-hackage-info
+
+extra-deps:
+- ghc-lib-parser-9.14.1.20251220
+- Cabal-syntax-3.16.0.0
 
 flags:
   path:
