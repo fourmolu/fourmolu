@@ -21,7 +21,6 @@ import Data.List.NonEmpty (NonEmpty (..))
 import Data.List.NonEmpty qualified as NE
 import Data.Maybe (isJust, isNothing, maybeToList)
 import Data.Text qualified as Text
-import Data.Void
 import GHC.Hs
 import GHC.Types.Fixity
 import GHC.Types.ForeignCall

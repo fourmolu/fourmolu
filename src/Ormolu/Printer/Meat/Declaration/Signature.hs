@@ -22,6 +22,7 @@ import GHC.Types.Basic
 import GHC.Types.Fixity
 import GHC.Types.Name.Reader
 import GHC.Types.SourceText
+import GHC.Types.SrcLoc
 import Ormolu.Printer.Combinators
 import Ormolu.Printer.Meat.Common
 import Ormolu.Printer.Meat.Declaration.Rule
