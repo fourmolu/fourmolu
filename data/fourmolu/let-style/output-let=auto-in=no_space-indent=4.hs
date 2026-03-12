@@ -25,9 +25,11 @@ let_single_sig =
     in a + 2
 
 let_single_comment =
-    let -- a comment
+    let
+        -- a comment
         a = 1
-    in a + 2
+    in
+        a + 2
 
 let_multi =
     let a = 1
@@ -35,13 +37,17 @@ let_multi =
     in a + b
 
 let_single_newline =
-    let a = 1
-    in a + 2
+    let
+        a = 1
+    in
+        a + 2
 
 let_multi_newline =
-    let a = 1
+    let
+        a = 1
         b = 2
-    in a + b
+    in
+        a + b
 
 {-- do-block --}
 

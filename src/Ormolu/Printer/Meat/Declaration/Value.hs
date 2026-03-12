@@ -379,8 +379,8 @@ p_hsCmd' isApp s = \case
     p_case isApp cmdPlacement p_hsCmd e mgroup
   HsCmdIf anns _ if' then' else' ->
     p_if cmdPlacement p_hsCmd anns if' then' else'
-  HsCmdLet _ localBinds c ->
-    p_let (s == S) p_hsCmd localBinds c
+  HsCmdLet (letToken, _) localBinds c ->
+    p_let (s == S) p_hsCmd letToken localBinds c
   HsCmdDo _ es -> do
     txt "do"
     p_stmts S isApp cmdPlacement (p_hsCmd' NotApplicand) es
@@ -447,7 +447,7 @@ p_stmt' s placer render = \case
     switchLayout [loc, l] $
       placeHanging placement (located f (render N))
   BodyStmt _ body _ _ -> located body (render s)
-  LetStmt _ binds -> p_let' True binds Nothing
+  LetStmt epAnnLet binds -> p_let' True epAnnLet binds Nothing
   ParStmt {} ->
     -- 'ParStmt' should always be eliminated in 'gatherStmts' already, such
     -- that it never occurs in 'p_stmt''. Consequently, handling it here
@@ -748,8 +748,8 @@ p_hsExpr' isApp s = \case
     breakpoint
     inciApplicand isApp $
       sep breakpoint (located' (p_grhs RightArrow)) (NE.toList guards)
-  HsLet _ localBinds e ->
-    p_let (s == S) p_hsExpr localBinds e
+  HsLet (letToken, _) localBinds e ->
+    p_let (s == S) p_hsExpr letToken localBinds e
   HsDo _ doFlavor es -> do
     let doBody moduleName header = do
           forM_ moduleName $ \m -> atom m *> txt "."
@@ -1158,20 +1158,24 @@ p_let ::
   Bool ->
   -- | Render
   (body -> R ()) ->
+  -- | Annotation for the `let` block
+  EpToken "let" ->
   HsLocalBinds GhcPs ->
   LocatedA body ->
   R ()
-p_let inDo render localBinds e = p_let' inDo localBinds $ Just (located e render)
+p_let inDo render letToken localBinds e = p_let' inDo letToken localBinds $ Just (located e render)
 
 p_let' ::
   -- | True if in do-block
   Bool ->
+  -- | Annotation for the `let` block
+  EpToken "let" ->
   -- | Let bindings
   HsLocalBinds GhcPs ->
   -- | Optional 'in' body
   Maybe (R ()) ->
   R ()
-p_let' inDo localBinds mBody = do
+p_let' inDo letLoc localBinds mBody = do
   letStyle <- getPrinterOpt poLetStyle
   inStyle <- getPrinterOpt poInStyle
   layout <- getLayout
@@ -1182,9 +1186,19 @@ p_let' inDo localBinds mBody = do
         case letStyle of
           _ | isAllInline -> True
           LetAuto ->
-            -- In GHC 9.14+, the let token position is no longer available,
-            -- so we fall back to inline style
-            True
+            -- check if local binds are on the same line as the "let" keyword;
+            -- if we can't figure out the positions, just fallback to `inline` style
+            fromMaybe True $ do
+              letStartLine <-
+                case letLoc of
+                  EpTok loc -> pure . srcSpanStartLine . epaLocationRealSrcSpan $ loc
+                  NoEpTok -> Nothing
+              localBindsStartLine <- localBindsEpAnns localBinds >>= epAnnsStartLine
+              pure $
+                -- special case when let has zero local binds
+                if localBindsStartLine == -1
+                  then True
+                  else letStartLine == localBindsStartLine
           LetInline -> True
           LetNewline -> False
           LetMixed -> numLocalBinds <= 1
@@ -1223,8 +1237,14 @@ p_let' inDo localBinds mBody = do
         HsValBinds _ (XValBindsLR (NValBinds binds sigs)) -> length binds + length sigs
         HsIPBinds _ (IPBinds _ binds) -> length binds
         EmptyLocalBinds _ -> 0
-
-
+    localBindsEpAnns = \case
+      HsValBinds epanns _ -> Just epanns
+      HsIPBinds epanns _ -> Just epanns
+      EmptyLocalBinds _ -> Nothing
+    epAnnsStartLine epAnn =
+      case entry epAnn of
+        EpaSpan (RealSrcSpan r _) -> Just $ srcSpanStartLine r
+        _ -> Nothing
 
 p_pat :: Pat GhcPs -> R ()
 p_pat = \case
