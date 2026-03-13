@@ -48,10 +48,10 @@ type instance Elem [e] = e
 
 data T1 a = MkT1 a
 
-construct ∷ a %1 → T1 a
+construct ∷ a ⊸ T1 a
 construct x = MkT1 x
 
-deconstruct ∷ T1 a %1 → a
+deconstruct ∷ T1 a ⊸ a
 deconstruct (MkT1 x) = x
 
 pattern HeadC x ← x : xs

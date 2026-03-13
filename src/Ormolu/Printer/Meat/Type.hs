@@ -547,12 +547,13 @@ p_hsFunParsed' arrowsStyle fun0 = Cont.evalContT . (`State.evalStateT` initialSt
         _ -> pure ()
 
       forM_ args $ \(L _ (larg, doc, multAnn)) -> do
-        let renderArrow = do
-              p_hsMultAnn (located' renderFunItem) multAnn
-              case multAnn of
-                HsUnannotated _ -> pure ()
-                _ -> space
-              token'rarrow
+        let renderArrow = case multAnn of
+              HsUnannotated _ -> token'rarrow
+              HsLinearAnn _ -> token'lolly
+              HsExplicitMult _ _ -> do
+                p_hsMultAnn (located' renderFunItem) multAnn
+                space
+                token'rarrow
         withHaddocks (Isn't #end) doc $ do
           withApplyLeadingDelim $ \applyLeadingDelim' ->
             liftR . located larg $ \arg -> do
