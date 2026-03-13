@@ -161,55 +161,50 @@ p_conDecl _ ConDeclGADT {..} = do
     unless (null cs) . inci $ do
       commaDel
       sep commaDel p_rdrName cs
-    space
-    token'dcolon
-    delimiter
-    inci . switchLayout conSigSpans $ do
-      located con_outer_bndrs p_hsOuterTyVarBndrs
-      case unLoc con_outer_bndrs of
-        HsOuterImplicit {} -> pure ()
-        HsOuterExplicit {} -> delimiter
-      forM_ con_inner_bndrs $ \tele -> do
-        p_hsForAllTelescope tele
-        delimiter
-      forM_ con_mb_cxt $ \qs -> do
-        located qs p_hsContext
-        space
-        token'darrow
-        delimiter
-      switchLayout conArgResSpans $ do
-        case con_g_args of
-          PrefixConGADT NoExtField xs ->
-            forM_ xs $ \x -> do
-              p_hsConDeclFieldWithDoc x
-              space
-              p_hsMultAnn (located' p_hsType) (cdf_multiplicity x)
-              space
-              token'rarrow
-              delimiter
-          RecConGADT _ x -> do
-            located x p_hsConDeclRecFields
-            space
-            token'rarrow
-            delimiter
-        located con_res_ty p_hsType
+    inci $ do
+      let -- Convert GADT args + result to a function type
+          conTy = case con_g_args of
+            PrefixConGADT NoExtField xs ->
+              let go x t =
+                    let argTy = conDeclFieldToType x
+                     in addCLocA argTy t $ HsFunTy NoExtField (cdf_multiplicity x) argTy t
+               in foldr go con_res_ty xs
+            RecConGADT _ r ->
+              addCLocA r con_res_ty $
+                HsFunTy
+                  NoExtField
+                  (HsUnannotated (EpArrow noAnn))
+                  (la2la $ (XHsType . HsRecTy noAnn) <$> r)
+                  con_res_ty
+          -- Wrap with context if present
+          qualTy = case con_mb_cxt of
+            Nothing -> conTy
+            Just qs ->
+              addCLocA qs conTy $
+                HsQualTy NoExtField qs conTy
+          -- Wrap with inner forall telescopes (from right to left)
+          withInnerForalls =
+            foldr
+              ( \tele body ->
+                  L (getLoc body) $ HsForAllTy NoExtField tele body
+              )
+              qualTy
+              con_inner_bndrs
+          -- Wrap with outer forall binders
+          quantifiedTy :: LHsType GhcPs
+          quantifiedTy =
+            addCLocA con_outer_bndrs withInnerForalls $
+              hsOuterTyVarBndrsToHsType (unLoc con_outer_bndrs) withInnerForalls
+      p_hsTypeAnnotation quantifiedTy
   where
-    delimiter = if anyDocStrings then newline else breakpoint
-    anyDocStrings =
-      hasDocStrings (unLoc con_res_ty) || case con_g_args of
-        PrefixConGADT _ xs -> conArgsHaveHaddocks xs
-        RecConGADT _ (L _ xs) -> conArgsHaveHaddocks $ cdrf_spec . unLoc <$> xs
-
     conDeclSpn =
-      fmap getLocA (NE.toList con_names) <> conSigSpans
-    conSigSpans =
-      [getLocA con_outer_bndrs]
+      fmap getLocA (NE.toList con_names)
+        <> [getLocA con_outer_bndrs]
         <> maybeToList (fmap getLocA con_mb_cxt)
-        <> conArgResSpans
-    conArgResSpans =
-      getLocA con_res_ty : case con_g_args of
-        PrefixConGADT NoExtField xs -> getLocA . cdf_type <$> xs
-        RecConGADT _ x -> [getLocA x]
+        <> conArgsSpans
+    conArgsSpans = case con_g_args of
+      PrefixConGADT NoExtField xs -> getLocA . cdf_type <$> xs
+      RecConGADT _ x -> [getLocA x]
 p_conDecl singleRecCon ConDeclH98 {..} =
   case con_args of
     PrefixCon xs -> do
@@ -293,6 +288,18 @@ p_lhsContext = \case
     space
     token'darrow
     breakpoint
+
+-- | Convert a 'HsConDeclField' back to an 'LHsType', wrapping with
+-- 'HsBangTy' for unpack\/strictness and 'HsDocTy' for documentation.
+-- This is used to synthesize a function type from GADT constructor fields
+-- so that the function-arrows rendering machinery can handle leading\/trailing
+-- arrow placement.
+conDeclFieldToType :: HsConDeclField GhcPs -> LHsType GhcPs
+conDeclFieldToType cdf@CDF {..} = withDoc (conDeclFieldBangType cdf)
+  where
+    withDoc ty = case cdf_doc of
+      Just doc -> L (getLoc ty) $ HsDocTy NoExtField ty doc
+      Nothing -> ty
 
 isGadt :: ConDecl GhcPs -> Bool
 isGadt = \case

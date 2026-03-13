@@ -31,21 +31,21 @@ data Foo a where
         forall a b.
         (Show a, Eq b) => -- foo
         -- bar
-        a ->
-        b ->
-        Foo 'Int
+        a
+        -> b
+        -> Foo 'Int
     -- | But 'Bar' is also not too bad.
     Bar ::
-        -- | An Int
-        Int ->
-        -- | And a Maybe Text
-        Maybe Text ->
-        Foo 'Bool
+        Int
+        -- ^ An Int
+        -> Maybe Text
+        -- ^ And a Maybe Text
+        -> Foo 'Bool
     -- | So is 'Baz'.
     Baz ::
         forall a.
-        a ->
-        Foo 'String
+        a
+        -> Foo 'String
     (:~>) :: Foo a -> Foo a -> Foo a
 
 -- Single line type signature is preserved

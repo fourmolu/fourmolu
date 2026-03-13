@@ -19,6 +19,7 @@ module Ormolu.Printer.Meat.Type
     p_hsConDeclRecFields,
     p_hsConDeclField,
     p_hsConDeclFieldWithDoc,
+    conDeclFieldBangType,
     p_lhsTypeArg,
     p_hsSigType,
     FunRepr (..),
@@ -27,6 +28,7 @@ module Ormolu.Printer.Meat.Type
     p_hsForAllTelescope,
     p_hsOuterTyVarBndrs,
     hsSigTypeToType,
+    hsOuterTyVarBndrsToHsType,
     lhsTypeToSigType,
   )
 where
@@ -310,12 +312,12 @@ p_hsConDeclRecField HsConDeclRecField {..} = do
       commaDel
       (located' (p_rdrName . foLabel))
       cdrf_names
-  space
-  p_hsMultAnn (located' p_hsType) (cdf_multiplicity cdrf_spec)
-  space
-  token'dcolon
-  breakpoint
-  sitcc . inci $ p_hsConDeclField cdrf_spec
+  case cdf_multiplicity cdrf_spec of
+    HsUnannotated _ -> pure ()
+    mult -> do
+      space
+      p_hsMultAnn (located' p_hsType) mult
+  inci $ p_hsTypeAnnotation (conDeclFieldBangType cdrf_spec)
   when (commaStyle == Leading) $
     mapM_ (inciByFrac (-1) . (newline >>) . p_hsDoc Caret (Without #endNewline)) (cdf_doc cdrf_spec)
 
@@ -338,6 +340,19 @@ p_hsConDeclFieldWithDoc :: HsConDeclField GhcPs -> R ()
 p_hsConDeclFieldWithDoc cdf = do
   mapM_ (p_hsDoc Pipe (With #endNewline)) (cdf_doc cdf)
   p_hsConDeclField cdf
+
+-- | Convert a 'HsConDeclField' to an 'LHsType' by wrapping with 'HsBangTy'
+-- for unpack\/strictness annotations. Does not include documentation.
+-- This is used so that the type can be routed through 'p_hsTypeAnnotation'
+-- for function-arrows-aware rendering.
+conDeclFieldBangType :: HsConDeclField GhcPs -> LHsType GhcPs
+conDeclFieldBangType CDF {..}
+  | cdf_unpack /= NoSrcUnpack || cdf_bang /= NoSrcStrict =
+      let (bangAnn, srcText) = cdf_ext
+       in L (getLoc cdf_type) $
+            XHsType $
+              HsBangTy bangAnn (HsSrcBang srcText cdf_unpack cdf_bang) cdf_type
+  | otherwise = cdf_type
 
 p_lhsTypeArg :: LHsTypeArg GhcPs -> R ()
 p_lhsTypeArg = \case
