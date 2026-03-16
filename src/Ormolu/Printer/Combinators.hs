@@ -23,6 +23,7 @@ module Ormolu.Printer.Combinators
     space,
     newline,
     declNewline,
+    declNewline',
     multilineCommentNewline,
     inci,
     inciBy,
