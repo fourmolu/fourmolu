@@ -4,7 +4,7 @@ $info$
 
 Some basic presets are provided but you can configure your own rules via a dedicated YAML configuration.
 
-Predefined presets:
+Predefined presets, usable directly as values for `import-grouping`:
 
 - `legacy`: adopt the legacy behavior (before version 0.17), i.e., `single` when `respectful` is `false` and `preserve` when `respectful` is true. See [`respectful`](/config/respectful).
 - `preserve`: preserve the existing import groups
@@ -13,11 +13,26 @@ Predefined presets:
 - `by-scope`: one group for external imports, then one group for imports targeting modules from the current Cabal project
 - `by-scope-then-qualified`: apply `by-scope` first, then `by-qualified`
 
-Predefined matchers:
+When the value for `import-grouping` is a list, that list defines the order for groups of import declarations. Each group are defined by a name and a set of rules:
+
+```yaml
+name: "Text modules"
+rules:
+  - glob: Data.Text
+```
+
+Any import declaration matching at least one of those rules will belong to that group.
+
+The following rule types are defined:
 
 - `match: all`: matches all modules
 - `match: local-modules`: matches modules defined in the current Cabal project. Those modules are automatically detected. Developers can add custom modules through the `--local-modules` CLI option. See [`local-modules`](/config/local-modules) for more information.
-- `glob: pattern`: matches modules matching the provided `pattern`. `*` can be any character on the same module level. `**` can be any character and can span multiple module levels.
+- `glob: <pattern>`: matches modules matching the provided `<pattern>`. `*` can be any character on the same module level. `**` can be any character and can span multiple module levels.
+
+In addition to the type, certain attributes can be added to rules:
+
+- `qualified: <yes | no>`: when set, `yes` only matches import declarations that are qualified, unlike `no` which only matches import declarations that are not qualified.
+- `priority: <int>`: in cases multiple rules from different groups match an import declaration, the value associated to `priority` is used as a tie-breaker: the matching rule with the lowest priority wins, and the import declaration will belong to the group with that rule.
 
 Here's an example used in the `custom` configuration:
 
