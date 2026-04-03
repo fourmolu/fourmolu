@@ -3,6 +3,7 @@
 
 module Ormolu.Imports.Grouping
   ( Import (..),
+    ImportList (..),
     prepareExistingGroups,
     groupImports,
   )
@@ -28,8 +29,14 @@ newtype ImportGroups = ImportGroups (NonEmpty ImportGroup)
 
 data Import = Import
   { importName :: ModuleName,
+    importList :: Maybe ImportList,
     importQualified :: Bool
   }
+
+data ImportList
+  = ImportList
+  | HidingList
+  deriving (Eq)
 
 importGroupSingleStrategy :: ImportGroups
 importGroupSingleStrategy =
@@ -95,6 +102,7 @@ matchAllImportRule :: ImportGroupRule
 matchAllImportRule =
   ImportGroupRule
     { igrModuleMatcher = MatchAllModules,
+      igrImportListMatcher = Config.MatchAnyImportDeclaration,
       igrQualifiedMatcher = Config.MatchBothQualifiedAndUnqualified,
       igrPriority = Config.matchAllRulePriority
     }
@@ -103,6 +111,7 @@ matchLocalModulesRule :: ImportGroupRule
 matchLocalModulesRule =
   ImportGroupRule
     { igrModuleMatcher = MatchLocalModules,
+      igrImportListMatcher = Config.MatchAnyImportDeclaration,
       igrQualifiedMatcher = Config.MatchBothQualifiedAndUnqualified,
       igrPriority = Config.matchLocalRulePriority
     }
@@ -122,8 +131,13 @@ withUnqualifiedOnly ImportGroupRule {..} =
     }
 
 matchesRule :: Set Cabal.ModuleName -> Import -> ImportGroupRule -> Bool
-matchesRule localMods Import {..} ImportGroupRule {..} = matchesModules && matchesQualified
+matchesRule localMods Import {..} ImportGroupRule {..} = and [matchesImportList, matchesModules, matchesQualified]
   where
+    matchesImportList = case igrImportListMatcher of
+      Config.MatchExplicitImportList -> importList == Just ImportList
+      Config.MatchHidingImportClause -> importList == Just HidingList
+      Config.MatchWholeModuleImport -> importList == Nothing
+      Config.MatchAnyImportDeclaration -> True
     matchesModules = case igrModuleMatcher of
       MatchAllModules -> True
       MatchLocalModules -> ghcModuleNameToCabal importName `Set.member` localMods

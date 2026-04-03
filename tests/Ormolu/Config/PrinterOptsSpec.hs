@@ -154,7 +154,20 @@ spec =
                       igRules =
                         NonEmpty.fromList
                           [ ImportGroupRule
+                              { igrModuleMatcher = MatchAllModules,
+                                igrImportListMatcher = MatchWholeModuleImport,
+                                igrQualifiedMatcher = MatchUnqualifiedOnly,
+                                igrPriority = defaultImportRulePriority
+                              }
+                          ]
+                    },
+                  ImportGroup
+                    { igName = Nothing,
+                      igRules =
+                        NonEmpty.fromList
+                          [ ImportGroupRule
                               { igrModuleMatcher = MatchGlob (mkGlob "Data.Text"),
+                                igrImportListMatcher = MatchAnyImportDeclaration,
                                 igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
                                 igrPriority = defaultImportRulePriority
                               }
@@ -166,6 +179,7 @@ spec =
                         NonEmpty.fromList
                           [ ImportGroupRule
                               { igrModuleMatcher = MatchAllModules,
+                                igrImportListMatcher = MatchAnyImportDeclaration,
                                 igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
                                 igrPriority = ImportRulePriority 100
                               }
@@ -177,11 +191,13 @@ spec =
                         NonEmpty.fromList
                           [ ImportGroupRule
                               { igrModuleMatcher = MatchGlob (mkGlob "SomeInternal.**"),
+                                igrImportListMatcher = MatchAnyImportDeclaration,
                                 igrQualifiedMatcher = MatchQualifiedOnly,
                                 igrPriority = defaultImportRulePriority
                               },
                             ImportGroupRule
                               { igrModuleMatcher = MatchGlob (mkGlob "Unknown.**"),
+                                igrImportListMatcher = MatchAnyImportDeclaration,
                                 igrQualifiedMatcher = MatchUnqualifiedOnly,
                                 igrPriority = defaultImportRulePriority
                               }
@@ -193,11 +209,13 @@ spec =
                         NonEmpty.fromList
                           [ ImportGroupRule
                               { igrModuleMatcher = MatchLocalModules,
+                                igrImportListMatcher = MatchAnyImportDeclaration,
                                 igrQualifiedMatcher = MatchUnqualifiedOnly,
                                 igrPriority = defaultImportRulePriority
                               },
                             ImportGroupRule
                               { igrModuleMatcher = MatchAllModules,
+                                igrImportListMatcher = MatchAnyImportDeclaration,
                                 igrQualifiedMatcher = MatchQualifiedOnly,
                                 igrPriority = defaultImportRulePriority
                               }

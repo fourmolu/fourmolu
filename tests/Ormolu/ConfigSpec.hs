@@ -8,7 +8,7 @@ import Data.List (isInfixOf)
 import Data.List.NonEmpty qualified as NonEmpty
 import Data.Map qualified as Map
 import Data.Yaml qualified as Yaml
-import Ormolu.Config (FourmoluConfig (..), ImportGroup (..), ImportGroupRule (..), ImportGrouping (..), ImportModuleMatcher (..), ImportRulePriority (ImportRulePriority), PrinterOpts (..), QualifiedImportMatcher (MatchBothQualifiedAndUnqualified, MatchQualifiedOnly, MatchUnqualifiedOnly), defaultImportRulePriority, matchAllRulePriority, resolvePrinterOpts)
+import Ormolu.Config (FourmoluConfig (..), ImportGroup (..), ImportGroupRule (..), ImportGrouping (..), ImportListMatcher (..), ImportModuleMatcher (..), ImportRulePriority (ImportRulePriority), PrinterOpts (..), QualifiedImportMatcher (MatchBothQualifiedAndUnqualified, MatchQualifiedOnly, MatchUnqualifiedOnly), defaultImportRulePriority, matchAllRulePriority, resolvePrinterOpts)
 import Ormolu.Fixity (ModuleReexports (..))
 import Ormolu.Utils.Glob (mkGlob)
 import Test.Hspec
@@ -82,8 +82,108 @@ spec = do
                         NonEmpty.fromList
                           [ ImportGroupRule
                               { igrModuleMatcher = MatchAllModules,
+                                igrImportListMatcher = MatchAnyImportDeclaration,
                                 igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
                                 igrPriority = matchAllRulePriority
+                              }
+                          ]
+                    }
+                ]
+        actualStrategy `shouldBe` Just (ImportGroupCustom expectedRules)
+      it "enables the 'explicit' import list option" $ do
+        config <-
+          Yaml.decodeThrow . Char8.pack . unlines $
+            [ "import-grouping:",
+              "  - rules:",
+              "      - glob: \"**\"",
+              "        import-list: explicit"
+            ]
+        let actualStrategy = poImportGrouping (cfgFilePrinterOpts config)
+            expectedRules =
+              NonEmpty.fromList
+                [ ImportGroup
+                    { igName = Nothing,
+                      igRules =
+                        NonEmpty.fromList
+                          [ ImportGroupRule
+                              { igrModuleMatcher = MatchGlob (mkGlob "**"),
+                                igrImportListMatcher = MatchExplicitImportList,
+                                igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
+                                igrPriority = defaultImportRulePriority
+                              }
+                          ]
+                    }
+                ]
+        actualStrategy `shouldBe` Just (ImportGroupCustom expectedRules)
+      it "enables the 'hiding' import list option" $ do
+        config <-
+          Yaml.decodeThrow . Char8.pack . unlines $
+            [ "import-grouping:",
+              "  - rules:",
+              "      - glob: \"**\"",
+              "        import-list: hiding"
+            ]
+        let actualStrategy = poImportGrouping (cfgFilePrinterOpts config)
+            expectedRules =
+              NonEmpty.fromList
+                [ ImportGroup
+                    { igName = Nothing,
+                      igRules =
+                        NonEmpty.fromList
+                          [ ImportGroupRule
+                              { igrModuleMatcher = MatchGlob (mkGlob "**"),
+                                igrImportListMatcher = MatchHidingImportClause,
+                                igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
+                                igrPriority = defaultImportRulePriority
+                              }
+                          ]
+                    }
+                ]
+        actualStrategy `shouldBe` Just (ImportGroupCustom expectedRules)
+      it "enables the 'none' import list option" $ do
+        config <-
+          Yaml.decodeThrow . Char8.pack . unlines $
+            [ "import-grouping:",
+              "  - rules:",
+              "      - glob: \"**\"",
+              "        import-list: none"
+            ]
+        let actualStrategy = poImportGrouping (cfgFilePrinterOpts config)
+            expectedRules =
+              NonEmpty.fromList
+                [ ImportGroup
+                    { igName = Nothing,
+                      igRules =
+                        NonEmpty.fromList
+                          [ ImportGroupRule
+                              { igrModuleMatcher = MatchGlob (mkGlob "**"),
+                                igrImportListMatcher = MatchWholeModuleImport,
+                                igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
+                                igrPriority = defaultImportRulePriority
+                              }
+                          ]
+                    }
+                ]
+        actualStrategy `shouldBe` Just (ImportGroupCustom expectedRules)
+      it "disregards the presence or absence of import list and hiding clause by default" $ do
+        config <-
+          Yaml.decodeThrow . Char8.pack . unlines $
+            [ "import-grouping:",
+              "  - rules:",
+              "      - glob: \"**\""
+            ]
+        let actualStrategy = poImportGrouping (cfgFilePrinterOpts config)
+            expectedRules =
+              NonEmpty.fromList
+                [ ImportGroup
+                    { igName = Nothing,
+                      igRules =
+                        NonEmpty.fromList
+                          [ ImportGroupRule
+                              { igrModuleMatcher = MatchGlob (mkGlob "**"),
+                                igrImportListMatcher = MatchAnyImportDeclaration,
+                                igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
+                                igrPriority = defaultImportRulePriority
                               }
                           ]
                     }
@@ -106,6 +206,7 @@ spec = do
                         NonEmpty.fromList
                           [ ImportGroupRule
                               { igrModuleMatcher = MatchGlob (mkGlob "**"),
+                                igrImportListMatcher = MatchAnyImportDeclaration,
                                 igrQualifiedMatcher = MatchQualifiedOnly,
                                 igrPriority = defaultImportRulePriority
                               }
@@ -130,6 +231,7 @@ spec = do
                         NonEmpty.fromList
                           [ ImportGroupRule
                               { igrModuleMatcher = MatchGlob (mkGlob "**"),
+                                igrImportListMatcher = MatchAnyImportDeclaration,
                                 igrQualifiedMatcher = MatchUnqualifiedOnly,
                                 igrPriority = defaultImportRulePriority
                               }
@@ -154,6 +256,7 @@ spec = do
                         NonEmpty.fromList
                           [ ImportGroupRule
                               { igrModuleMatcher = MatchAllModules,
+                                igrImportListMatcher = MatchAnyImportDeclaration,
                                 igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
                                 igrPriority = ImportRulePriority 55
                               }
@@ -177,6 +280,7 @@ spec = do
                         NonEmpty.fromList
                           [ ImportGroupRule
                               { igrModuleMatcher = MatchGlob (mkGlob "Data.Text.**"),
+                                igrImportListMatcher = MatchAnyImportDeclaration,
                                 igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
                                 igrPriority = defaultImportRulePriority
                               }
@@ -200,6 +304,7 @@ spec = do
                         NonEmpty.fromList
                           [ ImportGroupRule
                               { igrModuleMatcher = MatchLocalModules,
+                                igrImportListMatcher = MatchAnyImportDeclaration,
                                 igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
                                 igrPriority = defaultImportRulePriority
                               }
@@ -223,6 +328,7 @@ spec = do
                         NonEmpty.fromList
                           [ ImportGroupRule
                               { igrModuleMatcher = MatchAllModules,
+                                igrImportListMatcher = MatchAnyImportDeclaration,
                                 igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
                                 igrPriority = matchAllRulePriority
                               }
@@ -266,6 +372,7 @@ spec = do
                         NonEmpty.fromList
                           [ ImportGroupRule
                               { igrModuleMatcher = MatchGlob (mkGlob "Data.Text"),
+                                igrImportListMatcher = MatchAnyImportDeclaration,
                                 igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
                                 igrPriority = defaultImportRulePriority
                               }
@@ -277,6 +384,7 @@ spec = do
                         NonEmpty.fromList
                           [ ImportGroupRule
                               { igrModuleMatcher = MatchAllModules,
+                                igrImportListMatcher = MatchAnyImportDeclaration,
                                 igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
                                 igrPriority = ImportRulePriority 100
                               }
@@ -288,11 +396,13 @@ spec = do
                         NonEmpty.fromList
                           [ ImportGroupRule
                               { igrModuleMatcher = MatchLocalModules,
+                                igrImportListMatcher = MatchAnyImportDeclaration,
                                 igrQualifiedMatcher = MatchUnqualifiedOnly,
                                 igrPriority = defaultImportRulePriority
                               },
                             ImportGroupRule
                               { igrModuleMatcher = MatchGlob (mkGlob "Control.Monad"),
+                                igrImportListMatcher = MatchAnyImportDeclaration,
                                 igrQualifiedMatcher = MatchUnqualifiedOnly,
                                 igrPriority = defaultImportRulePriority
                               }
@@ -304,11 +414,13 @@ spec = do
                         NonEmpty.fromList
                           [ ImportGroupRule
                               { igrModuleMatcher = MatchLocalModules,
+                                igrImportListMatcher = MatchAnyImportDeclaration,
                                 igrQualifiedMatcher = MatchQualifiedOnly,
                                 igrPriority = defaultImportRulePriority
                               },
                             ImportGroupRule
                               { igrModuleMatcher = MatchGlob (mkGlob "Control.Monad"),
+                                igrImportListMatcher = MatchAnyImportDeclaration,
                                 igrQualifiedMatcher = MatchQualifiedOnly,
                                 igrPriority = defaultImportRulePriority
                               }
@@ -320,6 +432,7 @@ spec = do
                         NonEmpty.fromList
                           [ ImportGroupRule
                               { igrModuleMatcher = MatchGlob (mkGlob "Control.Monad.**"),
+                                igrImportListMatcher = MatchAnyImportDeclaration,
                                 igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
                                 igrPriority = defaultImportRulePriority
                               }

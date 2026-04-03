@@ -28,7 +28,7 @@ import GHC.Types.PkgQual
 import GHC.Types.SourceText
 import GHC.Types.SrcLoc
 import Ormolu.Config (ImportGrouping)
-import Ormolu.Imports.Grouping (Import (..), groupImports, prepareExistingGroups)
+import Ormolu.Imports.Grouping (Import (..), ImportList (..), groupImports, prepareExistingGroups)
 import Ormolu.Utils (notImplemented, showOutputable)
 #if !MIN_VERSION_base(4,20,0)
 import Data.List (foldl')
@@ -51,7 +51,15 @@ normalizeImports respectful localModules importGrouping =
     . prepareExistingGroups importGrouping respectful
   where
     toImport :: (ImportId, x) -> Import
-    toImport (ImportId {..}, _) = Import {importName = importIdName, importQualified}
+    toImport (ImportId {..}, _) =
+      Import
+        { importName = importIdName,
+          importList = case importHiding of
+            Just (ImportListInterpretationOrd Exactly) -> Just ImportList
+            Just (ImportListInterpretationOrd EverythingBut) -> Just HidingList
+            Nothing -> Nothing,
+          importQualified
+        }
 
     g :: LImportDecl GhcPs -> LImportDecl GhcPs
     g (L l ImportDecl {..}) =

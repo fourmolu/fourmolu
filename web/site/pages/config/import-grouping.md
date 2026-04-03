@@ -31,6 +31,7 @@ The following rule types are defined:
 
 In addition to the type, certain attributes can be added to rules:
 
+- `import-list: explicit | hiding | none`: when set, `explicit` only matches import declarations with an explicit import list, `hiding` only matches import declarations with the `hiding` clause, `none` only matches import declarations on a whole module (no explicit import list or `hiding` clause). When absent, import declarations will match regardless of import lists or `hiding` clauses.
 - `qualified: <yes | no>`: when set, `yes` only matches import declarations that are qualified, unlike `no` which only matches import declarations that are not qualified.
 - `priority: <int>`: in cases multiple rules from different groups match an import declaration, the value associated to `priority` is used as a tie-breaker: the matching rule with the lowest priority wins, and the import declaration will belong to the group with that rule.
 

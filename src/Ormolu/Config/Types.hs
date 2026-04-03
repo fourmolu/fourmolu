@@ -9,6 +9,7 @@ module Ormolu.Config.Types
     matchAllRulePriority,
     matchLocalRulePriority,
     defaultImportRulePriority,
+    ImportListMatcher (..),
     QualifiedImportMatcher (..),
   )
 where
@@ -35,6 +36,7 @@ instance Aeson.FromJSON ImportGroup where
 
 data ImportGroupRule = ImportGroupRule
   { igrModuleMatcher :: !ImportModuleMatcher,
+    igrImportListMatcher :: !ImportListMatcher,
     igrQualifiedMatcher :: !QualifiedImportMatcher,
     igrPriority :: !ImportRulePriority
   }
@@ -46,6 +48,14 @@ instance Aeson.FromJSON ImportGroupRule where
         failUnknownModuleMatcher = Aeson.parseFail "Unknown or invalid module matcher"
         attemptParseModuleMatcher = parseModuleMatcher <|> failUnknownModuleMatcher
     igrModuleMatcher <- attemptParseModuleMatcher
+
+    importList <- Aeson.parseFieldMaybe @String o "import-list"
+    igrImportListMatcher <- case importList of
+      Just "explicit" -> pure MatchExplicitImportList
+      Just "hiding" -> pure MatchHidingImportClause
+      Just "none" -> pure MatchWholeModuleImport
+      Just other -> Aeson.parseFail $ "Unknown import list matcher: " <> other
+      Nothing -> pure MatchAnyImportDeclaration
 
     qualified <- o .:? "qualified"
     igrQualifiedMatcher <- case qualified of
@@ -74,6 +84,13 @@ matchLocalRulePriority = ImportRulePriority 60 -- Lower priority than "all" but 
 
 defaultImportRulePriority :: ImportRulePriority
 defaultImportRulePriority = ImportRulePriority 50
+
+data ImportListMatcher
+  = MatchExplicitImportList
+  | MatchHidingImportClause
+  | MatchWholeModuleImport
+  | MatchAnyImportDeclaration
+  deriving (Eq, Show)
 
 data QualifiedImportMatcher
   = MatchQualifiedOnly
