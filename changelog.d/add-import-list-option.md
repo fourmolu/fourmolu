@@ -1,1 +1,1 @@
-- Add the `import-list` option for import grouping.
+- Add the `import-list` option for import grouping ([pull request 522](https://github.com/fourmolu/fourmolu/pull/522) for [issue 519](https://github.com/fourmolu/fourmolu/issues/519)).
