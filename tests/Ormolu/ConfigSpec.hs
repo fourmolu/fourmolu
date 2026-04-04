@@ -125,6 +125,7 @@ spec = do
                 ]
         actualStrategy `shouldBe` Just (ImportGroupCustom expectedRules)
 
+      checkRuleAttribute "'any' import list" ["import-list: any"] $ \config -> config {igrImportListMatcher = MatchAnyImportDeclaration}
       checkRuleAttribute "'explicit' import list" ["import-list: explicit"] $ \config -> config {igrImportListMatcher = MatchExplicitImportList}
       checkRuleAttribute "'hiding' import list" ["import-list: hiding"] $ \config -> config {igrImportListMatcher = MatchHidingImportClause}
       checkRuleAttribute "'none' import list" ["import-list: none"] $ \config -> config {igrImportListMatcher = MatchWholeModuleImport}

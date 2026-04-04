@@ -52,6 +52,7 @@ instance Aeson.FromJSON ImportGroupRule where
 
     igrImportListMatcher <-
       o .:? "import-list" >>= \case
+        Just "any" -> pure MatchAnyImportDeclaration
         Just "explicit" -> pure MatchExplicitImportList
         Just "hiding" -> pure MatchHidingImportClause
         Just "none" -> pure MatchWholeModuleImport
