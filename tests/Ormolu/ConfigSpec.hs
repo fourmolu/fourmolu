@@ -38,7 +38,7 @@ spec = do
 
     context "when using an import grouping configuration" $ do
       let checkRuleAttribute desc ruleConfig applyExpectedChange =
-            it ("enables the " ++ desc ++ " rule attribute") $ do
+            it ("enables the " ++ desc ++ " rule option") $ do
               let baseArbitraryYamlConfig =
                     [ "import-grouping:",
                       "  - rules:",
@@ -131,81 +131,12 @@ spec = do
       checkRuleAttribute "'none' import list" ["import-list: none"] $ \config -> config {igrImportListMatcher = MatchWholeModuleImport}
       checkRuleAttribute "default import list" [] $ \config -> config {igrImportListMatcher = MatchAnyImportDeclaration}
 
-      it "enables the 'qualified' rule option" $ do
-        config <-
-          Yaml.decodeThrow . Char8.pack . unlines $
-            [ "import-grouping:",
-              "  - rules:",
-              "      - glob: \"**\"",
-              "        qualified: yes"
-            ]
-        let actualStrategy = poImportGrouping (cfgFilePrinterOpts config)
-            expectedRules =
-              NonEmpty.fromList
-                [ ImportGroup
-                    { igName = Nothing,
-                      igRules =
-                        NonEmpty.fromList
-                          [ ImportGroupRule
-                              { igrModuleMatcher = MatchGlob (mkGlob "**"),
-                                igrImportListMatcher = MatchAnyImportDeclaration,
-                                igrQualifiedMatcher = MatchQualifiedOnly,
-                                igrPriority = defaultImportRulePriority
-                              }
-                          ]
-                    }
-                ]
-        actualStrategy `shouldBe` Just (ImportGroupCustom expectedRules)
-      it "disables the 'qualified' rule option" $ do
-        config <-
-          Yaml.decodeThrow . Char8.pack . unlines $
-            [ "import-grouping:",
-              "  - rules:",
-              "      - glob: \"**\"",
-              "        qualified: no"
-            ]
-        let actualStrategy = poImportGrouping (cfgFilePrinterOpts config)
-            expectedRules =
-              NonEmpty.fromList
-                [ ImportGroup
-                    { igName = Nothing,
-                      igRules =
-                        NonEmpty.fromList
-                          [ ImportGroupRule
-                              { igrModuleMatcher = MatchGlob (mkGlob "**"),
-                                igrImportListMatcher = MatchAnyImportDeclaration,
-                                igrQualifiedMatcher = MatchUnqualifiedOnly,
-                                igrPriority = defaultImportRulePriority
-                              }
-                          ]
-                    }
-                ]
-        actualStrategy `shouldBe` Just (ImportGroupCustom expectedRules)
-      it "decodes the 'priority' rule option" $ do
-        config <-
-          Yaml.decodeThrow . Char8.pack . unlines $
-            [ "import-grouping:",
-              "  - rules:",
-              "      - match: all",
-              "        priority: 55"
-            ]
-        let actualStrategy = poImportGrouping (cfgFilePrinterOpts config)
-            expectedRules =
-              NonEmpty.fromList
-                [ ImportGroup
-                    { igName = Nothing,
-                      igRules =
-                        NonEmpty.fromList
-                          [ ImportGroupRule
-                              { igrModuleMatcher = MatchAllModules,
-                                igrImportListMatcher = MatchAnyImportDeclaration,
-                                igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
-                                igrPriority = ImportRulePriority 55
-                              }
-                          ]
-                    }
-                ]
-        actualStrategy `shouldBe` Just (ImportGroupCustom expectedRules)
+      checkRuleAttribute "'qualified: yes'" ["qualified: yes"] $ \config -> config {igrQualifiedMatcher = MatchQualifiedOnly}
+      checkRuleAttribute "'qualified: no'" ["qualified: no"] $ \config -> config {igrQualifiedMatcher = MatchUnqualifiedOnly}
+
+      checkRuleAttribute "'priority' (55 priority example)" ["priority: 55"] $ \config -> config {igrPriority = ImportRulePriority 55}
+      checkRuleAttribute "'priority' (80 priority example)" ["priority: 80"] $ \config -> config {igrPriority = ImportRulePriority 80}
+
       it "parses a 'glob' rule" $ do
         config <-
           Yaml.decodeThrow . Char8.pack . unlines $
