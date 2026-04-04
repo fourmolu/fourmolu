@@ -3,8 +3,10 @@
 -- | Tests for Fourmolu file configuration.
 module Ormolu.ConfigSpec (spec) where
 
+import Control.Monad ((>=>))
 import Data.ByteString.Char8 qualified as Char8
 import Data.List (isInfixOf)
+import Data.List.NonEmpty (NonEmpty (..))
 import Data.List.NonEmpty qualified as NonEmpty
 import Data.Map qualified as Map
 import Data.Yaml qualified as Yaml
@@ -35,6 +37,38 @@ spec = do
       poIndentation (resolvePrinterOpts configs) `shouldBe` 4
 
     context "when using an import grouping configuration" $ do
+      let checkRuleAttribute desc ruleConfig applyExpectedChange =
+            it ("enables the " ++ desc ++ " rule attribute") $ do
+              let baseArbitraryYamlConfig =
+                    [ "import-grouping:",
+                      "  - rules:",
+                      "      - glob: \"**\""
+                    ]
+                  yamlConfigChange = map ("        " ++) ruleConfig
+                  yamlConfig = unlines (baseArbitraryYamlConfig ++ yamlConfigChange)
+
+                  downCustomRules (ImportGroupCustom customRules) = Just customRules
+                  downCustomRules _ = Nothing
+                  downSingleton (a :| []) = Just a
+                  downSingleton _ = Nothing
+                  accessTestedRule = downCustomRules >=> downSingleton >=> downSingleton . igRules
+
+                  baseArbitraryConfig =
+                    ImportGroupRule
+                      { igrModuleMatcher = MatchGlob (mkGlob "**"),
+                        igrImportListMatcher = MatchAnyImportDeclaration,
+                        igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
+                        igrPriority = defaultImportRulePriority
+                      }
+                  expectedRuleConfig = applyExpectedChange baseArbitraryConfig
+
+              config <- Yaml.decodeThrow (Char8.pack yamlConfig)
+
+              let actualStrategy = poImportGrouping (cfgFilePrinterOpts config)
+              case actualStrategy >>= accessTestedRule of
+                Nothing -> expectationFailure "A single tested rule change was expected"
+                Just actualRule -> actualRule `shouldBe` expectedRuleConfig
+
       it "parses 'legacy' as the 'ImportGroupLegacy' import grouping strategy" $ do
         config <- Yaml.decodeThrow "import-grouping: legacy"
         let actualStrategy = poImportGrouping (cfgFilePrinterOpts config)
@@ -90,105 +124,12 @@ spec = do
                     }
                 ]
         actualStrategy `shouldBe` Just (ImportGroupCustom expectedRules)
-      it "enables the 'explicit' import list option" $ do
-        config <-
-          Yaml.decodeThrow . Char8.pack . unlines $
-            [ "import-grouping:",
-              "  - rules:",
-              "      - glob: \"**\"",
-              "        import-list: explicit"
-            ]
-        let actualStrategy = poImportGrouping (cfgFilePrinterOpts config)
-            expectedRules =
-              NonEmpty.fromList
-                [ ImportGroup
-                    { igName = Nothing,
-                      igRules =
-                        NonEmpty.fromList
-                          [ ImportGroupRule
-                              { igrModuleMatcher = MatchGlob (mkGlob "**"),
-                                igrImportListMatcher = MatchExplicitImportList,
-                                igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
-                                igrPriority = defaultImportRulePriority
-                              }
-                          ]
-                    }
-                ]
-        actualStrategy `shouldBe` Just (ImportGroupCustom expectedRules)
-      it "enables the 'hiding' import list option" $ do
-        config <-
-          Yaml.decodeThrow . Char8.pack . unlines $
-            [ "import-grouping:",
-              "  - rules:",
-              "      - glob: \"**\"",
-              "        import-list: hiding"
-            ]
-        let actualStrategy = poImportGrouping (cfgFilePrinterOpts config)
-            expectedRules =
-              NonEmpty.fromList
-                [ ImportGroup
-                    { igName = Nothing,
-                      igRules =
-                        NonEmpty.fromList
-                          [ ImportGroupRule
-                              { igrModuleMatcher = MatchGlob (mkGlob "**"),
-                                igrImportListMatcher = MatchHidingImportClause,
-                                igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
-                                igrPriority = defaultImportRulePriority
-                              }
-                          ]
-                    }
-                ]
-        actualStrategy `shouldBe` Just (ImportGroupCustom expectedRules)
-      it "enables the 'none' import list option" $ do
-        config <-
-          Yaml.decodeThrow . Char8.pack . unlines $
-            [ "import-grouping:",
-              "  - rules:",
-              "      - glob: \"**\"",
-              "        import-list: none"
-            ]
-        let actualStrategy = poImportGrouping (cfgFilePrinterOpts config)
-            expectedRules =
-              NonEmpty.fromList
-                [ ImportGroup
-                    { igName = Nothing,
-                      igRules =
-                        NonEmpty.fromList
-                          [ ImportGroupRule
-                              { igrModuleMatcher = MatchGlob (mkGlob "**"),
-                                igrImportListMatcher = MatchWholeModuleImport,
-                                igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
-                                igrPriority = defaultImportRulePriority
-                              }
-                          ]
-                    }
-                ]
-        actualStrategy `shouldBe` Just (ImportGroupCustom expectedRules)
-      it "disregards the presence or absence of import list and hiding clause by default" $ do
-        config <-
-          Yaml.decodeThrow . Char8.pack . unlines $
-            [ "import-grouping:",
-              "  - rules:",
-              "      - glob: \"**\""
-            ]
-        let actualStrategy = poImportGrouping (cfgFilePrinterOpts config)
-            expectedRules =
-              NonEmpty.fromList
-                [ ImportGroup
-                    { igName = Nothing,
-                      igRules =
-                        NonEmpty.fromList
-                          [ ImportGroupRule
-                              { igrModuleMatcher = MatchGlob (mkGlob "**"),
-                                igrImportListMatcher = MatchAnyImportDeclaration,
-                                igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
-                                igrPriority = defaultImportRulePriority
-                              }
-                          ]
-                    }
-                ]
-        actualStrategy `shouldBe` Just (ImportGroupCustom expectedRules)
+
+      checkRuleAttribute "'explicit' import list" ["import-list: explicit"] $ \config -> config {igrImportListMatcher = MatchExplicitImportList}
+      checkRuleAttribute "'hiding' import list" ["import-list: hiding"] $ \config -> config {igrImportListMatcher = MatchHidingImportClause}
+      checkRuleAttribute "'none' import list" ["import-list: none"] $ \config -> config {igrImportListMatcher = MatchWholeModuleImport}
+      checkRuleAttribute "default import list" [] $ \config -> config {igrImportListMatcher = MatchAnyImportDeclaration}
+
       it "enables the 'qualified' rule option" $ do
         config <-
           Yaml.decodeThrow . Char8.pack . unlines $
