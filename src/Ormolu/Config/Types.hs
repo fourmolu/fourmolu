@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
@@ -49,13 +50,13 @@ instance Aeson.FromJSON ImportGroupRule where
         attemptParseModuleMatcher = parseModuleMatcher <|> failUnknownModuleMatcher
     igrModuleMatcher <- attemptParseModuleMatcher
 
-    importList <- Aeson.parseFieldMaybe @String o "import-list"
-    igrImportListMatcher <- case importList of
-      Just "explicit" -> pure MatchExplicitImportList
-      Just "hiding" -> pure MatchHidingImportClause
-      Just "none" -> pure MatchWholeModuleImport
-      Just other -> Aeson.parseFail $ "Unknown import list matcher: " <> other
-      Nothing -> pure MatchAnyImportDeclaration
+    igrImportListMatcher <-
+      o .:? "import-list" >>= \case
+        Just "explicit" -> pure MatchExplicitImportList
+        Just "hiding" -> pure MatchHidingImportClause
+        Just "none" -> pure MatchWholeModuleImport
+        Just other -> Aeson.parseFail $ "Unknown import list matcher: " <> other
+        Nothing -> pure MatchAnyImportDeclaration
 
     qualified <- o .:? "qualified"
     igrQualifiedMatcher <- case qualified of
