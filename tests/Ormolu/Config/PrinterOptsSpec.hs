@@ -13,6 +13,7 @@ import Control.Exception (catch)
 import Control.Monad (forM_, when)
 import Data.Algorithm.DiffContext qualified as Diff
 import Data.Char (isSpace)
+import Data.List.NonEmpty (NonEmpty)
 import Data.List.NonEmpty qualified as NonEmpty
 import Data.Maybe (isJust)
 import Data.Set qualified as S
@@ -148,80 +149,7 @@ spec =
               ImportGroupByQualified,
               ImportGroupByScope,
               ImportGroupByScopeThenQualified,
-              ImportGroupCustom . NonEmpty.fromList $
-                [ ImportGroup
-                    { igName = Nothing,
-                      igRules =
-                        NonEmpty.fromList
-                          [ ImportGroupRule
-                              { igrModuleMatcher = MatchAllModules,
-                                igrImportListMatcher = MatchWholeModuleImport,
-                                igrQualifiedMatcher = MatchUnqualifiedOnly,
-                                igrPriority = defaultImportRulePriority
-                              }
-                          ]
-                    },
-                  ImportGroup
-                    { igName = Nothing,
-                      igRules =
-                        NonEmpty.fromList
-                          [ ImportGroupRule
-                              { igrModuleMatcher = MatchGlob (mkGlob "Data.Text"),
-                                igrImportListMatcher = MatchAnyImportDeclaration,
-                                igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
-                                igrPriority = defaultImportRulePriority
-                              }
-                          ]
-                    },
-                  ImportGroup
-                    { igName = Nothing,
-                      igRules =
-                        NonEmpty.fromList
-                          [ ImportGroupRule
-                              { igrModuleMatcher = MatchAllModules,
-                                igrImportListMatcher = MatchAnyImportDeclaration,
-                                igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
-                                igrPriority = ImportRulePriority 100
-                              }
-                          ]
-                    },
-                  ImportGroup
-                    { igName = Nothing,
-                      igRules =
-                        NonEmpty.fromList
-                          [ ImportGroupRule
-                              { igrModuleMatcher = MatchGlob (mkGlob "SomeInternal.**"),
-                                igrImportListMatcher = MatchAnyImportDeclaration,
-                                igrQualifiedMatcher = MatchQualifiedOnly,
-                                igrPriority = defaultImportRulePriority
-                              },
-                            ImportGroupRule
-                              { igrModuleMatcher = MatchGlob (mkGlob "Unknown.**"),
-                                igrImportListMatcher = MatchAnyImportDeclaration,
-                                igrQualifiedMatcher = MatchUnqualifiedOnly,
-                                igrPriority = defaultImportRulePriority
-                              }
-                          ]
-                    },
-                  ImportGroup
-                    { igName = Nothing,
-                      igRules =
-                        NonEmpty.fromList
-                          [ ImportGroupRule
-                              { igrModuleMatcher = MatchLocalModules,
-                                igrImportListMatcher = MatchAnyImportDeclaration,
-                                igrQualifiedMatcher = MatchUnqualifiedOnly,
-                                igrPriority = defaultImportRulePriority
-                              },
-                            ImportGroupRule
-                              { igrModuleMatcher = MatchAllModules,
-                                igrImportListMatcher = MatchAnyImportDeclaration,
-                                igrQualifiedMatcher = MatchQualifiedOnly,
-                                igrPriority = defaultImportRulePriority
-                              }
-                          ]
-                    }
-                ]
+              ImportGroupCustom importGroupCustomRules
             ],
           updateConfig = \igs opts ->
             opts
@@ -561,3 +489,80 @@ spanEnd :: (a -> Bool) -> [a] -> ([a], [a])
 spanEnd f xs =
   let xs' = reverse xs
    in (reverse $ dropWhile f xs', reverse $ takeWhile f xs')
+
+importGroupCustomRules :: NonEmpty ImportGroup
+importGroupCustomRules =
+  NonEmpty.fromList
+    [ ImportGroup
+        { igName = Nothing,
+          igRules =
+            NonEmpty.fromList
+              [ ImportGroupRule
+                  { igrModuleMatcher = MatchAllModules,
+                    igrImportListMatcher = MatchWholeModuleImport,
+                    igrQualifiedMatcher = MatchUnqualifiedOnly,
+                    igrPriority = defaultImportRulePriority
+                  }
+              ]
+        },
+      ImportGroup
+        { igName = Nothing,
+          igRules =
+            NonEmpty.fromList
+              [ ImportGroupRule
+                  { igrModuleMatcher = MatchGlob (mkGlob "Data.Text"),
+                    igrImportListMatcher = MatchAnyImportDeclaration,
+                    igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
+                    igrPriority = defaultImportRulePriority
+                  }
+              ]
+        },
+      ImportGroup
+        { igName = Nothing,
+          igRules =
+            NonEmpty.fromList
+              [ ImportGroupRule
+                  { igrModuleMatcher = MatchAllModules,
+                    igrImportListMatcher = MatchAnyImportDeclaration,
+                    igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
+                    igrPriority = ImportRulePriority 100
+                  }
+              ]
+        },
+      ImportGroup
+        { igName = Nothing,
+          igRules =
+            NonEmpty.fromList
+              [ ImportGroupRule
+                  { igrModuleMatcher = MatchGlob (mkGlob "SomeInternal.**"),
+                    igrImportListMatcher = MatchAnyImportDeclaration,
+                    igrQualifiedMatcher = MatchQualifiedOnly,
+                    igrPriority = defaultImportRulePriority
+                  },
+                ImportGroupRule
+                  { igrModuleMatcher = MatchGlob (mkGlob "Unknown.**"),
+                    igrImportListMatcher = MatchAnyImportDeclaration,
+                    igrQualifiedMatcher = MatchUnqualifiedOnly,
+                    igrPriority = defaultImportRulePriority
+                  }
+              ]
+        },
+      ImportGroup
+        { igName = Nothing,
+          igRules =
+            NonEmpty.fromList
+              [ ImportGroupRule
+                  { igrModuleMatcher = MatchLocalModules,
+                    igrImportListMatcher = MatchAnyImportDeclaration,
+                    igrQualifiedMatcher = MatchUnqualifiedOnly,
+                    igrPriority = defaultImportRulePriority
+                  },
+                ImportGroupRule
+                  { igrModuleMatcher = MatchAllModules,
+                    igrImportListMatcher = MatchAnyImportDeclaration,
+                    igrQualifiedMatcher = MatchQualifiedOnly,
+                    igrPriority = defaultImportRulePriority
+                  }
+              ]
+        }
+    ]
