@@ -51,13 +51,12 @@ instance Aeson.FromJSON ImportGroupRule where
     igrModuleMatcher <- attemptParseModuleMatcher
 
     igrImportListMatcher <-
-      o .:? "import-list" >>= \case
-        Just "any" -> pure MatchAnyImportDeclaration
-        Just "explicit" -> pure MatchExplicitImportList
-        Just "hiding" -> pure MatchHidingImportClause
-        Just "none" -> pure MatchWholeModuleImport
-        Just other -> Aeson.parseFail $ "Unknown import list matcher: " <> other
-        Nothing -> pure MatchAnyImportDeclaration
+      o .:? "import-list" .!= "any" >>= \case
+        "any" -> pure MatchAnyImportDeclaration
+        "explicit" -> pure MatchExplicitImportList
+        "hiding" -> pure MatchHidingImportClause
+        "none" -> pure MatchWholeModuleImport
+        other -> Aeson.parseFail $ "Unknown import list matcher: " <> other
 
     qualified <- o .:? "qualified"
     igrQualifiedMatcher <- case qualified of
