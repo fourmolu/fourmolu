@@ -80,15 +80,7 @@ spec = do
               NonEmpty.fromList
                 [ ImportGroup
                     { igName = Just "Some name",
-                      igRules =
-                        NonEmpty.fromList
-                          [ ImportGroupRule
-                              { igrModuleMatcher = MatchAllModules,
-                                igrImportListMatcher = MatchAnyImportDeclaration,
-                                igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
-                                igrPriority = matchAllRulePriority
-                              }
-                          ]
+                      igRules = NonEmpty.fromList [(defaultImportGroupRule MatchAllModules) {igrPriority = matchAllRulePriority}]
                     }
                 ]
         actualStrategy `shouldBe` Just (ImportGroupCustom expectedRules)
@@ -177,75 +169,31 @@ spec = do
               NonEmpty.fromList
                 [ ImportGroup
                     { igName = Just "Text modules",
-                      igRules =
-                        NonEmpty.fromList
-                          [ ImportGroupRule
-                              { igrModuleMatcher = MatchGlob (mkGlob "Data.Text"),
-                                igrImportListMatcher = MatchAnyImportDeclaration,
-                                igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
-                                igrPriority = defaultImportRulePriority
-                              }
-                          ]
+                      igRules = NonEmpty.fromList [defaultImportGroupRule (MatchGlob $ mkGlob "Data.Text")]
                     },
                   ImportGroup
                     { igName = Just "The rest",
-                      igRules =
-                        NonEmpty.fromList
-                          [ ImportGroupRule
-                              { igrModuleMatcher = MatchAllModules,
-                                igrImportListMatcher = MatchAnyImportDeclaration,
-                                igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
-                                igrPriority = ImportRulePriority 100
-                              }
-                          ]
+                      igRules = NonEmpty.fromList [(defaultImportGroupRule MatchAllModules) {igrPriority = ImportRulePriority 100}]
                     },
                   ImportGroup
                     { igName = Just "My internals and monads unqualified",
                       igRules =
                         NonEmpty.fromList
-                          [ ImportGroupRule
-                              { igrModuleMatcher = MatchLocalModules,
-                                igrImportListMatcher = MatchAnyImportDeclaration,
-                                igrQualifiedMatcher = MatchUnqualifiedOnly,
-                                igrPriority = defaultImportRulePriority
-                              },
-                            ImportGroupRule
-                              { igrModuleMatcher = MatchGlob (mkGlob "Control.Monad"),
-                                igrImportListMatcher = MatchAnyImportDeclaration,
-                                igrQualifiedMatcher = MatchUnqualifiedOnly,
-                                igrPriority = defaultImportRulePriority
-                              }
+                          [ (defaultImportGroupRule MatchLocalModules) {igrQualifiedMatcher = MatchUnqualifiedOnly},
+                            (defaultImportGroupRule (MatchGlob $ mkGlob "Control.Monad")) {igrQualifiedMatcher = MatchUnqualifiedOnly}
                           ]
                     },
                   ImportGroup
                     { igName = Just "My internals and monads qualified",
                       igRules =
                         NonEmpty.fromList
-                          [ ImportGroupRule
-                              { igrModuleMatcher = MatchLocalModules,
-                                igrImportListMatcher = MatchAnyImportDeclaration,
-                                igrQualifiedMatcher = MatchQualifiedOnly,
-                                igrPriority = defaultImportRulePriority
-                              },
-                            ImportGroupRule
-                              { igrModuleMatcher = MatchGlob (mkGlob "Control.Monad"),
-                                igrImportListMatcher = MatchAnyImportDeclaration,
-                                igrQualifiedMatcher = MatchQualifiedOnly,
-                                igrPriority = defaultImportRulePriority
-                              }
+                          [ (defaultImportGroupRule MatchLocalModules) {igrQualifiedMatcher = MatchQualifiedOnly},
+                            (defaultImportGroupRule (MatchGlob $ mkGlob "Control.Monad")) {igrQualifiedMatcher = MatchQualifiedOnly}
                           ]
                     },
                   ImportGroup
                     { igName = Just "Specific monads",
-                      igRules =
-                        NonEmpty.fromList
-                          [ ImportGroupRule
-                              { igrModuleMatcher = MatchGlob (mkGlob "Control.Monad.**"),
-                                igrImportListMatcher = MatchAnyImportDeclaration,
-                                igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
-                                igrPriority = defaultImportRulePriority
-                              }
-                          ]
+                      igRules = NonEmpty.fromList [defaultImportGroupRule (MatchGlob $ mkGlob "Control.Monad.**")]
                     }
                 ]
         actualStrategy `shouldBe` Just (ImportGroupCustom expectedRules)
