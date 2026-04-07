@@ -493,76 +493,55 @@ spanEnd f xs =
 importGroupCustomRules :: NonEmpty ImportGroup
 importGroupCustomRules =
   NonEmpty.fromList
-    [ ImportGroup
-        { igName = Nothing,
-          igRules =
-            NonEmpty.fromList
-              [ ImportGroupRule
-                  { igrModuleMatcher = MatchAllModules,
-                    igrImportListMatcher = MatchWholeModuleImport,
-                    igrQualifiedMatcher = MatchUnqualifiedOnly,
-                    igrPriority = defaultImportRulePriority
-                  }
-              ]
-        },
-      ImportGroup
-        { igName = Nothing,
-          igRules =
-            NonEmpty.fromList
-              [ ImportGroupRule
-                  { igrModuleMatcher = MatchGlob (mkGlob "Data.Text"),
-                    igrImportListMatcher = MatchAnyImportDeclaration,
-                    igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
-                    igrPriority = defaultImportRulePriority
-                  }
-              ]
-        },
-      ImportGroup
-        { igName = Nothing,
-          igRules =
-            NonEmpty.fromList
-              [ ImportGroupRule
-                  { igrModuleMatcher = MatchAllModules,
-                    igrImportListMatcher = MatchAnyImportDeclaration,
-                    igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
-                    igrPriority = ImportRulePriority 100
-                  }
-              ]
-        },
-      ImportGroup
-        { igName = Nothing,
-          igRules =
-            NonEmpty.fromList
-              [ ImportGroupRule
-                  { igrModuleMatcher = MatchGlob (mkGlob "SomeInternal.**"),
-                    igrImportListMatcher = MatchAnyImportDeclaration,
-                    igrQualifiedMatcher = MatchQualifiedOnly,
-                    igrPriority = defaultImportRulePriority
-                  },
-                ImportGroupRule
-                  { igrModuleMatcher = MatchGlob (mkGlob "Unknown.**"),
-                    igrImportListMatcher = MatchAnyImportDeclaration,
-                    igrQualifiedMatcher = MatchUnqualifiedOnly,
-                    igrPriority = defaultImportRulePriority
-                  }
-              ]
-        },
-      ImportGroup
-        { igName = Nothing,
-          igRules =
-            NonEmpty.fromList
-              [ ImportGroupRule
-                  { igrModuleMatcher = MatchLocalModules,
-                    igrImportListMatcher = MatchAnyImportDeclaration,
-                    igrQualifiedMatcher = MatchUnqualifiedOnly,
-                    igrPriority = defaultImportRulePriority
-                  },
-                ImportGroupRule
-                  { igrModuleMatcher = MatchAllModules,
-                    igrImportListMatcher = MatchAnyImportDeclaration,
-                    igrQualifiedMatcher = MatchQualifiedOnly,
-                    igrPriority = defaultImportRulePriority
-                  }
-              ]
-        }
+    [ defaultImportGroup $
+        NonEmpty.fromList
+          [ (defaultImportGroupRule MatchAllModules)
+              { igrImportListMatcher = MatchWholeModuleImport,
+                igrQualifiedMatcher = MatchUnqualifiedOnly
+              }
+          ],
+      defaultImportGroup $
+        NonEmpty.fromList
+          [ defaultImportGroupRule (MatchGlob $ mkGlob "Data.Text")
+          ],
+      defaultImportGroup $
+        NonEmpty.fromList
+          [ (defaultImportGroupRule MatchAllModules)
+              { igrPriority = ImportRulePriority 100
+              }
+          ],
+      defaultImportGroup $
+        NonEmpty.fromList
+          [ (defaultImportGroupRule $ MatchGlob (mkGlob "SomeInternal.**"))
+              { igrQualifiedMatcher = MatchQualifiedOnly
+              },
+            (defaultImportGroupRule $ MatchGlob (mkGlob "Unknown.**"))
+              { igrQualifiedMatcher = MatchUnqualifiedOnly
+              }
+          ],
+      defaultImportGroup $
+        NonEmpty.fromList
+          [ (defaultImportGroupRule MatchLocalModules)
+              { igrQualifiedMatcher = MatchUnqualifiedOnly
+              },
+            (defaultImportGroupRule MatchAllModules)
+              { igrQualifiedMatcher = MatchQualifiedOnly
+              }
+          ]
     ]
+  where
+    defaultImportGroup :: NonEmpty ImportGroupRule -> ImportGroup
+    defaultImportGroup rules =
+      ImportGroup
+        { igName = Nothing,
+          igRules = rules
+        }
+
+    defaultImportGroupRule :: ImportModuleMatcher -> ImportGroupRule
+    defaultImportGroupRule moduleMatcher =
+      ImportGroupRule
+        { igrModuleMatcher = moduleMatcher,
+          igrImportListMatcher = MatchAnyImportDeclaration,
+          igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
+          igrPriority = defaultImportRulePriority
+        }
