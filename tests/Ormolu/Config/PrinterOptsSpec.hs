@@ -493,41 +493,36 @@ spanEnd f xs =
 importGroupCustomRules :: NonEmpty ImportGroup
 importGroupCustomRules =
   NonEmpty.fromList
-    [ defaultImportGroup $
-        NonEmpty.fromList
-          [ (defaultImportGroupRule MatchAllModules)
-              { igrImportListMatcher = MatchWholeModuleImport,
-                igrQualifiedMatcher = MatchUnqualifiedOnly
-              }
-          ],
-      defaultImportGroup $
-        NonEmpty.fromList
-          [ defaultImportGroupRule (MatchGlob $ mkGlob "Data.Text")
-          ],
-      defaultImportGroup $
-        NonEmpty.fromList
-          [ (defaultImportGroupRule MatchAllModules)
-              { igrPriority = ImportRulePriority 100
-              }
-          ],
-      defaultImportGroup $
-        NonEmpty.fromList
-          [ (defaultImportGroupRule $ MatchGlob (mkGlob "SomeInternal.**"))
-              { igrQualifiedMatcher = MatchQualifiedOnly
-              },
-            (defaultImportGroupRule $ MatchGlob (mkGlob "Unknown.**"))
-              { igrQualifiedMatcher = MatchUnqualifiedOnly
-              }
-          ],
-      defaultImportGroup $
-        NonEmpty.fromList
-          [ (defaultImportGroupRule MatchLocalModules)
-              { igrQualifiedMatcher = MatchUnqualifiedOnly
-              },
-            (defaultImportGroupRule MatchAllModules)
-              { igrQualifiedMatcher = MatchQualifiedOnly
-              }
-          ]
+    [ defaultImportGroup . NonEmpty.fromList $
+        [ (defaultImportGroupRule MatchAllModules)
+            { igrImportListMatcher = MatchWholeModuleImport,
+              igrQualifiedMatcher = MatchUnqualifiedOnly
+            }
+        ],
+      defaultImportGroup . NonEmpty.fromList $
+        [ defaultImportGroupRule (MatchGlob $ mkGlob "Data.Text")
+        ],
+      defaultImportGroup . NonEmpty.fromList $
+        [ (defaultImportGroupRule MatchAllModules)
+            { igrPriority = ImportRulePriority 100
+            }
+        ],
+      defaultImportGroup . NonEmpty.fromList $
+        [ (defaultImportGroupRule $ MatchGlob (mkGlob "SomeInternal.**"))
+            { igrQualifiedMatcher = MatchQualifiedOnly
+            },
+          (defaultImportGroupRule $ MatchGlob (mkGlob "Unknown.**"))
+            { igrQualifiedMatcher = MatchUnqualifiedOnly
+            }
+        ],
+      defaultImportGroup . NonEmpty.fromList $
+        [ (defaultImportGroupRule MatchLocalModules)
+            { igrQualifiedMatcher = MatchUnqualifiedOnly
+            },
+          (defaultImportGroupRule MatchAllModules)
+            { igrQualifiedMatcher = MatchQualifiedOnly
+            }
+        ]
     ]
   where
     defaultImportGroup :: NonEmpty ImportGroupRule -> ImportGroup
