@@ -85,7 +85,8 @@ spec = do
                 ]
         actualStrategy `shouldBe` Just (ImportGroupCustom expectedRules)
 
-      let checkRule desc yamlRuleConfig expectedRuleConfig =
+      let checkRule :: (HasCallStack) => String -> [String] -> ImportGroupRule -> SpecWith ()
+          checkRule desc yamlRuleConfig expectedRuleConfig =
             it ("parses " ++ desc) $ do
               let baseArbitraryYamlConfig =
                     [ "import-grouping:",
@@ -107,6 +108,8 @@ spec = do
               case actualStrategy >>= accessTestedRule of
                 Nothing -> expectationFailure "A single tested rule change was expected"
                 Just actualRule -> actualRule `shouldBe` expectedRuleConfig
+
+          checkRuleAttribute :: (HasCallStack) => String -> [String] -> (ImportGroupRule -> ImportGroupRule) -> SpecWith ()
           checkRuleAttribute desc yamlRuleConfig applyExpectedChange = do
             let baseArbitraryYamlConfig = ["glob: \"**\""]
                 yamlConfig = baseArbitraryYamlConfig ++ yamlRuleConfig
