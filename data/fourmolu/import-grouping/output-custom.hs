@@ -1,5 +1,9 @@
 module Main where
 
+import Data.Either
+import Data.Functor
+import SomeInternal.Module2
+
 import Data.Text (Text)
 import qualified Data.Text
 

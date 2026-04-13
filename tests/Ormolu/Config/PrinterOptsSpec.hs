@@ -13,6 +13,7 @@ import Control.Exception (catch)
 import Control.Monad (forM_, when)
 import Data.Algorithm.DiffContext qualified as Diff
 import Data.Char (isSpace)
+import Data.List.NonEmpty (NonEmpty)
 import Data.List.NonEmpty qualified as NonEmpty
 import Data.Maybe (isJust)
 import Data.Set qualified as S
@@ -148,62 +149,7 @@ spec =
               ImportGroupByQualified,
               ImportGroupByScope,
               ImportGroupByScopeThenQualified,
-              ImportGroupCustom . NonEmpty.fromList $
-                [ ImportGroup
-                    { igName = Nothing,
-                      igRules =
-                        NonEmpty.fromList
-                          [ ImportGroupRule
-                              { igrModuleMatcher = MatchGlob (mkGlob "Data.Text"),
-                                igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
-                                igrPriority = defaultImportRulePriority
-                              }
-                          ]
-                    },
-                  ImportGroup
-                    { igName = Nothing,
-                      igRules =
-                        NonEmpty.fromList
-                          [ ImportGroupRule
-                              { igrModuleMatcher = MatchAllModules,
-                                igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
-                                igrPriority = ImportRulePriority 100
-                              }
-                          ]
-                    },
-                  ImportGroup
-                    { igName = Nothing,
-                      igRules =
-                        NonEmpty.fromList
-                          [ ImportGroupRule
-                              { igrModuleMatcher = MatchGlob (mkGlob "SomeInternal.**"),
-                                igrQualifiedMatcher = MatchQualifiedOnly,
-                                igrPriority = defaultImportRulePriority
-                              },
-                            ImportGroupRule
-                              { igrModuleMatcher = MatchGlob (mkGlob "Unknown.**"),
-                                igrQualifiedMatcher = MatchUnqualifiedOnly,
-                                igrPriority = defaultImportRulePriority
-                              }
-                          ]
-                    },
-                  ImportGroup
-                    { igName = Nothing,
-                      igRules =
-                        NonEmpty.fromList
-                          [ ImportGroupRule
-                              { igrModuleMatcher = MatchLocalModules,
-                                igrQualifiedMatcher = MatchUnqualifiedOnly,
-                                igrPriority = defaultImportRulePriority
-                              },
-                            ImportGroupRule
-                              { igrModuleMatcher = MatchAllModules,
-                                igrQualifiedMatcher = MatchQualifiedOnly,
-                                igrPriority = defaultImportRulePriority
-                              }
-                          ]
-                    }
-                ]
+              ImportGroupCustom importGroupCustomRules
             ],
           updateConfig = \igs opts ->
             opts
@@ -543,3 +489,54 @@ spanEnd :: (a -> Bool) -> [a] -> ([a], [a])
 spanEnd f xs =
   let xs' = reverse xs
    in (reverse $ dropWhile f xs', reverse $ takeWhile f xs')
+
+importGroupCustomRules :: NonEmpty ImportGroup
+importGroupCustomRules =
+  NonEmpty.fromList
+    [ defaultImportGroup . NonEmpty.fromList $
+        [ (defaultImportGroupRule MatchAllModules)
+            { igrImportListMatcher = MatchWholeModuleImport,
+              igrQualifiedMatcher = MatchUnqualifiedOnly
+            }
+        ],
+      defaultImportGroup . NonEmpty.fromList $
+        [ defaultImportGroupRule (MatchGlob $ mkGlob "Data.Text")
+        ],
+      defaultImportGroup . NonEmpty.fromList $
+        [ (defaultImportGroupRule MatchAllModules)
+            { igrPriority = ImportRulePriority 100
+            }
+        ],
+      defaultImportGroup . NonEmpty.fromList $
+        [ (defaultImportGroupRule $ MatchGlob (mkGlob "SomeInternal.**"))
+            { igrQualifiedMatcher = MatchQualifiedOnly
+            },
+          (defaultImportGroupRule $ MatchGlob (mkGlob "Unknown.**"))
+            { igrQualifiedMatcher = MatchUnqualifiedOnly
+            }
+        ],
+      defaultImportGroup . NonEmpty.fromList $
+        [ (defaultImportGroupRule MatchLocalModules)
+            { igrQualifiedMatcher = MatchUnqualifiedOnly
+            },
+          (defaultImportGroupRule MatchAllModules)
+            { igrQualifiedMatcher = MatchQualifiedOnly
+            }
+        ]
+    ]
+  where
+    defaultImportGroup :: NonEmpty ImportGroupRule -> ImportGroup
+    defaultImportGroup rules =
+      ImportGroup
+        { igName = Nothing,
+          igRules = rules
+        }
+
+    defaultImportGroupRule :: ImportModuleMatcher -> ImportGroupRule
+    defaultImportGroupRule moduleMatcher =
+      ImportGroupRule
+        { igrModuleMatcher = moduleMatcher,
+          igrImportListMatcher = MatchAnyImportDeclaration,
+          igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
+          igrPriority = defaultImportRulePriority
+        }
