@@ -1,0 +1,2 @@
+- Add the `scope` option for import grouping ([pull request 525](https://github.com/fourmolu/fourmolu/pull/525)).
+- Deprecate the `match` option for import grouping in favor of `glob` and `scope` ([pull request 525](https://github.com/fourmolu/fourmolu/pull/525)).
