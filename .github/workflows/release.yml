@@ -98,7 +98,7 @@ jobs:
           hackageToken: ${{ secrets[steps.hackage_token_secret.outputs.name] }}
           packagesPath: ./.release/sdist
       -
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: v${{ env.version }}
           body_path: .release/release-notes.md
