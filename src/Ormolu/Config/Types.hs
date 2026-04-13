@@ -5,18 +5,18 @@
 module Ormolu.Config.Types
   ( ImportGroup (..),
     ImportGroupRule (..),
-    ImportModuleMatcher (..),
     ImportRulePriority (..),
     matchAllRulePriority,
     matchLocalRulePriority,
     defaultImportRulePriority,
     ImportListMatcher (..),
     QualifiedImportMatcher (..),
+    ImportScopeMatcher (..),
   )
 where
 
-import Control.Applicative (Alternative (..), asum)
-import Data.Aeson ((.!=), (.:), (.:?))
+import Control.Applicative (Alternative (..))
+import Data.Aeson ((.!=), (.:?))
 import Data.Aeson qualified as Aeson
 import Data.Aeson.Types qualified as Aeson
 import Data.List.NonEmpty (NonEmpty)
@@ -36,19 +36,24 @@ instance Aeson.FromJSON ImportGroup where
       <*> Aeson.parseField o "rules"
 
 data ImportGroupRule = ImportGroupRule
-  { igrModuleMatcher :: !ImportModuleMatcher,
+  { igrGlob :: !Glob,
     igrImportListMatcher :: !ImportListMatcher,
     igrQualifiedMatcher :: !QualifiedImportMatcher,
+    igrScopeMatcher :: !ImportScopeMatcher,
     igrPriority :: !ImportRulePriority
   }
   deriving (Eq, Show)
 
 instance Aeson.FromJSON ImportGroupRule where
   parseJSON = Aeson.withObject "rule" $ \o -> do
-    let parseModuleMatcher = Aeson.parseJSON (Aeson.Object o)
-        failUnknownModuleMatcher = Aeson.parseFail "Unknown or invalid module matcher"
-        attemptParseModuleMatcher = parseModuleMatcher <|> failUnknownModuleMatcher
-    igrModuleMatcher <- attemptParseModuleMatcher
+    legacyMatch <- o .:? "match"
+    (defaultPriority, defaultScope) <- case legacyMatch of
+      Just "all" -> pure (matchAllRulePriority, pure MatchAllModules)
+      Just "local-modules" -> pure (matchLocalRulePriority, pure MatchLocalModules)
+      Just other -> Aeson.parseFail $ "Unknown legacy match value: " <> other
+      Nothing -> pure (defaultImportRulePriority, empty)
+
+    igrGlob <- mkGlob <$> o .:? "glob" .!= "**"
 
     igrImportListMatcher <-
       o .:? "import-list" .!= "any" >>= \case
@@ -58,15 +63,20 @@ instance Aeson.FromJSON ImportGroupRule where
         "none" -> pure MatchWholeModuleImport
         other -> Aeson.parseFail $ "Unknown import list matcher: " <> other
 
-    qualified <- o .:? "qualified"
-    igrQualifiedMatcher <- case qualified of
-      Just True -> pure MatchQualifiedOnly
-      Just False -> pure MatchUnqualifiedOnly
-      Nothing -> pure MatchBothQualifiedAndUnqualified
+    igrQualifiedMatcher <-
+      o .:? "qualified" >>= \case
+        Just True -> pure MatchQualifiedOnly
+        Just False -> pure MatchUnqualifiedOnly
+        Nothing -> pure MatchBothQualifiedAndUnqualified
 
-    let defaultPriority
-          | MatchAllModules <- igrModuleMatcher = matchAllRulePriority
-          | otherwise = defaultImportRulePriority
+    igrScopeMatcher <-
+      o .:? "scope" >>= \case
+        Just "any" -> pure MatchAllModules
+        Just "local" -> pure MatchLocalModules
+        Just "external" -> pure MatchExternalModules
+        Nothing -> defaultScope <|> pure MatchAllModules
+        Just other -> Aeson.parseFail ("Unknown scope matcher: " <> other)
+
     igrPriority <- o .:? "priority" .!= defaultPriority
 
     pure ImportGroupRule {..}
@@ -99,29 +109,8 @@ data QualifiedImportMatcher
   | MatchBothQualifiedAndUnqualified
   deriving (Eq, Show)
 
-data ImportModuleMatcher
-  = MatchAllModules
+data ImportScopeMatcher
+  = MatchExternalModules
   | MatchLocalModules
-  | MatchGlob !Glob
+  | MatchAllModules
   deriving (Eq, Show)
-
-instance Aeson.FromJSON ImportModuleMatcher where
-  parseJSON v =
-    asum
-      [ parseMatchModuleMatcher v,
-        parseGlobModuleMatcher v
-      ]
-    where
-      parseMatchModuleMatcher :: Aeson.Value -> Aeson.Parser ImportModuleMatcher
-      parseMatchModuleMatcher = Aeson.withObject "ImportModuleMatcher" $ \o -> do
-        c <- Aeson.parseField @String o "match"
-        case c of
-          "all" -> pure MatchAllModules
-          "local-modules" -> pure MatchLocalModules
-          other -> Aeson.parseFail $ "Unknown matcher: " <> other
-
-      parseGlobModuleMatcher :: Aeson.Value -> Aeson.Parser ImportModuleMatcher
-      parseGlobModuleMatcher = Aeson.withObject "ImportModuleMatcher" $ \o -> do
-        rawGlob <- o .: "glob"
-        let glob = mkGlob rawGlob
-        pure (MatchGlob glob)

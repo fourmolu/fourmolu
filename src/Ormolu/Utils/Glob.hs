@@ -1,6 +1,7 @@
 module Ormolu.Utils.Glob
   ( Glob,
     mkGlob,
+    matchAllGlob,
     matchesGlob,
   )
 where
@@ -31,6 +32,9 @@ mkGlob = Glob . parsePart
       t ->
         let (m, t') = break (== '*') t
          in MatchExactly m : parsePart t'
+
+matchAllGlob :: Glob
+matchAllGlob = Glob [DoubleWildcard]
 
 matchesGlob :: String -> Glob -> Bool
 matchesGlob s (Glob ps) = s `matchesGlobParts` ps

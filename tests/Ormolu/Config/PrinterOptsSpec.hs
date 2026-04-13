@@ -27,7 +27,7 @@ import Ormolu (detectSourceType, ormolu)
 import Ormolu.Config
 import Ormolu.Exception (OrmoluException, printOrmoluException)
 import Ormolu.Terminal (runTerm)
-import Ormolu.Utils.Glob (mkGlob)
+import Ormolu.Utils.Glob (matchAllGlob, mkGlob)
 import Path
   ( File,
     Path,
@@ -494,32 +494,35 @@ importGroupCustomRules :: NonEmpty ImportGroup
 importGroupCustomRules =
   NonEmpty.fromList
     [ defaultImportGroup . NonEmpty.fromList $
-        [ (defaultImportGroupRule MatchAllModules)
+        [ defaultImportGroupRule
             { igrImportListMatcher = MatchWholeModuleImport,
               igrQualifiedMatcher = MatchUnqualifiedOnly
             }
         ],
       defaultImportGroup . NonEmpty.fromList $
-        [ defaultImportGroupRule (MatchGlob $ mkGlob "Data.Text")
+        [ defaultImportGroupRule {igrGlob = mkGlob "Data.Text"}
         ],
       defaultImportGroup . NonEmpty.fromList $
-        [ (defaultImportGroupRule MatchAllModules)
+        [ defaultImportGroupRule
             { igrPriority = ImportRulePriority 100
             }
         ],
       defaultImportGroup . NonEmpty.fromList $
-        [ (defaultImportGroupRule $ MatchGlob (mkGlob "SomeInternal.**"))
-            { igrQualifiedMatcher = MatchQualifiedOnly
+        [ defaultImportGroupRule
+            { igrGlob = mkGlob "SomeInternal.**",
+              igrQualifiedMatcher = MatchQualifiedOnly
             },
-          (defaultImportGroupRule $ MatchGlob (mkGlob "Unknown.**"))
-            { igrQualifiedMatcher = MatchUnqualifiedOnly
+          defaultImportGroupRule
+            { igrGlob = mkGlob "Unknown.**",
+              igrQualifiedMatcher = MatchUnqualifiedOnly
             }
         ],
       defaultImportGroup . NonEmpty.fromList $
-        [ (defaultImportGroupRule MatchLocalModules)
-            { igrQualifiedMatcher = MatchUnqualifiedOnly
+        [ defaultImportGroupRule
+            { igrQualifiedMatcher = MatchUnqualifiedOnly,
+              igrScopeMatcher = MatchLocalModules
             },
-          (defaultImportGroupRule MatchAllModules)
+          defaultImportGroupRule
             { igrQualifiedMatcher = MatchQualifiedOnly
             }
         ]
@@ -532,11 +535,12 @@ importGroupCustomRules =
           igRules = rules
         }
 
-    defaultImportGroupRule :: ImportModuleMatcher -> ImportGroupRule
-    defaultImportGroupRule moduleMatcher =
+    defaultImportGroupRule :: ImportGroupRule
+    defaultImportGroupRule =
       ImportGroupRule
-        { igrModuleMatcher = moduleMatcher,
+        { igrGlob = matchAllGlob,
           igrImportListMatcher = MatchAnyImportDeclaration,
           igrQualifiedMatcher = MatchBothQualifiedAndUnqualified,
+          igrScopeMatcher = MatchAllModules,
           igrPriority = defaultImportRulePriority
         }

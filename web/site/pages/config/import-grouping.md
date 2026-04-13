@@ -23,17 +23,20 @@ rules:
 
 Any import declaration matching at least one of those rules will belong to that group.
 
-The following rule types are defined:
+By default, rules match all import declarations, either local or external, either qualified or unqualified, with explicit import list or hiding clauses, though with a high priority value.
 
-- `match: all`: matches all modules
-- `match: local-modules`: matches modules defined in the current Cabal project. Those modules are automatically detected. Developers can add custom modules through the `--local-modules` CLI option. See [`local-modules`](/config/local-modules) for more information.
+The following are possible rule attributes:
+
 - `glob: <pattern>`: matches modules matching the provided `<pattern>`. `*` can be any character on the same module level. `**` can be any character and can span multiple module levels.
-
-In addition to the type, certain attributes can be added to rules:
-
 - `import-list: any | explicit | hiding | none`: when set, `explicit` only matches import declarations with an explicit import list, `hiding` only matches import declarations with the `hiding` clause, `none` only matches import declarations on a whole module (no explicit import list or `hiding` clause), `any` matches all import declarations regardless of import lists or `hiding` clauses. When absent, `any` is assumed.
-- `qualified: <yes | no>`: when set, `yes` only matches import declarations that are qualified, unlike `no` which only matches import declarations that are not qualified.
+- `qualified: yes | no`: when set, `yes` only matches import declarations that are qualified, unlike `no` which only matches import declarations that are not qualified.
+- `scope: any | local | external`: when set, `any` matches all import declarations, `local` only matches modules defined in the current Cabal project and `external` only matches external modules. When absent, `any` is assumed. Local modules are automatically detected. Developers can add custom modules through the `--local-modules` CLI option. See [`local-modules`](/config/local-modules) for more information.
 - `priority: <int>`: in cases multiple rules from different groups match an import declaration, the value associated to `priority` is used as a tie-breaker: the matching rule with the lowest priority wins, and the import declaration will belong to the group with that rule.
+
+The following attributes are deprecated but still usable:
+
+- `match: all`: matches all modules with a high priority value.
+- `match: local-modules`: matches local modules with a high priority value.
 
 Here's an example used in the `custom` configuration:
 
@@ -44,17 +47,16 @@ import-grouping:
       - glob: Data.Text
   - name: "The rest"
     rules:
-      - match: all
-        priority: 100
+      - priority: 100
   - name: "My internals and monads unqualified"
     rules:
-      - match: local-modules
+      - scope: local
         qualified: no
       - glob: Control.Monad
         qualified: no
   - name: "My internals and monads qualified"
     rules:
-      - match: local-modules
+      - scope: local
         qualified: yes
       - glob: Control.Monad
         qualified: yes
