@@ -3,7 +3,6 @@
 
 module Ormolu.Parser.OptionsSpec (spec) where
 
-import Data.Text (Text)
 import Data.Text qualified as T
 import Ormolu
 import Test.Hspec
@@ -30,8 +29,5 @@ spec = describe "GHC options in source files take priority" $ do
     fixedPoint ["-XNoBlockArguments"] src
   where
     fixedPoint opts input = do
-      output <- ormolu unexpectedPragmaOptions defaultConfig {cfgDynOptions = DynOption <$> opts} "<input>" input
+      output <- ormolu defaultConfig {cfgDynOptions = DynOption <$> opts} "<input>" input
       output `shouldBe` input
-
-unexpectedPragmaOptions :: PrinterOptsTotal -> Text -> Either Text PrinterOptsTotal
-unexpectedPragmaOptions _ _ = Left "Pragma options are not expected in the options tests"

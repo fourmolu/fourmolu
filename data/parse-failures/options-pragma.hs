@@ -1,4 +1,4 @@
-{- FOURMOLU_OPTIONS --hello -}
+{- FOURMOLU_OPTIONS silly-option -}
 
 module Main where
 

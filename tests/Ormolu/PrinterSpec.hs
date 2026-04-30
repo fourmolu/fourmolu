@@ -72,7 +72,7 @@ checkExample (printerOpts, label, suffix) srcPath' = it (fromRelFile srcPath' ++
   -- 2. Parse the result of pretty-printing again and make sure that AST
   -- is the same as AST of the original snippet. (This happens in
   -- 'ormoluFile' automatically.)
-  formatted0 <- ormoluFile unexpectedPragmaOptionParser config inputPath
+  formatted0 <- ormoluFile config inputPath
   -- 3. Check the output against expected output. Thus all tests should
   -- include two files: input and expected output.
   whenShouldRegenerateOutput $
@@ -81,7 +81,7 @@ checkExample (printerOpts, label, suffix) srcPath' = it (fromRelFile srcPath' ++
   shouldMatch False formatted0 expected
   -- 4. Check that running the formatter on the output produces the same
   -- output again (the transformation is idempotent).
-  formatted1 <- ormolu unexpectedPragmaOptionParser config "<formatted>" formatted0
+  formatted1 <- ormolu config "<formatted>" formatted0
   shouldMatch True formatted1 formatted0
 
 -- | Build list of examples for testing.
@@ -140,6 +140,3 @@ whenShouldRegenerateOutput :: IO () -> IO ()
 whenShouldRegenerateOutput action = do
   shouldRegenerateOutput <- isJust <$> lookupEnv "ORMOLU_REGENERATE_EXAMPLES"
   when shouldRegenerateOutput action
-
-unexpectedPragmaOptionParser :: PrinterOptsTotal -> Text -> Either Text PrinterOptsTotal
-unexpectedPragmaOptionParser _ _ = Left "Pragma options are not expected in the tests"

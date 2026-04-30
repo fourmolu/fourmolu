@@ -383,7 +383,7 @@ runTestGroup TestGroup {..} =
 
 runOrmolu :: PrinterOptsTotal -> Bool -> FilePath -> Text -> IO Text
 runOrmolu opts checkIdempotence inputPath input =
-  ormolu unexpectedPragmaOptions config inputPath input `catch` \e -> do
+  ormolu config inputPath input `catch` \e -> do
     msg <- renderOrmoluException e
     expectationFailure' $ unlines ["Got ormolu exception:", "", msg]
   where
@@ -544,6 +544,3 @@ importGroupCustomRules =
           igrScopeMatcher = MatchAllModules,
           igrPriority = defaultImportRulePriority
         }
-
-unexpectedPragmaOptions :: PrinterOptsTotal -> Text -> Either Text PrinterOptsTotal
-unexpectedPragmaOptions _ _ = Left (T.pack "Pragma options are not expected in the printer options tests")

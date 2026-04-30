@@ -55,7 +55,9 @@ import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Set qualified as Set
 import Data.Text (Text)
 import Data.Text qualified as T
+import Data.Text.Encoding (encodeUtf8)
 import Data.Text.IO.Utf8 qualified as T.Utf8
+import Data.Yaml qualified as Yaml
 import Debug.Trace
 import GHC.Driver.Errors.Types
 import GHC.Types.Error
@@ -89,8 +91,6 @@ import System.FilePath
 -- here, see 'detectSourceType'.
 ormolu ::
   (MonadIO m) =>
-  -- | Pragma options parser
-  (PrinterOptsTotal -> Text -> Either Text PrinterOptsTotal) ->
   -- | Ormolu configuration
   Config RegionIndices ->
   -- | Location of source file
@@ -98,7 +98,7 @@ ormolu ::
   -- | Input to format
   Text ->
   m Text
-ormolu updateOpts cfgWithIndices path originalInput = do
+ormolu cfgWithIndices path originalInput = do
   let totalLines = length (T.lines originalInput)
       cfg = regionIndicesToDeltas totalLines <$> cfgWithIndices
       fixityMap =
@@ -168,10 +168,12 @@ ormolu updateOpts cfgWithIndices path originalInput = do
     mergeWithSnippetOpts currentOpts = \case
       ParsedSnippet (ParseResult {prCommentStream = CommentStream comments}) ->
         let pragmaOpts =
-              mapMaybe (traverse isFourmoluOptionsPragma)
+              mapMaybe (traverse extractRawFourmoluPragmaContent)
                 . fmap (fmap $ T.unwords . toList . unComment)
                 $ comments
-            doUpdate opts (L loc comment) = first (loc,) . updateOpts opts $ comment
+            doUpdate opts (L loc comment) = first (loc,) $ do
+              localPrinterOpts <- parseFourmoluPrinterOpts comment
+              pure (fillMissingPrinterOpts localPrinterOpts opts)
          in foldlM doUpdate currentOpts pragmaOpts
       _ -> pure currentOpts
 
@@ -183,16 +185,14 @@ ormolu updateOpts cfgWithIndices path originalInput = do
 -- here, see 'detectSourceType'.
 ormoluFile ::
   (MonadIO m) =>
-  -- | Pragma options parser
-  (PrinterOptsTotal -> Text -> Either Text PrinterOptsTotal) ->
   -- | Ormolu configuration
   Config RegionIndices ->
   -- | Location of source file
   FilePath ->
   -- | Resulting rendition
   m Text
-ormoluFile updateOpts cfg path =
-  liftIO (T.Utf8.readFile path) >>= ormolu updateOpts cfg path
+ormoluFile cfg path =
+  liftIO (T.Utf8.readFile path) >>= ormolu cfg path
 
 -- | Read input from stdin and format it.
 --
@@ -201,14 +201,12 @@ ormoluFile updateOpts cfg path =
 -- here, see 'detectSourceType'.
 ormoluStdin ::
   (MonadIO m) =>
-  -- | Pragma options parser
-  (PrinterOptsTotal -> Text -> Either Text PrinterOptsTotal) ->
   -- | Ormolu configuration
   Config RegionIndices ->
   -- | Resulting rendition
   m Text
-ormoluStdin updateOpts cfg =
-  liftIO T.Utf8.getContents >>= ormolu updateOpts cfg "<stdin>"
+ormoluStdin cfg =
+  liftIO T.Utf8.getContents >>= ormolu cfg "<stdin>"
 
 -- | Refine a 'Config' by incorporating given 'SourceType', 'CabalInfo', and
 -- fixity overrides 'FixityMap'. You can use 'detectSourceType' to deduce
@@ -272,8 +270,11 @@ refineConfig sourceType mcabalInfo mfixityOverrides mreexports rawConfig =
 ----------------------------------------------------------------------------
 -- Helpers
 
-isFourmoluOptionsPragma :: Text -> Maybe Text
-isFourmoluOptionsPragma s0 = do
+parseFourmoluPrinterOpts :: Text -> Either Text PrinterOptsPartial
+parseFourmoluPrinterOpts = first (T.pack . Yaml.prettyPrintParseException) . Yaml.decodeEither' . encodeUtf8
+
+extractRawFourmoluPragmaContent :: Text -> Maybe Text
+extractRawFourmoluPragmaContent s0 = do
   s1 <- T.stripStart <$> T.stripPrefix "{-" (T.stripStart s0)
   s2 <- T.stripStart <$> T.stripPrefix "FOURMOLU_OPTIONS" s1
   T.stripEnd <$> T.stripSuffix "-}" s2
