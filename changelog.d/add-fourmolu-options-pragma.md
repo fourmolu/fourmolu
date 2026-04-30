@@ -1,0 +1,1 @@
+- Add support for the `FOURMOLU_OPTIONS` pragma, which allows files to define their own formatting options ([pull request 527](https://github.com/fourmolu/fourmolu/pull/527)).

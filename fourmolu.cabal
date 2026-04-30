@@ -132,6 +132,7 @@ library
   build-depends:
     aeson >=1.0 && <3.0,
     scientific >=0.3.2 && <1,
+    yaml >=0.11.6.0 && <1,
 
   if flag(dev)
     ghc-options:
@@ -235,6 +236,7 @@ test-suite tests
     Ormolu.Integration.FixitySpec
     Ormolu.Integration.RegionSpec
     Ormolu.Integration.Utils
+    Ormolu.PragmaOptionsSpec
     Ormolu.Utils.GlobSpec
   build-depends:
     Diff >=1 && <2,

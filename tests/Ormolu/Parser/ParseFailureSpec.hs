@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Ormolu.Parser.ParseFailureSpec (spec) where
 
@@ -11,6 +12,7 @@ spec :: Spec
 spec = do
   "disabling-preserves-error-location.hs" `failsAt` "12:1"
   "line-pragma.hs" `failsAt` "4:47"
+  "options-pragma.hs" `pragmaParseFailsAt` "1:1-35"
 
 failsAt :: String -> String -> Spec
 failsAt filename location =
@@ -20,6 +22,16 @@ failsAt filename location =
           `shouldThrow` \case
             OrmoluParsingFailed srcSpan _ ->
               showOutputable srcSpan == filePath ++ ":" ++ location
+            _ -> False
+
+pragmaParseFailsAt :: String -> String -> Spec
+pragmaParseFailsAt filename location =
+  let filePath = baseDir </> filename
+   in it (filename ++ " fails at " ++ location) $
+        ormoluFile defaultConfig filePath
+          `shouldThrow` \case
+            FourmoluPragmaOptsParsingFailed realSrcSpan _ ->
+              showOutputable realSrcSpan == filePath ++ ":" ++ location
             _ -> False
 
 baseDir :: FilePath
