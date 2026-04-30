@@ -11,11 +11,14 @@ import Control.Concurrent (MVar, newMVar, withMVar)
 import Control.Exception (throwIO)
 import Control.Monad
 import Data.Bool (bool)
+import Data.Char (isSpace)
 import Data.List (intercalate, isSuffixOf, sort)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Map.Strict qualified as Map
 import Data.Maybe (fromMaybe, mapMaybe, maybeToList)
 import Data.Set qualified as Set
+import Data.Text (Text)
+import Data.Text qualified as T
 import Data.Text.IO.Utf8 qualified as T.Utf8
 import Data.Version (showVersion)
 import Data.Yaml qualified as Yaml
@@ -138,6 +141,25 @@ resolveConfig opts@(Opts {optConfig = cliConfig, optPrinterOpts = cliPrinterOpts
     outputInfo = unless (optQuiet opts) . output
     outputDebug = when (cfgDebug cliConfig) . output
 
+-- | Parse Fourmolu options pragma and update the provided configuration
+-- accordingly. Only printer options are supported.
+updateOptsWithPragma :: PrinterOptsTotal -> Text -> Either Text PrinterOptsTotal
+updateOptsWithPragma cfg options = do
+  let args = T.unpack <$> naiveArgsSplit options
+  partialOpts <- case parse args of
+    Success partialOpts -> Right partialOpts
+    Failure pf -> Left (T.pack . fst $ renderFailure pf "fourmolu")
+    CompletionInvoked _ -> Left (T.pack "Completion not supported")
+  pure (fillMissingPrinterOpts partialOpts cfg)
+  where
+    parse :: [String] -> ParserResult PrinterOptsPartial
+    parse = execParserPure (prefs mempty) (info printerOptsParser mempty)
+
+-- | Split arguments naively on whitespaces. Not correct for general shell
+-- arguments parsing, but enough for Fourmolu options.
+naiveArgsSplit :: Text -> [Text]
+naiveArgsSplit = filter (not . T.null) . T.split isSpace
+
 getHaskellFiles :: FilePath -> IO [FilePath]
 getHaskellFiles input = do
   isDir <- doesDirectoryExist input
@@ -213,7 +235,7 @@ formatOne ConfigFileOpts {..} mode reqSourceType rawConfig outputLock mpath =
         config <- patchConfig Nothing mcabalInfo mdotOrmolu
         case mode of
           Stdout -> do
-            output <- ormoluStdin config
+            output <- ormoluStdin updateOptsWithPragma config
             withMVar outputLock $ \_ ->
               T.Utf8.putStr output
             return ExitSuccess
@@ -228,7 +250,7 @@ formatOne ConfigFileOpts {..} mode reqSourceType rawConfig outputLock mpath =
             originalInput <- T.Utf8.getContents
             let stdinRepr = "<stdin>"
             formattedInput <-
-              ormolu config stdinRepr originalInput
+              ormolu updateOptsWithPragma config stdinRepr originalInput
             handleDiff originalInput formattedInput stdinRepr
       -- input source = a file
       Just inputFile -> do
@@ -244,7 +266,7 @@ formatOne ConfigFileOpts {..} mode reqSourceType rawConfig outputLock mpath =
             mdotOrmolu
         case mode of
           Stdout -> do
-            output <- ormoluFile config inputFile
+            output <- ormoluFile updateOptsWithPragma config inputFile
             withMVar outputLock $ \_ ->
               T.Utf8.putStr output
             return ExitSuccess
@@ -252,7 +274,7 @@ formatOne ConfigFileOpts {..} mode reqSourceType rawConfig outputLock mpath =
             -- ormoluFile is not used because we need originalInput
             originalInput <- T.Utf8.readFile inputFile
             formattedInput <-
-              ormolu config inputFile originalInput
+              ormolu updateOptsWithPragma config inputFile originalInput
             when (formattedInput /= originalInput) $
               T.Utf8.writeFile inputFile formattedInput
             return ExitSuccess
@@ -260,7 +282,7 @@ formatOne ConfigFileOpts {..} mode reqSourceType rawConfig outputLock mpath =
             -- ormoluFile is not used because we need originalInput
             originalInput <- T.Utf8.readFile inputFile
             formattedInput <-
-              ormolu config inputFile originalInput
+              ormolu updateOptsWithPragma config inputFile originalInput
             handleDiff originalInput formattedInput inputFile
   where
     patchConfig mdetectedSourceType mcabalInfo mdotOrmolu = do

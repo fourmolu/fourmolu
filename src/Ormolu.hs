@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
 -- | A formatter for Haskell source code. This module exposes the official
@@ -47,8 +48,10 @@ where
 import Control.Exception
 import Control.Monad
 import Control.Monad.IO.Class (MonadIO (..))
+import Data.Bifunctor (first)
+import Data.Foldable (foldlM, toList)
 import Data.Map.Strict qualified as Map
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Set qualified as Set
 import Data.Text (Text)
 import Data.Text qualified as T
@@ -64,7 +67,7 @@ import Ormolu.Diff.Text
 import Ormolu.Exception
 import Ormolu.Fixity
 import Ormolu.Parser
-import Ormolu.Parser.CommentStream (CommentStream (..))
+import Ormolu.Parser.CommentStream (CommentStream (..), unComment)
 import Ormolu.Parser.Result
 import Ormolu.Printer
 import Ormolu.Utils (showOutputable)
@@ -86,6 +89,8 @@ import System.FilePath
 -- here, see 'detectSourceType'.
 ormolu ::
   (MonadIO m) =>
+  -- | Pragma options parser
+  (PrinterOptsTotal -> Text -> Either Text PrinterOptsTotal) ->
   -- | Ormolu configuration
   Config RegionIndices ->
   -- | Location of source file
@@ -93,7 +98,7 @@ ormolu ::
   -- | Input to format
   Text ->
   m Text
-ormolu cfgWithIndices path originalInput = do
+ormolu updateOpts cfgWithIndices path originalInput = do
   let totalLines = length (T.lines originalInput)
       cfg = regionIndicesToDeltas totalLines <$> cfgWithIndices
       fixityMap =
@@ -113,12 +118,21 @@ ormolu cfgWithIndices path originalInput = do
         forM_ comments $ \(L loc comment) ->
           traceM $ unwords ["*** COMMENT ***", showOutputable loc, show comment]
       _ -> pure ()
+
+  let basePrinterOpts = cfgPrinterOpts cfgWithIndices
+      mergeWithAllSnippetOpts = foldlM mergeWithSnippetOpts
+  printerOpts <- case mergeWithAllSnippetOpts basePrinterOpts result0 of
+    Right printerOpts -> pure printerOpts
+    Left (loc, optsParseFailure) -> liftIO . throwIO $ FourmoluPragmaOptsParsingFailed loc optsParseFailure
+  when (cfgDebug cfg) $ do
+    traceM $ unwords ["*** PRINTER OPTIONS ***", show printerOpts]
+
   -- We're forcing 'formattedText' here because otherwise errors (such as
   -- messages about not-yet-supported functionality) will be thrown later
   -- when we try to parse the rendered code back, inside of GHC monad
   -- wrapper which will lead to error messages presenting the exceptions as
   -- GHC bugs.
-  let !formattedText = printSnippets (cfgDebug cfg) result0 $ cfgPrinterOpts cfgWithIndices
+  let !formattedText = printSnippets (cfgDebug cfg) result0 printerOpts
   when (not (cfgUnsafe cfg) || cfgCheckIdempotence cfg) $ do
     -- Parse the result of pretty-printing again and make sure that AST
     -- is the same as AST of original snippet module span positions.
@@ -144,11 +158,22 @@ ormolu cfgWithIndices path originalInput = do
     -- Try re-formatting the formatted result to check if we get exactly
     -- the same output.
     when (cfgCheckIdempotence cfg) . liftIO $
-      let reformattedText = printSnippets (cfgDebug cfg) result1 $ cfgPrinterOpts cfgWithIndices
+      let reformattedText = printSnippets (cfgDebug cfg) result1 printerOpts
        in case diffText formattedText reformattedText path of
             Nothing -> return ()
             Just diff -> throwIO (OrmoluNonIdempotentOutput diff)
   return formattedText
+  where
+    mergeWithSnippetOpts :: PrinterOptsTotal -> SourceSnippet -> Either (RealSrcSpan, Text) PrinterOptsTotal
+    mergeWithSnippetOpts currentOpts = \case
+      ParsedSnippet (ParseResult {prCommentStream = CommentStream comments}) ->
+        let pragmaOpts =
+              mapMaybe (traverse isFourmoluOptionsPragma)
+                . fmap (fmap $ T.unwords . toList . unComment)
+                $ comments
+            doUpdate opts (L loc comment) = first (loc,) . updateOpts opts $ comment
+         in foldlM doUpdate currentOpts pragmaOpts
+      _ -> pure currentOpts
 
 -- | Load a file and format it. The file stays intact and the rendered
 -- version is returned as 'Text'.
@@ -158,14 +183,16 @@ ormolu cfgWithIndices path originalInput = do
 -- here, see 'detectSourceType'.
 ormoluFile ::
   (MonadIO m) =>
+  -- | Pragma options parser
+  (PrinterOptsTotal -> Text -> Either Text PrinterOptsTotal) ->
   -- | Ormolu configuration
   Config RegionIndices ->
   -- | Location of source file
   FilePath ->
   -- | Resulting rendition
   m Text
-ormoluFile cfg path =
-  liftIO (T.Utf8.readFile path) >>= ormolu cfg path
+ormoluFile updateOpts cfg path =
+  liftIO (T.Utf8.readFile path) >>= ormolu updateOpts cfg path
 
 -- | Read input from stdin and format it.
 --
@@ -174,12 +201,14 @@ ormoluFile cfg path =
 -- here, see 'detectSourceType'.
 ormoluStdin ::
   (MonadIO m) =>
+  -- | Pragma options parser
+  (PrinterOptsTotal -> Text -> Either Text PrinterOptsTotal) ->
   -- | Ormolu configuration
   Config RegionIndices ->
   -- | Resulting rendition
   m Text
-ormoluStdin cfg =
-  liftIO T.Utf8.getContents >>= ormolu cfg "<stdin>"
+ormoluStdin updateOpts cfg =
+  liftIO T.Utf8.getContents >>= ormolu updateOpts cfg "<stdin>"
 
 -- | Refine a 'Config' by incorporating given 'SourceType', 'CabalInfo', and
 -- fixity overrides 'FixityMap'. You can use 'detectSourceType' to deduce
@@ -242,6 +271,12 @@ refineConfig sourceType mcabalInfo mfixityOverrides mreexports rawConfig =
 
 ----------------------------------------------------------------------------
 -- Helpers
+
+isFourmoluOptionsPragma :: Text -> Maybe Text
+isFourmoluOptionsPragma s0 = do
+  s1 <- T.stripStart <$> T.stripPrefix "{-" (T.stripStart s0)
+  s2 <- T.stripStart <$> T.stripPrefix "FOURMOLU_OPTIONS" s1
+  T.stripEnd <$> T.stripSuffix "-}" s2
 
 -- | A wrapper around 'parseModule'.
 parseModule' ::

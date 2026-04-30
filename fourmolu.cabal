@@ -235,6 +235,7 @@ test-suite tests
     Ormolu.Integration.FixitySpec
     Ormolu.Integration.RegionSpec
     Ormolu.Integration.Utils
+    Ormolu.PragmaOptionsSpec
     Ormolu.Utils.GlobSpec
   build-depends:
     Diff >=1 && <2,
