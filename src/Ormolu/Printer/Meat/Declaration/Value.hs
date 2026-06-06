@@ -1438,17 +1438,22 @@ instance FunRepr (HsExpr GhcPs) where
   parseFunRepr = \case
     -- `forall a. _`
     L ann (HsForAll _ tele expr) ->
-      ParsedFunForall (L ann tele) (parseFunRepr expr)
+      ParsedFunForall {tele = L ann tele, next = parseFunRepr expr}
     -- `HasCallStack => _`
     expr@(L _ HsQual {}) ->
       let (ctxs, rest) = getContexts expr
-       in ParsedFunQuals ctxs (parseFunRepr rest)
+       in ParsedFunQuals {ctxs, next = parseFunRepr rest}
     -- `Int -> _`
-    expr@(L _ HsFunArr {}) ->
-      let (args, ret) = getArgsAndReturn expr
-       in ParsedFunArgs args (parseFunRepr ret)
+    L ann (HsFunArr _ arrow item r) ->
+      ParsedFunArg
+        { span = ann,
+          item,
+          doc = Nothing,
+          arrow,
+          next = parseFunRepr r
+        }
     -- `_ -> Int`
-    expr -> ParsedFunReturn (expr, Nothing)
+    expr -> ParsedFunReturn {item = expr, doc = Nothing}
     where
       getContexts =
         let go ctxs = \case
@@ -1456,13 +1461,6 @@ instance FunRepr (HsExpr GhcPs) where
                 go (L ann ctx : ctxs) expr
               expr ->
                 (reverse ctxs, expr)
-         in go []
-      getArgsAndReturn =
-        let go args = \case
-              L ann (HsFunArr _ arrow l r) ->
-                go (L ann (l, Nothing, arrow) : args) r
-              expr ->
-                (reverse args, expr)
          in go []
 
 ----------------------------------------------------------------------------
