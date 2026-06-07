@@ -222,9 +222,8 @@ p_conDecl _ decl@ConDeclGADT {..} = do
             forM_ xs $ \x -> do
               p_hsConDeclFieldWithDoc x
               space
-              p_hsMultAnn (located' p_hsType) (cdf_multiplicity x)
-              space
-              txt "->"
+              p_arrow (located' p_hsType) (cdf_multiplicity x)
+
               delimiter
           RecConGADT _ x -> do
             located x p_hsConDeclRecFields

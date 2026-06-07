@@ -884,9 +884,8 @@ p_hsExpr' isApp s = \case
   HsFunArr _ multAnn x y -> do
     located x p_hsExpr
     space
-    p_hsMultAnn (located' p_hsExpr) multAnn
-    space
-    txt "->"
+    p_arrow (located' p_hsExpr) multAnn
+
     breakpoint
     case unLoc y of
       HsFunArr {} -> p_hsExpr (unLoc y)

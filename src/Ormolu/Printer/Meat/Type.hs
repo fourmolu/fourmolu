@@ -115,9 +115,8 @@ p_hsType = \case
   HsFunTy _ multAnn x y -> do
     located x p_hsType
     space
-    p_hsMultAnn (located' p_hsTypeR) multAnn
-    space
-    txt "->"
+    p_arrow (located' p_hsTypeR) multAnn
+
     interArgBreak
     case unLoc y of
       HsFunTy {} -> p_hsTypeR (unLoc y)

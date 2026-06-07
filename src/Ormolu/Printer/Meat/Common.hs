@@ -16,6 +16,7 @@ module Ormolu.Printer.Meat.Common
     p_sourceText,
     p_namespaceSpec,
     p_hsMultAnn,
+    p_arrow,
   )
 where
 
@@ -241,30 +242,20 @@ p_namespaceSpec = \case
   TypeNamespaceSpecifier _ -> txt "type" *> space
   DataNamespaceSpecifier _ -> txt "data" *> space
 
-<<<<<<< HEAD
-p_arrow :: (mult -> R ()) -> HsArrowOf mult GhcPs -> R ()
-p_arrow p_mult = \case
-  HsUnrestrictedArrow _ -> token'rarrow
-  HsLinearArrow _ -> token'lolly
-  HsExplicitMult _ mult -> do
-    txt "%"
-    p_mult mult
-    space
-    token'rarrow
-||||||| a1fd8b82
-p_arrow :: (mult -> R ()) -> HsArrowOf mult GhcPs -> R ()
-p_arrow p_mult = \case
-  HsUnrestrictedArrow _ -> txt "->"
-  HsLinearArrow _ -> txt "%1 ->"
-  HsExplicitMult _ mult -> do
-    txt "%"
-    p_mult mult
-    space
-    txt "->"
-=======
 p_hsMultAnn :: (mult -> R ()) -> HsMultAnnOf mult GhcPs -> R ()
 p_hsMultAnn p_mult = \case
   HsUnannotated _ -> pure ()
   HsLinearAnn _ -> txt "%1"
   HsExplicitMult _ mult -> txt "%" *> p_mult mult
->>>>>>> refs/rewritten/Merge-ormolu-0-8-1-0
+
+-- | Like 'p_hsMultAnn', except specifically for arrows, taking -XUnicodeSyntax
+--   into account.
+p_arrow :: (mult -> R ()) -> HsMultAnnOf mult GhcPs -> R ()
+p_arrow p_mult = \case
+  HsUnannotated _ -> token'rarrow
+  HsLinearAnn _ -> token'lolly
+  HsExplicitMult _ mult -> do
+    txt "%"
+    p_mult mult
+    space
+    token'rarrow
