@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedLabels #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -20,12 +21,15 @@ module Ormolu.Printer.Meat.Type
     p_conDeclFields,
     p_lhsTypeArg,
     p_hsSigType,
-    FunRepr (..),
-    ParsedFunRepr (..),
-    p_hsFun,
     hsOuterTyVarBndrsToHsType,
     hsSigTypeToType,
     lhsTypeToSigType,
+
+    -- * Re-exports from Ormolu.Printer.Meat.Type.Function
+    FunRepr (..),
+    ParsedFunRepr,
+    ParsedFunRepr' (..),
+    p_hsFun,
   )
 where
 
@@ -45,6 +49,7 @@ import {-# SOURCE #-} Ormolu.Printer.Meat.Declaration.Value (p_hsUntypedSplice)
 import Ormolu.Printer.Meat.Type.Function
 import Ormolu.Printer.Operators
 import Ormolu.Utils
+import Prelude hiding (span)
 
 p_hsType :: HsType GhcPs -> R ()
 p_hsType = \case
@@ -182,7 +187,12 @@ p_hsType = \case
       _ -> False
 
 p_hsTypeAnnotation :: LHsType GhcPs -> R ()
-p_hsTypeAnnotation = p_hsFunParsed . ParsedFunSig . parseFunRepr
+p_hsTypeAnnotation ty =
+  p_hsFunParsed @(HsType GhcPs) $
+    ParsedFunSig
+      { sig = (),
+        next = parseFunRepr ty
+      }
 
 -- | Return 'True' if at least one argument in 'HsType' has a doc string
 -- attached to it.
@@ -228,31 +238,36 @@ p_hsSigType :: HsSigType GhcPs -> R ()
 p_hsSigType = p_hsType . hsSigTypeToType
 
 instance FunRepr (HsType GhcPs) where
-  renderFunItem = p_hsType
   parseFunRepr = \case
     -- `forall a. _`
     L ann (HsForAllTy _ tele ty) ->
-      ParsedFunForall {tele = L ann tele, next = parseFunRepr ty}
+      ParsedFunForall
+        { tele = L ann tele,
+          next = parseFunRepr ty
+        }
     -- `HasCallStack => _`
     ty@(L _ HsQualTy {}) ->
       let (ctxs, rest) = getContexts ty
-       in ParsedFunQuals {ctxs, next = parseFunRepr rest}
+       in ParsedFunQuals
+            { ctxs,
+              next = parseFunRepr rest
+            }
     -- `Int -> _`
     L ann (HsFunTy _ arrow l r) ->
-      let (item, doc) =
+      let (arg, doc) =
             case l of
               L _ (HsDocTy _ x doc_) -> (x, Just doc_)
               _ -> (l, Nothing)
        in ParsedFunArg
             { span = ann,
-              item,
+              arg,
               doc,
               arrow,
               next = parseFunRepr r
             }
     -- `_ -> Int`
-    L _ (HsDocTy _ ty doc) -> ParsedFunReturn {item = ty, doc = Just doc}
-    ty -> ParsedFunReturn {item = ty, doc = Nothing}
+    L _ (HsDocTy _ ret doc) -> ParsedFunReturn {ret, doc = Just doc}
+    ret -> ParsedFunReturn {ret, doc = Nothing}
     where
       getContexts =
         let go ctxs = \case
@@ -261,6 +276,11 @@ instance FunRepr (HsType GhcPs) where
               ty ->
                 (reverse ctxs, ty)
          in go []
+
+  renderFunReprCtx = p_hsType
+  renderFunReprArg = p_hsType
+  renderFunReprArr = p_hsType
+  renderFunReprRet = p_hsType
 
 ----------------------------------------------------------------------------
 -- Conversion functions

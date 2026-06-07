@@ -1434,26 +1434,31 @@ p_hsQuote = \case
 
 -- | Function types in expressions, e.g. with -XRequiredTypeArguments
 instance FunRepr (HsExpr GhcPs) where
-  renderFunItem = p_hsExpr
   parseFunRepr = \case
     -- `forall a. _`
     L ann (HsForAll _ tele expr) ->
-      ParsedFunForall {tele = L ann tele, next = parseFunRepr expr}
+      ParsedFunForall
+        { tele = L ann tele,
+          next = parseFunRepr expr
+        }
     -- `HasCallStack => _`
     expr@(L _ HsQual {}) ->
       let (ctxs, rest) = getContexts expr
-       in ParsedFunQuals {ctxs, next = parseFunRepr rest}
+       in ParsedFunQuals
+            { ctxs,
+              next = parseFunRepr rest
+            }
     -- `Int -> _`
-    L ann (HsFunArr _ arrow item r) ->
+    L ann (HsFunArr _ arrow arg r) ->
       ParsedFunArg
         { span = ann,
-          item,
+          arg,
           doc = Nothing,
           arrow,
           next = parseFunRepr r
         }
     -- `_ -> Int`
-    expr -> ParsedFunReturn {item = expr, doc = Nothing}
+    ret -> ParsedFunReturn {ret, doc = Nothing}
     where
       getContexts =
         let go ctxs = \case
@@ -1462,6 +1467,11 @@ instance FunRepr (HsExpr GhcPs) where
               expr ->
                 (reverse ctxs, expr)
          in go []
+
+  renderFunReprArg = p_hsExpr
+  renderFunReprCtx = p_hsExpr
+  renderFunReprArr = p_hsExpr
+  renderFunReprRet = p_hsExpr
 
 ----------------------------------------------------------------------------
 -- Helpers
