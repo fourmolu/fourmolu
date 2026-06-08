@@ -212,18 +212,21 @@ p_conDeclFields xs =
   recordBraces $ sep commaDel (sitcc . located' p_conDeclField) xs
 
 p_conDeclField :: ConDeclField GhcPs -> R ()
-p_conDeclField ConDeclField {..} = do
-  commaStyle <- getPrinterOpt poCommaStyle
-  when (commaStyle == Trailing) $
-    mapM_ (p_hsDoc Pipe (With #endNewline)) cd_fld_doc
+p_conDeclField ConDeclField {..} = withFieldHaddocks $ do
   sitcc $
     sep
       commaDel
       (located' (p_rdrName . foLabel))
       cd_fld_names
   inci $ p_hsTypeAnnotation cd_fld_type
-  when (commaStyle == Leading) $
-    mapM_ (inciByFrac (-1) . (newline >>) . p_hsDoc Caret (Without #endNewline)) cd_fld_doc
+  where
+    withFieldHaddocks action = do
+      commaStyle <- getPrinterOpt poCommaStyle
+      when (commaStyle == Trailing) $
+        mapM_ (p_hsDoc Pipe (With #endNewline)) cd_fld_doc
+      action
+      when (commaStyle == Leading) $
+        mapM_ (inciByFrac (-1) . (newline >>) . p_hsDoc Caret (Without #endNewline)) cd_fld_doc
 
 p_lhsTypeArg :: LHsTypeArg GhcPs -> R ()
 p_lhsTypeArg = \case
