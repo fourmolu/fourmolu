@@ -49,6 +49,10 @@ p_hsmodImport ImportDecl {..} = do
   space
   when ideclSafe (txt "safe")
   space
+  case ideclLevelSpec of
+    LevelStylePre l -> p_declLevel l
+    _ -> return ()
+  space
   when
     (isImportDeclQualified ideclQualified && not useQualifiedPost)
     (txt "qualified")
@@ -59,6 +63,10 @@ p_hsmodImport ImportDecl {..} = do
   space
   inci $ do
     located ideclName atom
+    space
+    case ideclLevelSpec of
+      LevelStylePost l -> p_declLevel l
+      _ -> return ()
     when
       (isImportDeclQualified ideclQualified && useQualifiedPost)
       (space >> txt "qualified")
@@ -84,6 +92,11 @@ p_hsmodImport ImportDecl {..} = do
             (\(p, l) -> sitcc (located l (p_lie layout False p)))
             (attachRelativePos xs)
     newline
+
+p_declLevel :: ImportDeclLevel -> R ()
+p_declLevel = \case
+  ImportDeclSplice -> txt "splice"
+  ImportDeclQuote -> txt "quote"
 
 p_lie :: Layout -> Bool -> RelativePos -> IE GhcPs -> R ()
 p_lie encLayout isAllPrevDoc relativePos = \case

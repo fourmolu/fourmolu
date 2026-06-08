@@ -15,6 +15,7 @@ module Ormolu.Printer.Meat.Common
     p_hsDoc',
     p_sourceText,
     p_namespaceSpec,
+    p_hsMultAnn,
     p_arrow,
   )
 where
@@ -29,13 +30,13 @@ import GHC.Hs.Binds
 import GHC.Hs.Doc
 import GHC.Hs.Extension (GhcPs)
 import GHC.Hs.ImpExp
+import GHC.Hs.Type
 import GHC.LanguageExtensions.Type (Extension (..))
 import GHC.Parser.Annotation
 import GHC.Types.Name.Occurrence (OccName (..), occNameString)
 import GHC.Types.Name.Reader
 import GHC.Types.SourceText
 import GHC.Types.SrcLoc
-import Language.Haskell.Syntax (HsArrowOf (..))
 import Language.Haskell.Syntax.Module.Name
 import Ormolu.Config
 import Ormolu.Printer.Combinators
@@ -48,7 +49,7 @@ data FamilyStyle
   | -- | Top-level declarations
     Free
 
--- | Outputs the name of the module-like entity, preceeded by the correct prefix ("module" or "signature").
+-- | Outputs the name of the module-like entity, preceded by the correct prefix ("module" or "signature").
 p_hsmodName :: ModuleName -> R ()
 p_hsmodName mname = do
   sourceType <- askSourceType
@@ -73,6 +74,10 @@ p_ieWrappedName = \case
     txt "type"
     space
     p_rdrName x
+  IEData _ x -> do
+    txt "data"
+    space
+    p_rdrName x
 
 -- | Render a @'LocatedN' 'RdrName'@.
 p_rdrName :: LocatedN RdrName -> R ()
@@ -93,7 +98,7 @@ p_rdrName l = located l $ \x -> do
       -- insert spaces when we have a parenthesized operator starting with `#`.
       handleUnboxedSumsAndHashInteraction
         | unboxedSums,
-          -- Qualified names do not start wth a `#`.
+          -- Qualified names do not start with a `#`.
           Unqual (occNameString -> '#' : _) <- x =
             \y -> space *> y <* space
         | otherwise = id
@@ -237,10 +242,18 @@ p_namespaceSpec = \case
   TypeNamespaceSpecifier _ -> txt "type" *> space
   DataNamespaceSpecifier _ -> txt "data" *> space
 
-p_arrow :: (mult -> R ()) -> HsArrowOf mult GhcPs -> R ()
+p_hsMultAnn :: (mult -> R ()) -> HsMultAnnOf mult GhcPs -> R ()
+p_hsMultAnn p_mult = \case
+  HsUnannotated _ -> pure ()
+  HsLinearAnn _ -> txt "%1"
+  HsExplicitMult _ mult -> txt "%" *> p_mult mult
+
+-- | Like 'p_hsMultAnn', except specifically for arrows, taking -XUnicodeSyntax
+--   into account.
+p_arrow :: (mult -> R ()) -> HsMultAnnOf mult GhcPs -> R ()
 p_arrow p_mult = \case
-  HsUnrestrictedArrow _ -> token'rarrow
-  HsLinearArrow _ -> token'lolly
+  HsUnannotated _ -> token'rarrow
+  HsLinearAnn _ -> token'lolly
   HsExplicitMult _ mult -> do
     txt "%"
     p_mult mult

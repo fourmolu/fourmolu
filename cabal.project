@@ -4,3 +4,7 @@ index-state: 2026-04-13T17:16:17Z
 
 tests: True
 multi-repl: True
+
+allow-newer:
+    *:template-haskell,
+    *:base,

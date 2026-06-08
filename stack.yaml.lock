@@ -3,10 +3,24 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/topics/lock_files
 
-packages: []
+packages:
+- completed:
+    hackage: ghc-lib-parser-9.14.1.20251220@sha256:a3ef9ebf56e69dc91f7bd7598ee1167ebb6fa7641cf20d2a2c33b65b07462502,19394
+    pantry-tree:
+      sha256: eb86bba56de28c5c82ed0ff0de21a982fc227872bd922c9107730617d8a73110
+      size: 41229
+  original:
+    hackage: ghc-lib-parser-9.14.1.20251220
+- completed:
+    hackage: Cabal-syntax-3.16.0.0@sha256:9bb3d76ccebf24f7d6f1fdc9579fe33bf0c8fdd45da27afe61a8db4208859c2e,7778
+    pantry-tree:
+      sha256: b4f7100d43e727493fc667b88c4646ab3408920e6d8983eb2187fd2ff7eaee0e
+      size: 11238
+  original:
+    hackage: Cabal-syntax-3.16.0.0
 snapshots:
 - completed:
-    sha256: a12749e8aabc7527888b3935e9da0997af21c1067f252558f9064a7d710d2bdb
-    size: 719789
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2026/1/15.yaml
-  original: nightly-2026-01-15
+    sha256: 8d06e2858a3e8ca608fdd6d6426f38023be1d85ff1d771b32f14a789d9d29e4d
+    size: 752942
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2026/5/22.yaml
+  original: nightly-2026-05-22

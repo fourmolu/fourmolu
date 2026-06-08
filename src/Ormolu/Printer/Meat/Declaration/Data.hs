@@ -3,6 +3,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedLabels #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -23,7 +24,6 @@ import Data.List.NonEmpty (NonEmpty (..))
 import Data.List.NonEmpty qualified as NE
 import Data.Maybe (isJust, isNothing, maybeToList)
 import Data.Text qualified as Text
-import Data.Void
 import GHC.Hs
 import GHC.Types.Fixity
 import GHC.Types.ForeignCall
@@ -167,26 +167,27 @@ p_conDecl _ decl@ConDeclGADT {..} = do
     inci $ p_hsFun decl
   where
     conDeclSpn =
-      fmap getLocA (NE.toList con_names)
-        <> [getLocA con_bndrs]
+      fmap getLocA (NE.toList con_names) <> conSigSpans
+    conSigSpans =
+      [getLocA con_outer_bndrs]
         <> maybeToList (fmap getLocA con_mb_cxt)
-        <> conArgsSpans
-    conArgsSpans = case con_g_args of
-      PrefixConGADT NoExtField xs -> getLocA . hsScaledThing <$> xs
-      RecConGADT _ x -> [getLocA x]
+        <> conArgResSpans
+    conArgResSpans =
+      getLocA con_res_ty : case con_g_args of
+        PrefixConGADT NoExtField xs -> getLocA . cdf_type <$> xs
+        RecConGADT _ x -> [getLocA x]
 p_conDecl singleRecCon ConDeclH98 {..} =
   case con_args of
-    PrefixCon (_ :: [Void]) xs -> do
+    PrefixCon xs -> do
       renderConDoc
       renderContext
       switchLayout conDeclSpn $ do
         p_rdrName con_name
-        let args = hsScaledThing <$> xs
-            argsHaveDocs = conArgsHaveHaddocks args
+        let argsHaveDocs = conArgsHaveHaddocks xs
             delimiter = if argsHaveDocs then newline else breakpoint
         unless (null xs) delimiter
         inci . sitcc $
-          sep delimiter (sitcc . located' p_hsType) args
+          sep delimiter (sitcc . p_hsConDeclFieldWithDoc) xs
     RecCon l -> do
       renderConDoc
       renderContext
@@ -194,11 +195,11 @@ p_conDecl singleRecCon ConDeclH98 {..} =
         p_rdrName con_name
         recordStyle <- getPrinterOpt poRecordStyle
         if recordStyle == RecordStyleKnr then space else breakpoint
-        inciIf (Choice.isFalse singleRecCon) (located l p_conDeclFields)
-    InfixCon (HsScaled _ l) (HsScaled _ r) -> do
+        inciIf (Choice.isFalse singleRecCon) (located l p_hsConDeclRecFields)
+    InfixCon l r -> do
       -- manually render these
-      let (lType, larg_doc) = splitDocTy l
-      let (rType, rarg_doc) = splitDocTy r
+      let larg_doc = cdf_doc l
+          rarg_doc = cdf_doc r
 
       -- the constructor haddock can go on top of the entire constructor
       -- only if neither argument has haddocks
@@ -211,10 +212,10 @@ p_conDecl singleRecCon ConDeclH98 {..} =
         if isJust con_doc
           then do
             mapM_ (p_hsDoc Pipe (With #endNewline)) larg_doc
-            located lType p_hsType
+            p_hsConDeclField l
             breakpoint
           else do
-            located lType p_hsType
+            p_hsConDeclField l
             case larg_doc of
               Just doc -> space >> p_hsDoc Caret (With #endNewline) doc
               Nothing -> breakpoint
@@ -224,7 +225,7 @@ p_conDecl singleRecCon ConDeclH98 {..} =
           case rarg_doc of
             Just doc -> newline >> p_hsDoc Pipe (With #endNewline) doc
             Nothing -> breakpoint
-          located rType p_hsType
+          p_hsConDeclField r
   where
     renderConDoc = mapM_ (p_hsDoc Pipe (With #endNewline)) con_doc
     renderContext =
@@ -244,13 +245,9 @@ p_conDecl singleRecCon ConDeclH98 {..} =
     conDeclSpn = conNameSpn : conArgsSpans
     conNameSpn = getLocA con_name
     conArgsSpans = case con_args of
-      PrefixCon (_ :: [Void]) xs -> getLocA . hsScaledThing <$> xs
+      PrefixCon xs -> getLocA . cdf_type <$> xs
       RecCon l -> [getLocA l]
-      InfixCon x y -> getLocA . hsScaledThing <$> [x, y]
-
-    splitDocTy = \case
-      L _ (HsDocTy _ ty doc) -> (ty, Just doc)
-      ty -> (ty, Nothing)
+      InfixCon x y -> getLocA . cdf_type <$> [x, y]
 
 p_lhsContext ::
   LHsContext GhcPs ->
@@ -334,7 +331,8 @@ instance FunRepr (ConDeclGADT GhcPs) where
     L _ ConDeclGADT {..} ->
       fst
         . addSig
-        . addOuter con_bndrs
+        . addOuter con_outer_bndrs
+        . addInner con_inner_bndrs
         . addCtx con_mb_cxt
         . addArgs con_g_args
         $ mkRet con_res_ty
@@ -352,6 +350,16 @@ instance FunRepr (ConDeclGADT GhcPs) where
                       next
                     }
              in (fun, loc')
+      addInner =
+        let go tele (next, loc) =
+              let loc' =
+                    combineSrcSpans loc $
+                      case tele of
+                        HsForAllVis x _ -> getHasLoc x
+                        HsForAllInvis x _ -> getHasLoc x
+                  fun = ParsedFunForall {tele = L (l2l loc') tele, next}
+               in (fun, loc')
+         in foldr (\tele acc -> go tele . acc) id
       addCtx = \case
         Nothing -> id
         Just ctxs -> \(next, loc) ->
@@ -361,18 +369,14 @@ instance FunRepr (ConDeclGADT GhcPs) where
       addArgs details =
         case details :: HsConDeclGADTDetails GhcPs of
           PrefixConGADT _ fields ->
-            let go (HsScaled arrow field) (next, loc) =
-                  let loc' = combineSrcSpans loc (getHasLoc field)
-                      (arg, doc) =
-                        case field of
-                          L _ (HsDocTy _ arg_ doc_) -> (arg_, Just doc_)
-                          _ -> (field, Nothing)
+            let go field (next, loc) =
+                  let loc' = combineSrcSpans loc (getHasLoc field.cdf_type)
                       fun =
                         ParsedFunArg
                           { span = l2l loc',
-                            arg = Left <$> arg,
-                            doc,
-                            arrow,
+                            arg = L noAnn (Left field),
+                            doc = field.cdf_doc,
+                            multAnn = field.cdf_multiplicity,
                             next
                           }
                    in (fun, loc')
@@ -384,7 +388,7 @@ instance FunRepr (ConDeclGADT GhcPs) where
                     { span = l2l loc',
                       arg = la2la $ Right <$> fields,
                       doc = Nothing,
-                      arrow = HsUnrestrictedArrow noAnn,
+                      multAnn = HsUnannotated (EpArrow noAnn),
                       next
                     }
              in (fun, loc')
@@ -401,11 +405,11 @@ instance FunRepr (ConDeclGADT GhcPs) where
   -- Invariant: Exactly one of the following must be true:
   --   * There's exactly one 'Right' arg
   --   * There are zero or more 'Left' args
-  type FunReprArg (ConDeclGADT GhcPs) = Either (HsType GhcPs) [LocatedA (ConDeclField GhcPs)]
-  renderFunReprArg = either p_hsType p_conDeclFields
+  type FunReprArg (ConDeclGADT GhcPs) = Either (HsConDeclField GhcPs) [LocatedA (HsConDeclRecField GhcPs)]
+  renderFunReprArg = either p_hsConDeclField p_hsConDeclRecFields
 
-  type FunReprArr (ConDeclGADT GhcPs) = HsType GhcPs
-  renderFunReprArr = p_hsType
+  type FunReprMult (ConDeclGADT GhcPs) = HsType GhcPs
+  renderFunReprMult = p_hsType
 
   type FunReprRet (ConDeclGADT GhcPs) = HsType GhcPs
   renderFunReprRet = p_hsType
@@ -423,14 +427,9 @@ hasHaddocks = any (f . unLoc)
   where
     f ConDeclH98 {..} =
       isJust con_doc || case con_args of
-        PrefixCon [] xs ->
-          conArgsHaveHaddocks (hsScaledThing <$> xs)
+        PrefixCon xs -> conArgsHaveHaddocks xs
         _ -> False
     f _ = False
 
-conArgsHaveHaddocks :: [LBangType GhcPs] -> Bool
-conArgsHaveHaddocks xs =
-  let hasDocs = \case
-        HsDocTy {} -> True
-        _ -> False
-   in any (hasDocs . unLoc) xs
+conArgsHaveHaddocks :: [HsConDeclField GhcPs] -> Bool
+conArgsHaveHaddocks = any (isJust . cdf_doc)

@@ -18,10 +18,11 @@ module Ormolu.Printer.Meat.Type
     p_hsTyVarBndr,
     ForAllVisibility (..),
     p_forallBndrs,
-    p_conDeclFields,
+    p_hsConDeclRecFields,
+    p_hsConDeclField,
+    p_hsConDeclFieldWithDoc,
     p_lhsTypeArg,
     p_hsSigType,
-    hsOuterTyVarBndrsToHsType,
     hsSigTypeToType,
     lhsTypeToSigType,
 
@@ -35,6 +36,7 @@ where
 
 import Control.Monad
 import Data.Choice (pattern Is, pattern With, pattern Without)
+import Data.Maybe (fromMaybe)
 import GHC.Data.Strict qualified as Strict
 import GHC.Hs hiding (isPromoted)
 import GHC.Types.SourceText
@@ -137,18 +139,6 @@ p_hsType = \case
     --       Int
     withHaddocks (Is #end) (Just str) $ do
       located t p_hsType
-  HsBangTy _ (HsBang u s) t -> do
-    case u of
-      SrcUnpack -> txt "{-# UNPACK #-}" >> space
-      SrcNoUnpack -> txt "{-# NOUNPACK #-}" >> space
-      NoSrcUnpack -> return ()
-    case s of
-      SrcLazy -> txt "~"
-      SrcStrict -> txt "!"
-      NoSrcStrict -> return ()
-    located t p_hsType
-  HsRecTy _ fields ->
-    p_conDeclFields fields
   HsExplicitListTy _ p xs -> do
     case p of
       IsPromoted -> txt "'"
@@ -176,7 +166,20 @@ p_hsType = \case
       HsStrTy (SourceText s) _ -> p_stringLit s
       a -> atom a
   HsWildCardTy _ -> txt "_"
-  XHsType t -> atom t
+  XHsType ext -> case ext of
+    HsCoreTy t -> atom @HsCoreTy t
+    HsBangTy _ (HsSrcBang _ u s) t -> do
+      case u of
+        SrcUnpack -> txt "{-# UNPACK #-}" >> space
+        SrcNoUnpack -> txt "{-# NOUNPACK #-}" >> space
+        NoSrcUnpack -> return ()
+      case s of
+        SrcLazy -> txt "~"
+        SrcStrict -> txt "!"
+        NoSrcStrict -> return ()
+      located t p_hsType
+    HsRecTy _ fields ->
+      p_hsConDeclRecFields fields
   where
     startsWithSingleQuote = \case
       HsAppTy _ (L _ f) _ -> startsWithSingleQuote f
@@ -207,26 +210,46 @@ hasDocStrings = \case
 p_hsContext :: HsContext GhcPs -> R ()
 p_hsContext = p_hsContext' p_hsType
 
-p_conDeclFields :: [LConDeclField GhcPs] -> R ()
-p_conDeclFields xs =
-  recordBraces $ sep commaDel (sitcc . located' p_conDeclField) xs
+p_hsConDeclRecFields :: [LHsConDeclRecField GhcPs] -> R ()
+p_hsConDeclRecFields xs =
+  recordBraces $ sep commaDel (sitcc . located' p_hsConDeclRecField) xs
 
-p_conDeclField :: ConDeclField GhcPs -> R ()
-p_conDeclField ConDeclField {..} = withFieldHaddocks $ do
+p_hsConDeclRecField :: HsConDeclRecField GhcPs -> R ()
+p_hsConDeclRecField field@HsConDeclRecField {..} = withFieldHaddocks $ do
   sitcc $
     sep
       commaDel
       (located' (p_rdrName . foLabel))
-      cd_fld_names
-  inci $ p_hsTypeAnnotation cd_fld_type
+      cdrf_names
+  inci $ p_hsFun field
   where
     withFieldHaddocks action = do
       commaStyle <- getPrinterOpt poCommaStyle
+      let doc = cdf_doc cdrf_spec
       when (commaStyle == Trailing) $
-        mapM_ (p_hsDoc Pipe (With #endNewline)) cd_fld_doc
+        mapM_ (p_hsDoc Pipe (With #endNewline)) doc
       action
       when (commaStyle == Leading) $
-        mapM_ (inciByFrac (-1) . (newline >>) . p_hsDoc Caret (Without #endNewline)) cd_fld_doc
+        mapM_ (inciByFrac (-1) . (newline >>) . p_hsDoc Caret (Without #endNewline)) doc
+
+-- | This does not print 'cdf_doc' and 'cdf_multiplicity' as there is no single
+-- strategy for where to print them (see call sites).
+p_hsConDeclField :: HsConDeclField GhcPs -> R ()
+p_hsConDeclField CDF {..} = do
+  case cdf_unpack of
+    SrcUnpack -> txt "{-# UNPACK #-}" *> space
+    SrcNoUnpack -> txt "{-# NOUNPACK #-}" *> space
+    NoSrcUnpack -> pure ()
+  located cdf_type $ \ty -> do
+    case cdf_bang of
+      SrcLazy -> txt "~"
+      SrcStrict -> txt "!"
+      NoSrcStrict -> pure ()
+    p_hsType ty
+
+p_hsConDeclFieldWithDoc :: HsConDeclField GhcPs -> R ()
+p_hsConDeclFieldWithDoc cdf = withHaddocks (Is #end) cdf.cdf_doc $ do
+  p_hsConDeclField cdf
 
 p_lhsTypeArg :: LHsTypeArg GhcPs -> R ()
 p_lhsTypeArg = \case
@@ -256,7 +279,7 @@ instance FunRepr (HsType GhcPs) where
               next = parseFunRepr rest
             }
     -- `Int -> _`
-    L ann (HsFunTy _ arrow l r) ->
+    L ann (HsFunTy _ multAnn l r) ->
       let (arg, doc) =
             case l of
               L _ (HsDocTy _ x doc_) -> (x, Just doc_)
@@ -265,7 +288,7 @@ instance FunRepr (HsType GhcPs) where
             { span = ann,
               arg,
               doc,
-              arrow,
+              multAnn,
               next = parseFunRepr r
             }
     -- `_ -> Int`
@@ -282,8 +305,103 @@ instance FunRepr (HsType GhcPs) where
 
   renderFunReprCtx = p_hsType
   renderFunReprArg = p_hsType
-  renderFunReprArr = p_hsType
+  renderFunReprMult = p_hsType
   renderFunReprRet = p_hsType
+
+----------------------------------------------------------------------------
+-- FunRepr HsConDeclRecField
+
+-- | FunRepr HsConDeclRecField renders a record field type annotation. If the
+-- record field has a function type, we want to render it as a function
+-- respecting `function-arrows`. For the most part, it behaves like HsTypeSig;
+-- however, record fields can have additional syntax not in normal function
+-- types, like specifying the multiplicity for the `::` or specifying
+-- UNPACK/strictness, so we need to handle this specially.
+instance FunRepr (HsConDeclRecField GhcPs) where
+  parseFunRepr (L _ HsConDeclRecField {..}) =
+    ParsedFunSig
+      { sig = cdrf_spec.cdf_multiplicity,
+        next = toRecFieldRepr False $ parseFunRepr cdrf_spec.cdf_type
+      }
+    where
+      toRecFieldRepr :: Bool -> ParsedFunRepr (HsType GhcPs) -> ParsedFunRepr (HsConDeclRecField GhcPs)
+      toRecFieldRepr seenArg = \case
+        ParsedFunSig {} -> error "parseFunRepr @HsType unexpectedly returned ParsedFunSig"
+        ParsedFunForall {..} ->
+          ParsedFunForall
+            { tele,
+              next = toRecFieldRepr seenArg next
+            }
+        ParsedFunQuals {..} ->
+          ParsedFunQuals
+            { ctxs,
+              next = toRecFieldRepr seenArg next
+            }
+        ParsedFunArg {..} ->
+          ParsedFunArg
+            { span,
+              arg =
+                let mUnpack =
+                      if not seenArg
+                        then Just cdrf_spec.cdf_unpack
+                        else Nothing
+                 in L (getLoc arg) (mUnpack, arg),
+              doc,
+              multAnn,
+              next = toRecFieldRepr True next
+            }
+        ParsedFunReturn {..} ->
+          ParsedFunReturn
+            { ret =
+                let mAnn =
+                      if not seenArg
+                        then Just (cdrf_spec.cdf_unpack, cdrf_spec.cdf_bang)
+                        else Nothing
+                 in L (getLoc ret) (mAnn, ret),
+              doc
+            }
+
+  type FunReprSig (HsConDeclRecField GhcPs) = HsMultAnnOf (LocatedA (HsType GhcPs)) GhcPs
+  renderFunReprSig multAnn = do
+    space
+    p_hsMultAnn (located' p_hsType) multAnn
+    space
+    token'dcolon
+
+  type FunReprCtx (HsConDeclRecField GhcPs) = HsType GhcPs
+  renderFunReprCtx = p_hsType
+
+  -- Invariant: SrcUnpackedness should only be set for the first arg
+  type FunReprArg (HsConDeclRecField GhcPs) = (Maybe SrcUnpackedness, LocatedA (HsType GhcPs))
+  renderFunReprArg (mUnpacked, ty) =
+    p_hsConDeclField
+      CDF
+        { cdf_ext = error "unused",
+          cdf_unpack = fromMaybe NoSrcUnpack mUnpacked,
+          cdf_bang = NoSrcStrict,
+          cdf_multiplicity = error "unused",
+          cdf_type = ty,
+          cdf_doc = error "unused"
+        }
+
+  type FunReprMult (HsConDeclRecField GhcPs) = HsType GhcPs
+  renderFunReprMult = p_hsType
+
+  -- Invariant: SrcUnpackedness/SrcStrictness should only be set if there are
+  -- no args
+  type FunReprRet (HsConDeclRecField GhcPs) = (Maybe (SrcUnpackedness, SrcStrictness), LocatedA (HsType GhcPs))
+  renderFunReprRet (mAnn, ty) =
+    p_hsConDeclField
+      CDF
+        { cdf_ext = error "unused",
+          cdf_unpack = unpack,
+          cdf_bang = strictness,
+          cdf_multiplicity = error "unused",
+          cdf_type = ty,
+          cdf_doc = error "unused"
+        }
+    where
+      (unpack, strictness) = fromMaybe (NoSrcUnpack, NoSrcStrict) mAnn
 
 ----------------------------------------------------------------------------
 -- Conversion functions
