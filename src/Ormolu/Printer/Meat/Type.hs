@@ -23,16 +23,7 @@ module Ormolu.Printer.Meat.Type
     p_hsConDeclFieldWithDoc,
     p_lhsTypeArg,
     p_hsSigType,
-<<<<<<< HEAD
-    hsOuterTyVarBndrsToHsType,
     hsSigTypeToType,
-||||||| a1fd8b82
-    p_hsForAllTelescope,
-    hsOuterTyVarBndrsToHsType,
-=======
-    p_hsForAllTelescope,
-    p_hsOuterTyVarBndrs,
->>>>>>> refs/rewritten/Merge-ormolu-0-8-1-0
     lhsTypeToSigType,
 
     -- * Re-exports from Ormolu.Printer.Meat.Type.Function
@@ -45,6 +36,7 @@ where
 
 import Control.Monad
 import Data.Choice (pattern Is, pattern With, pattern Without)
+import Data.Maybe (fromMaybe)
 import GHC.Data.Strict qualified as Strict
 import GHC.Hs hiding (isPromoted)
 import GHC.Types.SourceText
@@ -99,29 +91,8 @@ p_hsType = \case
     inci $ do
       txt "@"
       located kd p_hsType
-<<<<<<< HEAD
   ty@HsFunTy {} ->
     p_hsFun ty
-||||||| a1fd8b82
-  HsFunTy _ arrow x y -> do
-    located x p_hsType
-    space
-    p_arrow (located' p_hsTypeR) arrow
-    interArgBreak
-    case unLoc y of
-      HsFunTy {} -> p_hsTypeR (unLoc y)
-      _ -> located y p_hsTypeR
-=======
-  HsFunTy _ multAnn x y -> do
-    located x p_hsType
-    space
-    p_arrow (located' p_hsTypeR) multAnn
-
-    interArgBreak
-    case unLoc y of
-      HsFunTy {} -> p_hsTypeR (unLoc y)
-      _ -> located y p_hsTypeR
->>>>>>> refs/rewritten/Merge-ormolu-0-8-1-0
   HsListTy _ t ->
     located t (brackets N . p_hsType)
   HsTupleTy _ tsort xs ->
@@ -153,7 +124,6 @@ p_hsType = \case
     inci $ p_hsTypeAnnotation k
   HsSpliceTy _ splice -> p_hsUntypedSplice DollarSplice splice
   HsDocTy _ t str -> do
-<<<<<<< HEAD
     -- Usually handled by p_hsFun, but it's possible to have a bare type
     -- with docstrings, e.g.
     --
@@ -169,37 +139,6 @@ p_hsType = \case
     --       Int
     withHaddocks (Is #end) (Just str) $ do
       located t p_hsType
-  HsBangTy _ (HsBang u s) t -> do
-    case u of
-      SrcUnpack -> txt "{-# UNPACK #-}" >> space
-      SrcNoUnpack -> txt "{-# NOUNPACK #-}" >> space
-      NoSrcUnpack -> return ()
-    case s of
-      SrcLazy -> txt "~"
-      SrcStrict -> txt "!"
-      NoSrcStrict -> return ()
-    located t p_hsType
-  HsRecTy _ fields ->
-    p_conDeclFields fields
-||||||| a1fd8b82
-    p_hsDoc Pipe (With #endNewline) str
-    located t p_hsType
-  HsBangTy _ (HsBang u s) t -> do
-    case u of
-      SrcUnpack -> txt "{-# UNPACK #-}" >> space
-      SrcNoUnpack -> txt "{-# NOUNPACK #-}" >> space
-      NoSrcUnpack -> return ()
-    case s of
-      SrcLazy -> txt "~"
-      SrcStrict -> txt "!"
-      NoSrcStrict -> return ()
-    located t p_hsType
-  HsRecTy _ fields ->
-    p_conDeclFields fields
-=======
-    p_hsDoc Pipe (With #endNewline) str
-    located t p_hsType
->>>>>>> refs/rewritten/Merge-ormolu-0-8-1-0
   HsExplicitListTy _ p xs -> do
     case p of
       IsPromoted -> txt "'"
@@ -271,193 +210,27 @@ hasDocStrings = \case
 p_hsContext :: HsContext GhcPs -> R ()
 p_hsContext = p_hsContext' p_hsType
 
-<<<<<<< HEAD
-p_conDeclFields :: [LConDeclField GhcPs] -> R ()
-p_conDeclFields xs =
-  recordBraces $ sep commaDel (sitcc . located' p_conDeclField) xs
-||||||| a1fd8b82
-p_hsContext' :: (HasLoc (Anno a)) => (a -> R ()) -> [XRec GhcPs a] -> R ()
-p_hsContext' f = \case
-  [] -> txt "()"
-  [x] -> located x f
-  xs -> parens N $ sep commaDel (sitcc . located' f) xs
-
-class IsTyVarBndrFlag flag where
-  isInferred :: flag -> Bool
-  p_tyVarBndrFlag :: flag -> R ()
-  p_tyVarBndrFlag _ = pure ()
-
-instance IsTyVarBndrFlag () where
-  isInferred () = False
-
-instance IsTyVarBndrFlag Specificity where
-  isInferred = \case
-    InferredSpec -> True
-    SpecifiedSpec -> False
-
-instance IsTyVarBndrFlag (HsBndrVis GhcPs) where
-  isInferred _ = False
-  p_tyVarBndrFlag = \case
-    HsBndrRequired NoExtField -> pure ()
-    HsBndrInvisible _ -> txt "@"
-
-p_hsTyVarBndr :: (IsTyVarBndrFlag flag) => HsTyVarBndr flag GhcPs -> R ()
-p_hsTyVarBndr HsTvb {..} = do
-  p_tyVarBndrFlag tvb_flag
-  let wrap
-        | isInferred tvb_flag = braces N
-        | otherwise = case tvb_kind of
-            HsBndrKind {} -> parens N
-            HsBndrNoKind {} -> id
-  wrap $ do
-    case tvb_var of
-      HsBndrVar _ x -> p_rdrName x
-      HsBndrWildCard _ -> txt "_"
-    case tvb_kind of
-      HsBndrKind _ k -> do
-        space
-        txt "::"
-        breakpoint
-        inci (located k p_hsType)
-      HsBndrNoKind _ -> pure ()
-
-data ForAllVisibility = ForAllInvis | ForAllVis
-
--- | Render several @forall@-ed variables.
-p_forallBndrs ::
-  (HasLoc l) =>
-  ForAllVisibility ->
-  (a -> R ()) ->
-  [GenLocated l a] ->
-  R ()
-p_forallBndrs ForAllInvis _ [] = txt "forall."
-p_forallBndrs ForAllVis _ [] = txt "forall ->"
-p_forallBndrs vis p tyvars =
-  switchLayout (locA <$> tyvars) $ do
-    txt "forall"
-    breakpoint
-    inci $ do
-      sitcc $ sep breakpoint (sitcc . located' p) tyvars
-      case vis of
-        ForAllInvis -> txt "."
-        ForAllVis -> space >> txt "->"
-
-p_conDeclFields :: [LConDeclField GhcPs] -> R ()
-p_conDeclFields xs =
-  braces N $ sep commaDel (sitcc . located' p_conDeclField) xs
-=======
-p_hsContext' :: (HasLoc (Anno a)) => (a -> R ()) -> [XRec GhcPs a] -> R ()
-p_hsContext' f = \case
-  [] -> txt "()"
-  [x] -> located x f
-  xs -> parens N $ sep commaDel (sitcc . located' f) xs
-
-class IsTyVarBndrFlag flag where
-  isInferred :: flag -> Bool
-  p_tyVarBndrFlag :: flag -> R ()
-  p_tyVarBndrFlag _ = pure ()
-
-instance IsTyVarBndrFlag () where
-  isInferred () = False
-
-instance IsTyVarBndrFlag Specificity where
-  isInferred = \case
-    InferredSpec -> True
-    SpecifiedSpec -> False
-
-instance IsTyVarBndrFlag (HsBndrVis GhcPs) where
-  isInferred _ = False
-  p_tyVarBndrFlag = \case
-    HsBndrRequired NoExtField -> pure ()
-    HsBndrInvisible _ -> txt "@"
-
-p_hsTyVarBndr :: (IsTyVarBndrFlag flag) => HsTyVarBndr flag GhcPs -> R ()
-p_hsTyVarBndr HsTvb {..} = do
-  p_tyVarBndrFlag tvb_flag
-  let wrap
-        | isInferred tvb_flag = braces N
-        | otherwise = case tvb_kind of
-            HsBndrKind {} -> parens N
-            HsBndrNoKind {} -> id
-  wrap $ do
-    case tvb_var of
-      HsBndrVar _ x -> p_rdrName x
-      HsBndrWildCard _ -> txt "_"
-    case tvb_kind of
-      HsBndrKind _ k -> do
-        space
-        txt "::"
-        breakpoint
-        inci (located k p_hsType)
-      HsBndrNoKind _ -> pure ()
-
-data ForAllVisibility = ForAllInvis | ForAllVis
-
--- | Render several @forall@-ed variables.
-p_forallBndrs ::
-  (HasLoc l) =>
-  ForAllVisibility ->
-  (a -> R ()) ->
-  [GenLocated l a] ->
-  R ()
-p_forallBndrs ForAllInvis _ [] = txt "forall."
-p_forallBndrs ForAllVis _ [] = txt "forall ->"
-p_forallBndrs vis p tyvars =
-  switchLayout (locA <$> tyvars) $ do
-    txt "forall"
-    breakpoint
-    inci $ do
-      sitcc $ sep breakpoint (sitcc . located' p) tyvars
-      case vis of
-        ForAllInvis -> txt "."
-        ForAllVis -> space >> txt "->"
-
 p_hsConDeclRecFields :: [LHsConDeclRecField GhcPs] -> R ()
 p_hsConDeclRecFields xs =
-  braces N $ sep commaDel (sitcc . located' p_hsConDeclRecField) xs
->>>>>>> refs/rewritten/Merge-ormolu-0-8-1-0
+  recordBraces $ sep commaDel (sitcc . located' p_hsConDeclRecField) xs
 
-<<<<<<< HEAD
-p_conDeclField :: ConDeclField GhcPs -> R ()
-p_conDeclField ConDeclField {..} = withFieldHaddocks $ do
-||||||| a1fd8b82
-p_conDeclField :: ConDeclField GhcPs -> R ()
-p_conDeclField ConDeclField {..} = do
-  mapM_ (p_hsDoc Pipe (With #endNewline)) cd_fld_doc
-=======
 p_hsConDeclRecField :: HsConDeclRecField GhcPs -> R ()
-p_hsConDeclRecField HsConDeclRecField {..} = do
-  mapM_ (p_hsDoc Pipe (With #endNewline)) (cdf_doc cdrf_spec)
->>>>>>> refs/rewritten/Merge-ormolu-0-8-1-0
+p_hsConDeclRecField field@HsConDeclRecField {..} = withFieldHaddocks $ do
   sitcc $
     sep
       commaDel
       (located' (p_rdrName . foLabel))
-<<<<<<< HEAD
-      cd_fld_names
-  inci $ p_hsTypeAnnotation cd_fld_type
+      cdrf_names
+  inci $ p_hsFun field
   where
     withFieldHaddocks action = do
       commaStyle <- getPrinterOpt poCommaStyle
+      let doc = cdf_doc cdrf_spec
       when (commaStyle == Trailing) $
-        mapM_ (p_hsDoc Pipe (With #endNewline)) cd_fld_doc
+        mapM_ (p_hsDoc Pipe (With #endNewline)) doc
       action
       when (commaStyle == Leading) $
-        mapM_ (inciByFrac (-1) . (newline >>) . p_hsDoc Caret (Without #endNewline)) cd_fld_doc
-||||||| a1fd8b82
-      cd_fld_names
-  space
-  txt "::"
-  breakpoint
-  sitcc . inci $ p_hsType (unLoc cd_fld_type)
-=======
-      cdrf_names
-  space
-  p_hsMultAnn (located' p_hsType) (cdf_multiplicity cdrf_spec)
-  space
-  txt "::"
-  breakpoint
-  sitcc . inci $ p_hsConDeclField cdrf_spec
+        mapM_ (inciByFrac (-1) . (newline >>) . p_hsDoc Caret (Without #endNewline)) doc
 
 -- | This does not print 'cdf_doc' and 'cdf_multiplicity' as there is no single
 -- strategy for where to print them (see call sites).
@@ -475,10 +248,8 @@ p_hsConDeclField CDF {..} = do
     p_hsType ty
 
 p_hsConDeclFieldWithDoc :: HsConDeclField GhcPs -> R ()
-p_hsConDeclFieldWithDoc cdf = do
-  mapM_ (p_hsDoc Pipe (With #endNewline)) (cdf_doc cdf)
+p_hsConDeclFieldWithDoc cdf = withHaddocks (Is #end) cdf.cdf_doc $ do
   p_hsConDeclField cdf
->>>>>>> refs/rewritten/Merge-ormolu-0-8-1-0
 
 p_lhsTypeArg :: LHsTypeArg GhcPs -> R ()
 p_lhsTypeArg = \case
@@ -490,19 +261,7 @@ p_lhsTypeArg = \case
   HsArgPar _ -> notImplemented "HsArgPar"
 
 p_hsSigType :: HsSigType GhcPs -> R ()
-<<<<<<< HEAD
 p_hsSigType = p_hsType . hsSigTypeToType
-||||||| a1fd8b82
-p_hsSigType HsSig {..} =
-  p_hsType $ hsOuterTyVarBndrsToHsType sig_bndrs sig_body
-=======
-p_hsSigType HsSig {..} = do
-  p_hsOuterTyVarBndrs sig_bndrs
-  case sig_bndrs of
-    HsOuterImplicit {} -> pure ()
-    HsOuterExplicit {} -> breakpoint
-  located sig_body p_hsType
->>>>>>> refs/rewritten/Merge-ormolu-0-8-1-0
 
 instance FunRepr (HsType GhcPs) where
   parseFunRepr = \case
@@ -520,7 +279,7 @@ instance FunRepr (HsType GhcPs) where
               next = parseFunRepr rest
             }
     -- `Int -> _`
-    L ann (HsFunTy _ arrow l r) ->
+    L ann (HsFunTy _ multAnn l r) ->
       let (arg, doc) =
             case l of
               L _ (HsDocTy _ x doc_) -> (x, Just doc_)
@@ -529,7 +288,7 @@ instance FunRepr (HsType GhcPs) where
             { span = ann,
               arg,
               doc,
-              arrow,
+              multAnn,
               next = parseFunRepr r
             }
     -- `_ -> Int`
@@ -546,20 +305,107 @@ instance FunRepr (HsType GhcPs) where
 
   renderFunReprCtx = p_hsType
   renderFunReprArg = p_hsType
-  renderFunReprArr = p_hsType
+  renderFunReprMult = p_hsType
   renderFunReprRet = p_hsType
 
-p_hsOuterTyVarBndrs ::
-  HsOuterTyVarBndrs Specificity GhcPs ->
-  R ()
-p_hsOuterTyVarBndrs = \case
-  HsOuterImplicit _ -> pure ()
-  HsOuterExplicit _ bndrs -> p_hsForAllTelescope $ mkHsForAllInvisTele noAnn bndrs
+----------------------------------------------------------------------------
+-- FunRepr HsConDeclRecField
+
+-- | FunRepr HsConDeclRecField renders a record field type annotation. If the
+-- record field has a function type, we want to render it as a function
+-- respecting `function-arrows`. For the most part, it behaves like HsTypeSig;
+-- however, record fields can have additional syntax not in normal function
+-- types, like specifying the multiplicity for the `::` or specifying
+-- UNPACK/strictness, so we need to handle this specially.
+instance FunRepr (HsConDeclRecField GhcPs) where
+  parseFunRepr (L _ HsConDeclRecField {..}) =
+    ParsedFunSig
+      { sig = cdrf_spec.cdf_multiplicity,
+        next = toRecFieldRepr False $ parseFunRepr cdrf_spec.cdf_type
+      }
+    where
+      toRecFieldRepr :: Bool -> ParsedFunRepr (HsType GhcPs) -> ParsedFunRepr (HsConDeclRecField GhcPs)
+      toRecFieldRepr seenArg = \case
+        ParsedFunSig {} -> error "parseFunRepr @HsType unexpectedly returned ParsedFunSig"
+        ParsedFunForall {..} ->
+          ParsedFunForall
+            { tele,
+              next = toRecFieldRepr seenArg next
+            }
+        ParsedFunQuals {..} ->
+          ParsedFunQuals
+            { ctxs,
+              next = toRecFieldRepr seenArg next
+            }
+        ParsedFunArg {..} ->
+          ParsedFunArg
+            { span,
+              arg =
+                let mUnpack =
+                      if not seenArg
+                        then Just cdrf_spec.cdf_unpack
+                        else Nothing
+                 in L (getLoc arg) (mUnpack, arg),
+              doc,
+              multAnn,
+              next = toRecFieldRepr True next
+            }
+        ParsedFunReturn {..} ->
+          ParsedFunReturn
+            { ret =
+                let mAnn =
+                      if not seenArg
+                        then Just (cdrf_spec.cdf_unpack, cdrf_spec.cdf_bang)
+                        else Nothing
+                 in L (getLoc ret) (mAnn, ret),
+              doc
+            }
+
+  type FunReprSig (HsConDeclRecField GhcPs) = HsMultAnnOf (LocatedA (HsType GhcPs)) GhcPs
+  renderFunReprSig multAnn = do
+    space
+    p_hsMultAnn (located' p_hsType) multAnn
+    space
+    token'dcolon
+
+  type FunReprCtx (HsConDeclRecField GhcPs) = HsType GhcPs
+  renderFunReprCtx = p_hsType
+
+  -- Invariant: SrcUnpackedness should only be set for the first arg
+  type FunReprArg (HsConDeclRecField GhcPs) = (Maybe SrcUnpackedness, LocatedA (HsType GhcPs))
+  renderFunReprArg (mUnpacked, ty) =
+    p_hsConDeclField
+      CDF
+        { cdf_ext = error "unused",
+          cdf_unpack = fromMaybe NoSrcUnpack mUnpacked,
+          cdf_bang = NoSrcStrict,
+          cdf_multiplicity = error "unused",
+          cdf_type = ty,
+          cdf_doc = error "unused"
+        }
+
+  type FunReprMult (HsConDeclRecField GhcPs) = HsType GhcPs
+  renderFunReprMult = p_hsType
+
+  -- Invariant: SrcUnpackedness/SrcStrictness should only be set if there are
+  -- no args
+  type FunReprRet (HsConDeclRecField GhcPs) = (Maybe (SrcUnpackedness, SrcStrictness), LocatedA (HsType GhcPs))
+  renderFunReprRet (mAnn, ty) =
+    p_hsConDeclField
+      CDF
+        { cdf_ext = error "unused",
+          cdf_unpack = unpack,
+          cdf_bang = strictness,
+          cdf_multiplicity = error "unused",
+          cdf_type = ty,
+          cdf_doc = error "unused"
+        }
+    where
+      (unpack, strictness) = fromMaybe (NoSrcUnpack, NoSrcStrict) mAnn
 
 ----------------------------------------------------------------------------
 -- Conversion functions
 
-<<<<<<< HEAD
 hsSigTypeToType :: HsSigType GhcPs -> HsType GhcPs
 hsSigTypeToType HsSig {..} = hsOuterTyVarBndrsToHsType sig_bndrs sig_body
 
@@ -573,19 +419,6 @@ hsOuterTyVarBndrsToHsType obndrs ty = case obndrs of
   HsOuterExplicit _ bndrs ->
     HsForAllTy NoExtField (mkHsForAllInvisTele noAnn bndrs) ty
 
-||||||| a1fd8b82
--- could be generalized to also handle () instead of Specificity
-hsOuterTyVarBndrsToHsType ::
-  HsOuterTyVarBndrs Specificity GhcPs ->
-  LHsType GhcPs ->
-  HsType GhcPs
-hsOuterTyVarBndrsToHsType obndrs ty = case obndrs of
-  HsOuterImplicit NoExtField -> unLoc ty
-  HsOuterExplicit _ bndrs ->
-    HsForAllTy NoExtField (mkHsForAllInvisTele noAnn bndrs) ty
-
-=======
->>>>>>> refs/rewritten/Merge-ormolu-0-8-1-0
 lhsTypeToSigType :: LHsType GhcPs -> LHsSigType GhcPs
 lhsTypeToSigType ty =
   L (getLoc ty) . HsSig NoExtField (HsOuterImplicit NoExtField) $ ty

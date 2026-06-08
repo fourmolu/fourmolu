@@ -868,29 +868,8 @@ p_hsExpr' isApp s = \case
   expr@HsQual {} ->
     p_hsFun expr
   -- similar to HsFunTy
-<<<<<<< HEAD
   expr@HsFunArr {} ->
     p_hsFun expr
-||||||| a1fd8b82
-  HsFunArr _ arrow x y -> do
-    located x p_hsExpr
-    space
-    p_arrow (located' p_hsExpr) arrow
-    breakpoint
-    case unLoc y of
-      HsFunArr {} -> p_hsExpr (unLoc y)
-      _ -> located y p_hsExpr
-=======
-  HsFunArr _ multAnn x y -> do
-    located x p_hsExpr
-    space
-    p_arrow (located' p_hsExpr) multAnn
-
-    breakpoint
-    case unLoc y of
-      HsFunArr {} -> p_hsExpr (unLoc y)
-      _ -> located y p_hsExpr
->>>>>>> refs/rewritten/Merge-ormolu-0-8-1-0
 
 -- | Print a list comprehension.
 --
@@ -1472,12 +1451,12 @@ instance FunRepr (HsExpr GhcPs) where
               next = parseFunRepr rest
             }
     -- `Int -> _`
-    L ann (HsFunArr _ arrow arg r) ->
+    L ann (HsFunArr _ multAnn arg r) ->
       ParsedFunArg
         { span = ann,
           arg,
           doc = Nothing,
-          arrow,
+          multAnn,
           next = parseFunRepr r
         }
     -- `_ -> Int`
@@ -1493,7 +1472,7 @@ instance FunRepr (HsExpr GhcPs) where
 
   renderFunReprArg = p_hsExpr
   renderFunReprCtx = p_hsExpr
-  renderFunReprArr = p_hsExpr
+  renderFunReprMult = p_hsExpr
   renderFunReprRet = p_hsExpr
 
 ----------------------------------------------------------------------------

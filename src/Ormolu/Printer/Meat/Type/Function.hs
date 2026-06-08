@@ -112,7 +112,7 @@ getIsMultiline = do
   layout <- liftR getLayout
   pure $ state.forceMultiline || layout == MultiLine
 
-setMultilineContext :: ParsedFunRepr' sig ctx arg arr ret -> PrintHsFun ()
+setMultilineContext :: ParsedFunRepr' sig ctx arg mult ret -> PrintHsFun ()
 setMultilineContext fun =
   PrintHsFun . State.modify $ \state -> state {forceMultiline = hasDocs fun}
 
@@ -147,32 +147,32 @@ type ParsedFunRepr a =
     (FunReprSig a)
     (FunReprCtx a)
     (FunReprArg a)
-    (FunReprArr a)
+    (FunReprMult a)
     (FunReprRet a)
 
 -- | The parsed representation of a function
-data ParsedFunRepr' sig ctx arg arr ret
+data ParsedFunRepr' sig ctx arg mult ret
   = -- | The "::" delimiter. Invariant: must be first.
     ParsedFunSig
       { sig :: sig,
-        next :: ParsedFunRepr' sig ctx arg arr ret
+        next :: ParsedFunRepr' sig ctx arg mult ret
       }
   | -- | The "forall a b." or "forall a b ->" construct.
     ParsedFunForall
       { tele :: LocatedA (HsForAllTelescope GhcPs),
-        next :: ParsedFunRepr' sig ctx arg arr ret
+        next :: ParsedFunRepr' sig ctx arg mult ret
       }
   | -- | The "(A, B) =>" construct.
     ParsedFunQuals
       { ctxs :: [LocatedA (LocatedC [LocatedA ctx])],
-        next :: ParsedFunRepr' sig ctx arg arr ret
+        next :: ParsedFunRepr' sig ctx arg mult ret
       }
   | ParsedFunArg
       { span :: SrcSpanAnnA,
         arg :: LocatedA arg,
         doc :: Maybe (LHsDoc GhcPs),
-        arrow :: HsArrowOf (LocatedA arr) GhcPs,
-        next :: ParsedFunRepr' sig ctx arg arr ret
+        multAnn :: HsMultAnnOf (LocatedA mult) GhcPs,
+        next :: ParsedFunRepr' sig ctx arg mult ret
       }
   | ParsedFunReturn
       { ret :: LocatedA ret,
@@ -201,9 +201,9 @@ class
   type FunReprArg a = a
   renderFunReprArg :: FunReprArg a -> R ()
 
-  type FunReprArr a
-  type FunReprArr a = a
-  renderFunReprArr :: FunReprArr a -> R ()
+  type FunReprMult a
+  type FunReprMult a = a
+  renderFunReprMult :: FunReprMult a -> R ()
 
   type FunReprRet a
   type FunReprRet a = a
@@ -218,11 +218,11 @@ type FunReprHsType =
     FunReprSig (HsType GhcPs) ~ (),
     FunReprCtx (HsType GhcPs) ~ HsType GhcPs,
     FunReprArg (HsType GhcPs) ~ HsType GhcPs,
-    FunReprArr (HsType GhcPs) ~ HsType GhcPs,
+    FunReprMult (HsType GhcPs) ~ HsType GhcPs,
     FunReprRet (HsType GhcPs) ~ HsType GhcPs
   )
 
-hasDocs :: ParsedFunRepr' ig ctx arg arr ret -> Bool
+hasDocs :: ParsedFunRepr' ig ctx arg mult ret -> Bool
 hasDocs = \case
   ParsedFunSig {next} -> hasDocs next
   ParsedFunForall {next} -> hasDocs next
@@ -260,8 +260,8 @@ p_hsFunParsed' = \case
     p_parsedFunQuals @a ctxs
     setMultilineContext next
     p_hsFunParsed' @a next
-  ParsedFunArg {span, arg, doc, arrow, next} -> do
-    p_parsedFunArg @a span arg doc arrow
+  ParsedFunArg {span, arg, doc, multAnn, next} -> do
+    p_parsedFunArg @a span arg doc multAnn
     case next of
       ParsedFunArg {} -> pure ()
       _ -> do
@@ -335,9 +335,9 @@ p_parsedFunArg ::
   SrcSpanAnnA ->
   LocatedA (FunReprArg a) ->
   Maybe (LHsDoc GhcPs) ->
-  HsArrowOf (LocatedA (FunReprArr a)) GhcPs ->
+  HsMultAnnOf (LocatedA (FunReprMult a)) GhcPs ->
   PrintHsFun ()
-p_parsedFunArg span item doc arrow = do
+p_parsedFunArg span item doc multAnn = do
   isTrailing <- getIsTrailing
 
   -- We only want to set located on the first arg
@@ -346,7 +346,7 @@ p_parsedFunArg span item doc arrow = do
     setLocated_ (L span item)
     setInArgList True
 
-  let renderArrow = p_arrow (located' (renderFunReprArr @a)) arrow
+  let renderArrow = p_arrow (located' (renderFunReprMult @a)) multAnn
   withHaddocks (Isn't #end) doc $ do
     withApplyLeadingDelim $ \applyLeadingDelim' ->
       liftR . located item $ \arg -> do
