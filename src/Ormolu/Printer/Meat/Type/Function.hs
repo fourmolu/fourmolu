@@ -10,6 +10,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoFieldSelectors #-}
+{-# OPTIONS_GHC -Wno-partial-fields #-}
 
 -- | A Fourmolu-specific module for rendering function-like type signatures.
 module Ormolu.Printer.Meat.Type.Function
