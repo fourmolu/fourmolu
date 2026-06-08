@@ -84,6 +84,7 @@ library
     Ormolu.Printer.Meat.Module
     Ormolu.Printer.Meat.Pragma
     Ormolu.Printer.Meat.Type
+    Ormolu.Printer.Meat.Type.Function
     Ormolu.Printer.Operators
     Ormolu.Printer.SpanStream
     Ormolu.Processing.Common
