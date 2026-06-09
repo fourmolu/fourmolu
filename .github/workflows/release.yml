@@ -66,6 +66,15 @@ jobs:
       -
         uses: actions/checkout@v6
       -
+        name: Check release does not already exist
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view "v${version}" --repo "${{ github.repository }}" > /dev/null 2>&1; then
+            echo "❌ Release v${version} already exists. Aborting."
+            exit 1
+          fi
+      -
         uses: actions/download-artifact@v8
         with:
           path: ./.release/bin/
