@@ -1,5 +1,7 @@
 ## Fourmolu 0.20.0.0
 
+Now installable with GHCup! See README for details.
+
 * Improve `import-grouping` configuration
 
     * Add the `scope` option for import grouping ([#525](https://github.com/fourmolu/fourmolu/pull/525)).

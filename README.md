@@ -49,14 +49,23 @@ See https://fourmolu.github.io/config/
 
 ## Installation
 
-To install the latest release from Hackage, simply install with Cabal or Stack:
+### (Recommended) Install with GHCup
 
-```console
-$ cabal install fourmolu
-$ stack install fourmolu
+```bash
+ghcup config add-release-channel 3rdparty
+ghcup install fourmolu latest
 ```
 
-Alternatively, you can use [dotslash](https://dotslash-cli.com/docs/) using the configuration in the release notes.
+### Install with Cabal/Stack
+
+```bash
+cabal install fourmolu
+stack install fourmolu
+```
+
+### Install with [dotslash](https://dotslash-cli.com/docs/)
+
+Copy the configuration in the GitHub release notes.
 
 ## Building from source
 
