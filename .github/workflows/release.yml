@@ -66,6 +66,15 @@ jobs:
       -
         uses: actions/checkout@v6
       -
+        name: Check release does not already exist
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view "v${version}" --repo "${{ github.repository }}" > /dev/null 2>&1; then
+            echo "❌ Release v${version} already exists. Aborting."
+            exit 1
+          fi
+      -
         uses: actions/download-artifact@v8
         with:
           path: ./.release/bin/
@@ -77,6 +86,9 @@ jobs:
           name: fourmolu-sdist
           path: ./.release/sdist/
       -
+        name: Create release archives
+        run: scripts/create_release_archives.py ./.release/bin/*
+      -
         name: Load Hackage token secret name
         id: hackage_token_secret
         run: |
@@ -87,10 +99,10 @@ jobs:
         run:
           scripts/release_notes.py generate
             --fourmolu-version "${version}"
-            --bin linux-x86_64 .release/bin/fourmolu-${version}-linux-x86_64
-            --bin linux-aarch64 .release/bin/fourmolu-${version}-linux-arm64
-            --bin macos-x86_64 .release/bin/fourmolu-${version}-osx-x86_64
-            --bin macos-aarch64 .release/bin/fourmolu-${version}-osx-arm64
+            --bin linux-x86_64 .release/bin/fourmolu-${version}-linux-x86_64.zip
+            --bin linux-aarch64 .release/bin/fourmolu-${version}-linux-arm64.zip
+            --bin macos-x86_64 .release/bin/fourmolu-${version}-darwin-x86_64.zip
+            --bin macos-aarch64 .release/bin/fourmolu-${version}-darwin-arm64.zip
             | tee .release/release-notes.md
       -
         uses: haskell-actions/hackage-publish@v1

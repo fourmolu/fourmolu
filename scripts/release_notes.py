@@ -87,7 +87,8 @@ def get_dotslash_config(version: str, binaries: Mapping[str, Path]) -> Any:
                 "size": bin_path.stat().st_size,
                 "hash": "sha256",
                 "digest": get_digest(bin_path),
-                "path": "fourmolu",
+                "format": "zip",
+                "path": f"{bin_path.name.removesuffix(".zip")}/fourmolu",
                 "providers": [
                     {"url": f"{BASE_DOWNLOAD_URL}/v{version}/{bin_path.name}"},
                 ],
