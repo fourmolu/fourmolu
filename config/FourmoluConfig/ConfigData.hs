@@ -96,7 +96,7 @@ allOptions =
         type_ = "RecordStyle",
         default_ = HsExpr "RecordStyleAligned",
         ormolu = HsExpr "RecordStyleAligned",
-        sinceVersion = Nothing,
+        sinceVersion = Just "0.20.0.0",
         cliOverrides = emptyOverrides
       },
     Option
@@ -176,7 +176,7 @@ allOptions =
         type_ = "HaddockLocSignature",
         default_ = HsExpr "HaddockLocSigAuto",
         ormolu = HsExpr "HaddockLocSigAuto",
-        sinceVersion = Nothing,
+        sinceVersion = Just "0.19.0.0",
         cliOverrides = emptyOverrides {cliDefault = Just "leading if function-arrows is trailing, or vice-versa"}
       },
     Option

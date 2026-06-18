@@ -103,7 +103,7 @@ To release a new version, do the following workflow:
     1. Curate `CHANGELOG.md` (see `changelog.d/README.md`)
 
     1. Curate option order
-        * Re-order the options in `config/ConfigData.hs`
+        * Re-order the options in `config/FourmoluConfig/ConfigData.hs`
             * Sort by popularity/importance (using your best judgement, without too much churn every release)
             * Regenerate with `config/generate.sh`
         * Ensure the `PrinterOptsSpec.hs` tests are also in the same order as the options
