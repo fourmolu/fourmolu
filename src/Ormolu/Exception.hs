@@ -45,6 +45,8 @@ data OrmoluException
     OrmoluMissingStdinInputFile
   | -- | A parse error in a fixity overrides file
     OrmoluFixityOverridesParseError (ParseErrorBundle Text Void)
+  | -- | A FOURMOLU_OPTIONS pragma could not be parsed in the original source code
+    FourmoluPragmaOptsParsingFailed RealSrcSpan Text
   deriving (Show)
 
 instance Exception OrmoluException where
@@ -111,6 +113,14 @@ printOrmoluException = \case
   OrmoluFixityOverridesParseError errorBundle -> Term.do
     put . T.pack . errorBundlePretty $ errorBundle
     newline
+  FourmoluPragmaOptsParsingFailed s e -> Term.do
+    bold (putOutputable s)
+    newline
+    put "  The Fourmolu options could not be parsed:"
+    newline
+    put "  "
+    put e
+    newline
 
 -- | Inside this wrapper 'OrmoluException' will be caught and displayed
 -- nicely.
@@ -136,3 +146,4 @@ withPrettyOrmoluExceptions colorMode m = m `catch` h
           OrmoluCabalFileParsingFailed {} -> 8
           OrmoluMissingStdinInputFile {} -> 9
           OrmoluFixityOverridesParseError {} -> 10
+          FourmoluPragmaOptsParsingFailed {} -> 16
