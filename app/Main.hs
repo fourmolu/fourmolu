@@ -18,6 +18,7 @@ import Data.Maybe (fromMaybe, mapMaybe, maybeToList)
 import Data.Set qualified as Set
 import Data.Text.IO.Utf8 qualified as T.Utf8
 import Data.Version (showVersion)
+import Data.Yaml (ParseException (..))
 import Data.Yaml qualified as Yaml
 import Distribution.ModuleName (ModuleName)
 import Distribution.Types.PackageName (PackageName)
@@ -95,6 +96,8 @@ resolveConfig opts@(Opts {optConfig = cliConfig, optPrinterOpts = cliPrinterOpts
         pure emptyConfig
       Right configPath ->
         Yaml.decodeFileEither configPath >>= \case
+          Left (AesonException "Error in $: parsing FourmoluConfig failed, expected Object, but encountered Null") -> do
+            pure emptyConfig
           Left e -> do
             outputError . unlines $
               [ "Failed to load " <> configPath <> ":",

@@ -79,6 +79,17 @@ spec =
               }
         stdout `shouldBe` "f :: Show a => a -> String\n"
 
+    it "accepts empty config file" $ \fourmoluExe ->
+      withTempDir $ \tmpdir -> do
+        writeFile' (tmpdir </> "fourmolu.yaml") ""
+        stdout <-
+          readFrom $
+            (proc fourmoluExe ["--no-cabal", "-"])
+              { procStdin = unformattedCode,
+                procCwd = Just tmpdir
+              }
+        stdout `shouldBe` formattedCode
+
     it "recursively finds files in directories" $ \fourmoluExe -> do
       withTempDir $ \tmpdir -> do
         let hsFile = tmpdir </> "test.hs"
