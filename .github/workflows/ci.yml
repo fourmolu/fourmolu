@@ -23,8 +23,8 @@ jobs:
             accept-flake-config = true
       - uses: cachix/cachix-action@v17
         with:
-          name: tweag-ormolu
-          authToken: '${{ secrets.CACHIX_TWEAG_ORMOLU_AUTH_TOKEN }}'
+          name: ormolu
+          authToken: '${{ secrets.CACHIX_ORMOLU_AUTH_TOKEN }}'
       - name: Build and run tests
         run: |
           nix build -L --keep-going .#${{ matrix.ghc }}.ci

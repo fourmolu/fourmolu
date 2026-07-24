@@ -179,14 +179,14 @@ viewModel model =
             []
             [ text $ "Version " <> VERSION_ormolu <> ", commit ",
               a_
-                [href_ $ "https://github.com/tweag/ormolu/commit/" <> commitRev, target_ "blank"]
+                [href_ $ "https://github.com/mrkkrp/ormolu/commit/" <> commitRev, target_ "blank"]
                 [span_ [class_ "is-family-code"] [text . T.take 7 $ commitRev]],
               text $ ", using ghc-lib-parser " <> VERSION_ghc_lib_parser
             ],
           p_
             []
             [ a_
-                [class_ "button is-link is-light", href_ "https://github.com/tweag/ormolu", target_ "blank"]
+                [class_ "button is-link is-light", href_ "https://github.com/mrkkrp/ormolu", target_ "blank"]
                 [text "See the GitHub repository"]
             ],
           div_ [] . intersperse (br_ []) $

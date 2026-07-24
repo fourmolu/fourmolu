@@ -49,4 +49,4 @@ To regenerate outputs that have changed, you can set the
 
 If Ormolu is not formatted like this, the CI will fail.
 
-[issues]: https://github.com/tweag/ormolu/issues
+[issues]: https://github.com/mrkkrp/ormolu/issues

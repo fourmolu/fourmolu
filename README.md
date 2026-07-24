@@ -4,7 +4,7 @@
 [![Hackage](https://img.shields.io/hackage/v/ormolu.svg?style=flat)](https://hackage.haskell.org/package/ormolu)
 [![Stackage Nightly](http://stackage.org/package/ormolu/badge/nightly)](http://stackage.org/nightly/package/ormolu)
 [![Stackage LTS](http://stackage.org/package/ormolu/badge/lts)](http://stackage.org/lts/package/ormolu)
-[![CI](https://github.com/tweag/ormolu/actions/workflows/ci.yml/badge.svg)](https://github.com/tweag/ormolu/actions/workflows/ci.yml)
+[![CI](https://github.com/mrkkrp/ormolu/actions/workflows/ci.yml/badge.svg)](https://github.com/mrkkrp/ormolu/actions/workflows/ci.yml)
 
 * [Installation](#installation)
 * [Building from source](#building-from-source)
@@ -46,7 +46,7 @@ the following goals in mind:
 * Be well-tested and robust so that the formatter can be used in large
   projects.
 
-Try it out in your browser at <https://ormolu-live.tweag.io>!
+Try it out in your browser at <https://ormolu-live.markkarpov.com>!
 See [Ormolu Live](#ormolu-live) for more info.
 
 ## Installation
@@ -89,7 +89,7 @@ To use Ormolu directly from GitHub with Nix flakes, this snippet may come in han
 
 ```nix
 {
-  inputs.ormolu.url = "github:tweag/ormolu";
+  inputs.ormolu.url = "github:mrkkrp/ormolu";
   outputs = { ormolu, ... }: {
     # use ormolu.packages.${system}.default here
   };
@@ -140,8 +140,8 @@ to `false`.
 ### Ormolu Live
 
 On every new commit to `master`, [Ormolu Live](./ormolu-live) is deployed to
-https://ormolu-live.tweag.io. Older versions are available at
-https://COMMITHASH--ormolu-live.netlify.app.
+https://ormolu-live.markkarpov.com. Older versions are available at
+https://COMMITHASH--ormolu.netlify.app.
 
 ### Editor integration
 
@@ -345,17 +345,17 @@ See [CONTRIBUTING.md][contributing].
 
 See [LICENSE.md][license].
 
-Copyright © 2018–present Tweag I/O
+Copyright © 2018–2026 Tweag I/O, 2026–present Mark Karpov
 
 [aur]: https://aur.archlinux.org/packages/ormolu
-[design-cpp]: https://github.com/tweag/ormolu/blob/master/DESIGN.md#cpp
+[design-cpp]: https://github.com/mrkkrp/ormolu/blob/master/DESIGN.md#cpp
 [emacs-package]: https://github.com/vyorkin/ormolu.el
 [haskell-src-exts]: https://hackage.haskell.org/package/haskell-src-exts
 [neoformat]: https://github.com/sbdchd/neoformat
-[releases]: https://github.com/tweag/ormolu/releases
+[releases]: https://github.com/mrkkrp/ormolu/releases
 [run-ormolu]: https://github.com/haskell-actions/run-ormolu
 [vim-ormolu]: https://github.com/sdiehl/vim-ormolu
 [vs-code-plugin]: https://marketplace.visualstudio.com/items?itemName=sjurmillidahl.ormolu-vscode
 [fourmolu]: https://github.com/fourmolu/fourmolu
-[contributing]: https://github.com/tweag/ormolu/blob/master/CONTRIBUTING.md
-[license]: https://github.com/tweag/ormolu/blob/master/LICENSE.md
+[contributing]: https://github.com/mrkkrp/ormolu/blob/master/CONTRIBUTING.md
+[license]: https://github.com/mrkkrp/ormolu/blob/master/LICENSE.md
