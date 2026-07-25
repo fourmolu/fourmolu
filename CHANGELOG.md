@@ -1,5 +1,10 @@
 ## Unreleased
 
+* Do not crash when a parent directory cannot be read due to insufficient
+  permissions while searching for configuration files; the search for
+  configuration files is stopped at that point instead. [Issue
+  1212](https://github.com/tweag/ormolu/issues/1212).
+
 * Preserve blank lines between blocks in layout contexts (`where`, `do`,
   `let`) when the preceding block ends with a trailing comment. [Issue
   1132](https://github.com/tweag/ormolu/issues/1132).
