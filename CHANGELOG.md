@@ -6,6 +6,10 @@
 * Fix preservation of the position of comments around the `where` keyword.
   [Issue 784](https://github.com/tweag/ormolu/issues/784).
 
+* Do not sort `Prelude` to the end of the import list when the
+  `NoImplicitPrelude` extension is enabled; instead sort it like any other
+  import. [Issue 1189](https://github.com/tweag/ormolu/issues/1189).
+
 ## Ormolu 0.8.1.1
 
 * Add missing braces for case expressions in single‑line do blocks. [Issue
