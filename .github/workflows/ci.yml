@@ -66,17 +66,26 @@ jobs:
       - uses: actions/cache@v6
         with:
           path: |
+            ~/.ghc-wasm/.cabal/packages
             ~/.ghc-wasm/.cabal/store
             ormolu-live/dist-newstyle
-          key: wasm-${{ github.run_id }}
+          key: wasm-${{ hashFiles('ormolu-live/cabal.project', 'ormolu-live/*.cabal', 'ormolu.cabal', 'ormolu-live/package-lock.json') }}
           restore-keys: |
-            wasm-${{ github.run_id }}
             wasm-
       - name: Build Ormolu Live
         run: |
           cd ormolu-live
-          nix develop .#ormoluLive -c sh -c \
-            'npm ci && wasm32-wasi-cabal update && ./build.sh prod'
+          nix develop .#ormoluLive -c sh -c '
+            set -e
+            npm ci
+            # Only refresh the Hackage index if it is not already cached; the
+            # index-state is pinned in cabal.project, so a stale-but-present
+            # index is fine.
+            if ! ls ~/.ghc-wasm/.cabal/packages/*/01-index.tar >/dev/null 2>&1; then
+              wasm32-wasi-cabal update
+            fi
+            ./build.sh prod
+          '
       - name: Deploy to Netlify, preview
         if: env.NETLIFY_AUTH_TOKEN != ''
         uses: nwtgck/actions-netlify@v4
