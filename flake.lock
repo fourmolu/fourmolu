@@ -16,23 +16,6 @@
         "type": "github"
       }
     },
-    "cabal-32": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1603716527,
-        "narHash": "sha256-X0TFfdD4KZpwl0Zr6x+PLxUt/VyKQfX7ylXHdmZIL+w=",
-        "owner": "haskell",
-        "repo": "cabal",
-        "rev": "48bf10787e27364730dd37a42b603cee8d6af7ee",
-        "type": "github"
-      },
-      "original": {
-        "owner": "haskell",
-        "ref": "3.2",
-        "repo": "cabal",
-        "type": "github"
-      }
-    },
     "cabal-34": {
       "flake": false,
       "locked": {
@@ -197,11 +180,11 @@
     "hackage": {
       "flake": false,
       "locked": {
-        "lastModified": 1771289625,
-        "narHash": "sha256-ySABvJf2NaxGc1mPSkwKjC8So9S906UgOYZVzX35Ng8=",
+        "lastModified": 1784940086,
+        "narHash": "sha256-XCbW2U4EghY77mAaQDQ93APzpyf/5cp9FRGGUH4uXxo=",
         "owner": "input-output-hk",
         "repo": "hackage.nix",
-        "rev": "808af568b7e14e1eced115e65825d2f50a608008",
+        "rev": "65005f5a373b9aa1b6beb041ced2efa9f785a151",
         "type": "github"
       },
       "original": {
@@ -213,11 +196,11 @@
     "hackage-for-stackage": {
       "flake": false,
       "locked": {
-        "lastModified": 1771288450,
-        "narHash": "sha256-2tCS6CXMHPo4Jsh4JopbYBoQXnTTp8MdZVAqPVmOIq4=",
+        "lastModified": 1784940072,
+        "narHash": "sha256-IsmBZGQVMRgFSWb8oQ1eb/kd8YNeiysT6GkCUxbsf6U=",
         "owner": "input-output-hk",
         "repo": "hackage.nix",
-        "rev": "3049efd880816a3bb98b7b5fb4062045fcddd474",
+        "rev": "1b33a4a0cef338e6f9a7f8fb7fcc757a0bc76cb8",
         "type": "github"
       },
       "original": {
@@ -246,7 +229,6 @@
     "haskellNix": {
       "inputs": {
         "HTTP": "HTTP",
-        "cabal-32": "cabal-32",
         "cabal-34": "cabal-34",
         "cabal-36": "cabal-36",
         "cardano-shell": "cardano-shell",
@@ -285,11 +267,11 @@
         "stackage": "stackage"
       },
       "locked": {
-        "lastModified": 1771289806,
-        "narHash": "sha256-s60Kb3cYr0t6LDQ/LmJr5vQN8Z4IY1Vfwq2keZW0VOM=",
+        "lastModified": 1784941440,
+        "narHash": "sha256-xyzTygZSuDWRJx3UUBz77H3BIUMA933PiOajEuem6/0=",
         "owner": "input-output-hk",
         "repo": "haskell.nix",
-        "rev": "3331ba591ae02a41c638aeb6bea91d268b34cf8e",
+        "rev": "1cc7e7184968ea273dfc747efa00c7adf855a286",
         "type": "github"
       },
       "original": {
@@ -554,11 +536,11 @@
     "iserv-proxy": {
       "flake": false,
       "locked": {
-        "lastModified": 1770174258,
-        "narHash": "sha256-x6QYupvHZM7rRpVO4AIC5gUWFprFQ59A95FPC7/Owjg=",
+        "lastModified": 1778457436,
+        "narHash": "sha256-bzZAHGzwcQGzBTipJuUs9tvMGO28kp0373zqnpn0g5A=",
         "owner": "stable-haskell",
         "repo": "iserv-proxy",
-        "rev": "91ef7ffdeedfb141a4d69dcf9e550abe3e1160c6",
+        "rev": "8cdc446f8e2d91b120ecc075063e9475d387df52",
         "type": "github"
       },
       "original": {
@@ -666,11 +648,11 @@
     },
     "nixpkgs-2511": {
       "locked": {
-        "lastModified": 1764572236,
-        "narHash": "sha256-hLp6T/vKdrBQolpbN3EhJOKTXZYxJZPzpnoZz+fEGlE=",
+        "lastModified": 1775749320,
+        "narHash": "sha256-msT6frWJSQ2WR+0cpk+KPcZdLTLagUIsJwQwIX9JNSo=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "b0924ea1889b366de6bb0018a9db70b2c43a15f8",
+        "rev": "74b87959b2d16f59f54d8559cf3cf26b9d907949",
         "type": "github"
       },
       "original": {
@@ -682,11 +664,11 @@
     },
     "nixpkgs-unstable": {
       "locked": {
-        "lastModified": 1764587062,
-        "narHash": "sha256-hdFa0TAVQAQLDF31cEW3enWmBP+b592OvHs6WVe3D8k=",
+        "lastModified": 1775888245,
+        "narHash": "sha256-nwASzrRDD1JBEu/o8ekKYEXm/oJW6EMCzCRdrwcLe90=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "c1cb7d097cb250f6e1904aacd5f2ba5ffd8a49ce",
+        "rev": "13043924aaa7375ce482ebe2494338e058282925",
         "type": "github"
       },
       "original": {

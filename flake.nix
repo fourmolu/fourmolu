@@ -23,7 +23,7 @@
         inherit (pkgs) lib haskell-nix;
         inherit (haskell-nix) haskellLib;
 
-        ghcVersions = [ "ghc9102" "ghc9122" "ghc9141" ];
+        ghcVersions = [ "ghc9103" "ghc9124" "ghc9141" ];
         defaultGHCVersion = builtins.head ghcVersions;
         perGHC = lib.genAttrs ghcVersions (ghcVersion:
           let
@@ -38,7 +38,8 @@
               }];
             };
             inherit (hsPkgs.ormolu.components.exes) ormolu;
-            hackageTests = import ./expected-failures { inherit pkgs ormolu; };
+            cpphs = hsPkgs.tool "cpphs" "1.20.10";
+            hackageTests = import ./expected-failures { inherit pkgs ormolu cpphs; };
             regionTests = import ./region-tests { inherit pkgs ormolu; };
             fixityTests = import ./fixity-tests { inherit pkgs ormolu; };
             weeder = hsPkgs.tool "weeder" "2.10.0";
@@ -139,10 +140,6 @@
           default = defaultGHC.dev.hsPkgs.shellFor {
             tools = {
               cabal = "latest";
-              haskell-language-server = {
-                src = inputs.haskellNix.inputs."hls-2.11";
-                configureArgs = "--disable-benchmarks --disable-tests";
-              };
             };
             nativeBuildInputs = pre-commit-check.enabledPackages;
             withHoogle = false;
