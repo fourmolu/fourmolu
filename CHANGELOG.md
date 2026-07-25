@@ -1,5 +1,9 @@
 ## Unreleased
 
+* Preserve blank lines between blocks in layout contexts (`where`, `do`,
+  `let`) when the preceding block ends with a trailing comment. [Issue
+  1132](https://github.com/tweag/ormolu/issues/1132).
+
 * Fix printing of single line export lists with inlined Haddock comments.
   [Issue 1051](https://github.com/tweag/ormolu/issues/1051).
 
