@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RecordWildCards #-}
 
@@ -7,6 +8,7 @@ module Ormolu.Printer
   )
 where
 
+import Data.Choice (Choice)
 import Data.Text (Text)
 import Data.Text qualified as T
 import Ormolu.Parser.Result
@@ -18,7 +20,7 @@ import Ormolu.Processing.Common
 -- | Render several source snippets.
 printSnippets ::
   -- | Whether to print out debug information during printing
-  Bool ->
+  Choice "debug" ->
   -- | Result of parsing
   [SourceSnippet] ->
   -- | Resulting rendition

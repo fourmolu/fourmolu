@@ -75,8 +75,8 @@ p_dataDecl style name tyVars getTyVarLoc p_tyVar fixity HsDataDefn {..} = do
     forM_ dd_ctxt p_lhsContext
     switchLayout constructorSpans $
       p_infixDefHelper
-        (isInfix fixity)
-        True
+        (Choice.fromBool (isInfix fixity))
+        (Is #indentArgs)
         (p_rdrName name)
         (p_tyVar <$> tyVars)
     forM_ dd_kindSig $ \k -> do

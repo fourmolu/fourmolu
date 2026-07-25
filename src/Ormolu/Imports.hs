@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -12,6 +13,8 @@ where
 
 import Data.Bifunctor
 import Data.Char (isAlphaNum)
+import Data.Choice (Choice)
+import Data.Choice qualified as Choice
 import Data.Function (on)
 import Data.List (nubBy, sortBy, sortOn)
 import Data.Map.Strict (Map)
@@ -27,7 +30,10 @@ import GHC.Types.SrcLoc
 import Ormolu.Utils (notImplemented, showOutputable)
 
 -- | Sort and normalize imports.
-normalizeImports :: Bool -> [LImportDecl GhcPs] -> [LImportDecl GhcPs]
+normalizeImports ::
+  Choice "implicitPrelude" ->
+  [LImportDecl GhcPs] ->
+  [LImportDecl GhcPs]
 normalizeImports implicitPrelude =
   fmap snd
     . M.toAscList
@@ -118,7 +124,7 @@ instance Ord ImportListInterpretationOrd where
       toBool EverythingBut = True
 
 -- | Obtain an 'ImportId' for a given import.
-importId :: Bool -> LImportDecl GhcPs -> ImportId
+importId :: Choice "implicitPrelude" -> LImportDecl GhcPs -> ImportId
 importId implicitPrelude (L _ ImportDecl {..}) =
   ImportId
     { importIsPrelude = isPrelude,
@@ -135,7 +141,8 @@ importId implicitPrelude (L _ ImportDecl {..}) =
       importLevel = importLevelOf ideclLevelSpec
     }
   where
-    isPrelude = implicitPrelude && moduleNameString moduleName == "Prelude"
+    isPrelude =
+      Choice.isTrue implicitPrelude && moduleNameString moduleName == "Prelude"
     moduleName = unLoc ideclName
     importLevelOf = \case
       LevelStylePre l -> Just (ImportDeclLevelOrd l)

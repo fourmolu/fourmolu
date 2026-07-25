@@ -40,6 +40,7 @@ where
 import Control.Exception
 import Control.Monad
 import Control.Monad.IO.Class (MonadIO (..))
+import Data.Choice qualified as Choice
 import Data.Map.Strict qualified as Map
 import Data.Maybe (fromMaybe)
 import Data.Set qualified as Set
@@ -112,7 +113,7 @@ ormolu cfgWithIndices path originalInput = do
   -- when we try to parse the rendered code back, inside of GHC monad
   -- wrapper which will lead to error messages presenting the exceptions as
   -- GHC bugs.
-  let !formattedText = printSnippets (cfgDebug cfg) result0
+  let !formattedText = printSnippets (Choice.fromBool (cfgDebug cfg)) result0
   when (not (cfgUnsafe cfg) || cfgCheckIdempotence cfg) $ do
     -- Parse the result of pretty-printing again and make sure that AST
     -- is the same as AST of original snippet module span positions.
@@ -138,7 +139,7 @@ ormolu cfgWithIndices path originalInput = do
     -- Try re-formatting the formatted result to check if we get exactly
     -- the same output.
     when (cfgCheckIdempotence cfg) . liftIO $
-      let reformattedText = printSnippets (cfgDebug cfg) result1
+      let reformattedText = printSnippets (Choice.fromBool (cfgDebug cfg)) result1
        in case diffText formattedText reformattedText path of
             Nothing -> return ()
             Just diff -> throwIO (OrmoluNonIdempotentOutput diff)

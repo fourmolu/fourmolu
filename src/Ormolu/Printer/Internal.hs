@@ -62,7 +62,6 @@ import Control.Monad.Reader
 import Control.Monad.State.Strict
 import Data.Bool (bool)
 import Data.Choice (Choice)
-import Data.Choice qualified as Choice
 import Data.Coerce
 import Data.Functor ((<&>))
 import Data.List (find)
@@ -109,7 +108,7 @@ data RC = RC
     -- | Module fixity map
     rcModuleFixityMap :: ModuleFixityMap,
     -- | Whether to print out debug information during printing
-    rcDebug :: !Bool
+    rcDebug :: !(Choice "debug")
   }
 
 -- | State context of 'R'.
@@ -179,8 +178,9 @@ runR ::
   EnumSet Extension ->
   -- | Module fixity map
   ModuleFixityMap ->
+  -- | Whether to print out debug information during printing
+  Choice "debug" ->
   -- | Resulting rendition
-  Bool ->
   Text
 runR (R m) sstream cstream sourceType extensions moduleFixityMap debug =
   TL.toStrict . toLazyText . scBuilder $ execState (runReaderT m rc) sc
@@ -411,7 +411,7 @@ askModuleFixityMap = R (asks rcModuleFixityMap)
 -- | Retrieve whether we should print out certain debug information while
 -- printing.
 askDebug :: R (Choice "debug")
-askDebug = R (asks (Choice.fromBool . rcDebug))
+askDebug = R (asks rcDebug)
 
 inciBy :: Int -> R () -> R ()
 inciBy step (R m) = R (local modRC m)

@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -17,6 +18,8 @@ import Control.Monad
 import Control.Monad.Except (ExceptT (..), runExceptT)
 import Control.Monad.IO.Class
 import Data.Char (isSpace)
+import Data.Choice (Choice)
+import Data.Choice qualified as Choice
 import Data.Functor
 import Data.Generics hiding (orElse)
 import Data.List qualified as L
@@ -90,8 +93,12 @@ parseModule config@Config {..} packageFixityMap path rawInput = liftIO $ do
     parsePragmasIntoDynFlags baseFlags extraOpts path rawInputStringBuffer >>= \case
       Right res -> pure res
       Left err -> throwIO (OrmoluParsingFailed beginningLoc err)
-  let cppEnabled = EnumSet.member Cpp (GHC.extensionFlags dynFlags)
-      implicitPrelude = EnumSet.member ImplicitPrelude (GHC.extensionFlags dynFlags)
+  let cppEnabled =
+        Choice.fromBool $
+          EnumSet.member Cpp (GHC.extensionFlags dynFlags)
+      implicitPrelude =
+        Choice.fromBool $
+          EnumSet.member ImplicitPrelude (GHC.extensionFlags dynFlags)
   fixityImports <-
     parseImports dynFlags implicitPrelude path rawInputStringBuffer >>= \case
       Right res ->
@@ -143,7 +150,9 @@ parseModuleSnippet Config {..} modFixityMap dynFlags path rawInput = liftIO $ do
       parser = case cfgSourceType of
         ModuleSource -> GHC.parseModule
         SignatureSource -> GHC.parseSignature
-      implicitPrelude = EnumSet.member ImplicitPrelude (GHC.extensionFlags dynFlags)
+      implicitPrelude =
+        Choice.fromBool $
+          EnumSet.member ImplicitPrelude (GHC.extensionFlags dynFlags)
       r = case runParser parser dynFlags path input of
         GHC.PFailed pstate ->
           case pStateErrors pstate of
@@ -174,7 +183,10 @@ parseModuleSnippet Config {..} modFixityMap dynFlags path rawInput = liftIO $ do
 
 -- | Normalize a 'HsModule' by sorting its import\/export lists, dropping
 -- blank comments, etc.
-normalizeModule :: Bool -> HsModule GhcPs -> HsModule GhcPs
+normalizeModule ::
+  Choice "implicitPrelude" ->
+  HsModule GhcPs ->
+  HsModule GhcPs
 normalizeModule implicitPrelude hsmod =
   everywhere
     ( mkT dropBlankTypeHaddocks
@@ -327,8 +339,8 @@ parsePragmasIntoDynFlags flags extraOpts filepath input =
 parseImports ::
   -- | Pre-set 'DynFlags'
   DynFlags ->
-  -- | Implicit Prelude?
-  Bool ->
+  -- | Whether the implicit Prelude is in effect
+  Choice "implicitPrelude" ->
   -- | File name (only for source location annotations)
   FilePath ->
   -- | Input for the parser
@@ -350,7 +362,11 @@ parseImports flags implicitPrelude filepath input =
                     mod' = mmoduleName `orElse` L (GHC.noAnnSrcSpan main_loc) mAIN_NAME
                     explicitImports = hsmodImports hsmod
                     implicitImports =
-                      GHC.mkPrelImports (unLoc mod') main_loc implicitPrelude explicitImports
+                      GHC.mkPrelImports
+                        (unLoc mod')
+                        main_loc
+                        (Choice.toBool implicitPrelude)
+                        explicitImports
                  in Right (explicitImports ++ implicitImports)
   where
     popts = initParserOpts flags

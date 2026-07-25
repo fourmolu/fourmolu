@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -12,6 +13,8 @@ import Control.Monad
 import Data.Array as A
 import Data.Bifunctor (bimap)
 import Data.Char (isSpace)
+import Data.Choice (Choice)
+import Data.Choice qualified as Choice
 import Data.Function ((&))
 import Data.IntMap (IntMap)
 import Data.IntMap.Strict qualified as IntMap
@@ -29,13 +32,14 @@ import Ormolu.Processing.Cpp
 -- and subregions to be formatted.
 preprocess ::
   -- | Whether CPP is enabled
-  Bool ->
+  Choice "cppEnabled" ->
   RegionDeltas ->
   Text ->
   [Either Text RegionDeltas]
 preprocess cppEnabled region rawInput = rawSnippetsAndRegionsToFormat
   where
-    (linesNotToFormat', replacementLines) = linesNotToFormat cppEnabled region rawInput
+    (linesNotToFormat', replacementLines) =
+      linesNotToFormat cppEnabled region rawInput
     regionsToFormat =
       intSetToRegions rawLineLength $
         IntSet.fromAscList [1 .. rawLineLength] IntSet.\\ linesNotToFormat'
@@ -91,7 +95,7 @@ preprocess cppEnabled region rawInput = rawSnippetsAndRegionsToFormat
 -- for specific lines.
 linesNotToFormat ::
   -- | Whether CPP is enabled
-  Bool ->
+  Choice "cppEnabled" ->
   RegionDeltas ->
   Text ->
   (IntSet, IntMap Text)
@@ -100,13 +104,16 @@ linesNotToFormat cppEnabled region@RegionDeltas {..} input =
   where
     unconsidered =
       IntSet.fromAscList $
-        [1 .. regionPrefixLength] <> [totalLines - regionSuffixLength + 1 .. totalLines]
+        [1 .. regionPrefixLength]
+          <> [totalLines - regionSuffixLength + 1 .. totalLines]
     totalLines = length (T.lines input)
     regionLines = linesInRegion region input
     (magicDisabled, lineUpdates) = magicDisabledLines regionLines
     otherDisabled = mconcat allLines regionLines
       where
-        allLines = [shebangLines, linePragmaLines] <> [cppLines | cppEnabled]
+        allLines =
+          [shebangLines, linePragmaLines]
+            <> [cppLines | Choice.isTrue cppEnabled]
 
 -- | Ormolu state.
 data OrmoluState

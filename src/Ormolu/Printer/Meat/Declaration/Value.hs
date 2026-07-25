@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -19,6 +20,7 @@ where
 
 import Control.Monad
 import Data.Bool (bool)
+import Data.Choice qualified as Choice
 import Data.Data hiding (Infix, Prefix)
 import Data.Function (on)
 import Data.Functor ((<&>))
@@ -213,8 +215,8 @@ p_match' placer render style isInfix multAnn strictness m_pats GRHSs {..} = do
         case style of
           Function name ->
             p_infixDefHelper
-              isInfix
-              indentBody
+              (Choice.fromBool isInfix)
+              (Choice.fromBool indentBody)
               (p_rdrName name)
               (located' p_pat <$> m_pats)
           PatternBind -> stdCase

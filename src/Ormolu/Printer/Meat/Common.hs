@@ -129,16 +129,16 @@ p_qualName mname occName = do
 -- | A helper for formatting infix constructions in lhs of definitions.
 p_infixDefHelper ::
   -- | Whether to format in infix style
-  Bool ->
+  Choice "infixStyle" ->
   -- | Whether to bump indentation for arguments
-  Bool ->
+  Choice "indentArgs" ->
   -- | How to print the operator\/name
   R () ->
   -- | How to print the arguments
   [R ()] ->
   R ()
 p_infixDefHelper isInfix indentArgs name args =
-  case (isInfix, args) of
+  case (Choice.toBool isInfix, args) of
     (True, p0 : p1 : ps) -> do
       let parens' =
             if null ps
@@ -151,14 +151,15 @@ p_infixDefHelper isInfix indentArgs name args =
           name
           space
           p1
-      unless (null ps) . inciIf indentArgs $ do
+      unless (null ps) . inciIf (Choice.toBool indentArgs) $ do
         breakpoint
         sitcc (sep breakpoint sitcc ps)
     (_, ps) -> do
       name
       unless (null ps) $ do
         breakpoint
-        inciIf indentArgs $ sitcc (sep breakpoint sitcc args)
+        inciIf (Choice.toBool indentArgs) $
+          sitcc (sep breakpoint sitcc args)
 
 -- | Print a Haddock.
 p_hsDoc ::
