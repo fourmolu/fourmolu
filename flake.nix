@@ -25,16 +25,45 @@
 
         ghcVersions = [ "ghc9103" "ghc9124" "ghc9141" ];
         defaultGHCVersion = builtins.head ghcVersions;
+
+        cleanSrc = haskellLib.cleanSourceWith {
+          name = "ormolu-src";
+          src = ./.;
+          filter = path: _type:
+            let relPath = lib.removePrefix (toString ./. + "/") (toString path); in
+            lib.any (prefix: relPath == prefix || lib.hasPrefix "${prefix}/" relPath) [
+              "src"
+              "app"
+              "tests"
+              "data"
+              "extract-hackage-info"
+            ]
+            || lib.elem relPath [
+              "cabal.project"
+              "ormolu.cabal"
+            ];
+        };
+        docStubs = [
+          "LICENSE.md"
+          "CHANGELOG.md"
+          "CONTRIBUTING.md"
+          "DESIGN.md"
+          "README.md"
+        ];
+        src = pkgs.runCommand "ormolu-src-with-doc-stubs" { } ''
+          cp -r ${cleanSrc} $out
+          chmod -R u+w $out
+          ${lib.concatMapStringsSep "\n" (f: "touch $out/${f}") docStubs}
+        '';
+
         perGHC = lib.genAttrs ghcVersions (ghcVersion:
           let
             hsPkgs = pkgs.haskell-nix.cabalProject {
-              src = ./.;
+              inherit src;
               compiler-nix-name = ghcVersion;
               modules = [{
                 packages.ormolu.writeHieFiles = true;
                 packages.extract-hackage-info.writeHieFiles = true;
-                packages.ormolu.components.exes.ormolu.preBuild =
-                  lib.mkIf (self ? rev) ''export ORMOLU_REV=${self.rev}'';
               }];
             };
             inherit (hsPkgs.ormolu.components.exes) ormolu;
@@ -73,6 +102,8 @@
                 dontStrip = false;
                 dontPatchELF = false;
                 enableDeadCodeElimination = true;
+                packages.ormolu.components.exes.ormolu.preBuild =
+                  lib.mkIf (self ? rev) ''export ORMOLU_REV=${self.rev}'';
               }];
             };
             ormoluExe = hsPkgs: hsPkgs.hsPkgs.ormolu.components.exes.ormolu;
