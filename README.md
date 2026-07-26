@@ -75,8 +75,23 @@ The easiest way to build the project is with Nix:
 $ nix build
 ```
 
-Make sure to accept the offered Nix caches (in particular the IOG cache),
-otherwise building may take a very long time.
+Make sure to accept the offered Nix binary caches, otherwise building may
+take a very long time. The flake declares the relevant caches (the IOG cache
+and the project's own `ormolu.cachix.org`, which is populated by CI) via its
+`nixConfig`, but Nix only uses them if you allow it to. The simplest way is
+to pass `--accept-flake-config`:
+
+```console
+$ nix build --accept-flake-config
+```
+
+To avoid repeating the flag, add the following to your Nix configuration
+(`/etc/nix/nix.conf`, or `nix.settings` on NixOS):
+
+```
+extra-substituters = https://cache.iog.io https://ormolu.cachix.org
+extra-trusted-public-keys = hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= ormolu.cachix.org-1:0L9Y4A+6dGpvfGtaeaq5w44pgX0AVRivKMfi2fiOzYE=
+```
 
 Alternatively, `stack` could be used as follows:
 
