@@ -1,5 +1,14 @@
 ## Unreleased
 
+* Overhaul how operator fixity information is collected. In addition to the
+  Hoogle database, Ormolu now parses the sources of a curated set of important
+  packages directly, which yields more accurate and complete fixity data than
+  before. In particular it recovers fixities for operators re-exported through
+  umbrella modules (e.g. `Servant.API`, `Control.Lens`) that recent Hoogle
+  databases no longer record. As a result, formatting of operator chains is
+  improved out of the box, and users should expect some operator-heavy code to
+  be laid out differently (and more correctly) than in previous releases.
+
 * Do not crash when a parent directory cannot be read due to insufficient
   permissions while searching for configuration files; the search for
   configuration files is stopped at that point instead. [Issue
