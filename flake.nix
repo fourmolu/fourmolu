@@ -10,7 +10,7 @@
     pre-commit-hooks.url = "github:cachix/git-hooks.nix";
 
     # for Ormolu Live
-    ghc-wasm-meta.url = "gitlab:ghc/ghc-wasm-meta?host=gitlab.haskell.org";
+    ghc-wasm-meta.url = "github:haskell-wasm/ghc-wasm-meta/4e1f900e9933966634bc2e29dbeb81d09ce36727";
   };
   outputs = inputs@{ self, nixpkgs, flake-utils, ... }:
     flake-utils.lib.eachDefaultSystem (system:
