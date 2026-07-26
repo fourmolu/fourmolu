@@ -54,6 +54,13 @@ jobs:
     needs: lint
     name: Build and deploy Ormolu Live
     runs-on: ubuntu-latest
+    # The Netlify preview deploy posts a comment on the pull request and sets
+    # a commit status, which requires write access to the GITHUB_TOKEN. The
+    # default token is read-only.
+    permissions:
+      contents: read
+      pull-requests: write
+      statuses: write
     env:
       NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
       NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
