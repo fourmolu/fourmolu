@@ -1,4 +1,4 @@
-## Unreleased
+## Ormolu 0.8.2.0
 
 * Overhaul how operator fixity information is collected. In addition to the
   Hoogle database, Ormolu now parses the sources of a curated set of important
