@@ -53,6 +53,10 @@ checkExample srcPath' = it (fromRelFile srcPath' ++ " works") . withNiceExceptio
                   "esqueleto",
                   "hspec",
                   "lens",
+                  "megaparsec",
+                  "optics",
+                  "relude",
+                  "rio",
                   "servant"
                 ]
           }
