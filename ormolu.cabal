@@ -5,8 +5,8 @@ license: BSD-3-Clause
 license-file: LICENSE.md
 maintainer: Mark Karpov <markkarpov92@gmail.com>
 tested-with:
-  ghc ==9.10.2
-  ghc ==9.12.2
+  ghc ==9.10.3
+  ghc ==9.12.4
   ghc ==9.14.1
 
 homepage: https://github.com/mrkkrp/ormolu
