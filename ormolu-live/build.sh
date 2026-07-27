@@ -43,4 +43,6 @@ esbuild_args=(--platform=browser --format=esm)
 esbuild www/{index,worker}.js --outdir=dist --bundle "${esbuild_args[@]}"
 esbuild www/jsaddle.js --outdir=dist "${esbuild_args[@]}"
 
-cp node_modules/bulma/css/bulma.min.css dist/
+tailwind_args=(-i www/app.css -o dist/app.css)
+$dev_mode || tailwind_args+=(--minify)
+tailwindcss "${tailwind_args[@]}"
