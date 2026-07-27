@@ -9,6 +9,15 @@
   improved out of the box, and users should expect some operator-heavy code to
   be laid out differently (and more correctly) than in previous releases.
 
+* Improve the layout of chains of `infixr 0` operators (`$`, `seq`, `?:`, and
+  the like). Such operators are only laid out in the trailing "staircase" style
+  when it is warranted: either the chain consists of a single operator, or its
+  final operand is a hanging construct (a `do` block, lambda, `case`, etc.). A
+  chain of several such operators that ends in an ordinary expression is now
+  laid out with the operators in the leading position instead of an
+  ever-deepening pyramid. [Issue
+  1151](https://github.com/tweag/ormolu/issues/1151).
+
 * Do not crash when a parent directory cannot be read due to insufficient
   permissions while searching for configuration files; the search for
   configuration files is stopped at that point instead. [Issue

@@ -203,9 +203,9 @@ reassociateFlatOpTree tree@(OpBranches noptExprs noptOps) =
       indices -> splitTree noptExprs noptOps indices
   where
     indicesOfHardSplitter =
-      fmap fst $
-        filter (isHardSplitterOp . opiFixityApproximation . snd) $
-          zip [0 ..] noptOps
+      fmap fst
+        $ filter (isHardSplitterOp . opiFixityApproximation . snd)
+        $ zip [0 ..] noptOps
     indexOfMinMaxPrecOps [] = (Nothing, Nothing)
     indexOfMinMaxPrecOps (oo : oos) = go oos 1 oo (Just [0]) oo (Just [0])
       where
