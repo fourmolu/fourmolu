@@ -37,12 +37,14 @@ import Ormolu qualified as O
 import Ormolu.Config qualified as O
 import Ormolu.Exception qualified as O
 import Ormolu.Fixity qualified as O
+import Ormolu.Fixity.Parser (parseDotOrmolu)
 import Ormolu.Live.AceEditor qualified as AceEditor
 import Ormolu.Live.CommitRev (commitRev)
 import Ormolu.Live.JSUtil
 import Ormolu.Parser qualified as O
 import Ormolu.Parser.Result as O
 import Ormolu.Terminal qualified as O
+import Text.Megaparsec (errorBundlePretty)
 import Text.Printf (printf)
 import UnliftIO.Exception
 
@@ -73,7 +75,9 @@ initialModel =
                       },
                   showParseResult = False,
                   overrideDeps = False,
-                  depsText = "base"
+                  depsText = "base",
+                  overrideDotOrmolu = False,
+                  dotOrmoluText = "infixr 9 .\n"
                 }
           },
       output = Nothing,
@@ -244,34 +248,72 @@ viewModel model =
                         "Override the set of packages assumed to be in scope. "
                           <> "This affects operator fixity resolution. "
                           <> "Enter package names separated by spaces or commas."
+                    ),
+                  configCheckbox
+                    #overrideDotOrmolu
+                    "Specify .ormolu file"
+                    ( Just $
+                        "Provide the contents of an .ormolu file: fixity overrides "
+                          <> "and module re-export declarations, which affect formatting."
                     )
                 ],
-              dependenciesField
+              dependenciesField,
+              dotOrmoluField
             ]
         ]
+
+    -- A styled multi-line text field used by the reveal-on-checkbox config
+    -- sections. @below@ is rendered under the field (a hint or an error).
+    configTextarea rows placeholder (cloneLens -> valueLens) below =
+      div_
+        [class_ "flex flex-col gap-1.5"]
+        [ textarea_
+            [ class_ $
+                "w-full rounded-md border border-neutral-300 bg-neutral-50 px-3 py-2 font-mono text-sm "
+                  <> "text-neutral-800 shadow-inner outline-none transition placeholder:text-neutral-400 "
+                  <> "focus:border-neutral-400 focus:ring-2 focus:ring-neutral-200 "
+                  <> "dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-200 "
+                  <> "dark:placeholder:text-neutral-600 dark:focus:border-neutral-500 dark:focus:ring-neutral-800",
+              rows_ rows,
+              placeholder_ placeholder,
+              value_ $ model ^. #input . #cfg . valueLens,
+              onInput $ \t -> UpdateConfig $ valueLens .~ t
+            ]
+            [],
+          below
+        ]
+
+    hint t =
+      p_
+        [class_ "text-xs text-neutral-500 dark:text-neutral-400"]
+        [text t]
 
     dependenciesField
       | not model.input.cfg.overrideDeps = text ""
       | otherwise =
-          div_
-            [class_ "flex flex-col gap-1.5"]
-            [ textarea_
-                [ class_ $
-                    "w-full rounded-md border border-neutral-300 bg-neutral-50 px-3 py-2 font-mono text-sm "
-                      <> "text-neutral-800 shadow-inner outline-none transition placeholder:text-neutral-400 "
-                      <> "focus:border-neutral-400 focus:ring-2 focus:ring-neutral-200 "
-                      <> "dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-200 "
-                      <> "dark:placeholder:text-neutral-600 dark:focus:border-neutral-500 dark:focus:ring-neutral-800",
-                  rows_ "2",
-                  placeholder_ "e.g. base lens servant optics",
-                  value_ model.input.cfg.depsText,
-                  onInput $ \t -> UpdateConfig $ #depsText .~ t
-                ]
-                [],
-              p_
-                [class_ "text-xs text-neutral-500 dark:text-neutral-400"]
-                [text "Separate package names with spaces or commas."]
-            ]
+          configTextarea
+            "2"
+            "e.g. base lens servant optics"
+            #depsText
+            (hint "Separate package names with spaces or commas.")
+
+    dotOrmoluField
+      | not model.input.cfg.overrideDotOrmolu = text ""
+      | otherwise =
+          configTextarea
+            "4"
+            "e.g. infixr 5 +++"
+            #dotOrmoluText
+            dotOrmoluBelow
+      where
+        dotOrmoluBelow =
+          case parseDotOrmolu "<.ormolu>" model.input.cfg.dotOrmoluText of
+            Right _ ->
+              hint "One fixity override or module re-export per line."
+            Left errBundle ->
+              pre_
+                [class_ "code-surface rounded-md bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-950/40 dark:text-red-300"]
+                [text . T.pack $ errorBundlePretty errBundle]
 
     sourceTypeToggle =
       let current = model.input.cfg.ormoluCfg.cfgSourceType
@@ -460,7 +502,13 @@ data OrmoluLiveConfig = OrmoluLiveConfig
     overrideDeps :: Bool,
     -- | The user-specified list of dependencies (whitespace/comma separated).
     -- Kept independently of 'overrideDeps' so it persists across toggling.
-    depsText :: Text
+    depsText :: Text,
+    -- | Whether the user-specified @.ormolu@ file override is active.
+    overrideDotOrmolu :: Bool,
+    -- | The user-specified @.ormolu@ file contents (fixity overrides and
+    -- module re-exports). Kept independently of 'overrideDotOrmolu' so it
+    -- persists across toggling.
+    dotOrmoluText :: Text
   }
   deriving stock (Show, Eq, Generic)
 
@@ -491,11 +539,23 @@ parseDependencies =
 
 format :: (MonadIO m) => FormatInput -> m FormatOutput
 format input = liftIO do
-  let ormoluCfg
+  let withDeps cfg
         | input.cfg.overrideDeps =
-            input.cfg.ormoluCfg
-              {O.cfgDependencies = parseDependencies input.cfg.depsText}
-        | otherwise = input.cfg.ormoluCfg
+            cfg {O.cfgDependencies = parseDependencies input.cfg.depsText}
+        | otherwise = cfg
+      -- Apply the user-provided .ormolu file when active and it parses; a
+      -- parse error simply leaves the overrides untouched (the field shows the
+      -- error inline).
+      withDotOrmolu cfg
+        | input.cfg.overrideDotOrmolu,
+          Right (fixityOverrides, moduleReexports) <-
+            parseDotOrmolu "<.ormolu>" input.cfg.dotOrmoluText =
+            cfg
+              { O.cfgFixityOverrides = fixityOverrides,
+                O.cfgModuleReexports = moduleReexports
+              }
+        | otherwise = cfg
+      ormoluCfg = withDotOrmolu . withDeps $ input.cfg.ormoluCfg
   t0 <- getMonotonicTime
   !res <- tryAnyDeep $ O.ormolu ormoluCfg "<input>" input.src
   t1 <- getMonotonicTime
