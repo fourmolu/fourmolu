@@ -80,6 +80,10 @@ jobs:
           restore-keys: |
             wasm-
       - name: Build Ormolu Live
+        env:
+          # On pull_request builds the checked-out HEAD is an ephemeral merge
+          # commit, so pass the real PR head SHA for the commit shown in the UI.
+          COMMIT_REV: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           cd ormolu-live
           nix develop .#ormoluLive -c sh -c '

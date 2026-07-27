@@ -11,7 +11,11 @@ else
     dev_mode=false
 fi
 
-git rev-parse HEAD > .commitrev
+# Record the commit shown in the UI. Prefer an explicitly provided SHA
+# (COMMIT_REV) over `git rev-parse HEAD`: on pull_request builds the checked-out
+# HEAD is an ephemeral merge commit rather than the PR head, so CI passes the
+# real head SHA via COMMIT_REV.
+echo "${COMMIT_REV:-$(git rev-parse HEAD)}" > .commitrev
 
 wasm32-wasi-cabal build
 wasm32-wasi-cabal list-bin exe:ormolu-live
