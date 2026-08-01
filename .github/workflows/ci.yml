@@ -127,6 +127,8 @@ jobs:
         with:
           path: ~/.stack
           key: stack-${{ hashFiles('stack.yaml', 'ormolu.cabal') }}
+          restore-keys: |
+            stack-
       - name: Build
         run: stack build
       - name: Test
