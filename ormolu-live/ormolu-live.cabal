@@ -12,6 +12,8 @@ common common
     -Wunused-packages
     -Wredundant-constraints
     -Wno-name-shadowing
+    -haddock
+    -Werror=invalid-haddock
 
 library
   import: common

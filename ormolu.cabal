@@ -121,6 +121,8 @@ library
       -Wredundant-constraints
       -Wpartial-fields
       -Wunused-packages
+      -haddock
+      -Winvalid-haddock
   else
     ghc-options:
       -O2
@@ -160,6 +162,8 @@ executable ormolu
       -Wpartial-fields
       -Wunused-packages
       -Wwarn=unused-packages
+      -haddock
+      -Winvalid-haddock
   else
     ghc-options:
       -O2
@@ -208,6 +212,8 @@ test-suite tests
       -Wredundant-constraints
       -Wpartial-fields
       -Wunused-packages
+      -haddock
+      -Winvalid-haddock
   else
     ghc-options:
       -O2
