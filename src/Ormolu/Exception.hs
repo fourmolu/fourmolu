@@ -106,13 +106,13 @@ printOrmoluException = \case
   OrmoluMissingStdinInputFile -> Term.do
     put "The --stdin-input-file option is necessary when using input"
     newline
-    put "from stdin and accounting for .cabal files"
+    put "from stdin and accounting for .cabal files."
     newline
   OrmoluFixityOverridesParseError errorBundle -> Term.do
     put . T.pack . errorBundlePretty $ errorBundle
     newline
 
--- | Inside this wrapper 'OrmoluException' will be caught and displayed
+-- | Inside this wrapper, 'OrmoluException' will be caught and displayed
 -- nicely.
 withPrettyOrmoluExceptions ::
   -- | Color mode
@@ -126,8 +126,8 @@ withPrettyOrmoluExceptions colorMode m = m `catch` h
       runTerm (printOrmoluException e) colorMode stderr
       return . ExitFailure $
         case e of
-          -- Error code 1 is for 'error' or 'notImplemented'
-          -- 2 used to be for erroring out on CPP
+          -- Error code 1 is for 'error' or 'notImplemented'.
+          -- 2 used to be for erroring out on CPP.
           OrmoluParsingFailed {} -> 3
           OrmoluOutputParsingFailed {} -> 4
           OrmoluASTDiffers {} -> 5

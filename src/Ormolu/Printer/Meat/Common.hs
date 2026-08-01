@@ -47,7 +47,8 @@ data FamilyStyle
   | -- | Top-level declarations
     Free
 
--- | Outputs the name of the module-like entity, preceded by the correct prefix ("module" or "signature").
+-- | Output the name of the module-like entity, preceded by the correct
+-- prefix (@module@ or @signature@).
 p_hsmodName :: ModuleName -> R ()
 p_hsmodName mname = do
   sourceType <- askSourceType
@@ -109,7 +110,7 @@ p_rdrName l = located l $ \x -> do
     Orig _ occName ->
       -- This is used when GHC generates code that will be fed into
       -- the renamer (e.g. from deriving clauses), but where we want
-      -- to say that something comes from given module which is not
+      -- to say that something comes from a given module that is not
       -- specified in the source code, e.g. @Prelude.map@.
       --
       -- My current understanding is that the provided module name
@@ -126,7 +127,8 @@ p_qualName mname occName = do
   txt "."
   atom occName
 
--- | A helper for formatting infix constructions in lhs of definitions.
+-- | A helper for formatting infix constructions on the left-hand side of
+-- definitions.
 p_infixDefHelper ::
   -- | Whether to format in infix style
   Choice "infixStyle" ->
@@ -193,12 +195,12 @@ p_hsDoc hstyle needsNewline (L l str) = do
   case l of
     UnhelpfulSpan _ ->
       -- It's often the case that the comment itself doesn't have a span
-      -- attached to it and instead its location can be obtained from
+      -- attached to it, and instead its location can be obtained from the
       -- nearest enclosing span.
       getEnclosingSpan >>= mapM_ (setSpanMark . HaddockSpan hstyle)
     RealSrcSpan spn _ -> setSpanMark (HaddockSpan hstyle spn)
 
--- | Print anchor of named doc section.
+-- | Print the anchor of a named doc section.
 p_hsDocName :: String -> R ()
 p_hsDocName name = txt ("-- $" <> T.pack name)
 

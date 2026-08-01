@@ -160,10 +160,10 @@ parseModuleSnippet Config {..} modFixityMap dynFlags path rawInput = liftIO $ do
             Nothing -> error "PFailed does not have an error"
         GHC.POk pstate (L _ (normalizeModule implicitPrelude -> hsModule)) ->
           case pStateErrors pstate of
-            -- Some parse errors (pattern/arrow syntax in expr context)
-            -- do not cause a parse error, but they are replaced with "_"
-            -- by the parser and the modified AST is propagated to the
-            -- later stages; but we fail in those cases.
+            -- Some malformed inputs (pattern/arrow syntax in an
+            -- expression context) do not cause a parse error; instead the
+            -- parser replaces them with "_" and propagates the modified AST
+            -- to the later stages. We fail in those cases.
             Just err -> Left err
             Nothing ->
               let (stackHeader, pragmas, comments) =
@@ -228,7 +228,7 @@ normalizeModule implicitPrelude hsmod =
       a -> a
 
     -- For constraint contexts (both in types and in expressions), normalize
-    -- parenthesis as decided in https://github.com/tweag/ormolu/issues/264.
+    -- parentheses as decided in https://github.com/tweag/ormolu/issues/264.
     patchContext :: LHsContext GhcPs -> LHsContext GhcPs
     patchContext = fmap $ \case
       [x@(L _ (HsParTy _ _))] -> [x]
@@ -249,7 +249,7 @@ setDefaultExts flags = L.foldl' xopt_set (lang_set flags (Just Haskell2010)) aut
     allExts = [minBound .. maxBound]
 
 -- | Extensions that are not enabled automatically and should be activated
--- by user.
+-- by the user.
 manualExts :: [Extension]
 manualExts =
   [ Arrows, -- steals proc
@@ -267,11 +267,11 @@ manualExts =
     UnboxedSums,
     UnicodeSyntax, -- gives special meanings to operators like (→)
     TemplateHaskell, -- changes how $foo is parsed
-    TemplateHaskellQuotes, -- enables TH subset of quasi-quotes, this
+    TemplateHaskellQuotes, -- enables the TH subset of quasi-quotes, which
     -- apparently interferes with QuasiQuotes in
     -- weird ways
     ImportQualifiedPost, -- affects how Ormolu renders imports, so the
-    -- decision of enabling this style is left to the user
+    -- decision to enable this style is left to the user
     NegativeLiterals, -- with this, `- 1` and `-1` have differing AST
     LexicalNegation, -- implies NegativeLiterals
     LinearTypes, -- steals the (%) type operator in some cases

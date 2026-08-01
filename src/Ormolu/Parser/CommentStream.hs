@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ViewPatterns #-}
 
--- | Functions for working with comment stream.
+-- | Functions for working with the comment stream.
 module Ormolu.Parser.CommentStream
   ( -- * Comment stream
     CommentStream (..),
@@ -43,12 +43,12 @@ import Ormolu.Utils (onTheSameLine)
 -- Comment stream
 
 -- | A stream of 'RealLocated' 'Comment's in ascending order with respect to
--- beginning of corresponding spans.
+-- the beginning of the corresponding spans.
 newtype CommentStream = CommentStream [LComment]
   deriving (Eq, Data, Semigroup, Monoid)
 
--- | Create 'CommentStream' from 'HsModule'. The pragmas are
--- removed from the 'CommentStream'.
+-- | Create a 'CommentStream' from an 'HsModule'. The pragmas are removed
+-- from the 'CommentStream'.
 mkCommentStream ::
   -- | Original input
   Text ->
@@ -110,15 +110,15 @@ mkCommentStream input hsModule =
 type LComment = RealLocated Comment
 
 -- | A wrapper for a single comment. The 'Bool' indicates whether there were
--- atoms before beginning of the comment in the original input. The
--- 'NonEmpty' list inside contains lines of multiline comment @{- … -}@ or
--- just single item\/line otherwise.
+-- atoms before the beginning of the comment in the original input. The
+-- 'NonEmpty' list inside contains the lines of a multiline comment
+-- @{- … -}@, or just a single item\/line otherwise.
 data Comment = Comment Bool (NonEmpty Text)
   deriving (Eq, Show, Data)
 
--- | Normalize comment string. Sometimes one multi-line comment is turned
--- into several lines for subsequent outputting with correct indentation for
--- each line.
+-- | Normalize a comment string. Sometimes a single multi-line comment is
+-- split into several lines so that it can later be output with correct
+-- indentation on each line.
 mkComment ::
   -- | Lines of original input with their indices
   [(Int, Text)] ->
@@ -152,7 +152,7 @@ mkComment ls (L l s) = (ls', comment)
       -- srcSpanStartCol counts columns starting from 1, so we subtract 1
       | "{-" `T.isPrefixOf` s = srcSpanStartCol l - 1
       -- For single-line comments, the only case where xs != [] is when an
-      -- invalid haddock comment composed of several single-line comments is
+      -- invalid Haddock comment composed of several single-line comments is
       -- encountered. In that case, each line of xs is prefixed with an
       -- extra space (not present in the original comment), so we set
       -- startIndent = 1 to remove this space.
@@ -175,7 +175,7 @@ isMultilineComment (Comment _ (x :| _)) = "{-" `T.isPrefixOf` x
 ----------------------------------------------------------------------------
 -- Helpers
 
--- | Detect and extract stack header if it is present.
+-- | Detect and extract the stack header if it is present.
 extractStackHeader ::
   -- | Comment stream to analyze
   [RealLocated Text] ->

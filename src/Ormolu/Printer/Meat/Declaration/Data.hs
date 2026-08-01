@@ -7,7 +7,7 @@
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
 
--- | Renedring of data type declarations.
+-- | Rendering of data type declarations.
 module Ormolu.Printer.Meat.Declaration.Data
   ( p_dataDecl,
   )
@@ -209,18 +209,19 @@ p_conDecl singleRecCon ConDeclH98 {..} =
         breakpoint
         inciIf (Choice.isFalse singleRecCon) (located l p_hsConDeclRecFields)
     InfixCon l r -> do
-      -- manually render these
+      -- Render these manually.
       let larg_doc = cdf_doc l
           rarg_doc = cdf_doc r
 
-      -- the constructor haddock can go on top of the entire constructor
-      -- only if neither argument has haddocks
+      -- The constructor Haddock can go on top of the entire constructor
+      -- only if neither argument has Haddocks.
       let putConDocOnTop = isNothing larg_doc && isNothing rarg_doc
 
       when putConDocOnTop renderConDoc
       renderContext
       switchLayout conDeclSpn $ do
-        -- the left arg haddock can use pipe only if the infix constructor has docs
+        -- The left arg Haddock can use pipe style only if the infix
+        -- constructor has docs.
         if isJust con_doc
           then do
             mapM_ (p_hsDoc Pipe (With #endNewline)) larg_doc

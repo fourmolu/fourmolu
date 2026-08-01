@@ -46,20 +46,20 @@ getOpName = \case
 getOpNameStr :: RdrName -> String
 getOpNameStr = occNameString . rdrNameOcc
 
--- | Decide if the operands of an operator chain should be hanging.
+-- | Decide whether the operands of an operator chain should be hanging.
 opBranchPlacement ::
   (HasLoc l) =>
   -- | Placer function for nodes
   (ty -> Placement) ->
-  -- | first expression of the chain
+  -- | First expression of the chain
   OpTree (GenLocated l ty) op ->
-  -- | last expression of the chain
+  -- | Last expression of the chain
   OpTree (GenLocated l ty) op ->
   Placement
 opBranchPlacement placer firstExpr lastExpr
-  -- If the beginning of the first argument and the last argument starts on
-  -- the same line, and the second argument has a hanging form, use hanging
-  -- placement.
+  -- If the start of the first argument and the start of the last argument
+  -- are on the same line, and the last argument has a hanging form, use
+  -- hanging placement.
   | isOneLineSpan
       ( mkSrcSpan
           (srcSpanStart (opTreeLoc firstExpr))
@@ -69,7 +69,7 @@ opBranchPlacement placer firstExpr lastExpr
       placer n
   | otherwise = Normal
 
--- | Decide whether to use braces or not based on the layout and placement
+-- | Decide whether or not to use braces based on the layout and placement
 -- of an expression in an infix operator application.
 opBranchBraceStyle :: Placement -> R (R () -> R ())
 opBranchBraceStyle placement =
@@ -112,17 +112,18 @@ p_exprOpTree s t@(OpBranches exprs@(firstExpr :| otherExprs) ops) = do
       -- Whether we could place the operator in a trailing position,
       -- followed by a breakpoint before the RHS
       couldBeTrailing (prevExpr, opi) =
-        -- An operator with fixity InfixR 0, like seq, $, and $ variants,
-        -- is required
+        -- An operator with fixity InfixR 0, like seq, $, and the $ variants,
+        -- is required.
         isHardSplitterOp (opiFixityApproximation opi)
-          -- the LHS must be single-line
+          -- The LHS must be single-line.
           && isOneLineSpan (opTreeLoc prevExpr)
-          -- can only happen when a breakpoint would have been added anyway
+          -- This can only happen when a breakpoint would have been added
+          -- anyway.
           && placement == Normal
-          -- if the node just on the left of the operator (so the rightmost
-          -- node of the subtree prevExpr) is a do-block, then we cannot
-          -- place the operator in a trailing position (because it would be
-          -- read as being part of the do-block)
+          -- If the node just to the left of the operator (that is, the
+          -- rightmost node of the subtree prevExpr) is a do-block, then we
+          -- cannot place the operator in a trailing position, because it
+          -- would be read as being part of the do-block.
           && not (isDoBlock $ rightMostNode prevExpr)
       -- A staircase of two or more trailing operators is only worthwhile when
       -- the operand at the very end of the chain has a hanging form (a do
@@ -217,14 +218,14 @@ p_cmdOpTree s t@(OpBranches (firstExpr :| otherExprs) ops) = do
     p_x
     putOpsExprs ops otherExprs
 
--- | Check if given expression has a hanging form. Added for symmetry with
--- exprPlacement and cmdTopPlacement, which are all used in p_xxxOpTree
--- functions with opBranchPlacement.
+-- | Check whether the given expression has a hanging form. Added for
+-- symmetry with 'exprPlacement' and 'cmdTopPlacement', all of which are used
+-- in the @p_xxxOpTree@ functions together with 'opBranchPlacement'.
 tyOpPlacement :: HsType GhcPs -> Placement
 tyOpPlacement = \case
   _ -> Normal
 
--- | Convert a LHsType containing an operator tree to the 'OpTree'
+-- | Convert an 'LHsType' containing an operator tree to the 'OpTree'
 -- intermediate representation.
 tyOpTree :: LHsType GhcPs -> OpTree (LHsType GhcPs) (LocatedN RdrName)
 tyOpTree (L _ (HsOpTy _ _ l op r)) =

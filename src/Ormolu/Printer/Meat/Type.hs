@@ -68,7 +68,7 @@ p_hsType' multilineArgs = \case
     p_rdrName n
   HsAppTy _ f x -> do
     let -- In order to format type applications with multiple parameters
-        -- nicer, traverse the AST to gather the function and all the
+        -- more nicely, traverse the AST to gather the function and all the
         -- parameters together.
         gatherArgs f' knownArgs =
           case f' of
@@ -193,7 +193,7 @@ p_hsType' multilineArgs = \case
         else breakpoint
     p_hsTypeR = p_hsType' multilineArgs
 
--- | Return 'True' if at least one argument in 'HsType' has a doc string
+-- | Return 'True' if at least one argument in the 'HsType' has a doc string
 -- attached to it.
 hasDocStrings :: HsType GhcPs -> Bool
 hasDocStrings = \case
@@ -291,8 +291,8 @@ p_hsConDeclRecField HsConDeclRecField {..} = do
   breakpoint
   sitcc . inci $ p_hsConDeclField cdrf_spec
 
--- | This does not print 'cdf_doc' and 'cdf_multiplicity' as there is no single
--- strategy for where to print them (see call sites).
+-- | This does not print 'cdf_doc' and 'cdf_multiplicity', as there is no
+-- single strategy for where to print them (see call sites).
 p_hsConDeclField :: HsConDeclField GhcPs -> R ()
 p_hsConDeclField CDF {..} = do
   case cdf_unpack of
@@ -314,8 +314,8 @@ p_hsConDeclFieldWithDoc cdf = do
 p_lhsTypeArg :: LHsTypeArg GhcPs -> R ()
 p_lhsTypeArg = \case
   HsValArg NoExtField ty -> located ty p_hsType
-  -- first argument is the SrcSpan of the @,
-  -- but the @ always has to be directly before the type argument
+  -- The first argument is the SrcSpan of the @, but the @ always has to be
+  -- directly before the type argument.
   HsTypeArg _ ty -> txt "@" *> located ty p_hsType
   -- NOTE(amesgen) is this unreachable or just not implemented?
   HsArgPar _ -> notImplemented "HsArgPar"

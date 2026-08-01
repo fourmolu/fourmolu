@@ -97,7 +97,7 @@ p_matchGroup' ::
   R ()
 p_matchGroup' placer render style mg@MG {..} = do
   -- Since we are forcing braces on 'sepSemi' based on 'ob', we have to
-  -- restore the brace state inside the sepsemi.
+  -- restore the brace state inside the 'sepSemi'.
   ub <- bool dontUseBraces useBraces <$> canUseBraces
   let ob = case style of
         Case -> bracesIfNecessary
@@ -119,12 +119,12 @@ p_matchGroup' placer render style mg@MG {..} = do
         (unLoc m_pats)
         m_grhss
 
--- | Function id obtained through pattern matching on 'FunBind' should not
--- be used to print the actual equations because the different ‘RdrNames’
--- used in the equations may have different “decorations” (such as backticks
--- and parentheses) associated with them. It is necessary to use per-equation
--- names obtained from 'm_ctxt' of 'Match'. This function replaces function
--- name inside of 'Function' accordingly.
+-- | The function id obtained through pattern matching on 'FunBind' should
+-- not be used to print the actual equations, because the different
+-- ‘RdrNames’ used in the equations may have different “decorations” (such as
+-- backticks and parentheses) associated with them. It is necessary to use
+-- the per-equation names obtained from the 'm_ctxt' of a 'Match'. This
+-- function replaces the function name inside 'Function' accordingly.
 adjustMatchGroupStyle ::
   Match GhcPs body ->
   MatchGroupStyle ->
@@ -175,12 +175,12 @@ p_match' ::
   R ()
 p_match' placer render style isInfix multAnn strictness m_pats GRHSs {..} = do
   -- Normally, since patterns may be placed in a multi-line layout, it is
-  -- necessary to bump indentation for the pattern group so it's more
-  -- indented than function name. This in turn means that indentation for
+  -- necessary to bump indentation for the pattern group so that it's more
+  -- indented than the function name. This in turn means that indentation for
   -- the body should also be bumped. Normally this would mean that bodies
   -- would start with two indentation steps applied, which is ugly, so we
-  -- need to be a bit more clever here and bump indentation level only when
-  -- pattern group is multiline.
+  -- need to be a bit more clever here and bump the indentation level only
+  -- when the pattern group is multiline.
   p_hsMultAnn (located' p_hsType) multAnn
   case multAnn of
     HsUnannotated {} -> pure ()
@@ -239,8 +239,9 @@ p_match' placer render style isInfix multAnn strictness m_pats GRHSs {..} = do
               -- lines, we have to indent all but the first pattern.
               inci $ sep breakpoint (located' p_pat) tail_pats
       return indentBody
-  let -- Calculate position of end of patterns. This is useful when we decide
-      -- about putting certain constructions in hanging positions.
+  let -- Calculate the position of the end of the patterns. This is useful
+      -- when we decide whether to put certain constructions in hanging
+      -- positions.
       endOfPats = case NE.nonEmpty m_pats of
         Nothing -> case style of
           Function name -> Just (getLocA name)
@@ -458,13 +459,13 @@ p_stmt' s placer render = \case
     space
     sitcc $ p_hsLocalBinds binds
   ParStmt {} ->
-    -- 'ParStmt' should always be eliminated in 'gatherStmts' already, such
+    -- 'ParStmt' should always be eliminated in 'gatherStmts' already, so
     -- that it never occurs in 'p_stmt''. Consequently, handling it here
     -- would be redundant.
     notImplemented "ParStmt"
   TransStmt {..} ->
-    -- 'TransStmt' only needs to account for render printing itself, since
-    -- pretty printing of relevant statements (e.g., in 'trS_stmts') is
+    -- 'TransStmt' only needs to account for printing itself, since
+    -- pretty-printing of the relevant statements (e.g. in 'trS_stmts') is
     -- handled through 'gatherStmts'.
     case (trS_form, trS_by) of
       (ThenForm, Nothing) -> do
@@ -517,7 +518,7 @@ p_stmts s isApp placer render es = do
         ub' $ withSpacing (p_stmt' s placer render) stmt
         where
           -- We need to set brace usage information for all but the last
-          -- statement (e.g.in the case of nested do blocks).
+          -- statement (e.g. in the case of nested do blocks).
           ub' = case relPos of
             FirstPos -> ub
             MiddlePos -> ub
@@ -530,8 +531,8 @@ p_hsLocalBinds :: HsLocalBinds GhcPs -> R ()
 p_hsLocalBinds = \case
   HsValBinds epAnn (ValBinds _ binds lsigs) -> pseudoLocated epAnn $ do
     -- When in a single-line layout, there is a chance that the inner
-    -- elements will also contain semicolons and they will confuse the
-    -- parser. so we request braces around every element except the last.
+    -- elements will also contain semicolons that will confuse the parser,
+    -- so we request braces around every element except the last.
     br <- layoutToBraces <$> getLayout
     let items =
           let injectLeft (L l x) = L l (Left x)
@@ -558,12 +559,12 @@ p_hsLocalBinds = \case
     sepSemi (located' p_ipBind) xs
   EmptyLocalBinds _ -> return ()
   where
-    -- HsLocalBinds is no longer wrapped in a Located (see call sites
-    -- of p_hsLocalBinds). Hence, we introduce a manual Located as we
-    -- depend on the layout being correctly set.
+    -- HsLocalBinds is no longer wrapped in a Located (see the call sites
+    -- of p_hsLocalBinds). Hence, we introduce a manual Located, as we
+    -- depend on the layout being set correctly.
     pseudoLocated = \case
       EpAnn {anns = AnnList {al_anchor}}
-        | -- excluding cases where there are no bindings
+        | -- Excluding cases where there are no bindings.
           not $ isZeroWidthSpan (locA al_anchor) ->
             located (L al_anchor ()) . const
       _ -> id
@@ -597,8 +598,9 @@ p_hsFieldBind p_lhs HsFieldBind {..} = do
 p_hsExpr :: HsExpr GhcPs -> R ()
 p_hsExpr = p_hsExpr' NotApplicand N
 
--- | An applicand is the left-hand side in a function application, i.e. @f@ in
--- @f a@. We need to track this in order to add extra indentation in cases like
+-- | An applicand is the left-hand side of a function application, i.e. @f@
+-- in @f a@. We need to track this in order to add extra indentation in cases
+-- like
 --
 -- > foo =
 -- >   do
@@ -611,7 +613,7 @@ inciApplicand = \case
   Applicand -> inci . inci
   NotApplicand -> inci
 
--- | Adjust bracing as needed for certain cases e.g. involving case
+-- | Adjust bracing as needed for certain cases, e.g. those involving case
 -- expressions and lambdas.
 adjustBracing :: IsApplicand -> BracketStyle -> R () -> R ()
 adjustBracing isApp s p = do
@@ -640,7 +642,7 @@ p_hsExpr' isApp s = \case
     p_lam isApp s variant exprPlacement p_hsExpr mgroup
   HsApp _ f x -> do
     let -- In order to format function applications with multiple parameters
-        -- nicer, traverse the AST to gather the function and all the
+        -- more nicely, traverse the AST to gather the function and all the
         -- parameters together.
         gatherArgs f' knownArgs =
           case f' of
@@ -661,8 +663,7 @@ p_hsExpr' isApp s = \case
             else Normal
     -- If the last argument is not hanging, just separate every argument as
     -- usual. If it is hanging, print the initial arguments and hang the
-    -- last one. Also, use braces around the every argument except the last
-    -- one.
+    -- last one. Also, use braces around every argument except the last one.
     case placement of
       Normal -> do
         ub <-
@@ -704,7 +705,7 @@ p_hsExpr' isApp s = \case
           _ -> False
     txt "-"
     -- If NegativeLiterals is enabled, we have to insert a space before
-    -- negated literals, as `- 1` and `-1` have differing AST.
+    -- negated literals, as `- 1` and `-1` have differing ASTs.
     when (negativeLiterals && isLiteral) space
     located e p_hsExpr
   HsPar _ e -> do
@@ -891,7 +892,8 @@ p_hsExpr' isApp s = \case
 
 -- | Print a list comprehension.
 --
--- BracketStyle should be N except in a do-block, which must be S or else it's a parse error.
+-- The 'BracketStyle' should be 'N' except in a do-block, where it must be 'S'
+-- or else it's a parse error.
 p_listComp :: BracketStyle -> XRec GhcPs [ExprLStmt GhcPs] -> R ()
 p_listComp s es = sitcc (vlayout singleLine multiLine)
   where
@@ -918,11 +920,11 @@ p_listComp s es = sitcc (vlayout singleLine multiLine)
       space
       p_bodyParallels (gatherStmts stmts)
 
-    -- print the list of list comprehension sections, e.g.
+    -- Print the list of list comprehension sections, e.g.
     -- [ "| x <- xs, y <- ys, let z = x <> y", "| a <- f z" ]
     p_bodyParallels = sep (breakpoint >> txt "|" >> space) (sitcc . p_bodyParallelStmts)
 
-    -- print a list comprehension section within a pipe, e.g.
+    -- Print a list comprehension section within a pipe, e.g.
     -- [ "x <- xs", "y <- ys", "let z = x <> y" ]
     p_bodyParallelStmts = sep commaDel (located' (sitcc . p_stmt))
 
@@ -961,7 +963,7 @@ p_listComp s es = sitcc (vlayout singleLine multiLine)
 -- @
 --
 -- The final expression is parsed out in p_body, and the rest is passed
--- to this function. This function takes the above tree as input and
+-- to this function. This function takes the tree above as input and
 -- normalizes it into:
 --
 -- @
@@ -978,17 +980,17 @@ p_listComp s es = sitcc (vlayout singleLine multiLine)
 --
 -- Notes:
 --   * The number of elements in the outer list is the number of pipes in
---     the comprehension; i.e. 1 unless -XParallelListComp is enabled
+--     the comprehension, i.e. 1 unless -XParallelListComp is enabled.
 gatherStmts :: [ExprLStmt GhcPs] -> [[ExprLStmt GhcPs]]
 gatherStmts = \case
-  -- When -XParallelListComp is enabled + list comprehension has
-  -- multiple pipes, input will have exactly 1 element, and it
-  -- will be ParStmt.
+  -- When -XParallelListComp is enabled and the list comprehension has
+  -- multiple pipes, the input will have exactly 1 element, and it
+  -- will be a ParStmt.
   [L _ (ParStmt _ blocks _ _)] ->
     [ concatMap collectNonParStmts stmts
     | ParStmtBlock _ stmts _ _ <- NE.toList blocks
     ]
-  -- Otherwise, list will not contain any ParStmt
+  -- Otherwise, the list will not contain any ParStmt.
   stmts ->
     [ concatMap collectNonParStmts stmts
     ]
@@ -1342,10 +1344,10 @@ p_hsQuote = \case
         breakpoint'
         txt "|]"
     -- With StarIsType, type and declaration brackets might end with a *,
-    -- so we have to insert a space in the end to prevent the (mis)parsing
+    -- so we have to insert a space at the end to prevent the (mis)parsing
     -- of an (*|) operator.
     -- The detection is a bit overcautious, as it adds the spaces as soon as
-    -- HsStarTy is anywhere in the type/declaration.
+    -- an HsStarTy appears anywhere in the type/declaration.
     handleStarIsType :: (Data a) => a -> R () -> R ()
     handleStarIsType a p
       | containsHsStarTy a = space *> p <* space
@@ -1369,7 +1371,7 @@ getGRHSSpan :: GRHS GhcPs (LocatedA body) -> SrcSpan
 getGRHSSpan (GRHS _ guards body) =
   combineSrcSpans' $ getLocA body :| map getLocA guards
 
--- | Determine placement of a given block.
+-- | Determine the placement of a given block.
 blockPlacement ::
   (body -> Placement) ->
   NonEmpty (LGRHS GhcPs (LocatedA body)) ->
@@ -1377,7 +1379,7 @@ blockPlacement ::
 blockPlacement placer (L _ (GRHS _ _ (L _ x)) :| []) = placer x
 blockPlacement _ _ = Normal
 
--- | Determine placement of a given command.
+-- | Determine the placement of a given command.
 cmdPlacement :: HsCmd GhcPs -> Placement
 cmdPlacement = \case
   HsCmdLam {} -> Hanging
@@ -1385,14 +1387,14 @@ cmdPlacement = \case
   HsCmdDo {} -> Hanging
   _ -> Normal
 
--- | Determine placement of a top level command.
+-- | Determine the placement of a top-level command.
 cmdTopPlacement :: HsCmdTop GhcPs -> Placement
 cmdTopPlacement (HsCmdTop _ (L _ x)) = cmdPlacement x
 
--- | Check if given expression has a hanging form.
+-- | Check whether the given expression has a hanging form.
 exprPlacement :: HsExpr GhcPs -> Placement
 exprPlacement = \case
-  -- Only hang lambdas with single line parameter lists
+  -- Only hang lambdas with single-line parameter lists.
   HsLam _ variant mg -> case variant of
     LamSingle -> case mg of
       MG _ (L _ [L _ (Match _ _ (L _ (x : xs)) _)])
@@ -1410,7 +1412,7 @@ exprPlacement = \case
       _ -> Normal
   HsApp _ _ y -> exprPlacement (unLoc y)
   HsProc _ p _ ->
-    -- Indentation breaks if pattern is longer than one line and left
+    -- Indentation breaks if the pattern is longer than one line and left
     -- hanging. Consequently, only apply hanging when it is safe.
     if isOneLineSpan (getLocA p)
       then Hanging

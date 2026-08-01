@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
--- | Helpers for formatting of comments. This is low-level code, use
+-- | Helpers for formatting comments. This is low-level code; use
 -- "Ormolu.Printer.Combinators" unless you know what you are doing.
 module Ormolu.Printer.Comments
   ( spitPrecedingComments,
@@ -21,7 +21,7 @@ import Ormolu.Printer.Internal
 ----------------------------------------------------------------------------
 -- Top-level
 
--- | Output all preceding comments for an element at given location.
+-- | Output all preceding comments for an element at the given location.
 spitPrecedingComments ::
   -- | Span of the element to attach comments to
   RealSrcSpan ->
@@ -34,7 +34,7 @@ spitPrecedingComments ref = do
     -- after them if there was a blank line in the input.
     when (needsNewlineBefore ref lastMark) newline
 
--- | Output all comments following an element at given location.
+-- | Output all comments following an element at the given location.
 spitFollowingComments ::
   -- | Span of the element to attach comments to
   RealSrcSpan ->
@@ -46,7 +46,7 @@ spitFollowingComments ref = do
 -- | Output all remaining comments in the comment stream.
 spitRemainingComments :: R ()
 spitRemainingComments = do
-  -- Make sure we have a blank a line between the last definition and the
+  -- Make sure we have a blank line between the last definition and the
   -- trailing comments.
   newline
   void $ handleCommentSeries spitRemainingComment
@@ -54,7 +54,7 @@ spitRemainingComments = do
 ----------------------------------------------------------------------------
 -- Single-comment functions
 
--- | Output a single preceding comment for an element at given location.
+-- | Output a single preceding comment for an element at the given location.
 spitPrecedingComment ::
   -- | Span of the element to attach comments to
   RealSrcSpan ->
@@ -76,8 +76,8 @@ spitPrecedingComment ref = do
       then space
       else newline
 
--- | Output a comment that follows element at given location immediately on
--- the same line, if there is any.
+-- | Output a comment that immediately follows an element at the given
+-- location on the same line, if there is any.
 spitFollowingComment ::
   -- | AST element to attach comments to
   RealSrcSpan ->
@@ -86,8 +86,8 @@ spitFollowingComment ::
 spitFollowingComment ref = do
   mlastMark <- getSpanMark
   mnSpn <- nextEltSpan
-  -- Get first enclosing span that is not equal to reference span, i.e. it's
-  -- truly something enclosing the AST element.
+  -- Get the first enclosing span that is not equal to the reference span,
+  -- i.e. something that truly encloses the AST element.
   meSpn <- getEnclosingSpanWhere (/= ref)
   withPoppedComment (commentFollowsElt ref mnSpn meSpn mlastMark) $ \l comment ->
     if theSameLinePost l ref
@@ -114,11 +114,11 @@ spitRemainingComment = do
 ----------------------------------------------------------------------------
 -- Helpers
 
--- | Output series of comments.
+-- | Output a series of comments.
 handleCommentSeries ::
   -- | Output and return the next comment, if any
   R (Maybe LComment) ->
-  -- | The comments outputted
+  -- | The comments that were output
   R [LComment]
 handleCommentSeries f = go
   where
@@ -128,8 +128,8 @@ handleCommentSeries f = go
         Nothing -> return []
         Just comment -> (comment :) <$> go
 
--- | Try to pop a comment using given predicate and if there is a comment
--- matching the predicate, print it out.
+-- | Try to pop a comment using the given predicate, and if there is a
+-- comment matching the predicate, print it out.
 withPoppedComment ::
   -- | Comment predicate
   (LComment -> Bool) ->
@@ -144,8 +144,8 @@ withPoppedComment p f = do
     Just (L l comment) -> f l comment
   return r
 
--- | Determine if we need to insert a newline between current comment and
--- last printed comment.
+-- | Determine whether we need to insert a newline between the current
+-- comment and the last printed comment.
 needsNewlineBefore ::
   -- | Current comment span
   RealSrcSpan ->
@@ -159,7 +159,7 @@ needsNewlineBefore l mlastMark =
     Just lastMark ->
       srcSpanStartLine l > srcSpanEndLine lastMark + 1
 
--- | Is the preceding comment and AST element are on the same line?
+-- | Are the preceding comment and the AST element on the same line?
 theSameLinePre ::
   -- | Current comment span
   RealSrcSpan ->
@@ -169,7 +169,7 @@ theSameLinePre ::
 theSameLinePre l ref =
   srcSpanEndLine l == srcSpanStartLine ref
 
--- | Is the following comment and AST element are on the same line?
+-- | Are the following comment and the AST element on the same line?
 theSameLinePost ::
   -- | Current comment span
   RealSrcSpan ->
@@ -179,7 +179,7 @@ theSameLinePost ::
 theSameLinePost l ref =
   srcSpanStartLine l == srcSpanEndLine ref
 
--- | Determine if given comment follows AST element.
+-- | Determine whether the given comment follows an AST element.
 commentFollowsElt ::
   -- | Location of AST element
   RealSrcSpan ->
@@ -193,16 +193,17 @@ commentFollowsElt ::
   LComment ->
   Bool
 commentFollowsElt ref mnSpn meSpn mlastMark (L l comment) =
-  -- A comment follows a AST element if all 4 conditions are satisfied:
+  -- A comment follows an AST element if all 4 conditions are satisfied:
   goesAfter
     && logicallyFollows
     && noEltBetween
     && (continuation || lastInEnclosing || supersedesParentElt)
   where
-    -- 1) The comment starts after end of the AST element:
+    -- 1) The comment starts after the end of the AST element:
     goesAfter =
       realSrcSpanStart l >= realSrcSpanEnd ref
-    -- 2) The comment logically belongs to the element, four cases:
+    -- 2) The comment logically belongs to the element, in one of three
+    -- cases:
     logicallyFollows =
       theSameLinePost l ref -- a) it's on the same line
         || continuation -- b) it's a continuation of a comment block
@@ -214,13 +215,14 @@ commentFollowsElt ref mnSpn meSpn mlastMark (L l comment) =
         Nothing -> True
         Just nspn ->
           realSrcSpanStart nspn >= realSrcSpanEnd l
-    -- 4) Less obvious: if column of comment is closer to the start of
-    -- enclosing element, it probably related to that parent element, not to
-    -- the current child element. This rule is important because otherwise
-    -- all comments would end up assigned to closest inner elements, and
-    -- parent elements won't have a chance to get any comments assigned to
-    -- them. This is not OK because comments will get indented according to
-    -- the AST elements they are attached to.
+    -- 4) Less obvious: if the column of the comment is closer to the start
+    -- of the enclosing element, it is probably related to that parent
+    -- element rather than to the current child element. This rule is
+    -- important because otherwise all comments would end up assigned to the
+    -- closest inner elements, and parent elements would never get a chance
+    -- to have any comments assigned to them. That is not OK, because
+    -- comments get indented according to the AST elements they are attached
+    -- to.
     --
     -- Skip this rule if the comment is a continuation of a comment block.
     supersedesParentElt =
@@ -244,13 +246,13 @@ commentFollowsElt ref mnSpn meSpn mlastMark (L l comment) =
            )
     lastInEnclosing =
       case meSpn of
-        -- When there is no enclosing element, return false
+        -- When there is no enclosing element, return False.
         Nothing -> False
-        -- When there is an enclosing element,
+        -- When there is an enclosing element:
         Just espn ->
-          let -- Make sure that the comment is inside the enclosing element
+          let -- Make sure that the comment is inside the enclosing element.
               insideParent = realSrcSpanEnd l <= realSrcSpanEnd espn
-              -- And check if the next element is outside of the parent
+              -- And check whether the next element is outside the parent.
               nextOutsideParent = case mnSpn of
                 Nothing -> True
                 Just nspn -> realSrcSpanEnd espn < realSrcSpanStart nspn
@@ -267,9 +269,9 @@ spitCommentNow spn comment = do
     $ comment
   setSpanMark (CommentSpan spn)
 
--- | Output a 'Comment' at the end of correct line or after it depending on
--- 'CommentPosition'. Used for comments that may potentially follow on the
--- same line as something we just rendered, but not immediately after it.
+-- | Output a 'Comment' at the end of the correct line, or after it,
+-- depending on the 'CommentPosition'. Used for comments that may follow on
+-- the same line as something we just rendered, but not immediately after it.
 spitCommentPending :: CommentPosition -> RealSrcSpan -> Comment -> R ()
 spitCommentPending position spn comment = do
   let wrapper = case position of

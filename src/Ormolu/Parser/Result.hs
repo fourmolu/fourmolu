@@ -1,4 +1,4 @@
--- | A type for result of parsing.
+-- | A type for the result of parsing.
 module Ormolu.Parser.Result
   ( SourceSnippet (..),
     ParseResult (..),
@@ -21,7 +21,7 @@ data SourceSnippet = RawSnippet Text | ParsedSnippet ParseResult
 data ParseResult = ParseResult
   { -- | Parsed module or signature
     prParsedSource :: HsModule GhcPs,
-    -- | Either regular module or signature file
+    -- | Whether this is a regular module or a signature file
     prSourceType :: SourceType,
     -- | Stack header
     prStackHeader :: Maybe LComment,
@@ -33,6 +33,6 @@ data ParseResult = ParseResult
     prExtensions :: EnumSet Extension,
     -- | Fixity map for operators
     prModuleFixityMap :: ModuleFixityMap,
-    -- | Indentation level, can be non-zero in case of region formatting
+    -- | Indentation level; can be non-zero in the case of region formatting
     prIndent :: Int
   }

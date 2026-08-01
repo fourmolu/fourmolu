@@ -1,4 +1,4 @@
--- | Build span stream from AST.
+-- | Build the span stream from the AST.
 module Ormolu.Printer.SpanStream
   ( SpanStream (..),
     mkSpanStream,
@@ -16,9 +16,9 @@ import Data.Typeable (cast)
 import GHC.Parser.Annotation
 import GHC.Types.SrcLoc
 
--- | A stream of 'RealSrcSpan's in ascending order. This allows us to tell
--- e.g. whether there is another \"located\" element of AST between current
--- element and comment we're considering for printing.
+-- | A stream of 'RealSrcSpan's in ascending order. This allows us to tell,
+-- e.g., whether there is another \"located\" element of the AST between the
+-- current element and the comment we are considering for printing.
 newtype SpanStream = SpanStream [RealSrcSpan]
   deriving (Eq, Show, Data, Semigroup, Monoid)
 

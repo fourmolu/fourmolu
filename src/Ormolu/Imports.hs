@@ -66,9 +66,9 @@ combineImports (L lx ImportDecl {..}) (L _ y) =
         ..
       }
 
--- | Import id, a collection of all things that justify having a separate
--- import entry. This is used for merging of imports. If two imports have
--- the same 'ImportId' they can be merged.
+-- | An import id, a collection of all the things that justify having a
+-- separate import entry. This is used for merging imports: if two imports
+-- have the same 'ImportId', they can be merged.
 data ImportId = ImportId
   { importIsPrelude :: Bool,
     importPkgQual :: ImportPkgQual,
@@ -227,7 +227,7 @@ getIewn = \case
 compareLIewn :: LIEWrappedName GhcPs -> LIEWrappedName GhcPs -> Ordering
 compareLIewn = compareIewn `on` unLoc
 
--- | Compare two @'IEWrapppedName' 'GhcPs'@ things.
+-- | Compare two @'IEWrappedName' 'GhcPs'@ things.
 compareIewn :: IEWrappedName GhcPs -> IEWrappedName GhcPs -> Ordering
 compareIewn = (comparing fst <> (compareRdrName `on` unLoc . snd)) `on` classify
   where
