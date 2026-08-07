@@ -194,9 +194,9 @@ getOptionDemoWidget option@ConfigData.Option {..}
 
 getConfigOptionContext :: ConfigData.Option -> [Context a]
 getConfigOptionContext option@ConfigData.Option {..} =
-  [ constField "info" $
-      wrap' "<table id=\"config-info\">" "</table>" . wrap "tbody" . concat $
-        [ wrap "tr" . concat $
+  [ constField "info"
+      $ wrap' "<table id=\"config-info\">" "</table>" . wrap "tbody" . concat
+      $ [ wrap "tr" . concat $
             [ wrap "th" label,
               wrap "td" val
             ]
@@ -266,9 +266,9 @@ replaceFourmoluExamples =
             case Text.breakOn "\n" rawTab of
               (label, rawPrinterOpts) -> do
                 printerOpts <-
-                  either error pure $
-                    Aeson.eitherDecode . ByteString.fromStrict . Text.encodeUtf8 $
-                      rawPrinterOpts
+                  either error pure
+                    $ Aeson.eitherDecode . ByteString.fromStrict . Text.encodeUtf8
+                    $ rawPrinterOpts
                 let key = Text.toLower . Text.replace " " "-" $ label
                 pure (label, key, printerOpts)
         outputs <-

@@ -410,9 +410,9 @@ checkResult outputFile actual
         Nothing ->
           expectationFailure "Output does not exist. Try running with ORMOLU_REGENERATE_EXAMPLES=1"
         Just expected ->
-          when (actual /= expected) $
-            expectationFailure . T.unpack $
-              getDiff ("actual", actual) ("expected", expected)
+          when (actual /= expected)
+            $ expectationFailure . T.unpack
+            $ getDiff ("actual", actual) ("expected", expected)
 
 {--- Renderers ---}
 
@@ -460,9 +460,9 @@ getFileContents path = do
 
 getDiff :: (String, Text) -> (String, Text) -> Text
 getDiff (s1Name, s1) (s2Name, s2) =
-  T.pack . Doc.render $
-    Diff.prettyContextDiff (Doc.text s1Name) (Doc.text s2Name) (Doc.text . T.unpack . Diff.unnumber) $
-      Diff.getContextDiff (Just 2) (T.lines s1) (T.lines s2)
+  T.pack . Doc.render
+    $ Diff.prettyContextDiff (Doc.text s1Name) (Doc.text s2Name) (Doc.text . T.unpack . Diff.unnumber)
+    $ Diff.getContextDiff (Just 2) (T.lines s1) (T.lines s2)
 
 renderOrmoluException :: OrmoluException -> IO String
 renderOrmoluException e =
