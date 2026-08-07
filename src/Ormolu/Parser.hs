@@ -152,15 +152,12 @@ parseModuleSnippet config@Config {..} modFixityMap dynFlags path rawInput = lift
       parser = case cfgSourceType of
         ModuleSource -> GHC.parseModule
         SignatureSource -> GHC.parseSignature
-      implicitPrelude =
-        Choice.fromBool $
-          EnumSet.member ImplicitPrelude (GHC.extensionFlags dynFlags)
       r = case runParser parser dynFlags path input of
         GHC.PFailed pstate ->
           case pStateErrors pstate of
             Just err -> Left err
             Nothing -> error "PFailed does not have an error"
-        GHC.POk pstate (L _ (normalizeModule implicitPrelude config -> hsModule)) ->
+        GHC.POk pstate (L _ (normalizeModule config -> hsModule)) ->
           case pStateErrors pstate of
             -- Some parse errors (pattern/arrow syntax in expr context)
             -- do not cause a parse error, but they are replaced with "_"
@@ -187,11 +184,10 @@ parseModuleSnippet config@Config {..} modFixityMap dynFlags path rawInput = lift
 -- | Normalize a 'HsModule' by sorting its export lists, dropping
 -- blank comments, etc.
 normalizeModule ::
-  Choice "implicitPrelude" ->
   Config RegionDeltas ->
   HsModule GhcPs ->
   HsModule GhcPs
-normalizeModule implicitPrelude Config {..} hsmod =
+normalizeModule Config {..} hsmod =
   everywhere
     ( mkT dropBlankTypeHaddocks
         `extT` dropBlankDataDeclHaddocks

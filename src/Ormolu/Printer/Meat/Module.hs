@@ -12,7 +12,9 @@ where
 
 import Control.Monad
 import Data.Choice (pattern With)
+import Data.Choice qualified as Choice
 import GHC.Hs hiding (comment)
+import GHC.LanguageExtensions (Extension (ImplicitPrelude))
 import GHC.Types.SrcLoc
 import Ormolu.Config
 import Ormolu.Imports (normalizeImports)
@@ -50,10 +52,8 @@ p_hsModule mstackHeader pragmas hsmod@HsModule {..} = do
       newline
       mapM_ (p_hsModuleHeader hsmod) hsmodName
       newline
-      respectful <- getPrinterOpt poRespectful
-      localModules <- getLocalModules
-      importGrouping <- getPrinterOpt poImportGrouping
-      forM_ (normalizeImports respectful localModules importGrouping hsmodImports) $ \importGroup -> do
+      importGroups <- normalizeImportsR hsmodImports
+      forM_ importGroups $ \importGroup -> do
         forM_ importGroup (located' p_hsmodImport)
         newline
       declNewline
@@ -62,6 +62,19 @@ p_hsModule mstackHeader pragmas hsmod@HsModule {..} = do
         (if preserveSpacing then p_hsDeclsRespectGrouping else p_hsDecls) Free hsmodDecls
         newline
         spitRemainingComments
+  where
+    normalizeImportsR imports = do
+      implicitPrelude <- Choice.fromBool <$> isExtensionEnabled ImplicitPrelude
+      respectful <- getPrinterOpt poRespectful
+      localModules <- getLocalModules
+      importGrouping <- getPrinterOpt poImportGrouping
+      pure $
+        normalizeImports
+          implicitPrelude
+          respectful
+          localModules
+          importGrouping
+          imports
 
 p_hsModuleHeader :: HsModule GhcPs -> LocatedA ModuleName -> R ()
 p_hsModuleHeader HsModule {hsmodExt = XModulePs {..}, ..} moduleName = do
