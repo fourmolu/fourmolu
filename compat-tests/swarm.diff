@@ -1,22 +1,8 @@
-diff --git a/src/Swarm/App.hs b/src/Swarm/App.hs
-index c425f2e..9d5b8d3 100644
---- a/src/Swarm/App.hs
-+++ b/src/Swarm/App.hs
-@@ -134,6 +134,6 @@ enablePasteMode :: EventM n s ()
- enablePasteMode = do
-   vty <- getVtyHandle
-   let output = V.outputIface vty
--  when (V.supportsMode output V.BracketedPaste) $
--    liftIO $
--      V.setMode output V.BracketedPaste True
-+  when (V.supportsMode output V.BracketedPaste)
-+    $ liftIO
-+    $ V.setMode output V.BracketedPaste True
-diff --git a/src/Swarm/Doc/Pedagogy.hs b/src/Swarm/Doc/Pedagogy.hs
-index c9db1eb..04e5a8e 100644
---- a/src/Swarm/Doc/Pedagogy.hs
-+++ b/src/Swarm/Doc/Pedagogy.hs
-@@ -236,8 +236,8 @@ renderTutorialProgression =
+diff --git a/src/swarm-doc/Swarm/Doc/Pedagogy.hs b/src/swarm-doc/Swarm/Doc/Pedagogy.hs
+index d50807a..8ba006a 100644
+--- a/src/swarm-doc/Swarm/Doc/Pedagogy.hs
++++ b/src/swarm-doc/Swarm/Doc/Pedagogy.hs
+@@ -259,8 +259,8 @@ renderTutorialProgression =
      allUsed = concatMap mkTuplesForTutorial infos
  
      mkTuplesForTutorial tut =
@@ -28,149 +14,79 @@ index c9db1eb..04e5a8e 100644
 +        $ novelSolutionCommands tut
       where
        tutIdxScenario = tutInfo tut
-diff --git a/src/Swarm/Game/Achievement/Description.hs b/src/Swarm/Game/Achievement/Description.hs
-index fe9df79..472c97f 100644
---- a/src/Swarm/Game/Achievement/Description.hs
-+++ b/src/Swarm/Game/Achievement/Description.hs
-@@ -19,11 +19,11 @@ describe (GlobalAchievement CompletedSingleTutorial) =
- describe (GlobalAchievement CompletedAllTutorials) =
-   AchievementInfo
-     "Autodidact"
--    ( Just $
--        FTQuotation $
--          Quotation
--            "Terry Pratchet"
--            "I didn't go to university... But I have sympathy for those who did."
-+    ( Just
-+        $ FTQuotation
-+        $ Quotation
-+          "Terry Pratchet"
-+          "I didn't go to university... But I have sympathy for those who did."
-     )
-     "Complete all of the tutorials."
-     Moderate
-@@ -75,11 +75,11 @@ describe (GameplayAchievement LoseScenario) =
- describe (GameplayAchievement GetDisoriented) =
-   AchievementInfo
-     "Playing Ostrich"
--    ( Just $
--        FTQuotation $
--          Quotation
--            "Lil Jon"
--            "Fire up that loud / Another round of shots / Turn down for what?"
-+    ( Just
-+        $ FTQuotation
-+        $ Quotation
-+          "Lil Jon"
-+          "Fire up that loud / Another round of shots / Turn down for what?"
-     )
-     "'turn down' without a compass. Congratulations, you are 'disoriented'. How are you supposed to move now?"
-     Easy
-diff --git a/src/Swarm/Game/ResourceLoading.hs b/src/Swarm/Game/ResourceLoading.hs
-index e272bde..65cbab9 100644
---- a/src/Swarm/Game/ResourceLoading.hs
-+++ b/src/Swarm/Game/ResourceLoading.hs
-@@ -80,12 +80,12 @@ dataNotFound :: FilePath -> IO LoadingFailure
- dataNotFound f = do
-   d <- getSwarmXdgDataSubdir False ""
-   let squotes = squote . T.pack
--  return $
--    CustomMessage $
--      T.unlines
--        [ "Could not find the data: " <> squotes f
--        , "Try downloading the Swarm 'data' directory to: " <> squotes (d </> "data")
--        ]
-+  return
-+    $ CustomMessage
-+    $ T.unlines
-+      [ "Could not find the data: " <> squotes f
-+      , "Try downloading the Swarm 'data' directory to: " <> squotes (d </> "data")
-+      ]
+diff --git a/src/swarm-doc/Swarm/Doc/Schema/Render.hs b/src/swarm-doc/Swarm/Doc/Schema/Render.hs
+index 61e4416..784a704 100644
+--- a/src/swarm-doc/Swarm/Doc/Schema/Render.hs
++++ b/src/swarm-doc/Swarm/Doc/Schema/Render.hs
+@@ -84,9 +84,9 @@ makePandocTable titleMap (SchemaData _ (ToplevelSchema theTitle theDescription _
+     ObjectProperties props -> makePropsTable True propertyColumnHeadings titleMap props
+     ListMembers someStuff -> renderItems someStuff
+     EnumMembers enumMembers ->
+-      simpleTable [plain $ text "Member"] $
+-        map (\m -> [plain $ code m]) $
+-          NE.toList enumMembers
++      simpleTable [plain $ text "Member"]
++        $ map (\m -> [plain $ code m])
++        $ NE.toList enumMembers
  
- -- | Get path to swarm data, optionally creating necessary
- --   directories. This could fail if user has bad permissions
-diff --git a/src/Swarm/Game/Scenario.hs b/src/Swarm/Game/Scenario.hs
-index 950637e..e83c0fa 100644
---- a/src/Swarm/Game/Scenario.hs
-+++ b/src/Swarm/Game/Scenario.hs
-@@ -155,9 +155,9 @@ instance FromJSONE (EntityMap, WorldMap) Scenario where
-           ]
- 
-       let mergedWaypoints =
--            M.fromList $
--              map (worldName &&& runIdentity . waypoints . navigation) $
--                NE.toList allWorlds
-+            M.fromList
-+              $ map (worldName &&& runIdentity . waypoints . navigation)
-+              $ NE.toList allWorlds
- 
-       mergedPortals <-
-         validatePortals
-diff --git a/src/Swarm/Game/Scenario/Objective/Graph.hs b/src/Swarm/Game/Scenario/Objective/Graph.hs
-index 4359bee..ca2d73b 100644
---- a/src/Swarm/Game/Scenario/Objective/Graph.hs
-+++ b/src/Swarm/Game/Scenario/Objective/Graph.hs
-@@ -80,9 +80,9 @@ getNegatedIds objs =
- 
- getObjectivesById :: [Objective] -> Map ObjectiveLabel Objective
- getObjectivesById objs =
--  M.fromList $
--    map swap $
--      mapMaybe (sequenceA . (id &&& _objectiveId)) objs
-+  M.fromList
-+    $ map swap
-+    $ mapMaybe (sequenceA . (id &&& _objectiveId)) objs
- 
- -- | Uses the textual labels for those objectives that
- -- have them, and assigns arbitrary integer IDs for
-diff --git a/src/Swarm/Game/Scenario/Objective/WinCheck.hs b/src/Swarm/Game/Scenario/Objective/WinCheck.hs
-index 34ace9d..e5bd736 100644
---- a/src/Swarm/Game/Scenario/Objective/WinCheck.hs
-+++ b/src/Swarm/Game/Scenario/Objective/WinCheck.hs
-@@ -45,9 +45,9 @@ isUnwinnablePrereq completedObjectives =
-   Simplify.cannotBeTrue . Simplify.replace boolMap . L.toBoolExpr
+ genPropsRow :: Bool -> Map SchemaIdReference T.Text -> (T.Text, SwarmSchema) -> [Blocks]
+ genPropsRow includeDefaultColumn titleMap (k, x) =
+@@ -122,9 +122,9 @@ genMarkdown schemaThings =
   where
-   boolMap =
--    M.fromList $
--      map (,True) $
--        Set.toList completedObjectives
-+    M.fromList
-+      $ map (,True)
-+      $ Set.toList completedObjectives
+   titleMap = makeTitleMap schemaThings
+   pd =
+-    mconcat $
+-      map (makePandocTable titleMap) $
+-        sortAndPruneSchemas (fromFilePath "scenario") schemaThings
++    mconcat
++      $ map (makePandocTable titleMap)
++      $ sortAndPruneSchemas (fromFilePath "scenario") schemaThings
  
- isUnwinnable :: ObjectiveCompletion -> Objective -> Bool
- isUnwinnable completions obj =
-@@ -57,9 +57,9 @@ isUnwinnable completions obj =
- -- the second element "inactive".
- partitionActiveObjectives :: ObjectiveCompletion -> ([Objective], [Objective])
- partitionActiveObjectives oc =
--  partition (isPrereqsSatisfied oc) $
--    incomplete $
--      completionBuckets oc
-+  partition (isPrereqsSatisfied oc)
-+    $ incomplete
-+    $ completionBuckets oc
- 
- getActiveObjectives :: ObjectiveCompletion -> [Objective]
- getActiveObjectives =
-@@ -82,9 +82,9 @@ instance ToSample PrereqSatisfaction where
- -- | Used only by the web interface for debugging
- getSatisfaction :: ObjectiveCompletion -> [PrereqSatisfaction]
- getSatisfaction oc =
--  map f $
--    listAllObjectives $
--      completionBuckets oc
-+  map f
-+    $ listAllObjectives
-+    $ completionBuckets oc
-  where
-   f y =
-     PrereqSatisfaction
-diff --git a/src/Swarm/Game/Scenario/Status.hs b/src/Swarm/Game/Scenario/Status.hs
-index f0897f1..2327c7b 100644
---- a/src/Swarm/Game/Scenario/Status.hs
-+++ b/src/Swarm/Game/Scenario/Status.hs
-@@ -114,15 +114,15 @@ updateScenarioInfoOnFinish
+ parseSchemaFile :: FileStemAndExtension -> IO (Either T.Text ToplevelSchema)
+ parseSchemaFile stemAndExtension =
+diff --git a/src/swarm-engine/Swarm/Game/Achievement/Description.hs b/src/swarm-engine/Swarm/Game/Achievement/Description.hs
+index 0f1a7a2..7e17631 100644
+--- a/src/swarm-engine/Swarm/Game/Achievement/Description.hs
++++ b/src/swarm-engine/Swarm/Game/Achievement/Description.hs
+@@ -24,11 +24,11 @@ describe = \case
+   GlobalAchievement CompletedAllTutorials ->
+     AchievementInfo
+       "Autodidact"
+-      ( Just $
+-          FTQuotation $
+-            Quotation
+-              "Terry Pratchet"
+-              "I didn't go to university... But I have sympathy for those who did."
++      ( Just
++          $ FTQuotation
++          $ Quotation
++            "Terry Pratchet"
++            "I didn't go to university... But I have sympathy for those who did."
+       )
+       "Complete all of the tutorials."
+       Moderate
+@@ -80,11 +80,11 @@ describe = \case
+   GameplayAchievement GetDisoriented ->
+     AchievementInfo
+       "Playing Ostrich"
+-      ( Just $
+-          FTQuotation $
+-            Quotation
+-              "Lil Jon"
+-              "Fire up that loud / Another round of shots / Turn down for what?"
++      ( Just
++          $ FTQuotation
++          $ Quotation
++            "Lil Jon"
++            "Fire up that loud / Another round of shots / Turn down for what?"
+       )
+       "`turn down` without a compass. Congratulations, you are \"disoriented\". How are you supposed to move now?"
+       Easy
+diff --git a/src/swarm-engine/Swarm/Game/Scenario/Status.hs b/src/swarm-engine/Swarm/Game/Scenario/Status.hs
+index 83ca95d..9240f99 100644
+--- a/src/swarm-engine/Swarm/Game/Scenario/Status.hs
++++ b/src/swarm-engine/Swarm/Game/Scenario/Status.hs
+@@ -145,15 +145,15 @@ updateScenarioInfoOnFinish
    completed
    si@(ScenarioInfo p prevPlayState) = case prevPlayState of
      Played launchParams (Metric _ (ProgressStats start _currentPlayMetrics)) prevBestRecords ->
@@ -192,140 +108,126 @@ index f0897f1..2327c7b 100644
 +          $ ProgressStats start
 +          $ AttemptMetrics (DurationMetrics el ticks) cs
      _ -> si
-diff --git a/src/Swarm/Game/Scenario/Topography/WorldPalette.hs b/src/Swarm/Game/Scenario/Topography/WorldPalette.hs
-index 2363848..9d703bd 100644
---- a/src/Swarm/Game/Scenario/Topography/WorldPalette.hs
-+++ b/src/Swarm/Game/Scenario/Topography/WorldPalette.hs
-@@ -101,26 +101,26 @@ prepForJson (WorldPalette suggestedPalette) cellGrid =
-  where
-   preassignments :: [(Char, TerrainWith EntityFacade)]
-   preassignments =
--    map (first T.head . fmap (cellToTerrainPair . standardCell)) $
--      M.toList $
--        KM.toMapText suggestedPalette
-+    map (first T.head . fmap (cellToTerrainPair . standardCell))
-+      $ M.toList
-+      $ KM.toMapText suggestedPalette
- 
-   entityCells :: M.Map (TerrainWith EntityName) (TerrainWith EntityFacade)
-   entityCells = getUniqueTerrainFacadePairs cellGrid
- 
-   unassignedCells :: M.Map (TerrainWith EntityName) (TerrainWith EntityFacade)
-   unassignedCells =
--    M.withoutKeys entityCells $
--      Set.fromList $
--        map (toKey . snd) preassignments
-+    M.withoutKeys entityCells
-+      $ Set.fromList
-+      $ map (toKey . snd) preassignments
- 
-   unassignedCharacters :: Set.Set Char
-   unassignedCharacters =
-     -- TODO (#1149): How can we efficiently use the Unicode categories (in "Data.Char")
-     -- to generate this pool?
--    Set.difference genericCharacterPool $
--      Set.fromList $
--        map fst preassignments
-+    Set.difference genericCharacterPool
-+      $ Set.fromList
-+      $ map fst preassignments
- 
-   newlyAssignedPairs :: [(Char, TerrainWith EntityFacade)]
-   newlyAssignedPairs = zip (Set.toList unassignedCharacters) $ M.elems unassignedCells
-diff --git a/src/Swarm/Game/State.hs b/src/Swarm/Game/State.hs
-index de6f4f5..5305ba7 100644
---- a/src/Swarm/Game/State.hs
-+++ b/src/Swarm/Game/State.hs
-@@ -502,9 +502,9 @@ robotsInArea (Cosmic subworldName o) d gs = map (rm IM.!) rids
-   rm = gs ^. robotMap
-   rl = gs ^. robotsByLocation
-   rids =
--    concatMap IS.elems $
--      getElemsInArea o d $
--        M.findWithDefault mempty subworldName rl
-+    concatMap IS.elems
-+      $ getElemsInArea o d
-+      $ M.findWithDefault mempty subworldName rl
- 
- -- | The base robot, if it exists.
- baseRobot :: Traversal' GameState Robot
-@@ -935,9 +935,9 @@ wakeWatchingRobots loc = do
+diff --git a/src/swarm-engine/Swarm/Game/State/Robot.hs b/src/swarm-engine/Swarm/Game/State/Robot.hs
+index c52b78e..a6992b5 100644
+--- a/src/swarm-engine/Swarm/Game/State/Robot.hs
++++ b/src/swarm-engine/Swarm/Game/State/Robot.hs
+@@ -224,9 +224,9 @@ wakeWatchingRobots myID currentTick loc = do
    let -- Step 1: Identify the robots that are watching this location.
        botsWatchingThisLoc :: [Robot]
        botsWatchingThisLoc =
 -        mapMaybe (`IM.lookup` rMap) $
--          S.toList $
--            M.findWithDefault mempty loc watchingMap
+-          IS.toList $
+-            MM.get loc watchingMap
 +        mapMaybe (`IM.lookup` rMap)
-+          $ S.toList
-+          $ M.findWithDefault mempty loc watchingMap
++          $ IS.toList
++          $ MM.get loc watchingMap
  
        -- Step 2: Get the target wake time for each of these robots
        wakeTimes :: [(RID, TickNumber)]
-diff --git a/src/Swarm/Game/Step.hs b/src/Swarm/Game/Step.hs
-index 8b1c6cb..b92808a 100644
---- a/src/Swarm/Game/Step.hs
-+++ b/src/Swarm/Game/Step.hs
-@@ -452,9 +452,9 @@ updateEntityAt ::
-   m ()
- updateEntityAt cLoc@(Cosmic subworldName loc) upd = do
-   didChange <-
--    fmap (fromMaybe False) $
--      zoomWorld subworldName $
--        W.updateM @Int (W.locToCoords loc) upd
-+    fmap (fromMaybe False)
-+      $ zoomWorld subworldName
-+      $ W.updateM @Int (W.locToCoords loc) upd
-   when didChange $
-     wakeWatchingRobots cLoc
+diff --git a/src/swarm-engine/Swarm/Game/Step.hs b/src/swarm-engine/Swarm/Game/Step.hs
+index 4618885..04dbe17 100644
+--- a/src/swarm-engine/Swarm/Game/Step.hs
++++ b/src/swarm-engine/Swarm/Game/Step.hs
+@@ -534,11 +534,11 @@ stepRobot r = do
+   isCreative <- use creativeMode
+   let shouldTrackActivity = isCreative || not (r' ^. systemRobot)
  
-@@ -1076,25 +1076,25 @@ addSeedBot ::
-   TimeSpec ->
-   m ()
- addSeedBot e (minT, maxT) loc ts =
--  void $
--    addTRobot $
--      mkRobot
--        ()
--        Nothing
--        "seed"
--        "A growing seed."
--        (Just loc)
--        zero
--        ( defaultEntityDisplay '.'
--            & displayAttr .~ (e ^. entityDisplay . displayAttr)
--            & displayPriority .~ 0
--        )
--        (initMachine (seedProgram minT (maxT - minT) (e ^. entityName)) empty emptyStore)
--        []
--        [(1, e)]
--        True
--        False
--        ts
-+  void
-+    $ addTRobot
-+    $ mkRobot
-+      ()
-+      Nothing
-+      "seed"
-+      "A growing seed."
-+      (Just loc)
-+      zero
-+      ( defaultEntityDisplay '.'
-+          & displayAttr .~ (e ^. entityDisplay . displayAttr)
-+          & displayPriority .~ 0
-+      )
-+      (initMachine (seedProgram minT (maxT - minT) (e ^. entityName)) empty emptyStore)
-+      []
-+      [(1, e)]
-+      True
-+      False
-+      ts
+-  return $
+-    applyWhen shouldTrackActivity (maintainActivityWindow t) $
+-      r'
+-        & machine .~ cesk'
+-        & activityCounts . lifetimeStepCount +~ 1
++  return
++    $ applyWhen shouldTrackActivity (maintainActivityWindow t)
++    $ r'
++      & machine .~ cesk'
++      & activityCounts . lifetimeStepCount +~ 1
+  where
+   maintainActivityWindow t bot =
+     bot & (activityCounts . activityWindow %~ WC.insert t)
+diff --git a/src/swarm-engine/Swarm/Game/Step/Arithmetic.hs b/src/swarm-engine/Swarm/Game/Step/Arithmetic.hs
+index 3c97a65..fc3c3af 100644
+--- a/src/swarm-engine/Swarm/Game/Step/Arithmetic.hs
++++ b/src/swarm-engine/Swarm/Game/Step/Arithmetic.hs
+@@ -82,9 +82,9 @@ incomparable = \case
+ --   possible since the type system should catch it.
+ incompatCmpErr :: Has (Throw Exn) sig m => Value -> Value -> m a
+ incompatCmpErr v1 v2 =
+-  throwError $
+-    Fatal $
+-      T.unwords ["Incompatible comparison of ", prettyValue v1, "and", prettyValue v2]
++  throwError
++    $ Fatal
++    $ T.unwords ["Incompatible comparison of ", prettyValue v1, "and", prettyValue v2]
  
- -- | All functions that are used for robot step can access 'GameState' and the current 'Robot'.
- --
-@@ -1169,17 +1169,17 @@ execConst c vs s k = do
-       return $ Out VUnit s k
+ -- | Values were compared of a type which cannot be compared
+ --   (e.g. functions, etc.).
+diff --git a/src/swarm-engine/Swarm/Game/Step/Combustion.hs b/src/swarm-engine/Swarm/Game/Step/Combustion.hs
+index b11e55c..72da06d 100644
+--- a/src/swarm-engine/Swarm/Game/Step/Combustion.hs
++++ b/src/swarm-engine/Swarm/Game/Step/Combustion.hs
+@@ -65,9 +65,9 @@ igniteCommand c d = do
+   combustionDurationRand <- addCombustionBot e selfCombustibility createdAt loc
+   let warmup = delay selfCombustibility
+   let neighborAffectDuration = max 0 (combustionDurationRand - warmup)
+-  when (neighborAffectDuration > 0) $
+-    forM_ (getNeighborLocs loc) $
+-      igniteNeighbor createdAt warmup neighborAffectDuration
++  when (neighborAffectDuration > 0)
++    $ forM_ (getNeighborLocs loc)
++    $ igniteNeighbor createdAt warmup neighborAffectDuration
+  where
+   verb = "ignite"
+   verbed = "ignited"
+diff --git a/src/swarm-engine/Swarm/Game/Step/Const.hs b/src/swarm-engine/Swarm/Game/Step/Const.hs
+index 3306d3c..f4ae78b 100644
+--- a/src/swarm-engine/Swarm/Game/Step/Const.hs
++++ b/src/swarm-engine/Swarm/Game/Step/Const.hs
+@@ -175,17 +175,17 @@ execConst runChildProg c vs s k = do
+       moveInDirection $ applyTurn (DRelative $ DPlanar DBack) $ orientation ? zero
+     Volume -> case vs of
+       [VInt limit] -> do
+-        when (limit > globalMaxVolume) $
+-          throwError $
+-            CmdFailed
+-              Volume
+-              ( T.unwords
+-                  [ "Can only measure up to"
+-                  , T.pack $ show globalMaxVolume
+-                  , "cells."
+-                  ]
+-              )
+-              Nothing
++        when (limit > globalMaxVolume)
++          $ throwError
++          $ CmdFailed
++            Volume
++            ( T.unwords
++                [ "Can only measure up to"
++                , T.pack $ show globalMaxVolume
++                , "cells."
++                ]
++            )
++            Nothing
+ 
+         robotLoc <- use robotLocation
+         maybeResult <- floodFill robotLoc $ fromIntegral limit
+@@ -206,9 +206,9 @@ execConst runChildProg c vs s k = do
+               _ -> badConst
+             else case goalVal of
+               VPair (VInt x) (VInt y) ->
+-                return $
+-                  LocationTarget $
+-                    Location (fromIntegral x) (fromIntegral y)
++                return
++                  $ LocationTarget
++                  $ Location (fromIntegral x) (fromIntegral y)
+               _ -> badConst
+         robotLoc <- use robotLocation
+         result <- pathCommand $ PathfindingParameters maybeLimit robotLoc goal
+@@ -244,17 +244,17 @@ execConst runChildProg c vs s k = do
+       return $ mkReturn ()
      Stride -> case vs of
        [VInt d] -> do
 -        when (d > fromIntegral maxStrideRange) $
@@ -353,7 +255,7 @@ index 8b1c6cb..b92808a 100644
  
          -- Figure out where we're going
          loc <- use robotLocation
-@@ -1189,9 +1189,9 @@ execConst c vs s k = do
+@@ -264,9 +264,9 @@ execConst runChildProg c vs s k = do
          -- Excludes the base location.
          let locsInDirection :: [Cosmic Location]
              locsInDirection =
@@ -366,7 +268,20 @@ index 8b1c6cb..b92808a 100644
  
          failureMaybes <- mapM checkMoveFailure locsInDirection
          let maybeFirstFailure = asum failureMaybes
-@@ -2143,9 +2143,9 @@ execConst c vs s k = do
+@@ -423,9 +423,9 @@ execConst runChildProg c vs s k = do
+           robotInventory %= delete item
+ 
+           -- Log a special message if re-equipping life support system
+-          when (itemName == "life support system") $
+-            void $
+-              traceLog Logged Warning "Life support system back online! Life failure averted!"
++          when (itemName == "life support system")
++            $ void
++            $ traceLog Logged Warning "Life support system back online! Life failure averted!"
+ 
+           -- Check whether we should bestow the 'EquippedAllDevices' achievement
+           curScenario <- use currentScenarioPath
+@@ -1385,9 +1385,9 @@ execConst runChildProg c vs s k = do
      -- add the targeted entity so it can be consumed by the recipe
      let makeRecipe r = (,r) <$> make' (insert nextE inv, ins) r
      chosenRecipe <-
@@ -379,162 +294,155 @@ index 8b1c6cb..b92808a 100644
      ((invTaken, outs), recipe) <-
        chosenRecipe
          `isJustOrFail` ["You don't have the ingredients to", verbPhrase, indefinite (nextE ^. entityName) <> "."]
-@@ -2848,9 +2848,9 @@ compareValues v1 = case v1 of
- --   possible since the type system should catch it.
- incompatCmp :: Has (Throw Exn) sig m => Value -> Value -> m a
- incompatCmp v1 v2 =
--  throwError $
--    Fatal $
--      T.unwords ["Incompatible comparison of ", prettyValue v1, "and", prettyValue v2]
-+  throwError
-+    $ Fatal
-+    $ T.unwords ["Incompatible comparison of ", prettyValue v1, "and", prettyValue v2]
+diff --git a/src/swarm-engine/Swarm/Game/Step/Path/Cache.hs b/src/swarm-engine/Swarm/Game/Step/Path/Cache.hs
+index c1b8e8d..2dc41bf 100644
+--- a/src/swarm-engine/Swarm/Game/Step/Path/Cache.hs
++++ b/src/swarm-engine/Swarm/Game/Step/Path/Cache.hs
+@@ -84,19 +84,19 @@ retrieveCachedPath currentWalkabilityContext newParms = do
+         PathfindingParameters prevDistLimit previousSubworldName t = prevParms
  
- -- | Values were compared of a type which cannot be compared
- --   (e.g. functions, etc.).
-diff --git a/src/Swarm/Game/World/Load.hs b/src/Swarm/Game/World/Load.hs
-index 67fe131..f376cf1 100644
---- a/src/Swarm/Game/World/Load.hs
-+++ b/src/Swarm/Game/World/Load.hs
-@@ -55,9 +55,9 @@ loadWorld dir em (fp, src) = do
-     liftEither . left (AssetNotLoaded (Data Worlds) fp . CanNotParseMegaparsec) $
-       runParser parseWExp (into @Text src)
-   t <-
--    withThrow (AssetNotLoaded (Data Worlds) fp . DoesNotTypecheck . prettyText @CheckErr) $
--      runReader em . runReader @WorldMap M.empty $
--        infer CNil wexp
-+    withThrow (AssetNotLoaded (Data Worlds) fp . DoesNotTypecheck . prettyText @CheckErr)
-+      $ runReader em . runReader @WorldMap M.empty
-+      $ infer CNil wexp
-   return (into @Text (dropExtension (stripDir dir fp)), t)
+     -- Subworlds must match
+-    unless (previousSubworldName == currentSubworld) $
+-      Left $
+-        DifferentArg NewSubworld
++    unless (previousSubworldName == currentSubworld)
++      $ Left
++      $ DifferentArg NewSubworld
  
- -- | Strip a leading directory from a 'FilePath'.
-diff --git a/src/Swarm/Language/LSP.hs b/src/Swarm/Language/LSP.hs
-index eeed96a..afe1d46 100644
---- a/src/Swarm/Language/LSP.hs
-+++ b/src/Swarm/Language/LSP.hs
-@@ -31,28 +31,28 @@ import Witch
+     -- Pathfinding target type must match
+-    unless (t == target) $
+-      Left $
+-        DifferentArg NewTargetType
++    unless (t == target)
++      $ Left
++      $ DifferentArg NewTargetType
+ 
+     -- Walkability context must match
+-    unless (currentWalkabilityContext == prevWalkabilityContext) $
+-      Left $
+-        DifferentArg NewWalkabilityContext
++    unless (currentWalkabilityContext == prevWalkabilityContext)
++      $ Left
++      $ DifferentArg NewWalkabilityContext
+ 
+     left (DifferentArg . NewDistanceLimit) $
+       getDistanceLimitInvalidation currentRobotLoc pathCells currentDistanceLimit prevDistLimit
+diff --git a/src/swarm-lang/Swarm/Language/Capability.hs b/src/swarm-lang/Swarm/Language/Capability.hs
+index ebbcbc0..562a380 100644
+--- a/src/swarm-lang/Swarm/Language/Capability.hs
++++ b/src/swarm-lang/Swarm/Language/Capability.hs
+@@ -149,6 +149,6 @@ constCaps = \case
+ -- | Inverts the 'constCaps' mapping.
+ constByCaps :: Map Capability (NE.NonEmpty Const)
+ constByCaps =
+-  binTuples $
+-    map swap $
+-      mapMaybe (sequenceA . (id &&& constCaps)) allConst
++  binTuples
++    $ map swap
++    $ mapMaybe (sequenceA . (id &&& constCaps)) allConst
+diff --git a/src/swarm-lang/Swarm/Language/LSP.hs b/src/swarm-lang/Swarm/Language/LSP.hs
+index d558b04..e48362d 100644
+--- a/src/swarm-lang/Swarm/Language/LSP.hs
++++ b/src/swarm-lang/Swarm/Language/LSP.hs
+@@ -39,30 +39,30 @@ import Witch
  
  lspMain :: IO ()
  lspMain =
 -  void $
 -    runServer $
 -      ServerDefinition
--        { onConfigurationChange = const $ const $ Right ()
--        , defaultConfig = ()
+-        { defaultConfig = ()
+-        , configSection = "swarm"
+-        , parseConfig = const $ const $ Right ()
+-        , onConfigChange = const $ return ()
 -        , doInitialize = \env _req -> pure $ Right env
--        , staticHandlers = handlers
+-        , staticHandlers = const handlers
 -        , interpretHandler = \env -> Iso (runLspT env) liftIO
 -        , options =
 -            defaultOptions
 -              { -- set sync options to get DidSave event, as well as Open and Close events.
--                textDocumentSync =
+-                optTextDocumentSync =
 -                  Just
--                    ( J.TextDocumentSyncOptions
+-                    ( LSP.TextDocumentSyncOptions
 -                        (Just True)
 -                        (Just syncKind)
 -                        (Just False)
 -                        (Just False)
--                        (Just . J.InR . J.SaveOptions $ Just True)
+-                        (Just . LSP.InR . LSP.SaveOptions $ Just True)
 -                    )
 -              }
 -        }
 +  void
 +    $ runServer
 +    $ ServerDefinition
-+      { onConfigurationChange = const $ const $ Right ()
-+      , defaultConfig = ()
++      { defaultConfig = ()
++      , configSection = "swarm"
++      , parseConfig = const $ const $ Right ()
++      , onConfigChange = const $ return ()
 +      , doInitialize = \env _req -> pure $ Right env
-+      , staticHandlers = handlers
++      , staticHandlers = const handlers
 +      , interpretHandler = \env -> Iso (runLspT env) liftIO
 +      , options =
 +          defaultOptions
 +            { -- set sync options to get DidSave event, as well as Open and Close events.
-+              textDocumentSync =
++              optTextDocumentSync =
 +                Just
-+                  ( J.TextDocumentSyncOptions
++                  ( LSP.TextDocumentSyncOptions
 +                      (Just True)
 +                      (Just syncKind)
 +                      (Just False)
 +                      (Just False)
-+                      (Just . J.InR . J.SaveOptions $ Just True)
++                      (Just . LSP.InR . LSP.SaveOptions $ Just True)
 +                  )
 +            }
 +      }
   where
    -- Using SyncFull seems to handle the debounce for us.
-   -- The alternative is to use SyncIncremental, but then then
-diff --git a/src/Swarm/Language/LSP/Hover.hs b/src/Swarm/Language/LSP/Hover.hs
-index ed62942..45ea659 100644
---- a/src/Swarm/Language/LSP/Hover.hs
-+++ b/src/Swarm/Language/LSP/Hover.hs
-@@ -200,13 +200,13 @@ explain trm = case trm ^. sTerm of
-   SLet isRecursive var mTypeAnn rhs _b -> pure $ explainDefinition False isRecursive var (rhs ^. sType) mTypeAnn
-   SDef isRecursive var mTypeAnn rhs -> pure $ explainDefinition True isRecursive var (rhs ^. sType) mTypeAnn
-   SLam (LV _s v) _mType _syn ->
+   -- The alternative is to use SyncIncremental, but then the
+diff --git a/src/swarm-lang/Swarm/Language/LSP/Hover.hs b/src/swarm-lang/Swarm/Language/LSP/Hover.hs
+index 75dd902..7caccff 100644
+--- a/src/swarm-lang/Swarm/Language/LSP/Hover.hs
++++ b/src/swarm-lang/Swarm/Language/LSP/Hover.hs
+@@ -96,13 +96,13 @@ explain trm = case trm ^. sTerm of
+   -- definition or bindings
+   SLet ls isRecursive var mTypeAnn _ _ rhs _b -> pure $ explainDefinition ls isRecursive var (rhs ^. sType) mTypeAnn
+   SLam (Loc _s v) _mType _syn ->
 -    pure $
 -      typeSignature v ty $
 -        "A lambda expression binding the variable " <> U.bquote v <> "."
 +    pure
 +      $ typeSignature v ty
 +      $ "A lambda expression binding the variable " <> U.bquote v <> "."
-   SBind mv rhs _cmds ->
+   SBind mv _ _ _ rhs _cmds ->
 -    pure $
--      typeSignature (maybe "__rhs" lvVar mv) (getInnerType $ rhs ^. sType) $
--        "A monadic bind for commands" <> maybe "." (\(LV _s v) -> ", that binds variable " <> U.bquote v <> ".") mv
+-      typeSignature (maybe "__rhs" locVal mv) (getInnerType $ rhs ^. sType) $
+-        "A monadic bind for commands" <> maybe "." (\(Loc _s v) -> ", that binds variable " <> U.bquote v <> ".") mv
 +    pure
-+      $ typeSignature (maybe "__rhs" lvVar mv) (getInnerType $ rhs ^. sType)
-+      $ "A monadic bind for commands" <> maybe "." (\(LV _s v) -> ", that binds variable " <> U.bquote v <> ".") mv
++      $ typeSignature (maybe "__rhs" locVal mv) (getInnerType $ rhs ^. sType)
++      $ "A monadic bind for commands" <> maybe "." (\(Loc _s v) -> ", that binds variable " <> U.bquote v <> ".") mv
    -- composite types
    SPair {} ->
      Node
-diff --git a/src/Swarm/Language/Parse.hs b/src/Swarm/Language/Parse.hs
-index e72dc10..f5cebbd 100644
---- a/src/Swarm/Language/Parse.hs
-+++ b/src/Swarm/Language/Parse.hs
-@@ -285,12 +285,12 @@ parseTermAtom2 =
-         <|> TBool <$> ((True <$ reserved "true") <|> (False <$ reserved "false"))
-         <|> reserved "require"
-           *> ( ( TRequireDevice
--                  <$> (textLiteral <?> "device name in double quotes")
-+                   <$> (textLiteral <?> "device name in double quotes")
-                )
--                <|> ( TRequire
--                        <$> (fromIntegral <$> integer)
--                        <*> (textLiteral <?> "entity name in double quotes")
--                    )
-+                 <|> ( TRequire
-+                         <$> (fromIntegral <$> integer)
-+                         <*> (textLiteral <?> "entity name in double quotes")
-+                     )
-              )
-         <|> uncurry SRequirements <$> (reserved "requirements" *> match parseTerm)
-         <|> SLam
-diff --git a/src/Swarm/Language/Requirement.hs b/src/Swarm/Language/Requirement.hs
-index 92e52b7..820f3af 100644
---- a/src/Swarm/Language/Requirement.hs
-+++ b/src/Swarm/Language/Requirement.hs
-@@ -228,9 +228,9 @@ requirements' = go
-     -- name from the context when recursing for the same reason as
-     -- lambda.
-     TLet r x _ t1 t2 ->
--      (if r then insert (ReqCap CRecursion) else id) $
--        insert (ReqCap CEnv) $
--          go (Ctx.delete x ctx) t1 <> go (Ctx.delete x ctx) t2
-+      (if r then insert (ReqCap CRecursion) else id)
-+        $ insert (ReqCap CEnv)
-+        $ go (Ctx.delete x ctx) t1 <> go (Ctx.delete x ctx) t2
-     -- We also delete the name in a TBind, if any, while recursing on
-     -- the RHS.
-     TBind mx t1 t2 -> go ctx t1 <> go (maybe id Ctx.delete mx ctx) t2
-diff --git a/src/Swarm/Language/Syntax.hs b/src/Swarm/Language/Syntax.hs
-index 9f71db4..2985334 100644
---- a/src/Swarm/Language/Syntax.hs
-+++ b/src/Swarm/Language/Syntax.hs
-@@ -963,8 +963,8 @@ noLoc = Syntax mempty
+diff --git a/src/swarm-lang/Swarm/Language/Syntax/Pattern.hs b/src/swarm-lang/Swarm/Language/Syntax/Pattern.hs
+index fdc4d8a..c6ebf77 100644
+--- a/src/swarm-lang/Swarm/Language/Syntax/Pattern.hs
++++ b/src/swarm-lang/Swarm/Language/Syntax/Pattern.hs
+@@ -61,8 +61,8 @@ type UTerm = Term' UType
+ -- | Raw parsed syntax, without comments or type annotations.
+ pattern Syntax :: SrcLoc -> Term -> Syntax
+ pattern Syntax l t <- Syntax' l t _ ()
+-  where
+-    Syntax l t = Syntax' l t Empty ()
++ where
++  Syntax l t = Syntax' l t Empty ()
+ 
+ {-# COMPLETE Syntax #-}
+ 
+@@ -81,8 +81,8 @@ noLoc = Syntax mempty
  pattern STerm :: Term -> Syntax
  pattern STerm t <-
-   Syntax _ t
+   CSyntax _ t _
 -  where
 -    STerm t = Syntax mempty t
 + where
@@ -542,111 +450,594 @@ index 9f71db4..2985334 100644
  
  pattern TRequirements :: Text -> Term -> Term
  pattern TRequirements x t = SRequirements x (STerm t)
-@@ -976,8 +976,8 @@ pattern TPair t1 t2 = SPair (STerm t1) (STerm t2)
- -- | Match a TLam without syntax
+@@ -94,8 +94,8 @@ pattern TPair t1 t2 = SPair (STerm t1) (STerm t2)
+ -- | Match a TLam without annotations.
  pattern TLam :: Var -> Maybe Type -> Term -> Term
- pattern TLam v ty t <- SLam (lvVar -> v) ty (STerm t)
+ pattern TLam v ty t <- SLam (locVal -> v) ty (STerm t)
 -  where
--    TLam v ty t = SLam (LV NoLoc v) ty (STerm t)
+-    TLam v ty t = SLam (Loc NoLoc v) ty (STerm t)
 + where
-+  TLam v ty t = SLam (LV NoLoc v) ty (STerm t)
++  TLam v ty t = SLam (Loc NoLoc v) ty (STerm t)
  
- -- | Match a TApp without syntax
+ -- | Match a TApp without annotations.
  pattern TApp :: Term -> Term -> Term
-@@ -992,20 +992,20 @@ pattern (:$:) t1 s2 = SApp (STerm t1) s2
- -- | Match a TLet without syntax
- pattern TLet :: Bool -> Var -> Maybe Polytype -> Term -> Term -> Term
- pattern TLet r v pt t1 t2 <- SLet r (lvVar -> v) pt (STerm t1) (STerm t2)
+@@ -110,20 +110,20 @@ pattern (:$:) t1 s2 = SApp (STerm t1) s2
+ -- | Match a TLet without annotations.
+ pattern TLet :: LetSyntax -> Bool -> Var -> Maybe RawPolytype -> Maybe Polytype -> Maybe Requirements -> Term -> Term -> Term
+ pattern TLet ls r v mty mpty mreq t1 t2 <- SLet ls r (locVal -> v) mty mpty mreq (STerm t1) (STerm t2)
 -  where
--    TLet r v pt t1 t2 = SLet r (LV NoLoc v) pt (STerm t1) (STerm t2)
+-    TLet ls r v mty mpty mreq t1 t2 = SLet ls r (Loc NoLoc v) mty mpty mreq (STerm t1) (STerm t2)
 + where
-+  TLet r v pt t1 t2 = SLet r (LV NoLoc v) pt (STerm t1) (STerm t2)
++  TLet ls r v mty mpty mreq t1 t2 = SLet ls r (Loc NoLoc v) mty mpty mreq (STerm t1) (STerm t2)
  
- -- | Match a TDef without syntax
- pattern TDef :: Bool -> Var -> Maybe Polytype -> Term -> Term
- pattern TDef r v pt t <- SDef r (lvVar -> v) pt (STerm t)
+ -- | Match a STydef without annotations.
+ pattern TTydef :: TDVar -> Polytype -> Maybe TydefInfo -> Term -> Term
+ pattern TTydef v ty mtd t1 <- STydef (locVal -> v) ty mtd (STerm t1)
 -  where
--    TDef r v pt t = SDef r (LV NoLoc v) pt (STerm t)
+-    TTydef v ty mtd t1 = STydef (Loc NoLoc v) ty mtd (STerm t1)
 + where
-+  TDef r v pt t = SDef r (LV NoLoc v) pt (STerm t)
++  TTydef v ty mtd t1 = STydef (Loc NoLoc v) ty mtd (STerm t1)
  
- -- | Match a TBind without syntax
- pattern TBind :: Maybe Var -> Term -> Term -> Term
- pattern TBind mv t1 t2 <- SBind (fmap lvVar -> mv) (STerm t1) (STerm t2)
+ -- | Match a TBind without annotations.
+ pattern TBind :: Maybe Var -> Maybe Polytype -> Maybe Requirements -> Term -> Term -> Term
+ pattern TBind mv mty mreq t1 t2 <- SBind (fmap locVal -> mv) _ mty mreq (STerm t1) (STerm t2)
 -  where
--    TBind mv t1 t2 = SBind (LV NoLoc <$> mv) (STerm t1) (STerm t2)
+-    TBind mv mty mreq t1 t2 = SBind (Loc NoLoc <$> mv) Nothing mty mreq (STerm t1) (STerm t2)
 + where
-+  TBind mv t1 t2 = SBind (LV NoLoc <$> mv) (STerm t1) (STerm t2)
++  TBind mv mty mreq t1 t2 = SBind (Loc NoLoc <$> mv) Nothing mty mreq (STerm t1) (STerm t2)
  
- -- | Match a TDelay without syntax
- pattern TDelay :: DelayType -> Term -> Term
-@@ -1014,8 +1014,8 @@ pattern TDelay m t = SDelay m (STerm t)
- -- | Match a TRcd without syntax
- pattern TRcd :: Map Var (Maybe Term) -> Term
- pattern TRcd m <- SRcd ((fmap . fmap) _sTerm -> m)
+ -- | Match a TDelay without annotations.
+ pattern TDelay :: Term -> Term
+@@ -132,8 +132,8 @@ pattern TDelay t = SDelay (STerm t)
+ -- | Match a TRcd without annotations.
+ pattern TRcd :: [(LocVar, Maybe Term)] -> Term
+ pattern TRcd m <- SRcd ((map . second . fmap) _sTerm -> m)
 -  where
--    TRcd m = SRcd ((fmap . fmap) STerm m)
+-    TRcd m = SRcd ((map . second . fmap) STerm m)
 + where
-+  TRcd m = SRcd ((fmap . fmap) STerm m)
++  TRcd m = SRcd ((map . second . fmap) STerm m)
  
  pattern TProj :: Term -> Var -> Term
  pattern TProj t x = SProj (STerm t) x
-diff --git a/src/Swarm/Language/Typecheck.hs b/src/Swarm/Language/Typecheck.hs
-index 7b688f0..24e9d50 100644
---- a/src/Swarm/Language/Typecheck.hs
-+++ b/src/Swarm/Language/Typecheck.hs
-@@ -930,9 +930,9 @@ check s@(Syntax l t) expected = addLocToTypeErr l $ case t of
-     | UTyRcd tyMap <- expected -> do
-         let expectedFields = M.keysSet tyMap
-             actualFields = M.keysSet fields
+diff --git a/src/swarm-lang/Swarm/Language/Typecheck.hs b/src/swarm-lang/Swarm/Language/Typecheck.hs
+index de5768b..e4e6dc9 100644
+--- a/src/swarm-lang/Swarm/Language/Typecheck.hs
++++ b/src/swarm-lang/Swarm/Language/Typecheck.hs
+@@ -1264,9 +1264,9 @@ check s@(CSyntax l t cs) expected = addLocToTypeErr l $ case t of
+     -- Now check the type of the body, under a context extended with
+     -- the type and requirements of the bound variable.
+     t2' <-
+-      withBinding (locVal x) upty $
+-        withBinding (locVal x) reqs $
+-          check t2 expected
++      withBinding (locVal x) upty
++        $ withBinding (locVal x) reqs
++        $ check t2 expected
+ 
+     -- Make sure none of the generated skolem variables have escaped.
+     ask @UCtx >>= mapM_ (noSkolems l skolems)
+@@ -1324,9 +1324,9 @@ check s@(CSyntax l t cs) expected = addLocToTypeErr l $ case t of
+         let fieldMap = M.fromList $ map (first locVal) fields
+             expectedFields = M.keysSet tyMap
+             actualFields = M.keysSet fieldMap
 -        when (actualFields /= expectedFields) $
 -          throwTypeErr l $
 -            FieldsMismatch (joined expectedFields actualFields)
 +        when (actualFields /= expectedFields)
 +          $ throwTypeErr l
 +          $ FieldsMismatch (joined expectedFields actualFields)
-         m' <- itraverse (\x ms -> check (fromMaybe (STerm (TVar x)) ms) (tyMap ! x)) fields
-         return $ Syntax' l (SRcd (Just <$> m')) expected
+         -- Since we checked above that 'fields' and 'tyMap' have the
+         -- same keys, we know this lookup into the tyMap will never fail;
+         -- however, we still use lookup + mapMaybe to avoid partial functions.
+diff --git a/src/swarm-lang/Swarm/Language/Types.hs b/src/swarm-lang/Swarm/Language/Types.hs
+index 386b573..510a42a 100644
+--- a/src/swarm-lang/Swarm/Language/Types.hs
++++ b/src/swarm-lang/Swarm/Language/Types.hs
+@@ -654,8 +654,8 @@ pattern TyBase b = TyConApp (TCBase b) []
  
-diff --git a/src/Swarm/TUI/Controller.hs b/src/Swarm/TUI/Controller.hs
-index 536c50b..4dbe416 100644
---- a/src/Swarm/TUI/Controller.hs
-+++ b/src/Swarm/TUI/Controller.hs
-@@ -340,9 +340,9 @@ handleMainEvent ev = do
-         then -- ignore repeated keypresses
-           continueWithoutRedraw
-         else -- hide for two seconds
--        do
--          uiState . uiHideRobotsUntil .= t + TimeSpec 2 0
--          invalidateCacheEntry WorldCache
-+          do
-+            uiState . uiHideRobotsUntil .= t + TimeSpec 2 0
-+            invalidateCacheEntry WorldCache
-     -- debug focused robot
-     MetaChar 'd' | isPaused && hasDebug -> do
-       debug <- uiState . uiShowDebug Lens.<%= not
-@@ -945,11 +945,11 @@ doGoalUpdates = do
-                 else GoalSummary
+ pattern TyVar :: Var -> Type
+ pattern TyVar x <- Fix (TyVarF _ x)
+-  where
+-    TyVar x = Fix (TyVarF x x)
++ where
++  TyVar x = Fix (TyVarF x x)
  
-             ring =
--              focusRing $
--                map GoalWidgets $
--                  if hasMultiple
--                    then listEnums
--                    else [GoalSummary]
-+              focusRing
-+                $ map GoalWidgets
-+                $ if hasMultiple
-+                  then listEnums
-+                  else [GoalSummary]
+ pattern TyVoid :: Type
+ pattern TyVoid = TyBase BVoid
+@@ -725,8 +725,8 @@ pattern UTyBase b = UTyConApp (TCBase b) []
  
-         -- The "uiGoal" field is necessary at least to "persist" the data that is needed
-         -- if the player chooses to later "recall" the goals dialog with CTRL+g.
-diff --git a/src/Swarm/TUI/Editor/View.hs b/src/Swarm/TUI/Editor/View.hs
-index 51fba78..38544a9 100644
---- a/src/Swarm/TUI/Editor/View.hs
-+++ b/src/Swarm/TUI/Editor/View.hs
-@@ -50,9 +50,9 @@ drawWorldEditor toplevelFocusRing uis =
+ pattern UTyVar :: Var -> UType
+ pattern UTyVar x <- Free (TyVarF _ x)
+-  where
+-    UTyVar x = Free (TyVarF x x)
++ where
++  UTyVar x = Free (TyVarF x x)
+ 
+ pattern UTyVar' :: Var -> Var -> UType
+ pattern UTyVar' x y = Free (TyVarF x y)
+diff --git a/src/swarm-scenario/Swarm/Game/Scenario.hs b/src/swarm-scenario/Swarm/Game/Scenario.hs
+index accb311..d42dfea 100644
+--- a/src/swarm-scenario/Swarm/Game/Scenario.hs
++++ b/src/swarm-scenario/Swarm/Game/Scenario.hs
+@@ -323,9 +323,9 @@ instance FromJSONE ScenarioInputs Scenario where
+             ]
+ 
+       let mergedWaypoints =
+-            M.fromList $
+-              map (worldName &&& runIdentity . waypoints . navigation) $
+-                NE.toList allWorlds
++            M.fromList
++              $ map (worldName &&& runIdentity . waypoints . navigation)
++              $ NE.toList allWorlds
+ 
+       mergedPortals <-
+         validatePortals
+diff --git a/src/swarm-scenario/Swarm/Game/Scenario/Objective/Graph.hs b/src/swarm-scenario/Swarm/Game/Scenario/Objective/Graph.hs
+index 2d13c96..535c96a 100644
+--- a/src/swarm-scenario/Swarm/Game/Scenario/Objective/Graph.hs
++++ b/src/swarm-scenario/Swarm/Game/Scenario/Objective/Graph.hs
+@@ -83,9 +83,9 @@ getNegatedIds objs =
+ 
+ getObjectivesById :: [Objective] -> Map ObjectiveLabel Objective
+ getObjectivesById objs =
+-  M.fromList $
+-    map swap $
+-      mapMaybe (sequenceA . (id &&& view objectiveId)) objs
++  M.fromList
++    $ map swap
++    $ mapMaybe (sequenceA . (id &&& view objectiveId)) objs
+ 
+ -- | Uses the textual labels for those objectives that
+ -- have them, and assigns arbitrary integer IDs for
+diff --git a/src/swarm-scenario/Swarm/Game/Scenario/Topography/WorldPalette.hs b/src/swarm-scenario/Swarm/Game/Scenario/Topography/WorldPalette.hs
+index 180db89..d019aed 100644
+--- a/src/swarm-scenario/Swarm/Game/Scenario/Topography/WorldPalette.hs
++++ b/src/swarm-scenario/Swarm/Game/Scenario/Topography/WorldPalette.hs
+@@ -112,9 +112,9 @@ prepForJson (PaletteAndMaskChar (StructurePalette _ _ suggestedPalette) maybeMas
+ 
+   unassignedCells :: M.Map (TerrainWith EntityName) (TerrainWith EntityFacade)
+   unassignedCells =
+-    M.withoutKeys entityCells $
+-      Set.fromList $
+-        map (toKey . snd) preassignments
++    M.withoutKeys entityCells
++      $ Set.fromList
++      $ map (toKey . snd) preassignments
+ 
+   (maskCharacter, availableCharacterPool) = case maybeMaskChar of
+     Just c -> (c, genericCharacterPool)
+diff --git a/src/swarm-scenario/Swarm/Game/State/Landscape.hs b/src/swarm-scenario/Swarm/Game/State/Landscape.hs
+index 627f6b8..07caa7b 100644
+--- a/src/swarm-scenario/Swarm/Game/State/Landscape.hs
++++ b/src/swarm-scenario/Swarm/Game/State/Landscape.hs
+@@ -143,9 +143,9 @@ buildWorld tem WorldDescription {..} =
+   (robots worldName, first getTerrainIndex . wf)
+  where
+   getTerrainIndex t =
+-    M.findWithDefault 0 t $
+-      terrainIndexByName $
+-        tem ^. terrainMap
++    M.findWithDefault 0 t
++      $ terrainIndexByName
++      $ tem ^. terrainMap
+ 
+   g = gridContent area
+ 
+diff --git a/src/swarm-scenario/Swarm/Game/World/DSL/Load.hs b/src/swarm-scenario/Swarm/Game/World/DSL/Load.hs
+index d8685a8..4b128b0 100644
+--- a/src/swarm-scenario/Swarm/Game/World/DSL/Load.hs
++++ b/src/swarm-scenario/Swarm/Game/World/DSL/Load.hs
+@@ -46,7 +46,7 @@ loadWorld tem (fp, src) = do
+     liftEither . left (AssetNotLoaded (Data Worlds) fp . SystemFailure . CanNotParseMegaparsec) $
+       runParser parseWExp src
+   t <-
+-    withThrow (AssetNotLoaded (Data Worlds) fp . SystemFailure . DoesNotTypecheck . prettyText @CheckErr) $
+-      runReader tem . runReader @WorldMap M.empty $
+-        infer CNil wexp
++    withThrow (AssetNotLoaded (Data Worlds) fp . SystemFailure . DoesNotTypecheck . prettyText @CheckErr)
++      $ runReader tem . runReader @WorldMap M.empty
++      $ infer CNil wexp
+   return (into @Text (dropExtension (takeFileName fp)), t)
+diff --git a/src/swarm-topography/Swarm/Game/Scenario/Topography/Palette.hs b/src/swarm-topography/Swarm/Game/Scenario/Topography/Palette.hs
+index 55f5ca1..b752f35 100644
+--- a/src/swarm-topography/Swarm/Game/Scenario/Topography/Palette.hs
++++ b/src/swarm-topography/Swarm/Game/Scenario/Topography/Palette.hs
+@@ -56,12 +56,12 @@ instance (FromJSONE e a) => FromJSONE e (StructurePalette a) where
+     verifyChar = traverse $ ensureSingleChar . K.toString
+     ensureSingleChar [x] = return x
+     ensureSingleChar x =
+-      fail $
+-        T.unpack $
+-          T.unwords
+-            [ "Palette entry is not a single character:"
+-            , quote $ T.pack x
+-            ]
++      fail
++        $ T.unpack
++        $ T.unwords
++          [ "Palette entry is not a single character:"
++          , quote $ T.pack x
++          ]
+ 
+ ------------------------------------------------------------
+ -- Parsing character sets
+diff --git a/src/swarm-topography/Swarm/Game/Scenario/Topography/Structure.hs b/src/swarm-topography/Swarm/Game/Scenario/Topography/Structure.hs
+index 0ebf065..cd77338 100644
+--- a/src/swarm-topography/Swarm/Game/Scenario/Topography/Structure.hs
++++ b/src/swarm-topography/Swarm/Game/Scenario/Topography/Structure.hs
+@@ -102,21 +102,21 @@ paintMap ::
+ paintMap maskChar pal g = do
+   nestedLists <- mapM toCell g
+   forM_ maskChar $ \c ->
+-    unless (Set.notMember c paletteKeys) $
+-      fail $
+-        unwords
+-          [ "Mask character"
+-          , ['"', c, '"']
+-          , "overlaps palette entry"
+-          ]
+-
+-  unless (Set.null unusedPaletteChars) $
+-    fail $
+-      unwords
+-        [ "Unused characters in palette:"
+-        , intercalate ", " $ map pure $ Set.toList unusedPaletteChars
++    unless (Set.notMember c paletteKeys)
++      $ fail
++      $ unwords
++        [ "Mask character"
++        , ['"', c, '"']
++        , "overlaps palette entry"
+         ]
+ 
++  unless (Set.null unusedPaletteChars)
++    $ fail
++    $ unwords
++      [ "Unused characters in palette:"
++      , intercalate ", " $ map pure $ Set.toList unusedPaletteChars
++      ]
++
+   let cells = fmap standardCell <$> nestedLists
+       wps = catMaybes $ mapWithCoords getWp nestedLists
+ 
+diff --git a/src/swarm-topography/Swarm/Game/Scenario/Topography/Structure/Assembly.hs b/src/swarm-topography/Swarm/Game/Scenario/Topography/Structure/Assembly.hs
+index aae2a21..948689f 100644
+--- a/src/swarm-topography/Swarm/Game/Scenario/Topography/Structure/Assembly.hs
++++ b/src/swarm-topography/Swarm/Game/Scenario/Topography/Structure/Assembly.hs
+@@ -251,27 +251,27 @@ validatePlacement ns (Pose _ orientation) = do
+       n = getStructureName . name $ ns
+ 
+   when (isRecognizable ns) $ do
+-    when (flipped orientation) $
+-      Left $
+-        T.unwords
+-          [ "Placing recognizable structure"
+-          , quote n
+-          , "with flipped orientation is not supported."
+-          ]
++    when (flipped orientation)
++      $ Left
++      $ T.unwords
++        [ "Placing recognizable structure"
++        , quote n
++        , "with flipped orientation is not supported."
++        ]
+ 
+     -- Redundant orientations by rotational symmetry are accounted
+     -- for at scenario parse time
+-    when (Set.notMember placementDirection recognizedOrientations) $
+-      Left $
+-        T.unwords
+-          [ "Placing recognizable structure"
+-          , quote n
+-          , "with"
+-          , renderDir placementDirection
+-          , "orientation is not supported."
+-          , "Try"
+-          , commaList $ map renderDir $ Set.toList recognizedOrientations
+-          , "instead."
+-          ]
++    when (Set.notMember placementDirection recognizedOrientations)
++      $ Left
++      $ T.unwords
++        [ "Placing recognizable structure"
++        , quote n
++        , "with"
++        , renderDir placementDirection
++        , "orientation is not supported."
++        , "Try"
++        , commaList $ map renderDir $ Set.toList recognizedOrientations
++        , "instead."
++        ]
+  where
+   renderDir = quote . T.pack . directionJsonModifier . show
+diff --git a/src/swarm-topography/Swarm/Game/Scenario/Topography/Structure/Recognition/Precompute.hs b/src/swarm-topography/Swarm/Game/Scenario/Topography/Structure/Recognition/Precompute.hs
+index a9f6210..3a4947b 100644
+--- a/src/swarm-topography/Swarm/Game/Scenario/Topography/Structure/Recognition/Precompute.hs
++++ b/src/swarm-topography/Swarm/Game/Scenario/Topography/Structure/Recognition/Precompute.hs
+@@ -113,9 +113,9 @@ extractOrientedGrid ::
+   AbsoluteDir ->
+   StructureWithGrid b a
+ extractOrientedGrid (ExtractedArea x neGrid) d =
+-  StructureWithGrid d w $
+-    ExtractedArea x $
+-      applyOrientationTransformNE (Orientation d False) neGrid
++  StructureWithGrid d w
++    $ ExtractedArea x
++    $ applyOrientationTransformNE (Orientation d False) neGrid
+  where
+   w = RowWidth . rectWidth . getNEGridDimensions $ neGrid
+ 
+@@ -146,9 +146,9 @@ lookupStaticPlacements (StaticStructureInfo theAutomatons thePlacements) =
+    where
+     g (LocatedStructure (OrientedStructure theName d) loc) = do
+       sGrid <- M.lookup theName definitionMap
+-      return $
+-        PositionedStructure (Cosmic subworldName loc) $
+-          extractOrientedGrid (grid $ annotatedGrid sGrid) d
++      return
++        $ PositionedStructure (Cosmic subworldName loc)
++        $ extractOrientedGrid (grid $ annotatedGrid sGrid) d
+ 
+ -- | Matches definitions against the placements.
+ -- Fails fast (short-circuits) if a non-matching
+diff --git a/src/swarm-topography/Swarm/Game/Scenario/Topography/Structure/Recognition/Prep.hs b/src/swarm-topography/Swarm/Game/Scenario/Topography/Structure/Recognition/Prep.hs
+index e24d765..0ad2e64 100644
+--- a/src/swarm-topography/Swarm/Game/Scenario/Topography/Structure/Recognition/Prep.hs
++++ b/src/swarm-topography/Swarm/Game/Scenario/Topography/Structure/Recognition/Prep.hs
+@@ -93,9 +93,9 @@ mkEntityLookup grids =
+     -- We wrap the entities with 'Just' since the Aho-Corasick
+     -- matcher needs to compare against world cells, which are of 'Maybe' type.
+     chunksStateMachine =
+-      makeStateMachine $
+-        map (NE.toList . fmap Just &&& id) $
+-          HS.toList extractedChunksForStateMachine
++      makeStateMachine
++        $ map (NE.toList . fmap Just &&& id)
++        $ HS.toList extractedChunksForStateMachine
+ 
+   -- The values of this map are guaranteed to contain only one
+   -- entry per row of each structure, even if some of those
+@@ -141,9 +141,9 @@ explodeRowEntities annotatedRow@(ConsolidatedRowReferences rowMembers _ width) =
+   chunks = getContiguousChunks $ NE.toList rowMembers
+ 
+   f (e, occurrences) =
+-    SingleRowEntityOccurrences annotatedRow e chunks $
+-      sconcat $
+-        NE.map deriveEntityOffsets occurrences
++    SingleRowEntityOccurrences annotatedRow e chunks
++      $ sconcat
++      $ NE.map deriveEntityOffsets occurrences
+ 
+   -- Tuples of (entity, rowOccurrenceOfEntity).
+   -- Only row members for which an entity exists (is not Nothing)
+diff --git a/src/swarm-topography/Swarm/Game/Scenario/Topography/Structure/Recognition/Registry.hs b/src/swarm-topography/Swarm/Game/Scenario/Topography/Structure/Recognition/Registry.hs
+index 9f6a207..0d37731 100644
+--- a/src/swarm-topography/Swarm/Game/Scenario/Topography/Structure/Recognition/Registry.hs
++++ b/src/swarm-topography/Swarm/Game/Scenario/Topography/Structure/Recognition/Registry.hs
+@@ -117,9 +117,9 @@ populateStaticFoundStructures allFound =
+   byLocation = M.unions $ map mkOccupationMap resolvedCollisions
+ 
+   byName =
+-    M.map (NEM.fromList . NE.map ((upperLeftCorner &&& rotatedTo . structureWithGrid) &&& structureWithGrid)) $
+-      binTuples $
+-        map (name . originalItem . entityGrid . structureWithGrid &&& id) resolvedCollisions
++    M.map (NEM.fromList . NE.map ((upperLeftCorner &&& rotatedTo . structureWithGrid) &&& structureWithGrid))
++      $ binTuples
++      $ map (name . originalItem . entityGrid . structureWithGrid &&& id) resolvedCollisions
+ 
+   resolvePreplacementCollisions foundList =
+     nonOverlappingFound <> maybeToList (listToMaybe overlapsByDecreasingPreference)
+diff --git a/src/swarm-topography/Swarm/Game/Scenario/Topography/Structure/Recognition/Tracking.hs b/src/swarm-topography/Swarm/Game/Scenario/Topography/Structure/Recognition/Tracking.hs
+index 52929c0..2aabec9 100644
+--- a/src/swarm-topography/Swarm/Game/Scenario/Topography/Structure/Recognition/Tracking.hs
++++ b/src/swarm-topography/Swarm/Game/Scenario/Topography/Structure/Recognition/Tracking.hs
+@@ -181,14 +181,14 @@ checkChunksCombination
+     candidateExpected = concatMap NE.toList candidateExpectedLists
+ 
+     foundRowChunksLookup =
+-      fmap NEIS.fromList $
+-        binTuplesHM $
+-          map (pVal &&& pIndex) candidatesChunked
++      fmap NEIS.fromList
++        $ binTuplesHM
++        $ map (pVal &&& pIndex) candidatesChunked
+ 
+     (candidateFailures, candidateExpectedLists) =
+-      partitionEithers $
+-        map (checkCandidateAgainstObservedChunks horizontalOffsets foundRowChunksLookup) $
+-          NE.toList rowChunkReferences
++      partitionEithers
++        $ map (checkCandidateAgainstObservedChunks horizontalOffsets foundRowChunksLookup)
++        $ NE.toList rowChunkReferences
+ 
+     mkFoundStructures x =
+       NE.toList $ NE.map mkFoundStructure . referencingRows . chunkStructure $ foundChunkRow x
+@@ -210,9 +210,9 @@ checkCandidateAgainstObservedChunks ::
+   Either (ChunkMatchFailureReason e) (NE.NonEmpty (ChunkedRowMatch (ConsolidatedRowReferences b e) e))
+ checkCandidateAgainstObservedChunks horizontalOffsets foundRowChunksLookup (RowChunkMatchingReference r chunkPositionMap) =
+   left (ChunkMatchFailureReason $ renderSharedNames r) $ do
+-    unless isKeysSubset . Left $
+-      NoKeysSubset $
+-        (FoundChunkComparison `on` HS.toList) foundChunksKeys referenceChunksKeys
++    unless isKeysSubset . Left
++      $ NoKeysSubset
++      $ (FoundChunkComparison `on` HS.toList) foundChunksKeys referenceChunksKeys
+ 
+     nonEmptyPairs <-
+       maybeToEither EmptyIntersection $
+@@ -354,9 +354,9 @@ seedPossibleOffsets (sizeDifference, FoundAndExpectedChunkPositions found expect
+   NEIS.nonEmptySet $ IS.fromList possibleOffsets
+  where
+   possibleOffsets =
+-    NE.take (sizeDifference + 1) $
+-      NE.map (subtract (NEIS.findMin expected)) $
+-        NEIS.toAscList found
++    NE.take (sizeDifference + 1)
++      $ NE.map (subtract (NEIS.findMin expected))
++      $ NEIS.toAscList found
+ 
+ -- | Return all of the offsets that are viable for repetitions of this chunk.
+ --
+diff --git a/src/swarm-tournament/Swarm/Web/Tournament.hs b/src/swarm-tournament/Swarm/Web/Tournament.hs
+index 86019d1..5a04b06 100644
+--- a/src/swarm-tournament/Swarm/Web/Tournament.hs
++++ b/src/swarm-tournament/Swarm/Web/Tournament.hs
+@@ -327,9 +327,9 @@ makeCookieHeader val =
+ 
+ doLogout :: Maybe TL.Text -> LoginHandler
+ doLogout maybeRefererUrl =
+-  return $
+-    addHeader (fromMaybe defaultRedirectPage maybeRefererUrl) $
+-      addHeader ((makeCookieHeader "") {setCookieMaxAge = Just 0}) NoContent
++  return
++    $ addHeader (fromMaybe defaultRedirectPage maybeRefererUrl)
++    $ addHeader ((makeCookieHeader "") {setCookieMaxAge = Just 0}) NoContent
+ 
+ doLoginResponse ::
+   AuthenticationStorage IO ->
+@@ -339,9 +339,9 @@ doLoginResponse ::
+ doLoginResponse authStorage refererUrl userAlias = do
+   cookieString <-
+     liftIO $ cookieFromUsername authStorage userAlias
+-  return $
+-    addHeader refererUrl $
+-      addHeader (makeCookieHeader $ LBS.toStrict $ encodeUtf8 cookieString) NoContent
++  return
++    $ addHeader refererUrl
++    $ addHeader (makeCookieHeader $ LBS.toStrict $ encodeUtf8 cookieString) NoContent
+ 
+ -- * Web app declaration
+ 
+diff --git a/src/swarm-tournament/Swarm/Web/Tournament/Validate.hs b/src/swarm-tournament/Swarm/Web/Tournament/Validate.hs
+index a089a57..68dc2a6 100644
+--- a/src/swarm-tournament/Swarm/Web/Tournament/Validate.hs
++++ b/src/swarm-tournament/Swarm/Web/Tournament/Validate.hs
+@@ -68,9 +68,9 @@ validateScenarioUpload (CommonValidationArgs solnTimeout persistenceArgs) gameVe
+  where
+   computeMetrics file = do
+     (gs, scenarioObject) <-
+-      withExceptT ScenarioUploadInstantiationFailure $
+-        gamestateFromScenarioText $
+-          fileContent file
++      withExceptT ScenarioUploadInstantiationFailure
++        $ gamestateFromScenarioText
++        $ fileContent file
+ 
+     soln <- except $ maybeToEither NoSolutionProvided $ gs ^. winSolution
+ 
+@@ -137,9 +137,9 @@ validateSubmittedSolution (CommonValidationArgs solnTimeout persistenceArgs) sce
+                 <$> scenarioLookupFunc scenarioSha1
+             )
+ 
+-      fmap fst $
+-        withExceptT RetrievedInstantiationFailure $
+-          gamestateFromScenarioText scenarioContent
++      fmap fst
++        $ withExceptT RetrievedInstantiationFailure
++        $ gamestateFromScenarioText scenarioContent
+ 
+     solnMetrics <-
+       withExceptT SubmittedSolutionEvaluationFailure $
+@@ -170,9 +170,9 @@ initScenarioObject ::
+   ExceptT ScenarioInstantiationFailure IO Scenario
+ initScenarioObject scenarioInputs content = do
+   rawYaml <- withExceptT YamlDecodeError . except . decodeEither' $ LBS.toStrict content
+-  withExceptT ScenarioParseFailure $
+-    except $
+-      parseEither (parseJSONE' scenarioInputs) rawYaml
++  withExceptT ScenarioParseFailure
++    $ except
++    $ parseEither (parseJSONE' scenarioInputs) rawYaml
+ 
+ gamestateFromScenarioText ::
+   LBS.ByteString ->
+diff --git a/src/swarm-tui/Swarm/TUI/Controller.hs b/src/swarm-tui/Swarm/TUI/Controller.hs
+index 6b85e1b..32c8c5f 100644
+--- a/src/swarm-tui/Swarm/TUI/Controller.hs
++++ b/src/swarm-tui/Swarm/TUI/Controller.hs
+@@ -242,9 +242,9 @@ handleMainMenuEvent menu = \case
+         uiState . uiMenu .= MessagesMenu
+       About -> do
+         uiState . uiMenu .= AboutMenu
+-        Brick.zoom (playState . progression) $
+-          attainAchievement $
+-            GlobalAchievement LookedAtAboutScreen
++        Brick.zoom (playState . progression)
++          $ attainAchievement
++          $ GlobalAchievement LookedAtAboutScreen
+       Quit -> haltApp
+   CharKey 'q' -> haltApp
+   ControlChar 'q' -> haltApp
+diff --git a/src/swarm-tui/Swarm/TUI/Controller/EventHandlers/Robot.hs b/src/swarm-tui/Swarm/TUI/Controller/EventHandlers/Robot.hs
+index bec2010..017e0ca 100644
+--- a/src/swarm-tui/Swarm/TUI/Controller/EventHandlers/Robot.hs
++++ b/src/swarm-tui/Swarm/TUI/Controller/EventHandlers/Robot.hs
+@@ -46,9 +46,9 @@ handleRobotPanelEvent bev = do
+     Nothing -> case bev of
+       VtyEvent ev@(V.EvKey k m) -> do
+         handled <- handleKey keyHandler k m
+-        unless handled $
+-          Brick.zoom (playState . scenarioState . uiGameplay) $
+-            handleInventoryListEvent ev
++        unless handled
++          $ Brick.zoom (playState . scenarioState . uiGameplay)
++          $ handleInventoryListEvent ev
+       _ -> continueWithoutRedraw
+ 
+ -- | Handle key events in the robot panel.
+diff --git a/src/swarm-tui/Swarm/TUI/Controller/SaveScenario.hs b/src/swarm-tui/Swarm/TUI/Controller/SaveScenario.hs
+index b106839..41d40a2 100644
+--- a/src/swarm-tui/Swarm/TUI/Controller/SaveScenario.hs
++++ b/src/swarm-tui/Swarm/TUI/Controller/SaveScenario.hs
+@@ -45,9 +45,9 @@ applyCompletionAchievements ::
+   EventM n ProgressionState ()
+ applyCompletionAchievements won t p = do
+   forM_ (listToMaybe $ splitDirectories p) $ \firstDir -> do
+-    when (won && firstDir == tutorialsDirname) $
+-      attainAchievement' t (Just $ ScenarioPath p) $
+-        GlobalAchievement CompletedSingleTutorial
++    when (won && firstDir == tutorialsDirname)
++      $ attainAchievement' t (Just $ ScenarioPath p)
++      $ GlobalAchievement CompletedSingleTutorial
+ 
+   -- Check if all tutorials have been completed
+   tutorialMap <- use $ scenarios . to getTutorials . to scMap
+@@ -57,9 +57,9 @@ applyCompletionAchievements won t p = do
+       -- like the right thing to do
+       isComplete (SICollection _ (SC m)) = all isComplete m
+ 
+-  when (all isComplete tutorialMap) $
+-    attainAchievement $
+-      GlobalAchievement CompletedAllTutorials
++  when (all isComplete tutorialMap)
++    $ attainAchievement
++    $ GlobalAchievement CompletedAllTutorials
+ 
+ saveScenarioInfoOnFinish ::
+   FilePath ->
+diff --git a/src/swarm-tui/Swarm/TUI/Controller/UpdateUI.hs b/src/swarm-tui/Swarm/TUI/Controller/UpdateUI.hs
+index f5eb1c4..e3f0ae7 100644
+--- a/src/swarm-tui/Swarm/TUI/Controller/UpdateUI.hs
++++ b/src/swarm-tui/Swarm/TUI/Controller/UpdateUI.hs
+@@ -241,9 +241,9 @@ updateUI = do
+ 
+   -- Update the robots modal only when it is enabled.  See #2370.
+   curModal <- use $ playState . scenarioState . uiGameplay . uiDialogs . uiModal
+-  when ((view modalType <$> curModal) == Just (MidScenarioModal RobotsModal)) $
+-    Brick.zoom (playState . scenarioState . uiGameplay . uiDialogs . uiRobot) $
+-      doRobotListUpdate dOps g
++  when ((view modalType <$> curModal) == Just (MidScenarioModal RobotsModal))
++    $ Brick.zoom (playState . scenarioState . uiGameplay . uiDialogs . uiRobot)
++    $ doRobotListUpdate dOps g
+ 
+   let shouldRedraw =
+         worldPanelUpdated
+diff --git a/src/swarm-tui/Swarm/TUI/Editor/View.hs b/src/swarm-tui/Swarm/TUI/Editor/View.hs
+index fc7c265..c4d4462 100644
+--- a/src/swarm-tui/Swarm/TUI/Editor/View.hs
++++ b/src/swarm-tui/Swarm/TUI/Editor/View.hs
+@@ -62,9 +62,9 @@ drawWorldEditor toplevelFocusRing uig =
          ]
  
    innerWidget =
@@ -657,9 +1048,9 @@ index 51fba78..38544a9 100644
 +      $ hLimit 30
 +      $ controlsBox <=> statusBox
  
-   worldEditor = uis ^. uiWorldEditor
+   worldEditor = uig ^. uiWorldEditor
    maybeAreaBounds = worldEditor ^. editingBounds . boundsRect
-@@ -103,13 +103,13 @@ drawWorldEditor toplevelFocusRing uis =
+@@ -118,13 +118,13 @@ drawWorldEditor toplevelFocusRing uig =
          ]
  
    renderBounds (upperLeftCoord, lowerRightCoord) =
@@ -668,22 +1059,22 @@ index 51fba78..38544a9 100644
 -        L.intersperse
 -          "@"
 -          [ EA.renderRectDimensions rectArea
--          , VU.locationToString upperLeftLoc
+-          , locationToString upperLeftLoc
 -          ]
 +    str
 +      $ unwords
 +      $ L.intersperse
 +        "@"
 +        [ EA.renderRectDimensions rectArea
-+        , VU.locationToString upperLeftLoc
++        , locationToString upperLeftLoc
 +        ]
     where
-     upperLeftLoc = W.coordsToLoc upperLeftCoord
-     lowerRightLoc = W.coordsToLoc lowerRightCoord
-diff --git a/src/Swarm/TUI/Launch/View.hs b/src/Swarm/TUI/Launch/View.hs
-index 3a46b59..215542e 100644
---- a/src/Swarm/TUI/Launch/View.hs
-+++ b/src/Swarm/TUI/Launch/View.hs
+     upperLeftLoc = coordsToLoc upperLeftCoord
+     lowerRightLoc = coordsToLoc lowerRightCoord
+diff --git a/src/swarm-tui/Swarm/TUI/Launch/View.hs b/src/swarm-tui/Swarm/TUI/Launch/View.hs
+index c033c18..8c12a42 100644
+--- a/src/swarm-tui/Swarm/TUI/Launch/View.hs
++++ b/src/swarm-tui/Swarm/TUI/Launch/View.hs
 @@ -34,9 +34,9 @@ drawFileBrowser b =
    centerLayer $ hLimit 50 $ ui <=> help
   where
@@ -719,7 +1110,7 @@ index 3a46b59..215542e 100644
  
  optionDescription :: ScenarioConfigPanelFocusable -> Maybe Text
  optionDescription = \case
-@@ -97,9 +97,9 @@ drawLaunchConfigPanel (LaunchOptions lc launchParams) =
+@@ -94,9 +94,9 @@ drawLaunchConfigPanel (LaunchOptions lc launchParams) =
        $ txt label
  
    mkSeedEditorWidget =
@@ -770,24 +1161,67 @@ index 3a46b59..215542e 100644
  
      controlsBox =
        vBox
-diff --git a/src/Swarm/TUI/View.hs b/src/Swarm/TUI/View.hs
-index a2e8240..1926800 100644
---- a/src/Swarm/TUI/View.hs
-+++ b/src/Swarm/TUI/View.hs
-@@ -249,9 +249,9 @@ drawNewGameMenuUI (l :| ls) launchOptions = case displayedFor of
+diff --git a/src/swarm-tui/Swarm/TUI/Model/StateUpdate.hs b/src/swarm-tui/Swarm/TUI/Model/StateUpdate.hs
+index 06fc5b5..485bbbf 100644
+--- a/src/swarm-tui/Swarm/TUI/Model/StateUpdate.hs
++++ b/src/swarm-tui/Swarm/TUI/Model/StateUpdate.hs
+@@ -441,9 +441,9 @@ setUIGameplay gs curTime isAutoplaying siPair@(ScenarioWith scenario _) uig =
+   entityList = EU.getEntitiesForList $ gs ^. landscape . terrainAndEntities . entityMap
+ 
+   (isEmptyArea, newBounds) =
+-    EU.getEditingBounds $
+-      NE.head $
+-        scenario ^. scenarioLandscape . scenarioWorlds
++    EU.getEditingBounds
++      $ NE.head
++      $ scenario ^. scenarioLandscape . scenarioWorlds
+ 
+   setNewBounds maybeOldBounds =
+     if isEmptyArea
+diff --git a/src/swarm-tui/Swarm/TUI/View.hs b/src/swarm-tui/Swarm/TUI/View.hs
+index b1e25e0..0b6efd4 100644
+--- a/src/swarm-tui/Swarm/TUI/View.hs
++++ b/src/swarm-tui/Swarm/TUI/View.hs
+@@ -273,9 +273,9 @@ drawNewGameMenuUI appState (l :| ls) launchOptions = case displayedFor of
+   drawDescription (SISingle (ScenarioWith s (ScenarioPath sPath))) =
+     vBox
+       [ drawMarkdown (nonBlank (s ^. scenarioOperation . scenarioDescription))
+-      , cached (ScenarioPreview sPath) $
+-          hCenter . padTop (Pad 1) . vLimit 6 $
+-            hLimitPercent 60 worldPeek
++      , cached (ScenarioPreview sPath)
++          $ hCenter . padTop (Pad 1) . vLimit 6
++          $ hLimitPercent 60 worldPeek
+       , padTop (Pad 1) table
+       ]
+    where
+@@ -285,9 +285,9 @@ drawNewGameMenuUI appState (l :| ls) launchOptions = case displayedFor of
+ 
+     worldTuples = buildWorldTuples $ s ^. scenarioLandscape
+     theWorlds =
+-      genMultiWorld worldTuples $
+-        fromMaybe 0 $
+-          s ^. scenarioLandscape . scenarioSeed
++      genMultiWorld worldTuples
++        $ fromMaybe 0
++        $ s ^. scenarioLandscape . scenarioSeed
+ 
+     entIsKnown =
+       getEntityIsKnown $
+@@ -318,9 +318,9 @@ drawNewGameMenuUI appState (l :| ls) launchOptions = case displayedFor of
      padTopLeft = padTop (Pad 1) . padLeft (Pad 1)
  
      tableRows =
 -      map (map padTopLeft . pairToList) $
 -        mapMaybe sequenceA $
--          firstRow : secondRow : makeBestScoreRows (si ^. scenarioStatus)
+-          firstRow : secondRow : maybe [] (makeBestScoreRows . view scenarioStatus) currentScenarioInfo
 +      map (map padTopLeft . pairToList)
 +        $ mapMaybe sequenceA
-+        $ firstRow : secondRow : makeBestScoreRows (si ^. scenarioStatus)
++        $ firstRow : secondRow : maybe [] (makeBestScoreRows . view scenarioStatus) currentScenarioInfo
      table =
        BT.renderTable
          . BT.surroundingBorder False
-@@ -283,22 +283,22 @@ describeProgress (Metric p (ProgressStats _startedAt (AttemptMetrics (DurationMe
+@@ -352,22 +352,22 @@ describeProgress (Metric p (ProgressStats _startedAt (AttemptMetrics (DurationMe
          <> maybeToList (sizeDisplay <$> maybeCodeMetrics)
     where
      sizeDisplay (ScenarioCodeMetrics myCharCount myAstSize) =
@@ -825,7 +1259,7 @@ index a2e8240..1926800 100644
   where
    formatTimeDiff :: NominalDiffTime -> Text
    formatTimeDiff = T.pack . formatTime defaultTimeLocale "%hh %Mm %Ss"
-@@ -326,11 +326,11 @@ makeBestScoreRows scenarioStat =
+@@ -395,11 +395,11 @@ makeBestScoreRows scenarioStat =
      hasMultiple = length groups > 1
  
    makeBestRow hasDistinctByCriteria (b, criteria) =
@@ -841,24 +1275,39 @@ index a2e8240..1926800 100644
      , Just $ describeProgress b
      )
     where
-@@ -591,11 +591,11 @@ drawModal s = \case
-   CommandsModal -> commandsListWidget (s ^. gameState)
-   MessagesModal -> availableListWidget (s ^. gameState) MessageList
-   ScenarioEndModal outcome ->
--    padBottom (Pad 1) $
--      vBox $
--        map
--          (hCenter . txt)
--          content
-+    padBottom (Pad 1)
-+      $ vBox
-+      $ map
-+        (hCenter . txt)
-+        content
-    where
-     content = case outcome of
-       WinModal -> ["Congratulations!"]
-@@ -805,17 +805,17 @@ commandsListWidget gs =
+@@ -671,11 +671,11 @@ drawModal h ps isNoMenu = \case
+     EntityPaletteModal -> EV.drawEntityPaintSelector uig
+   EndScenarioModal x -> case x of
+     ScenarioFinishModal outcome ->
+-      padBottom (Pad 1) $
+-        vBox $
+-          map
+-            (hCenter . txt)
+-            content
++      padBottom (Pad 1)
++        $ vBox
++        $ map
++          (hCenter . txt)
++          content
+      where
+       content = case outcome of
+         WinModal -> ["Congratulations!"]
+@@ -685,10 +685,10 @@ drawModal h ps isNoMenu = \case
+           ]
+     QuitModal -> padBottom (Pad 1) $ hCenter $ txt (quitMsg isNoMenu)
+     KeepPlayingModal ->
+-      padLeftRight 1 $
+-        displayParagraphs $
+-          pure
+-            "Have fun!  Hit Ctrl-Q whenever you're ready to proceed to the next challenge or return to the menu."
++      padLeftRight 1
++        $ displayParagraphs
++        $ pure
++          "Have fun!  Hit Ctrl-Q whenever you're ready to proceed to the next challenge or return to the menu."
+  where
+   gs = ps ^. gameState
+   uig = ps ^. uiGameplay
+@@ -820,17 +820,17 @@ commandsListWidget aMap gs =
    base = gs ^? baseRobot
    entsByCap = case base of
      Just r ->
@@ -870,7 +1319,7 @@ index a2e8240..1926800 100644
 +        $ (r ^. equippedDevices) `union` (r ^. robotInventory)
      Nothing -> mempty
  
-   listDevices cmd = vBox $ map drawLabelledEntityName providerDevices
+   listDevices cmd = vBox $ map (drawLabelledEntityName aMap) providerDevices
     where
      providerDevices =
 -      concatMap (flip (M.findWithDefault []) entsByCap) $
@@ -881,35 +1330,12 @@ index a2e8240..1926800 100644
 +        $ constCaps cmd
  
  -- | Generate a pop-up widget to display the description of an entity.
- descriptionWidget :: AppState -> Entity -> Widget Name
-diff --git a/src/Swarm/TUI/View/Achievement.hs b/src/Swarm/TUI/View/Achievement.hs
-index 369ef87..fc6572c 100644
---- a/src/Swarm/TUI/View/Achievement.hs
-+++ b/src/Swarm/TUI/View/Achievement.hs
-@@ -34,12 +34,12 @@ drawAchievementsMenuUI s l =
-     [ hCenter $ padTopBottom 1 $ str "🏆  Achievements 🏆 "
-     , hCenter $
-         hBox
--          [ hLimitPercent 30 $
--              padAll 2 $
--                BL.renderList (const $ drawAchievementListItem attainedMap) True l
--          , hLimitPercent 50 $
--              maybe emptyWidget (singleAchievementDetails attainedMap . snd) $
--                BL.listSelectedElement l
-+          [ hLimitPercent 30
-+              $ padAll 2
-+              $ BL.renderList (const $ drawAchievementListItem attainedMap) True l
-+          , hLimitPercent 50
-+              $ maybe emptyWidget (singleAchievementDetails attainedMap . snd)
-+              $ BL.listSelectedElement l
-           ]
-     ]
-  where
-diff --git a/src/Swarm/TUI/View/Objective.hs b/src/Swarm/TUI/View/Objective.hs
-index 03d5dd7..b084f09 100644
---- a/src/Swarm/TUI/View/Objective.hs
-+++ b/src/Swarm/TUI/View/Objective.hs
-@@ -44,14 +44,14 @@ renderGoalsDisplay gd =
+ descriptionWidget :: ScenarioState -> Entity -> Widget Name
+diff --git a/src/swarm-tui/Swarm/TUI/View/Objective.hs b/src/swarm-tui/Swarm/TUI/View/Objective.hs
+index 8d0224c..4cd99c0 100644
+--- a/src/swarm-tui/Swarm/TUI/View/Objective.hs
++++ b/src/swarm-tui/Swarm/TUI/View/Objective.hs
+@@ -56,14 +56,14 @@ renderGoalsDisplay gd desc =
    lw = _listWidget gd
    fr = _focus gd
    leftSide =
@@ -932,62 +1358,190 @@ index 03d5dd7..b084f09 100644
  
    -- Adds very subtle coloring to indicate focus switch
    highlightIfFocused = case (hasMultiple, focusGetCurrent fr) of
-diff --git a/test/unit/TestLanguagePipeline.hs b/test/unit/TestLanguagePipeline.hs
-index 15672e2..b0ea42a 100644
---- a/test/unit/TestLanguagePipeline.hs
-+++ b/test/unit/TestLanguagePipeline.hs
-@@ -168,8 +168,7 @@ testLanguagePipeline =
-         "atomic - #479"
-         [ testCase
-             "atomic move"
--            ( valid "atomic move"
--            )
-+            (valid "atomic move")
-         , testCase
-             "grabif"
-             (valid "def grabif : text -> cmd unit = \\x. atomic (b <- ishere x; if b {grab; return ()} {}) end")
-@@ -250,8 +249,7 @@ testLanguagePipeline =
-         "void type"
-         [ testCase
-             "isSimpleUType"
--            ( assertBool "" $ isSimpleUType UTyVoid
--            )
-+            (assertBool "" $ isSimpleUType UTyVoid)
-         , testCase
-             "valid type signature"
-             (valid "def f : void -> a = \\x. undefined end")
+diff --git a/src/swarm-tui/Swarm/TUI/View/Robot/Details.hs b/src/swarm-tui/Swarm/TUI/View/Robot/Details.hs
+index 0488264..3cd853b 100644
+--- a/src/swarm-tui/Swarm/TUI/View/Robot/Details.hs
++++ b/src/swarm-tui/Swarm/TUI/View/Robot/Details.hs
+@@ -69,6 +69,6 @@ renderRobotDetails r paneState =
+     ]
+ 
+   commandHistogramEntries =
+-    map mkHistogramEntry $
+-      M.toList $
+-        r ^. activityCounts . commandsHistogram
++    map mkHistogramEntry
++      $ M.toList
++      $ r ^. activityCounts . commandsHistogram
+diff --git a/src/swarm-tui/Swarm/TUI/View/Structure.hs b/src/swarm-tui/Swarm/TUI/View/Structure.hs
+index 3f27fa2..babeafb 100644
+--- a/src/swarm-tui/Swarm/TUI/View/Structure.hs
++++ b/src/swarm-tui/Swarm/TUI/View/Structure.hs
+@@ -142,14 +142,14 @@ renderStructuresDisplay aMap gs structureDisplay =
+   lw = _structurePanelListWidget structureDisplay
+   fr = _structurePanelFocus structureDisplay
+   leftSide =
+-    hLimitPercent 25 $
+-      padAll 1 $
+-        vBox
+-          [ hCenter $ withAttr boldAttr $ txt "Candidates"
+-          , padAll 1 $
+-              vLimit 10 $
+-                withFocusRing fr (BL.renderList drawSidebarListItem) lw
+-          ]
++    hLimitPercent 25
++      $ padAll 1
++      $ vBox
++        [ hCenter $ withAttr boldAttr $ txt "Candidates"
++        , padAll 1
++            $ vLimit 10
++            $ withFocusRing fr (BL.renderList drawSidebarListItem) lw
++        ]
+ 
+   -- Adds very subtle coloring to indicate focus switch
+   highlightIfFocused = case focusGetCurrent fr of
+diff --git a/src/swarm-web/Swarm/Web.hs b/src/swarm-web/Swarm/Web.hs
+index 84ed802..019a3cf 100644
+--- a/src/swarm-web/Swarm/Web.hs
++++ b/src/swarm-web/Swarm/Web.hs
+@@ -248,9 +248,9 @@ navigationHandler appStateRef = do
+ recogLogHandler :: IO AppState -> Handler [SearchLog EntityName]
+ recogLogHandler appStateRef = do
+   appState <- liftIO appStateRef
+-  return $
+-    map (fmap (view entityName)) $
+-      appState ^. playState . scenarioState . gameState . discovery . structureRecognition . recognitionLog
++  return
++    $ map (fmap (view entityName))
++    $ appState ^. playState . scenarioState . gameState . discovery . structureRecognition . recognitionLog
+ 
+ recogFoundHandler :: IO AppState -> Handler [StructureLocation]
+ recogFoundHandler appStateRef = do
+diff --git a/test/bench/Benchmark.hs b/test/bench/Benchmark.hs
+index 1712bd7..dbaba56 100644
+--- a/test/bench/Benchmark.hs
++++ b/test/bench/Benchmark.hs
+@@ -197,12 +197,12 @@ main = do
+     newLabel =
+       unwords
+         [ label
+-        , T.unpack $
+-            parens $
+-              T.unwords
+-                [ showT ticks
+-                , "ticks"
+-                ]
++        , T.unpack
++            $ parens
++            $ T.unwords
++              [ showT ticks
++              , "ticks"
++              ]
+         ]
+ 
+   robotNumbers = [10, 20 .. 40]
+diff --git a/test/integration/Main.hs b/test/integration/Main.hs
+index 2df5e0b..693a44b 100644
+--- a/test/integration/Main.hs
++++ b/test/integration/Main.hs
+@@ -135,9 +135,9 @@ testNoLoadingErrors r =
+ checkNoRuntimeErrors :: RuntimeState -> IO ()
+ checkNoRuntimeErrors r =
+   forM_ (r ^. eventLog . notificationsContent) $ \e ->
+-    when (isError e) $
+-      assertFailure $
+-        show (e ^. leSeverity) <> " was produced during loading: " <> T.unpack (e ^. leText)
++    when (isError e)
++      $ assertFailure
++      $ show (e ^. leSeverity) <> " was produced during loading: " <> T.unpack (e ^. leText)
+ 
+ isError :: LogEntry -> Bool
+ isError = (>= Warning) . view leSeverity
 diff --git a/test/unit/TestPretty.hs b/test/unit/TestPretty.hs
-index 1c6fff5..a4d25ed 100644
+index b29c888..26ed41a 100644
 --- a/test/unit/TestPretty.hs
 +++ b/test/unit/TestPretty.hs
-@@ -38,9 +38,9 @@ testPrettyConst =
+@@ -40,9 +40,9 @@ testPrettyConst =
          )
      , testCase
          "operators #8 - double unary negation"
--        ( equalPretty "-(-1)" $
+-        ( equalPrettyLine "-(-1)" $
 -            TApp (TConst Neg) $
 -              TApp (TConst Neg) (TInt 1)
-+        ( equalPretty "-(-1)"
++        ( equalPrettyLine "-(-1)"
 +            $ TApp (TConst Neg)
 +            $ TApp (TConst Neg) (TInt 1)
          )
      , testCase
          "operators #8 - unary negation with strongly fixing binary operator"
-@@ -88,8 +88,7 @@ testPrettyConst =
-         )
-     , testCase
-         "void type"
--        ( assertEqual "" "void" . show $ ppr TyVoid
--        )
-+        (assertEqual "" "void" . show $ ppr TyVoid)
-     , testCase
-         "type ascription"
-         ( equalPretty "1 : int" $
+@@ -194,36 +194,36 @@ testPrettyConst =
+         ]
+     , testGroup
+         "tydef"
+-        [ testCase "tydef alias" $
+-            equalPrettyLine "tydef X = Int end" $
+-              TTydef "X" (mkTrivPoly TyInt) Nothing (TConst Noop)
+-        , testCase "tydef Maybe" $
+-            equalPrettyLine "tydef Maybe a = Unit + a end" $
+-              TTydef "Maybe" (mkQPoly (TyUnit :+: TyVar "a")) Nothing (TConst Noop)
+-        , testCase "tydef multi-arg" $
+-            equalPrettyLine "tydef Foo a b c d = Unit + ((a * b) + ((c -> d) * a)) end" $
+-              TTydef
+-                "Foo"
+-                ( mkQPoly
+-                    (TyUnit :+: (TyVar "a" :*: TyVar "b") :+: ((TyVar "c" :->: TyVar "d") :*: TyVar "a"))
+-                )
+-                Nothing
+-                (TConst Noop)
+-        , testCase "consecutive tydef" $
+-            equalPrettyLine "tydef X = Int end\n\ntydef Y = Bool end" $
+-              TTydef "X" (mkTrivPoly TyInt) Nothing (TTydef "Y" (mkTrivPoly TyBool) Nothing (TConst Noop))
++        [ testCase "tydef alias"
++            $ equalPrettyLine "tydef X = Int end"
++            $ TTydef "X" (mkTrivPoly TyInt) Nothing (TConst Noop)
++        , testCase "tydef Maybe"
++            $ equalPrettyLine "tydef Maybe a = Unit + a end"
++            $ TTydef "Maybe" (mkQPoly (TyUnit :+: TyVar "a")) Nothing (TConst Noop)
++        , testCase "tydef multi-arg"
++            $ equalPrettyLine "tydef Foo a b c d = Unit + ((a * b) + ((c -> d) * a)) end"
++            $ TTydef
++              "Foo"
++              ( mkQPoly
++                  (TyUnit :+: (TyVar "a" :*: TyVar "b") :+: ((TyVar "c" :->: TyVar "d") :*: TyVar "a"))
++              )
++              Nothing
++              (TConst Noop)
++        , testCase "consecutive tydef"
++            $ equalPrettyLine "tydef X = Int end\n\ntydef Y = Bool end"
++            $ TTydef "X" (mkTrivPoly TyInt) Nothing (TTydef "Y" (mkTrivPoly TyBool) Nothing (TConst Noop))
+         ]
+     , testGroup
+         "recursive types"
+-        [ testCase "nat" $
+-            equalPrettyLine "rec n. Unit + n" $
+-              TyRec "n" (TyUnit :+: Fix (TyRecVarF NZ))
+-        , testCase "list" $
+-            equalPrettyLine "rec list. Unit + (a * list)" $
+-              TyRec "list" (TyUnit :+: (TyVar "a" :*: Fix (TyRecVarF NZ)))
+-        , testCase "rose" $
+-            equalPrettyLine "rec r. a * (rec l. Unit + (r * l))" $
+-              TyRec "r" (TyVar "a" :*: TyRec "l" (TyUnit :+: (Fix (TyRecVarF (NS NZ)) :*: Fix (TyRecVarF NZ))))
++        [ testCase "nat"
++            $ equalPrettyLine "rec n. Unit + n"
++            $ TyRec "n" (TyUnit :+: Fix (TyRecVarF NZ))
++        , testCase "list"
++            $ equalPrettyLine "rec list. Unit + (a * list)"
++            $ TyRec "list" (TyUnit :+: (TyVar "a" :*: Fix (TyRecVarF NZ)))
++        , testCase "rose"
++            $ equalPrettyLine "rec r. a * (rec l. Unit + (r * l))"
++            $ TyRec "r" (TyVar "a" :*: TyRec "l" (TyUnit :+: (Fix (TyRecVarF (NS NZ)) :*: Fix (TyRecVarF NZ))))
+         ]
+     ]
+  where
 diff --git a/test/unit/TestScoring.hs b/test/unit/TestScoring.hs
-index 7b5d948..d51d6ef 100644
+index 2efed8a..adb0821 100644
 --- a/test/unit/TestScoring.hs
 +++ b/test/unit/TestScoring.hs
-@@ -75,18 +75,18 @@ betterReplTimeAfterCodeSizeRecord =
+@@ -74,18 +74,18 @@ betterReplTimeAfterCodeSizeRecord =
   where
    mkZonedTime t = ZonedTime (LocalTime (fromOrdinalDate 2023 1) (TimeOfDay 0 t 0)) utc
    newRunWithoutCodeSize =
@@ -1016,7 +1570,7 @@ index 7b5d948..d51d6ef 100644
  
    oldBestWithCodeSize =
      BestRecords
-@@ -115,18 +115,18 @@ betterCodeWorseTime =
+@@ -114,18 +114,18 @@ betterCodeWorseTime =
   where
    mkZonedTime t = ZonedTime (LocalTime (fromOrdinalDate 2023 1) (TimeOfDay 0 t 0)) utc
    newRunBetterCodeSize =

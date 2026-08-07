@@ -16,12 +16,12 @@ jobs:
           -
             name: cabal
             repo: haskell/cabal
-            ref: Cabal-v3.12.0.0
+            ref: Cabal-v3.18.1.0
             args: Cabal Cabal-syntax cabal-install
           -
             name: swarm
             repo: swarm-game/swarm
-            ref: 0.4.0.0
+            ref: 0.8.0.0
             args: src app test
 
     name: 'format_compat: ${{ matrix.name }}'
