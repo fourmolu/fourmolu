@@ -22,6 +22,7 @@ where
 
 import Control.Monad
 import Data.Bool (bool)
+import Data.Choice qualified as Choice
 import Data.Data hiding (Infix, Prefix)
 import Data.Function (on)
 import Data.Functor ((<&>))
@@ -219,8 +220,8 @@ p_match' placer render style isInfix multAnn strictness m_pats GRHSs {..} = do
         case style of
           Function name ->
             p_infixDefHelper
-              isInfix
-              indentBody
+              (Choice.fromBool isInfix)
+              (Choice.fromBool indentBody)
               (p_rdrName name)
               (located' p_pat <$> m_pats)
           PatternBind -> stdCase
@@ -280,11 +281,18 @@ p_match' placer render style isInfix multAnn strictness m_pats GRHSs {..} = do
           breakpoint
           (located' (p_grhs' placement placer render groupStyle))
           (NE.toList grhssGRHSs)
+      localBindsWhereSpan = case grhssLocalBinds of
+        HsValBinds (EpAnn {anns = AnnList {al_rest}}) _ ->
+          locA al_rest
+        HsIPBinds (EpAnn {anns = AnnList {al_rest}}) _ ->
+          locA al_rest
+        EmptyLocalBinds _ -> noSrcSpan
       p_where = do
         unless (eqEmptyLocalBinds grhssLocalBinds) $ do
           breakpoint
           indentWhere <- getPrinterOpt poIndentWheres
-          bool (inciByFrac (-1 / 2)) id indentWhere $ txt "where"
+          bool (inciByFrac (-1 / 2)) id indentWhere $ do
+            located (L localBindsWhereSpan ()) $ \_ -> txt "where"
           breakpoint
           inciIf indentWhere $ p_hsLocalBinds grhssLocalBinds
   inciIf indentBody $ do
@@ -407,14 +415,15 @@ withSpacing f l = located l $ \x -> do
     UnhelpfulSpan _ -> f x
     RealSrcSpan currentSpn _ -> do
       getSpanMark >>= \case
-        -- Spacing before comments will be handled by the code
-        -- that prints comments, so we just have to deal with
-        -- blank lines between statements here.
-        Just (StatementSpan lastSpn) ->
-          if srcSpanStartLine currentSpn > srcSpanEndLine lastSpn + 1
-            then newline
-            else return ()
-        _ -> return ()
+        -- We deal with blank lines between statements here. The last mark
+        -- may be a 'StatementSpan' (the usual case) or a comment span: the
+        -- latter happens when the previous statement ended with a trailing
+        -- comment, in which case we still want to preserve a blank line that
+        -- followed that comment in the original input.
+        Just lastMark ->
+          let lastSpn = spanMarkSpan lastMark
+           in when (srcSpanStartLine currentSpn > srcSpanEndLine lastSpn + 1) newline
+        Nothing -> return ()
       f x
       -- In some cases the (f x) expression may insert a new mark. We want
       -- to be careful not to override comment marks.

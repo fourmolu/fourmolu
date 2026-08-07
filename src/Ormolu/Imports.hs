@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -12,6 +13,8 @@ where
 
 import Data.Bifunctor
 import Data.Char (isAlphaNum)
+import Data.Choice (Choice)
+import Data.Choice qualified as Choice
 import Data.Function (on)
 import Data.List (nubBy, sortBy, sortOn)
 import Data.Map.Strict (Map)
@@ -35,14 +38,20 @@ import Ormolu.Utils (notImplemented, showOutputable)
 -- Assumes input list is sorted by source location. Output list is not necessarily
 -- sorted by source location, so this function should be called at most once on a
 -- given input list.
-normalizeImports :: Bool -> Set Cabal.ModuleName -> ImportGrouping -> [LImportDecl GhcPs] -> [[LImportDecl GhcPs]]
-normalizeImports respectful localModules importGrouping =
+normalizeImports ::
+  Choice "implicitPrelude" ->
+  Bool ->
+  Set Cabal.ModuleName ->
+  ImportGrouping ->
+  [LImportDecl GhcPs] ->
+  [[LImportDecl GhcPs]]
+normalizeImports implicitPrelude respectful localModules importGrouping =
   map (fmap snd)
     . concatMap
       ( groupImports importGrouping localModules toImport
           . M.toAscList
           . M.fromListWith combineImports
-          . fmap (\x -> (importId x, g x))
+          . fmap (\x -> (importId implicitPrelude x, g x))
       )
     . prepareExistingGroups importGrouping respectful
   where
@@ -141,8 +150,8 @@ instance Ord ImportListInterpretationOrd where
       toBool EverythingBut = True
 
 -- | Obtain an 'ImportId' for a given import.
-importId :: LImportDecl GhcPs -> ImportId
-importId (L _ ImportDecl {..}) =
+importId :: Choice "implicitPrelude" -> LImportDecl GhcPs -> ImportId
+importId implicitPrelude (L _ ImportDecl {..}) =
   ImportId
     { importIsPrelude = isPrelude,
       importIdName = moduleName,
@@ -158,7 +167,8 @@ importId (L _ ImportDecl {..}) =
       importLevel = importLevelOf ideclLevelSpec
     }
   where
-    isPrelude = moduleNameString moduleName == "Prelude"
+    isPrelude =
+      Choice.isTrue implicitPrelude && moduleNameString moduleName == "Prelude"
     moduleName = unLoc ideclName
     importLevelOf = \case
       LevelStylePre l -> Just (ImportDeclLevelOrd l)

@@ -190,7 +190,7 @@ newtype FixityOverrides = FixityOverrides
 defaultFixityOverrides :: FixityOverrides
 defaultFixityOverrides = FixityOverrides Map.empty
 
--- | Module re-exports
+-- | Module re-exports.
 newtype ModuleReexports = ModuleReexports
   { unModuleReexports :: Map ModuleName (NonEmpty (Maybe PackageName, ModuleName))
   }
@@ -198,61 +198,7 @@ newtype ModuleReexports = ModuleReexports
 
 -- | Module re-exports to apply by default.
 defaultModuleReexports :: ModuleReexports
-defaultModuleReexports =
-  ModuleReexports . Map.fromList $
-    [ ( "Control.Lens",
-        l
-          "lens"
-          [ "Control.Lens.At",
-            "Control.Lens.Cons",
-            "Control.Lens.Each",
-            "Control.Lens.Empty",
-            "Control.Lens.Equality",
-            "Control.Lens.Fold",
-            "Control.Lens.Getter",
-            "Control.Lens.Indexed",
-            "Control.Lens.Iso",
-            "Control.Lens.Lens",
-            "Control.Lens.Level",
-            "Control.Lens.Plated",
-            "Control.Lens.Prism",
-            "Control.Lens.Reified",
-            "Control.Lens.Review",
-            "Control.Lens.Setter",
-            "Control.Lens.TH",
-            "Control.Lens.Traversal",
-            "Control.Lens.Tuple",
-            "Control.Lens.Type",
-            "Control.Lens.Wrapped",
-            "Control.Lens.Zoom"
-          ]
-      ),
-      ( "Servant",
-        l
-          "servant"
-          [ "Servant.API"
-          ]
-      ),
-      ( "Optics",
-        l
-          "optics"
-          [ "Optics.Fold",
-            "Optics.Operators",
-            "Optics.IxAffineFold",
-            "Optics.IxFold",
-            "Optics.IxTraversal",
-            "Optics.Traversal"
-          ]
-      ),
-      ( "Test.Hspec",
-        l
-          "hspec-expectations"
-          [ "Test.Hspec.Expectations"
-          ]
-      )
-    ]
-  where
-    l packageName xs = (Just packageName,) <$> NE.fromList xs
+defaultModuleReexports = ModuleReexports Map.empty
 
 -- | Fixity information that is specific to a package being formatted. It
 -- requires module-specific imports in order to be usable.

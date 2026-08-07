@@ -40,27 +40,28 @@ p_hsModule mstackHeader pragmas hsmod@HsModule {..} = do
   let XModulePs {..} = hsmodExt
       deprecSpan = maybe [] (pure . getLocA) hsmodDeprecMessage
       exportSpans = maybe [] (pure . getLocA) hsmodExports
-  switchLayout (deprecSpan <> exportSpans) $ do
-    forM_ mstackHeader $ \(L spn comment) -> do
-      spitCommentNow spn comment
+  switchLayout (deprecSpan <> exportSpans) $
+    enterMultilineLayoutIfContainsDocEntries (maybe [] unLoc hsmodExports) $ do
+      forM_ mstackHeader $ \(L spn comment) -> do
+        spitCommentNow spn comment
+        newline
       newline
-    newline
-    p_pragmas pragmas
-    newline
-    mapM_ (p_hsModuleHeader hsmod) hsmodName
-    newline
-    respectful <- getPrinterOpt poRespectful
-    localModules <- getLocalModules
-    importGrouping <- getPrinterOpt poImportGrouping
-    forM_ (normalizeImports respectful localModules importGrouping hsmodImports) $ \importGroup -> do
-      forM_ importGroup (located' p_hsmodImport)
+      p_pragmas pragmas
       newline
-    declNewline
-    switchLayout (getLocA <$> hsmodDecls) $ do
-      preserveSpacing <- getPrinterOpt poRespectful
-      (if preserveSpacing then p_hsDeclsRespectGrouping else p_hsDecls) Free hsmodDecls
+      mapM_ (p_hsModuleHeader hsmod) hsmodName
       newline
-      spitRemainingComments
+      respectful <- getPrinterOpt poRespectful
+      localModules <- getLocalModules
+      importGrouping <- getPrinterOpt poImportGrouping
+      forM_ (normalizeImports respectful localModules importGrouping hsmodImports) $ \importGroup -> do
+        forM_ importGroup (located' p_hsmodImport)
+        newline
+      declNewline
+      switchLayout (getLocA <$> hsmodDecls) $ do
+        preserveSpacing <- getPrinterOpt poRespectful
+        (if preserveSpacing then p_hsDeclsRespectGrouping else p_hsDecls) Free hsmodDecls
+        newline
+        spitRemainingComments
 
 p_hsModuleHeader :: HsModule GhcPs -> LocatedA ModuleName -> R ()
 p_hsModuleHeader HsModule {hsmodExt = XModulePs {..}, ..} moduleName = do
