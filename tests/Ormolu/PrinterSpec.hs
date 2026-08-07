@@ -64,6 +64,10 @@ checkExample (printerOpts, label, suffix) srcPath' = it (fromRelFile srcPath' ++
                   "esqueleto",
                   "hspec",
                   "lens",
+                  "megaparsec",
+                  "optics",
+                  "relude",
+                  "rio",
                   "servant"
                 ]
           }

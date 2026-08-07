@@ -38,6 +38,7 @@ module Ormolu.Printer.Combinators
     switchLayout,
     switchLayoutNoLimit,
     spansLayout,
+    enterLayout,
     Layout (..),
     vlayout,
     getLayout,

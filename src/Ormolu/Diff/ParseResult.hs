@@ -2,6 +2,8 @@
 {-# LANGUAGE DeepSubsumption #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedLabels #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ViewPatterns #-}
 
@@ -14,6 +16,7 @@ where
 
 import Data.ByteString (ByteString)
 import Data.Char (isSpace)
+import Data.Choice (pattern Without)
 import Data.Foldable
 import Data.Function
 import Data.Generics
@@ -62,8 +65,16 @@ diffParseResult
     } =
     diffCommentStream cstream0 cstream1
       <> diffHsModule
-        hs0 {hsmodImports = concat . normalizeImports False mempty ImportGroupSingle $ hsmodImports hs0}
-        hs1 {hsmodImports = concat . normalizeImports False mempty ImportGroupSingle $ hsmodImports hs1}
+        hs0 {hsmodImports = concat . normalizeImports' $ hsmodImports hs0}
+        hs1 {hsmodImports = concat . normalizeImports' $ hsmodImports hs1}
+    where
+      -- The exact parameters here don't matter, it just needs to be consistent
+      normalizeImports' =
+        normalizeImports
+          (Without #implicitPrelude)
+          False
+          mempty
+          ImportGroupSingle
 
 diffCommentStream :: CommentStream -> CommentStream -> ParseResultDiff
 diffCommentStream (CommentStream cs) (CommentStream cs')
