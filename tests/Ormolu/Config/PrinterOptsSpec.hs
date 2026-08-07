@@ -410,9 +410,9 @@ checkResult outputFile actual
         Nothing ->
           expectationFailure "Output does not exist. Try running with ORMOLU_REGENERATE_EXAMPLES=1"
         Just expected ->
-          when (actual /= expected)
-            $ expectationFailure . T.unpack
-            $ getDiff ("actual", actual) ("expected", expected)
+          when (actual /= expected) $ do
+            expectationFailure . T.unpack $
+              getDiff ("actual", actual) ("expected", expected)
 
 {--- Renderers ---}
 
