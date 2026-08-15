@@ -6,6 +6,9 @@
 [![Stackage LTS](http://stackage.org/package/ormolu/badge/lts)](http://stackage.org/lts/package/ormolu)
 [![CI](https://github.com/mrkkrp/ormolu/actions/workflows/ci.yml/badge.svg)](https://github.com/mrkkrp/ormolu/actions/workflows/ci.yml)
 
+*Ormolu gratefully acknowledges the support and contributions of
+[Tweag][tweag] during the period 2019–2026.*
+
 * [Installation](#installation)
 * [Building from source](#building-from-source)
 * [Usage](#usage)
@@ -363,6 +366,7 @@ See [LICENSE.md][license].
 
 Copyright © 2018–2026 Tweag I/O, 2026–present Mark Karpov
 
+[tweag]: https://tweag.io/
 [aur]: https://aur.archlinux.org/packages/ormolu
 [design-cpp]: https://github.com/mrkkrp/ormolu/blob/master/DESIGN.md#cpp
 [emacs-package]: https://github.com/vyorkin/ormolu.el
