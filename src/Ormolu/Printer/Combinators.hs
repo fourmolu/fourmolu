@@ -10,8 +10,7 @@ module Ormolu.Printer.Combinators
     R,
     runR,
     getEnclosingSpan,
-    getEnclosingSpanWhere,
-    getEnclosingComments,
+    getCommentsAnchoredWithin,
     isExtensionEnabled,
 
     -- * Combinators
@@ -28,9 +27,10 @@ module Ormolu.Printer.Combinators
     askModuleFixityMap,
     askDebug,
     located,
-    encloseLocated,
+    locatedEmpty,
     located',
     switchLayout,
+    switchLayoutWithEnclosingComments,
     enterLayout,
     Layout (..),
     vlayout,
@@ -61,14 +61,16 @@ module Ormolu.Printer.Combinators
     -- ** Literals
     comma,
     commaDel,
-    equals,
 
     -- ** Stateful markers
-    SpanMark (..),
-    spanMarkSpan,
+    LastEmitted (..),
+    lastEmittedSpan,
     HaddockStyle (..),
-    setSpanMark,
-    getSpanMark,
+    setLastEmitted,
+    getLastEmitted,
+
+    -- ** Haddocks
+    lookupHaddockText,
 
     -- ** Placement
     Placement (..),
@@ -78,12 +80,14 @@ where
 
 import Control.Monad
 import Data.List (intersperse)
+import Data.List.NonEmpty qualified as NE
 import Data.Text (Text)
 import GHC.Data.Strict qualified as Strict
 import GHC.Parser.Annotation
 import GHC.Types.SrcLoc
 import Ormolu.Printer.Comments
 import Ormolu.Printer.Internal
+import Ormolu.Utils (combineSrcSpans')
 
 ----------------------------------------------------------------------------
 -- Basic
@@ -112,27 +116,27 @@ located ::
 located (L l' a) f = case locA l' of
   UnhelpfulSpan _ -> f a
   RealSrcSpan l _ -> do
+    recordVisitedSpan l
     spitPrecedingComments l
     withEnclosingSpan l $
       switchLayout [RealSrcSpan l Strict.Nothing] (f a)
     spitFollowingComments l
 
--- | Similar to 'located', but when the "payload" is an empty list, print
--- virtual elements at the start and end of the source span to prevent
--- comments from "floating out".
-encloseLocated ::
-  (HasLoc l) =>
-  GenLocated l [a] ->
-  ([a] -> R ()) ->
+-- | Give an empty bracketed construct something for a comment written
+-- inside it to attach to.
+--
+-- Brackets are rendered with 'txt', so an empty export or import list, an
+-- empty @[]@ or a record with no fields contains no element at all. A
+-- comment written between the brackets would be attached to whatever
+-- encloses them and rendered outside them, so a zero-width element is
+-- entered at the opening bracket instead.
+locatedEmpty ::
+  -- | Span of the empty construct
+  SrcSpan ->
   R ()
-encloseLocated la f = located la $ \a -> do
-  when (null a) $ located (L startSpan ()) pure
-  f a
-  when (null a) $ located (L endSpan ()) pure
-  where
-    l = locA la
-    (startLoc, endLoc) = (srcSpanStart l, srcSpanEnd l)
-    (startSpan, endSpan) = (mkSrcSpan startLoc startLoc, mkSrcSpan endLoc endLoc)
+locatedEmpty l =
+  let loc = srcSpanStart l
+   in located (L (mkSrcSpan loc loc) ()) pure
 
 -- | A version of 'located' with the arguments flipped.
 located' ::
@@ -144,19 +148,77 @@ located' ::
   R ()
 located' = flip located
 
--- | Set the layout according to the combination of the given 'SrcSpan's.
--- Use this only when you need to set the layout based on, e.g., the combined
--- span of several elements when there is no corresponding 'Located' wrapper
--- provided by the GHC AST. It is relatively rare that this one is needed.
+-- | Set the layout according to the combination of the given 'SrcSpan's,
+-- together with the spans of the comments that belong inside them.
 --
--- Given an empty list, this function will set the layout to single-line.
+-- Comments count towards the layout: a construct that would fit on one line
+-- has to be broken up anyway if a comment was written inside it, or the
+-- comment would swallow whatever follows it on the line.
+--
+-- 'located' calls this for you. Call it directly only when the layout has
+-- to come from something the GHC AST has no 'Located' wrapper for, such as
+-- the combined span of several elements; that is rare.
+--
+-- Given an empty list and no comments, this function will set the layout to
+-- single-line.
 switchLayout ::
   -- | Span that controls layout
   [SrcSpan] ->
   -- | Computation to run with changed layout
   R () ->
   R ()
-switchLayout spans' = enterLayout (spansLayout spans')
+switchLayout spans' m = do
+  csSpans <- commentSpansIn (combineSrcSpans' <$> NE.nonEmpty spans')
+  enterLayout (spansLayout (spans' <> csSpans)) m
+
+-- | Like 'switchLayout', but the comments are looked for in the enclosing
+-- element rather than in the given spans.
+--
+-- This is what a bracketed construct needs. In
+--
+-- > ( -- c
+-- >   x
+-- > )
+--
+-- the comment sits between the bracket and @x@, so it is inside neither of
+-- them, and the parentheses would be put on one line despite it. Widening
+-- the question to the enclosing element catches it. Do not reach for this
+-- elsewhere: it is deliberately coarser than 'switchLayout', and applying
+-- it where the enclosing element is large would let one comment break every
+-- layout decision inside it.
+switchLayoutWithEnclosingComments ::
+  -- | Span that controls layout
+  [SrcSpan] ->
+  -- | Computation to run with changed layout
+  R () ->
+  R ()
+switchLayoutWithEnclosingComments spans' m = do
+  enclosing <- getEnclosingSpan
+  csSpans <- commentSpansIn (flip RealSrcSpan Strict.Nothing <$> enclosing)
+  enterLayout (spansLayout (spans' <> csSpans)) m
+
+-- | The spans of the comments that belong inside the given region: both
+-- attached to something in it and written inside it.
+--
+-- Both halves are needed. Without the first, a comment anywhere in a
+-- declaration would force every layout decision inside that declaration to
+-- multi-line. Without the second, a comment trailing an element would force
+-- that element itself to be broken up.
+--
+-- Haddocks are not consulted here. They do not travel in the anchor map,
+-- and their spans sit where the author wrote them rather than where they
+-- will be printed, which is the wrong question; see
+-- 'Ormolu.Printer.Meat.Common.multiLineIfDocumented'.
+commentSpansIn :: Maybe SrcSpan -> R [SrcSpan]
+commentSpansIn = \case
+  Just (RealSrcSpan region _) -> do
+    comments <- getCommentsAnchoredWithin region
+    pure
+      [ RealSrcSpan spn Strict.Nothing
+      | L spn _ <- comments,
+        region `containsSpan` spn
+      ]
+  _ -> pure []
 
 -- | Which layout do the combined spans result in?
 spansLayout :: [SrcSpan] -> Layout
@@ -348,10 +410,6 @@ comma = txt ","
 -- | Delimiting combination with 'comma'. To be used with 'sep'.
 commaDel :: R ()
 commaDel = comma >> breakpoint
-
--- | Print @=@. Do not use @'txt' "="@.
-equals :: R ()
-equals = interferingTxt "="
 
 ----------------------------------------------------------------------------
 -- Placement

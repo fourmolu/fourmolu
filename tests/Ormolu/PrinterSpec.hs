@@ -6,14 +6,12 @@ module Ormolu.PrinterSpec (spec) where
 import Control.Exception
 import Control.Monad
 import Data.List (isSuffixOf)
-import Data.Map qualified as Map
 import Data.Maybe (isJust)
-import Data.Set qualified as Set
 import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Text.IO.Utf8 qualified as T.Utf8
 import Ormolu
-import Ormolu.Fixity
+import Ormolu.TestConfig
 import Path
 import Path.IO
 import System.Environment (lookupEnv)
@@ -25,41 +23,12 @@ spec = do
   es <- runIO locateExamples
   forM_ es checkExample
 
--- | Fixity overrides that are to be used with the test examples.
-testsuiteOverrides :: FixityOverrides
-testsuiteOverrides =
-  FixityOverrides
-    ( Map.fromList
-        [ (".=", FixityInfo InfixR 8),
-          ("#", FixityInfo InfixR 5),
-          (">~<", FixityInfo InfixR 3),
-          ("|~|", FixityInfo InfixR 3.3),
-          ("<~>", FixityInfo InfixR 3.7)
-        ]
-    )
-
 -- | Check a single given example.
 checkExample :: Path Rel File -> Spec
 checkExample srcPath' = it (fromRelFile srcPath' ++ " works") . withNiceExceptions $ do
   let srcPath = examplesDir </> srcPath'
       inputPath = fromRelFile srcPath
-      config =
-        defaultConfig
-          { cfgSourceType = detectSourceType inputPath,
-            cfgFixityOverrides = testsuiteOverrides,
-            cfgDependencies =
-              Set.fromList
-                [ "base",
-                  "esqueleto",
-                  "hspec",
-                  "lens",
-                  "megaparsec",
-                  "optics",
-                  "relude",
-                  "rio",
-                  "servant"
-                ]
-          }
+      config = exampleConfig inputPath
   expectedOutputPath <- deriveOutput srcPath
   -- 1. Given an input snippet of source code, parse it and pretty-print it.
   -- 2. Parse the result of pretty-printing again and make sure that its AST

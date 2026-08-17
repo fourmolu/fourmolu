@@ -23,11 +23,16 @@ pkgs.stdenv.mkDerivation rec {
       # drop includes
       sed -i '/^#include/d' "$hs_file"
 
-      # deal with CPP
-      cpphs "$hs_file" --noline -DARCH_X86 > "''${hs_file}-nocpp" 2> /dev/null
-
-      # annoyingly, cpphs cannot modify files in place
-      mv "''${hs_file}-nocpp" "$hs_file"
+      # Deal with CPP. Some packages guard against non-GHC compilers with
+      # an #error, which cpphs hits and gives up on because we do not define
+      # __GLASGOW_HASKELL__ for it. Keep the original file in that case
+      # rather than failing the whole derivation.
+      if cpphs "$hs_file" --noline -DARCH_X86 > "''${hs_file}-nocpp" 2> /dev/null; then
+        # annoyingly, cpphs cannot modify files in place
+        mv "''${hs_file}-nocpp" "$hs_file"
+      else
+        rm -f "''${hs_file}-nocpp"
+      fi
 
       # preserve the original
       cp "$hs_file" "''${hs_file}-original"

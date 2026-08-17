@@ -39,6 +39,9 @@ flag dev
 library
   exposed-modules:
     Ormolu
+    Ormolu.Comments.Anchor
+    Ormolu.Comments.Invariants
+    Ormolu.Comments.Tree
     Ormolu.Config
     Ormolu.Diff.ParseResult
     Ormolu.Diff.Text
@@ -55,6 +58,7 @@ library
     Ormolu.Parser.Result
     Ormolu.Printer
     Ormolu.Printer.Combinators
+    Ormolu.Printer.CommentPlacement
     Ormolu.Printer.Comments
     Ormolu.Printer.Internal
     Ormolu.Printer.Meat.Common
@@ -80,7 +84,6 @@ library
     Ormolu.Printer.Meat.Pragma
     Ormolu.Printer.Meat.Type
     Ormolu.Printer.Operators
-    Ormolu.Printer.SpanStream
     Ormolu.Processing.Common
     Ormolu.Processing.Cpp
     Ormolu.Processing.Preprocess
@@ -176,6 +179,7 @@ test-suite tests
   hs-source-dirs: tests
   other-modules:
     Ormolu.CabalInfoSpec
+    Ormolu.Comments.AnchorSpec
     Ormolu.Diff.TextSpec
     Ormolu.Fixity.ParserSpec
     Ormolu.Fixity.PrinterSpec
@@ -185,6 +189,7 @@ test-suite tests
     Ormolu.Parser.ParseFailureSpec
     Ormolu.Parser.PragmaSpec
     Ormolu.PrinterSpec
+    Ormolu.TestConfig
 
   default-language: GHC2021
   build-depends:

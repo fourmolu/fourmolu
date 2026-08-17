@@ -49,9 +49,11 @@ import Data.Text qualified as T
 import Data.Text.IO.Utf8 qualified as T.Utf8
 import Debug.Trace
 import GHC.Driver.Errors.Types
+import GHC.Hs (HsModule (..), locA)
 import GHC.Types.Error
 import GHC.Types.SrcLoc
 import GHC.Utils.Error
+import Ormolu.Comments.Invariants
 import Ormolu.Config
 import Ormolu.Diff.ParseResult
 import Ormolu.Diff.Text
@@ -113,7 +115,32 @@ ormolu cfgWithIndices path originalInput = do
   -- when we try to parse the rendered code back inside the GHC monad
   -- wrapper, which would lead to error messages presenting the exceptions
   -- as GHC bugs.
-  let !formattedText = printSnippets (Choice.fromBool (cfgDebug cfg)) result0
+  let printed =
+        printSnippetsWithPlacements (Choice.fromBool (cfgDebug cfg)) result0
+      !formattedText = T.concat (fst <$> printed)
+  -- Every comment of the input should come out exactly once, and in the
+  -- order it went in. The AST check below does not cover this: it compares
+  -- the comment streams as multisets, and the comments that travel with
+  -- pragmas are not in the stream at all.
+  unless (cfgUnsafe cfg) . liftIO $ do
+    let violations =
+          concat
+            [ checkCommentInvariants
+                (getLoc <$> inputComments r)
+                (reorderableSpans (prParsedSource r))
+                placements
+            | (ParsedSnippet r, (_, placements)) <- result0 `zip` printed
+            ]
+        -- Imports are sorted and merged, so a comment attached to one of
+        -- them may legitimately come out in a different order than it went
+        -- in.
+        reorderableSpans hsmod =
+          [ spn
+          | L l _ <- hsmodImports hsmod,
+            Just spn <- [srcSpanToRealSrcSpan (locA l)]
+          ]
+    unless (null violations) $
+      throwIO (OrmoluCommentInvariantsViolated path violations)
   when (not (cfgUnsafe cfg) || cfgCheckIdempotence cfg) $ do
     -- Parse the result of pretty-printing again and make sure that its AST
     -- is the same as the AST of the original snippet, modulo span
@@ -140,7 +167,8 @@ ormolu cfgWithIndices path originalInput = do
     -- Try re-formatting the formatted result to check if we get exactly
     -- the same output.
     when (cfgCheckIdempotence cfg) . liftIO $
-      let reformattedText = printSnippets (Choice.fromBool (cfgDebug cfg)) result1
+      let reformattedText =
+            printSnippets (Choice.fromBool (cfgDebug cfg)) result1
        in case diffText formattedText reformattedText path of
             Nothing -> return ()
             Just diff -> throwIO (OrmoluNonIdempotentOutput diff)

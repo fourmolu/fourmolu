@@ -166,7 +166,7 @@ parseModuleSnippet Config {..} modFixityMap dynFlags path rawInput = liftIO $ do
             -- to the later stages. We fail in those cases.
             Just err -> Left err
             Nothing ->
-              let (stackHeader, pragmas, comments) =
+              let (stackHeader, pragmas, comments, haddockText) =
                     mkCommentStream input hsModule
                in Right
                     ParseResult
@@ -175,6 +175,7 @@ parseModuleSnippet Config {..} modFixityMap dynFlags path rawInput = liftIO $ do
                         prStackHeader = stackHeader,
                         prPragmas = pragmas,
                         prCommentStream = comments,
+                        prHaddockText = haddockText,
                         prExtensions = GHC.extensionFlags dynFlags,
                         prModuleFixityMap = modFixityMap,
                         prIndent = indent
@@ -191,6 +192,7 @@ normalizeModule implicitPrelude hsmod =
   everywhere
     ( mkT dropBlankTypeHaddocks
         `extT` dropBlankDataDeclHaddocks
+        `extT` dropBlankConDeclFieldHaddocks
         `extT` patchContext
         `extT` patchExprContext
     )
@@ -219,6 +221,13 @@ normalizeModule implicitPrelude hsmod =
     dropBlankTypeHaddocks = \case
       L _ (HsDocTy _ ty s) :: LHsType GhcPs
         | isBlankDocString s -> ty
+      a -> a
+    -- A Haddock on a field that holds nothing but whitespace is dropped,
+    -- the same way one on a constructor is. Without this, whether it
+    -- survives depends on whether it happened to end in a space.
+    dropBlankConDeclFieldHaddocks = \case
+      CDF {cdf_doc = Just s, ..} :: HsConDeclField GhcPs
+        | isBlankDocString s -> CDF {cdf_doc = Nothing, ..}
       a -> a
     dropBlankDataDeclHaddocks = \case
       ConDeclGADT {con_doc = Just s, ..} :: ConDecl GhcPs

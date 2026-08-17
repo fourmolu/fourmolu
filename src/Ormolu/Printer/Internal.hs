@@ -13,7 +13,6 @@ module Ormolu.Printer.Internal
 
     -- * Internal functions
     txt,
-    interferingTxt,
     atom,
     space,
     newline,
@@ -36,21 +35,25 @@ module Ormolu.Printer.Internal
     -- * Special helpers for comment placement
     CommentPosition (..),
     registerPendingCommentLine,
-    trimSpanStream,
-    nextEltSpan,
-    popComment,
-    getEnclosingComments,
+    withAnchorMap,
+    getCommentsAnchoredWithin,
     getEnclosingSpan,
-    getEnclosingSpanWhere,
     withEnclosingSpan,
     thisLineSpans,
 
     -- * Stateful markers
-    SpanMark (..),
-    spanMarkSpan,
+    LastEmitted (..),
+    lastEmittedSpan,
+    setLastEmitted,
+    getLastEmitted,
+
+    -- * Haddocks
     HaddockStyle (..),
-    setSpanMark,
-    getSpanMark,
+    lookupHaddockText,
+
+    -- * Recording comment placement
+    recordCommentPlacement,
+    recordVisitedSpan,
 
     -- * Extensions
     isExtensionEnabled,
@@ -62,9 +65,8 @@ import Control.Monad.Reader
 import Control.Monad.State.Strict
 import Data.Bool (bool)
 import Data.Choice (Choice)
-import Data.Coerce
-import Data.Functor ((<&>))
 import Data.List (find)
+import Data.Map.Strict qualified as M
 import Data.Maybe (listToMaybe)
 import Data.Text (Text)
 import Data.Text qualified as T
@@ -75,10 +77,11 @@ import GHC.Data.EnumSet qualified as EnumSet
 import GHC.LanguageExtensions.Type
 import GHC.Types.SrcLoc
 import GHC.Utils.Outputable (Outputable)
+import Ormolu.Comments.Anchor (AnchorMap, commentsAnchoredWithin)
 import Ormolu.Config (SourceType (..))
 import Ormolu.Fixity (ModuleFixityMap)
 import Ormolu.Parser.CommentStream
-import Ormolu.Printer.SpanStream
+import Ormolu.Printer.CommentPlacement
 import Ormolu.Utils (showOutputable)
 
 ----------------------------------------------------------------------------
@@ -108,7 +111,9 @@ data RC = RC
     -- | Module fixity map
     rcModuleFixityMap :: ModuleFixityMap,
     -- | Whether to print out debug information during printing
-    rcDebug :: !(Choice "debug")
+    rcDebug :: !(Choice "debug"),
+    -- | Source text of the module's Haddocks
+    rcHaddockText :: HaddockText
   }
 
 -- | State context of 'R'.
@@ -119,19 +124,23 @@ data SC = SC
     scIndent :: !Int,
     -- | Rendered source code so far
     scBuilder :: Builder,
-    -- | Span stream
-    scSpanStream :: SpanStream,
     -- | Spans of atoms that have been printed on the current line so far
     scThisLineSpans :: [RealSrcSpan],
-    -- | Comment stream
-    scCommentStream :: CommentStream,
+    -- | Comments that have not been emitted yet, by the element they are
+    -- attached to
+    scAnchorMap :: AnchorMap,
     -- | Pending comment lines (in reverse order) to be inserted before the
     -- next newline
     scPendingComments :: ![(CommentPosition, Text)],
     -- | Whether to output a space before the next output
     scRequestedDelimiter :: !RequestedDelimiter,
-    -- | An auxiliary marker for keeping track of the last output element
-    scSpanMark :: !(Maybe SpanMark)
+    -- | What was emitted last, used both for preserving blank lines from
+    -- the input and for recognizing runs of comments
+    scLastEmitted :: !LastEmitted,
+    -- | Comment placement decisions made so far, in reverse order
+    scCommentPlacements :: [CommentPlacement],
+    -- | Spans of the elements the printer has entered, in reverse order
+    scVisitedSpans :: [RealSrcSpan]
   }
 
 -- | Make sure the next output is delimited by one of the following.
@@ -168,10 +177,8 @@ data CommentPosition
 runR ::
   -- | Monad to run
   R () ->
-  -- | Span stream
-  SpanStream ->
-  -- | Comment stream
-  CommentStream ->
+  -- | Comments, attached to the elements they belong to
+  AnchorMap ->
   -- | Whether the source is a signature or a regular module
   SourceType ->
   -- | Enabled extensions
@@ -180,11 +187,18 @@ runR ::
   ModuleFixityMap ->
   -- | Whether to print out debug information during printing
   Choice "debug" ->
-  -- | Resulting rendition
-  Text
-runR (R m) sstream cstream sourceType extensions moduleFixityMap debug =
-  TL.toStrict . toLazyText . scBuilder $ execState (runReaderT m rc) sc
+  -- | Source text of the module's Haddocks
+  HaddockText ->
+  -- | The rendition, the comment placement decisions that were made along
+  -- the way, and the spans of the elements that were entered
+  (Text, [CommentPlacement], [RealSrcSpan])
+runR (R m) anchorMap sourceType extensions moduleFixityMap debug haddockText =
+  ( TL.toStrict . toLazyText . scBuilder $ finalSc,
+    reverse (scCommentPlacements finalSc),
+    reverse (scVisitedSpans finalSc)
+  )
   where
+    finalSc = execState (runReaderT m rc) sc
     rc =
       RC
         { rcIndent = 0,
@@ -194,19 +208,21 @@ runR (R m) sstream cstream sourceType extensions moduleFixityMap debug =
           rcExtensions = extensions,
           rcSourceType = sourceType,
           rcModuleFixityMap = moduleFixityMap,
-          rcDebug = debug
+          rcDebug = debug,
+          rcHaddockText = haddockText
         }
     sc =
       SC
         { scColumn = 0,
           scIndent = 0,
           scBuilder = mempty,
-          scSpanStream = sstream,
           scThisLineSpans = [],
-          scCommentStream = cstream,
+          scAnchorMap = anchorMap,
           scPendingComments = [],
           scRequestedDelimiter = VeryBeginning,
-          scSpanMark = Nothing
+          scLastEmitted = LastEmittedOther,
+          scCommentPlacements = [],
+          scVisitedSpans = []
         }
 
 ----------------------------------------------------------------------------
@@ -217,11 +233,6 @@ runR (R m) sstream cstream sourceType extensions moduleFixityMap debug =
 data SpitType
   = -- | Simple opaque text that breaks comment series.
     SimpleText
-  | -- | Like 'SimpleText', but assume that when this text is inserted it
-    -- will separate an 'Atom' and its pending comments, so insert an extra
-    -- 'newline' in that case to force the pending comments and continue on
-    -- a fresh line.
-    InterferingText
   | -- | An atom that typically has span information in the AST and can
     -- have comments attached to it.
     Atom
@@ -242,14 +253,6 @@ txt ::
   R ()
 txt = spit SimpleText
 
--- | Similar to 'txt' but the text inserted this way is assumed to break the
--- “link” between the preceding atom and its pending comments.
-interferingTxt ::
-  -- | 'Text' to output
-  Text ->
-  R ()
-interferingTxt = spit InterferingText
-
 -- | Output an 'Outputable' fragment of the AST. This can be used to output
 -- numeric literals and similar: anything that doesn't have inner structure
 -- but does have an 'Outputable' instance.
@@ -269,8 +272,6 @@ spit ::
 spit _ "" = return ()
 spit stype text = do
   requestedDel <- R (gets scRequestedDelimiter)
-  pendingComments <- R (gets scPendingComments)
-  when (stype == InterferingText && not (null pendingComments)) newline
   case requestedDel of
     RequestedNewline -> do
       R . modify $ \sc ->
@@ -307,12 +308,12 @@ spit stype text = do
                     Just x -> x : xs
                   _ -> xs,
           scRequestedDelimiter = RequestedNothing,
-          scSpanMark =
+          scLastEmitted =
             -- If there are pending comments, do not reset last comment
             -- location.
             if (stype == CommentPart) || (not . null . scPendingComments) sc
-              then scSpanMark sc
-              else Nothing
+              then scLastEmitted sc
+              else LastEmittedOther
         }
 
 -- | This primitive /does not/ necessarily output a space. It just ensures
@@ -342,7 +343,14 @@ space = R . modify $ \sc ->
 -- hard to output more than one blank newline in a row.
 newline :: R ()
 newline = do
-  indent <- R (gets scIndent)
+  lineIndent <- R (gets scIndent)
+  logicalIndent <- R (asks rcIndent)
+  -- A trailing comment block spills onto the lines below the code it
+  -- trails. Those lines take the indentation of the line the block started
+  -- on, unless the construct being printed is indented further, in which
+  -- case they follow it: dropping to the start of the line would put the
+  -- rest of a block comment outside the declaration it was written in.
+  let indent = max lineIndent logicalIndent
   cs <- reverse <$> R (gets scPendingComments)
   case cs of
     [] -> newlineRaw
@@ -488,46 +496,21 @@ registerPendingCommentLine position text = R $ do
       { scPendingComments = (position, text) : scPendingComments sc
       }
 
--- | Drop elements that begin before or at the same place as the given
--- 'SrcSpan'.
-trimSpanStream ::
-  -- | Reference span
-  RealSrcSpan ->
-  R ()
-trimSpanStream ref = do
-  let leRef :: RealSrcSpan -> Bool
-      leRef x = realSrcSpanStart x <= realSrcSpanStart ref
-  R . modify $ \sc ->
-    sc
-      { scSpanStream = coerce (dropWhile leRef) (scSpanStream sc)
-      }
+-- | Claim comments from the anchor map, storing what is left.
+withAnchorMap :: (AnchorMap -> (a, AnchorMap)) -> R a
+withAnchorMap f = R . state $ \sc ->
+  let (a, am) = f (scAnchorMap sc)
+   in (a, sc {scAnchorMap = am})
 
--- | Get the location of the next element in the AST.
-nextEltSpan :: R (Maybe RealSrcSpan)
-nextEltSpan = listToMaybe . coerce <$> R (gets scSpanStream)
-
--- | Pop a 'Comment' from the 'CommentStream' if the given predicate is
--- satisfied and there are comments in the stream.
-popComment ::
-  (LComment -> Bool) ->
-  R (Maybe LComment)
-popComment f = R $ do
-  CommentStream cstream <- gets scCommentStream
-  case cstream of
-    (x : xs) | f x -> do
-      modify $ \sc -> sc {scCommentStream = CommentStream xs}
-      return $ Just x
-    _ -> return Nothing
-
--- | Get the comments contained in the enclosing span.
-getEnclosingComments :: R [LComment]
-getEnclosingComments = do
-  isEnclosed <-
-    getEnclosingSpan <&> \case
-      Just enclSpan -> containsSpan enclSpan
-      Nothing -> const False
-  CommentStream cstream <- R $ gets scCommentStream
-  pure $ takeWhile (isEnclosed . getLoc) cstream
+-- | Get the comments attached to the element at the given span, or to
+-- anything inside it.
+--
+-- This only looks; it does not claim. The layout decisions that ask this
+-- run before the comments are emitted, and claiming here would leave
+-- nothing for the printer to emit later.
+getCommentsAnchoredWithin :: RealSrcSpan -> R [LComment]
+getCommentsAnchoredWithin region =
+  withAnchorMap (\am -> (commentsAnchoredWithin region am, am))
 
 -- | Get the immediately enclosing 'RealSrcSpan'.
 getEnclosingSpan :: R (Maybe RealSrcSpan)
@@ -558,23 +541,44 @@ thisLineSpans = R (gets scThisLineSpans)
 ----------------------------------------------------------------------------
 -- Stateful markers
 
--- | An auxiliary marker for keeping track of the last output element.
-data SpanMark
-  = -- | Haddock comment
-    HaddockSpan HaddockStyle RealSrcSpan
-  | -- | Non-Haddock comment
-    CommentSpan RealSrcSpan
-  | -- | A statement in a do-block and its span
-    StatementSpan RealSrcSpan
+-- | What the printer emitted last, and where it came from in the input.
+--
+-- This is about spacing, not about attachment: it is what lets a blank line
+-- in the input be preserved in the output, and what lets a run of comment
+-- lines be recognized as one. Statements are tracked for the first of those
+-- reasons, Haddocks for the second.
+data LastEmitted
+  = -- | Nothing yet, or ordinary code
+    LastEmittedOther
+  | -- | A comment occupying the given span of the input
+    LastEmittedComment RealSrcSpan
+  | -- | A Haddock occupying the given span of the input
+    LastEmittedHaddock RealSrcSpan
+  | -- | A statement of a layout block occupying the given span
+    LastEmittedStatement RealSrcSpan
+  deriving (Eq, Show)
 
--- | Project 'RealSrcSpan' from 'SpanMark'.
-spanMarkSpan :: SpanMark -> RealSrcSpan
-spanMarkSpan = \case
-  HaddockSpan _ s -> s
-  CommentSpan s -> s
-  StatementSpan s -> s
+-- | Where the last emitted thing came from in the input, if it came from
+-- anywhere in particular.
+lastEmittedSpan :: LastEmitted -> Maybe RealSrcSpan
+lastEmittedSpan = \case
+  LastEmittedOther -> Nothing
+  LastEmittedComment s -> Just s
+  LastEmittedHaddock s -> Just s
+  LastEmittedStatement s -> Just s
 
--- | Haddock string style.
+-- | Record what was emitted last.
+setLastEmitted :: LastEmitted -> R ()
+setLastEmitted lastEmitted = R . modify $ \sc ->
+  sc
+    { scLastEmitted = lastEmitted
+    }
+
+-- | Report what was emitted last.
+getLastEmitted :: R LastEmitted
+getLastEmitted = R (gets scLastEmitted)
+
+-- | Haddock string style, i.e. the trigger a Haddock is rendered with.
 data HaddockStyle
   = -- | @-- |@
     Pipe
@@ -585,19 +589,38 @@ data HaddockStyle
   | -- | @-- $@
     Named String
 
--- | Set the span of the last output comment.
-setSpanMark ::
-  -- | Span mark to set
-  SpanMark ->
-  R ()
-setSpanMark spnMark = R . modify $ \sc ->
+-- | The source text of the Haddock at the given span, if it is one of the
+-- module's Haddocks. See 'Ormolu.Parser.CommentStream.HaddockText'.
+lookupHaddockText :: RealSrcSpan -> R (Maybe Comment)
+lookupHaddockText spn = R (asks (M.lookup spn . rcHaddockText))
+
+----------------------------------------------------------------------------
+-- Recording comment placement
+
+-- | Record the fact that a comment was rendered in a particular slot.
+--
+-- Every code path that emits a comment has to call this. What is recorded
+-- here is what "Ormolu.Comments.Invariants" checks the input's comments
+-- against, so a comment emitted without being recorded is reported as
+-- dropped and Ormolu refuses to format the file.
+recordCommentPlacement :: CommentPlacement -> R ()
+recordCommentPlacement placement = R . modify $ \sc ->
   sc
-    { scSpanMark = Just spnMark
+    { scCommentPlacements = placement : scCommentPlacements sc
     }
 
--- | Get the span of the last output comment.
-getSpanMark :: R (Maybe SpanMark)
-getSpanMark = R (gets scSpanMark)
+-- | Record that the printer entered the element with the given span.
+--
+-- Not every span in the AST is entered: the printer renders plenty of
+-- syntax with 'txt' rather than through 'Ormolu.Printer.Combinators.located',
+-- so a @where@ clause, for instance, has a span but is never entered. A
+-- comment can only be attached to an element that is entered, because
+-- entering it is the only moment at which the comment could be emitted.
+recordVisitedSpan :: RealSrcSpan -> R ()
+recordVisitedSpan spn = R . modify $ \sc ->
+  sc
+    { scVisitedSpans = spn : scVisitedSpans sc
+    }
 
 ----------------------------------------------------------------------------
 -- Helpers for braces

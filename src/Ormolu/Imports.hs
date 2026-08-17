@@ -55,16 +55,37 @@ combineImports ::
   LImportDecl GhcPs ->
   LImportDecl GhcPs ->
   LImportDecl GhcPs
-combineImports (L lx ImportDecl {..}) (L _ y) =
-  L
-    lx
-    ImportDecl
-      { ideclImportList = case (ideclImportList, GHC.ideclImportList y) of
-          (Just (hiding, L l' xs), Just (_, L _ ys)) ->
-            Just (hiding, (L l' (normalizeLies (xs ++ ys))))
-          _ -> Nothing,
-        ..
-      }
+combineImports x y =
+  L widenedLoc earlier {ideclImportList = combinedImportList}
+  where
+    -- The merged declaration spans both of the ones it came from, so that
+    -- it is laid out over several lines and a comment that was written
+    -- between them has somewhere to go. Its own span would otherwise still
+    -- describe a single line.
+    widenedLoc =
+      l {entry = EpaSpan (combineSrcSpans (locA (getLoc x)) (locA (getLoc y)))}
+
+    -- Take the declaration that comes first in the source whole, rather
+    -- than mixing the span of one with the contents of the other: a
+    -- declaration whose span sits before its own module name or import
+    -- list cannot be placed in a containment tree, which is what comment
+    -- attachment needs.
+    (L l earlier, L _ later)
+      | startsFirst (locA (getLoc x)) (locA (getLoc y)) = (x, y)
+      | otherwise = (y, x)
+    combinedImportList =
+      case (GHC.ideclImportList earlier, GHC.ideclImportList later) of
+        (Just (hiding, L l' xs), Just (_, L _ ys)) ->
+          Just (hiding, L l' (normalizeLies (xs ++ ys)))
+        _ -> Nothing
+
+-- | Does the first span start before the second? Spans without a real
+-- location are treated as coming first, arbitrarily but consistently.
+startsFirst :: SrcSpan -> SrcSpan -> Bool
+startsFirst a b = case (srcSpanToRealSrcSpan a, srcSpanToRealSrcSpan b) of
+  (Just a', Just b') -> realSrcSpanStart a' <= realSrcSpanStart b'
+  (Nothing, _) -> True
+  _ -> False
 
 -- | An import id, a collection of all the things that justify having a
 -- separate import entry. This is used for merging imports: if two imports

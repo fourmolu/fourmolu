@@ -293,9 +293,9 @@ p_match' placer render style isInfix multAnn strictness m_pats GRHSs {..} = do
     unless (length grhssGRHSs > 1) $
       case style of
         Function _ | hasGuards -> return ()
-        Function _ -> space >> inci equals
+        Function _ -> space >> inci (txt "=")
         PatternBind | hasGuards -> return ()
-        PatternBind -> space >> inci equals
+        PatternBind -> space >> inci (txt "=")
         s | isCase s && hasGuards -> return ()
         _ -> space >> txt "->"
     switchLayout [patGrhssSpan] $
@@ -324,7 +324,7 @@ p_grhs' parentPlacement placer render style (GRHS _ guards body) =
       sitcc (sep commaDel (sitcc . located' p_stmt) xs)
       space
       inci $ case style of
-        EqualSign -> equals
+        EqualSign -> txt "="
         RightArrow -> txt "->"
       -- If we have a sequence of guards and it is placed in the normal way,
       -- then we indent one level more for readability. Otherwise (all
@@ -407,23 +407,22 @@ withSpacing f l = located l $ \x -> do
   case getLocA l of
     UnhelpfulSpan _ -> f x
     RealSrcSpan currentSpn _ -> do
-      getSpanMark >>= \case
-        -- We deal with blank lines between statements here. The last mark
-        -- may be a 'StatementSpan' (the usual case) or a comment span: the
+      (lastEmittedSpan <$> getLastEmitted) >>= \case
+        -- We deal with blank lines between statements here. The last thing
+        -- emitted may be a statement (the usual case) or a comment: the
         -- latter happens when the previous statement ended with a trailing
         -- comment, in which case we still want to preserve a blank line that
         -- followed that comment in the original input.
-        Just lastMark ->
-          let lastSpn = spanMarkSpan lastMark
-           in when (srcSpanStartLine currentSpn > srcSpanEndLine lastSpn + 1) newline
+        Just lastSpn ->
+          when (srcSpanStartLine currentSpn > srcSpanEndLine lastSpn + 1) newline
         Nothing -> return ()
       f x
-      -- In some cases the (f x) expression may insert a new mark. We want
-      -- to be careful not to override comment marks.
-      getSpanMark >>= \case
-        Just (HaddockSpan _ _) -> return ()
-        Just (CommentSpan _) -> return ()
-        _ -> setSpanMark (StatementSpan currentSpn)
+      -- In some cases the (f x) expression may record something else. We
+      -- want to be careful not to override comments.
+      getLastEmitted >>= \case
+        LastEmittedHaddock _ -> return ()
+        LastEmittedComment _ -> return ()
+        _ -> setLastEmitted (LastEmittedStatement currentSpn)
 
 p_stmt :: Stmt GhcPs (LHsExpr GhcPs) -> R ()
 p_stmt = p_stmt' N exprPlacement (p_hsExpr' NotApplicand)
@@ -553,7 +552,7 @@ p_hsLocalBinds = \case
     let p_ipBind (IPBind _ (L _ name) expr) = do
           atom @HsIPName name
           space
-          equals
+          txt "="
           breakpoint
           useBraces $ inci $ located expr p_hsExpr
     sepSemi (located' p_ipBind) xs
@@ -588,7 +587,7 @@ p_hsFieldBind p_lhs HsFieldBind {..} = do
   p_lhs hfbLHS
   unless hfbPun $ do
     space
-    equals
+    txt "="
     let placement =
           if onTheSameLine (getLocA hfbLHS) (getLocA hfbRHS)
             then exprPlacement (unLoc hfbRHS)
@@ -708,10 +707,8 @@ p_hsExpr' isApp s = \case
     -- negated literals, as `- 1` and `-1` have differing ASTs.
     when (negativeLiterals && isLiteral) space
     located e p_hsExpr
-  HsPar _ e -> do
-    csSpans <-
-      fmap (flip RealSrcSpan Strict.Nothing . getLoc) <$> getEnclosingComments
-    switchLayout (locA e : csSpans) $
+  HsPar _ e ->
+    switchLayoutWithEnclosingComments [locA e] $
       parens s (located e (dontUseBraces . p_hsExpr))
   SectionL _ x op -> do
     located x p_hsExpr
@@ -1015,7 +1012,7 @@ p_patSynBind PSB {..} = do
               located psb_def p_pat
           ImplicitBidirectional ->
             switchLayout pattern_def_spans $ do
-              equals
+              txt "="
               breakpoint
               located psb_def p_pat
           ExplicitBidirectional mgroup -> do
@@ -1134,7 +1131,12 @@ p_if placer render anns if' then' else' = do
   space
   located if' p_hsExpr
   breakpoint
-  commentSpans <- fmap getLoc <$> getEnclosingComments
+  -- A comment between the @then@ or @else@ keyword and its branch means the
+  -- branch cannot hang; it has to start on its own line.
+  commentSpans <-
+    getEnclosingSpan >>= \case
+      Nothing -> pure []
+      Just enclosing -> fmap getLoc <$> getCommentsAnchoredWithin enclosing
   let (thenSpan, elseSpan) = (locA aiThen, locA aiElse)
         where
           AnnsIf {aiThen, aiElse} = anns
@@ -1270,7 +1272,7 @@ p_pat_hsFieldBind HsFieldBind {..} = do
   located hfbLHS p_fieldOcc
   unless hfbPun $ do
     space
-    equals
+    txt "="
     breakpoint
     inci (located hfbRHS p_pat)
 

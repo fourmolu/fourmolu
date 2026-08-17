@@ -8,6 +8,7 @@ module Ormolu.Utils
     combineSrcSpans',
     notImplemented,
     showOutputable,
+    containsHaddocks,
     splitDocString,
     incSpanLine,
     separatedByBlank,
@@ -18,6 +19,8 @@ module Ormolu.Utils
   )
 where
 
+import Data.Data (Data)
+import Data.Generics.Schemes (listify)
 import Data.List (dropWhileEnd)
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.List.NonEmpty qualified as NE
@@ -69,6 +72,16 @@ notImplemented msg = error $ "not implemented yet: " ++ msg
 -- | Pretty-print a 'GHC.Outputable' thing.
 showOutputable :: (Outputable o) => o -> String
 showOutputable = showSDoc baseDynFlags . ppr
+
+-- | Does this fragment of the syntax tree carry a Haddock anywhere inside
+-- it?
+--
+-- Unlike the span of a Haddock, which sits wherever the author wrote it,
+-- this answers the question the printer actually has: will rendering this
+-- fragment emit documentation?
+containsHaddocks :: (Data a) => a -> Bool
+containsHaddocks =
+  not . null . listify (const True :: HsDocString -> Bool)
 
 -- | Split and normalize a doc string. The result is a list of lines that
 -- make up the comment.
