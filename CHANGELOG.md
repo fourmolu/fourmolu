@@ -28,6 +28,12 @@
   where Haddock does not look for a trigger anyway. [Issue
   1131](https://github.com/tweag/ormolu/issues/1131).
 
+* A comment written on its own line in front of an operator no longer
+  strands the operator at the start of the next line. In a `do` block that
+  changed what the code meant, because `$` at the beginning of a line is
+  read as a new statement rather than as a continuation of the previous one.
+  [Issue 1028](https://github.com/tweag/ormolu/issues/1028).
+
 * A comment written after `=`, `->`, or a lambda arrow now stays on that
   line instead of being pushed onto the next one, and the result is
   idempotent. `f x = -- note` no longer becomes an `=` stranded on a line of

@@ -37,6 +37,7 @@ module Ormolu.Printer.Internal
     registerPendingCommentLine,
     withAnchorMap,
     getCommentsAnchoredWithin,
+    getCommentsBefore,
     getEnclosingSpan,
     withEnclosingSpan,
     thisLineSpans,
@@ -77,7 +78,7 @@ import GHC.Data.EnumSet qualified as EnumSet
 import GHC.LanguageExtensions.Type
 import GHC.Types.SrcLoc
 import GHC.Utils.Outputable (Outputable)
-import Ormolu.Comments.Anchor (AnchorMap, commentsAnchoredWithin)
+import Ormolu.Comments.Anchor (AnchorMap, commentsAnchoredWithin, commentsBefore)
 import Ormolu.Config (SourceType (..))
 import Ormolu.Fixity (ModuleFixityMap)
 import Ormolu.Parser.CommentStream
@@ -501,6 +502,12 @@ withAnchorMap :: (AnchorMap -> (a, AnchorMap)) -> R a
 withAnchorMap f = R . state $ \sc ->
   let (a, am) = f (scAnchorMap sc)
    in (a, sc {scAnchorMap = am})
+
+-- | Get the comments that will be printed before the element at the given
+-- span. Like 'getCommentsAnchoredWithin', this only looks; it does not
+-- claim.
+getCommentsBefore :: RealSrcSpan -> R [LComment]
+getCommentsBefore spn = withAnchorMap (\am -> (commentsBefore spn am, am))
 
 -- | Get the comments attached to the element at the given span, or to
 -- anything inside it.

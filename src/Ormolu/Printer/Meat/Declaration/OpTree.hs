@@ -22,6 +22,7 @@ import GHC.Types.Fixity
 import GHC.Types.Name (occNameString)
 import GHC.Types.Name.Reader (RdrName, rdrNameOcc)
 import GHC.Types.SrcLoc
+import Ormolu.Parser.CommentStream (LComment)
 import Ormolu.Printer.Combinators
 import Ormolu.Printer.Meat.Common (p_rdrName)
 import Ormolu.Printer.Meat.Declaration.Value
@@ -140,11 +141,19 @@ p_exprOpTree s t@(OpBranches exprs@(firstExpr :| otherExprs) ops) = do
       isSingleOperator = case ops of
         [_] -> True
         _ -> False
-      -- If all operators at the current level match the conditions to be
-      -- trailing, and the chain is either a single operator or ends in a
-      -- hanging form, then put the operators in a trailing position.
-      isTrailing =
+  -- A comment written on its own line in front of an operator forces the
+  -- operator onto a line of its own. In trailing position that line starts
+  -- at the indentation of the statement, and @$@ at the start of a line in
+  -- a @do@ block is read as a new statement rather than as a continuation.
+  -- The leading layout indents instead, so it keeps the meaning.
+  opsAreCommented <-
+    or <$> traverse (fmap (not . null) . leadingComments . opiOp) ops
+  -- If all operators at the current level match the conditions to be
+  -- trailing, and the chain is either a single operator or ends in a
+  -- hanging form, then put the operators in a trailing position.
+  let isTrailing =
         (isSingleOperator || chainEndsInHangingForm)
+          && not opsAreCommented
           && all couldBeTrailing (zip (NE.toList exprs) ops)
   ub <- if isTrailing then return useBraces else opBranchBraceStyle placement
   let p_x = ub $ p_exprOpTree s firstExpr
@@ -178,6 +187,12 @@ p_exprOpTree s t@(OpBranches exprs@(firstExpr :| otherExprs) ops) = do
   switchLayout [opTreeLoc t] $ do
     p_x
     putOpsExprs firstExpr ops otherExprs
+
+-- | The comments that will be printed in front of a located thing.
+leadingComments :: (HasLoc l) => GenLocated l a -> R [LComment]
+leadingComments (L l _) = case locA l of
+  RealSrcSpan spn _ -> getCommentsBefore spn
+  _ -> pure []
 
 -- | Convert a 'LHsCmdTop' containing an operator tree to the 'OpTree'
 -- intermediate representation.

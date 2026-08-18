@@ -11,6 +11,7 @@ module Ormolu.Printer.Combinators
     runR,
     getEnclosingSpan,
     getCommentsAnchoredWithin,
+    getCommentsBefore,
     isExtensionEnabled,
 
     -- * Combinators

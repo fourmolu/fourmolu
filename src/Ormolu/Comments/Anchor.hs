@@ -28,6 +28,7 @@ module Ormolu.Comments.Anchor
     mkAnchorMap,
     noComments,
     claimBefore,
+    commentsBefore,
     claimTrailing,
     claimRemaining,
     pendingComments,
@@ -256,6 +257,11 @@ mkAnchorMap anchored =
     }
   where
     collect = Map.fromListWith (flip (<>)) . fmap (fmap pure)
+
+-- | The comments that go before the element with the given span, without
+-- claiming them.
+commentsBefore :: RealSrcSpan -> AnchorMap -> [LComment]
+commentsBefore spn = Map.findWithDefault [] spn . amBefore
 
 -- | Claim the comments that go before the element with the given span.
 claimBefore :: RealSrcSpan -> AnchorMap -> ([LComment], AnchorMap)
