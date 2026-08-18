@@ -1,4 +1,4 @@
-## Unreleased
+## Ormolu 0.9.0.0
 
 * Comments are now attached to the syntax tree by position, before anything
   is printed, rather than by a cursor advanced as the printer walks the
