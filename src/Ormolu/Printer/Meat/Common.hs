@@ -27,7 +27,7 @@ module Ormolu.Printer.Meat.Common
 where
 
 import Control.Monad
-import Data.Choice (Choice, pattern Is, pattern Isn't, pattern With)
+import Data.Choice (Choice, pattern Is, pattern Isn't)
 import Data.Choice qualified as Choice
 import Data.Data (Data)
 import Data.Generics.Schemes (listify)
@@ -205,10 +205,10 @@ p_hsDoc hstyle needsNewline m = do
 -- ends with a 'breakpoint' rather than a newline and can share the line:
 -- @data A = A {- | a number -} Int Bool@ stays as written. One rendered as
 -- @--@ lines still ends the line, since it owns the rest of it.
-p_hsDocInline :: HaddockStyle -> LHsDoc GhcPs -> R ()
-p_hsDocInline hstyle m = do
+p_hsDocInline :: HaddockStyle -> Choice "endNewline" -> LHsDoc GhcPs -> R ()
+p_hsDocInline hstyle needsNewline m = do
   poHStyle <- getPrinterOpt poHaddockStyle
-  p_hsDocWith poHStyle hstyle (With #endNewline) (Is #mayShareLine) m
+  p_hsDocWith poHStyle hstyle needsNewline (Is #mayShareLine) m
 
 -- | The worker behind 'p_hsDoc' and 'p_hsDocInline'.
 p_hsDocWith ::
