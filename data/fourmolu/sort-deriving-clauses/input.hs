@@ -7,6 +7,6 @@ newtype A = A Int
   deriving (ToJSON)
 
 data B 
-  -- A comment that will end up in an odd place
+  -- A comment that will stay above Show
   deriving stock (Show)
   deriving (Eq)
