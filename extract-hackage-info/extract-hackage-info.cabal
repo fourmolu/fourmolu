@@ -16,6 +16,8 @@ executable extract-hackage-info
     -O2
     -Wall
     -rtsopts
+    -haddock
+    -Werror=invalid-haddock
     -Wunused-packages
 
   build-depends:

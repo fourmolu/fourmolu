@@ -1,6 +1,8 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ViewPatterns #-}
 
 -- | Rendering of commonly useful bits.
@@ -12,7 +14,11 @@ module Ormolu.Printer.Meat.Common
     p_qualName,
     p_infixDefHelper,
     p_hsDoc,
-    p_hsDoc',
+    p_hsDocInline,
+    p_hsDocWith,
+    multiLineIfDocumented,
+    switchLayoutDocumented,
+    hasLineHaddocks,
     p_sourceText,
     p_namespaceSpec,
     p_hsMultAnn,
@@ -21,9 +27,12 @@ module Ormolu.Printer.Meat.Common
 where
 
 import Control.Monad
-import Data.Choice (Choice)
+import Data.Choice (Choice, pattern Is, pattern Isn't)
 import Data.Choice qualified as Choice
-import Data.Foldable (traverse_)
+import Data.Data (Data)
+import Data.Generics.Schemes (listify)
+import Data.List.NonEmpty qualified as NE
+import Data.Text (Text)
 import Data.Text qualified as T
 import GHC.Data.FastString
 import GHC.Hs.Binds
@@ -39,6 +48,7 @@ import GHC.Types.SourceText
 import GHC.Types.SrcLoc
 import Language.Haskell.Syntax.Module.Name
 import Ormolu.Config
+import Ormolu.Parser.CommentStream (Comment, isMultilineComment, unComment)
 import Ormolu.Printer.Combinators
 import Ormolu.Utils
 
@@ -49,7 +59,8 @@ data FamilyStyle
   | -- | Top-level declarations
     Free
 
--- | Outputs the name of the module-like entity, preceded by the correct prefix ("module" or "signature").
+-- | Output the name of the module-like entity, preceded by the correct
+-- prefix (@module@ or @signature@).
 p_hsmodName :: ModuleName -> R ()
 p_hsmodName mname = do
   sourceType <- askSourceType
@@ -92,6 +103,11 @@ p_rdrName l = located l $ \x -> do
         NameAnnRArrow {nann_mopen = Just _} -> parens N
         -- special case for unboxed unit tuples
         NameAnnOnly {nann_adornment = NameParensHash {}} -> const $ txt "(# #)"
+        -- An empty list reaches the printer as a name, not as a list, so
+        -- this is the only place a comment written between its brackets can
+        -- be given something to attach to.
+        NameAnnOnly {nann_adornment = NameSquare open _} ->
+          const $ brackets N (locatedEmpty (getEpTokenSrcSpan open))
         _ -> id
 
       -- When UnboxedSums is enabled, `(#` is a single lexeme, so we have to
@@ -111,7 +127,7 @@ p_rdrName l = located l $ \x -> do
     Orig _ occName ->
       -- This is used when GHC generates code that will be fed into
       -- the renamer (e.g. from deriving clauses), but where we want
-      -- to say that something comes from given module which is not
+      -- to say that something comes from a given module that is not
       -- specified in the source code, e.g. @Prelude.map@.
       --
       -- My current understanding is that the provided module name
@@ -128,7 +144,8 @@ p_qualName mname occName = do
   txt "."
   atom occName
 
--- | A helper for formatting infix constructions in lhs of definitions.
+-- | A helper for formatting infix constructions on the left-hand side of
+-- definitions.
 p_infixDefHelper ::
   -- | Whether to format in infix style
   Choice "infixStyle" ->
@@ -164,6 +181,11 @@ p_infixDefHelper isInfix indentArgs name args =
           sitcc (sep breakpoint sitcc args)
 
 -- | Print a Haddock.
+--
+-- The author's own text is reused whenever it can be, so a @{- | … -}@
+-- comes back as a block comment and an empty @-- |@ survives; see
+-- 'haddockAsWritten' for when it cannot be. Otherwise the Haddock is
+-- rebuilt from its 'HsDocString'.
 p_hsDoc ::
   -- | Haddock style
   HaddockStyle ->
@@ -172,65 +194,189 @@ p_hsDoc ::
   -- | The 'LHsDoc' to render
   LHsDoc GhcPs ->
   R ()
-p_hsDoc hstyle needsNewline lstr = do
+p_hsDoc hstyle needsNewline m = do
   poHStyle <- getPrinterOpt poHaddockStyle
-  p_hsDoc' poHStyle hstyle needsNewline lstr
+  p_hsDocWith poHStyle hstyle needsNewline (Isn't #mayShareLine) m
 
--- | Print a Haddock.
-p_hsDoc' ::
-  -- | 'haddock-style' configuration option
+-- | 'p_hsDoc' for a Haddock inside a construct that may legitimately be laid
+-- out on one line.
+--
+-- A Haddock that comes back out as @{- | … -}@ is self-delimiting, so it
+-- ends with a 'breakpoint' rather than a newline and can share the line:
+-- @data A = A {- | a number -} Int Bool@ stays as written. One rendered as
+-- @--@ lines still ends the line, since it owns the rest of it.
+p_hsDocInline :: HaddockStyle -> Choice "endNewline" -> LHsDoc GhcPs -> R ()
+p_hsDocInline hstyle needsNewline m = do
+  poHStyle <- getPrinterOpt poHaddockStyle
+  p_hsDocWith poHStyle hstyle needsNewline (Is #mayShareLine) m
+
+-- | The worker behind 'p_hsDoc' and 'p_hsDocInline'.
+p_hsDocWith ::
   HaddockPrintStyle ->
-  -- | Haddock style
   HaddockStyle ->
-  -- | Finish the doc string with a newline
   Choice "endNewline" ->
-  -- | The 'LHsDoc' to render
+  Choice "mayShareLine" ->
   LHsDoc GhcPs ->
   R ()
-p_hsDoc' poHStyle hstyle needsNewline (L l str) = do
-  let isCommentSpan = \case
-        HaddockSpan _ _ -> True
-        CommentSpan _ -> True
+p_hsDocWith poHStyle hstyle needsNewline mayShareLine ldoc@(L l str) = do
+  let goesAfterCommentOrHaddock = \case
+        LastEmittedHaddock _ -> True
+        LastEmittedComment _ -> True
         _ -> False
-  goesAfterComment <- maybe False isCommentSpan <$> getSpanMark
+  goesAfterComment <- goesAfterCommentOrHaddock <$> getLastEmitted
   -- Make sure the Haddock is separated by a newline from other comments.
   when goesAfterComment newline
-
-  let docStringLines = splitDocString $ hsDocString str
-
-  if poHStyle == HaddockSingleLine || length docStringLines <= 1
-    then do
+  poHStyle' <- resolveHaddockPrintStyle poHStyle hstyle ldoc (length docStringLines)
+  case poHStyle' of
+    HaddockPrint_AsWritten written -> do
+      let lns = unComment written
+      sitcc . sequence_ . NE.intersperse newline . fmap txt $ lns
+    HaddockPrint_Single -> do
       txt $ "-- " <> haddockDelim
       space
       sep (newline >> txt "--" >> space) txt docStringLines
-    else do
-      txt . T.concat $
-        [ "{-",
-          case (hstyle, poHStyle) of
-            (Pipe, HaddockMultiLineCompact) -> ""
-            _ -> " ",
-          haddockDelim
-        ]
+    HaddockPrint_Multi delimSpace -> do
+      txt $ "{-" <> delimSpace <> haddockDelim
       space
       sep multilineCommentNewline txtStripIndent docStringLines
       newline
       txt "-}"
-
-  when (Choice.isTrue needsNewline) newline
-  traverse_ (setSpanMark . HaddockSpan hstyle) =<< getSrcSpan l
+  -- A Haddock rendered as @--@ lines owns the rest of its line and has to
+  -- end it. One rendered as @{- | … -}@ is self-delimiting, so a space will
+  -- do when the surrounding layout is single-line.
+  when (Choice.isTrue needsNewline) $
+    if Choice.isTrue mayShareLine && isMultilineHaddockPrintStyle poHStyle'
+      then breakpoint
+      else newline
+  case l of
+    UnhelpfulSpan _ ->
+      -- It's often the case that the comment itself doesn't have a span
+      -- attached to it, and instead its location can be obtained from the
+      -- nearest enclosing span.
+      getEnclosingSpan >>= mapM_ (setLastEmitted . LastEmittedHaddock)
+    RealSrcSpan spn _ -> setLastEmitted (LastEmittedHaddock spn)
   where
+    docStringLines = splitDocString $ hsDocString str
     haddockDelim =
       case hstyle of
         Pipe -> "|"
         Caret -> "^"
         Asterisk n -> T.replicate n "*"
         Named name -> "$" <> T.pack name
-    getSrcSpan = \case
-      -- It's often the case that the comment itself doesn't have a span
-      -- attached to it and instead its location can be obtained from
-      -- nearest enclosing span.
-      UnhelpfulSpan _ -> getEnclosingSpan
-      RealSrcSpan spn _ -> pure $ Just spn
+
+data HaddockPrintStyleResolved
+  = HaddockPrint_AsWritten Comment
+  | HaddockPrint_Single
+  | HaddockPrint_Multi Text
+
+resolveHaddockPrintStyle :: HaddockPrintStyle -> HaddockStyle -> LHsDoc GhcPs -> Int -> R HaddockPrintStyleResolved
+resolveHaddockPrintStyle poHStyle hstyle ldoc numLines =
+  case poHStyle of
+    HaddockSingleLine -> pure HaddockPrint_Single
+    HaddockMultiLine -> resolveMulti " "
+    HaddockMultiLineCompact -> resolveMulti $ case hstyle of Pipe -> ""; _ -> " "
+    HaddockAuto -> do
+      -- Print what the author wrote when we still have it. Rebuilding the
+      -- comment from the doc string cannot preserve a @{- | … -}@ or an empty
+      -- @-- |@, and what it loses it loses from the AST too.
+      --
+      -- If we can't figure out what the author wrote, fallback to single-line haddocks
+      asWritten <- haddockAsWritten hstyle ldoc
+      pure $ maybe HaddockPrint_Single HaddockPrint_AsWritten asWritten
+  where
+    resolveMulti delimSpace =
+      pure $
+        if numLines <= 1
+          then HaddockPrint_Single
+          else HaddockPrint_Multi delimSpace
+
+isMultilineHaddockPrintStyle :: HaddockPrintStyleResolved -> Bool
+isMultilineHaddockPrintStyle = \case
+  HaddockPrint_AsWritten written -> isMultilineComment written
+  HaddockPrint_Single -> False
+  HaddockPrint_Multi _ -> True
+
+-- | Lay the computation out on several lines if rendering the given
+-- fragment of the syntax tree will emit a Haddock as @--@ lines.
+--
+-- Such a Haddock takes whole lines: emitted inside a bracketed construct
+-- that was put on one line, it swallows the rest of that line, closing
+-- bracket and all. The author writes it in front of the construct, so its
+-- span is outside the construct's and 'switchLayout' cannot see it; what
+-- decides is where it will be /printed/, which is inside. Hence
+-- @data A = A deriving (Eq)@ documented on the @Eq@ came out as
+-- @deriving (-- \| B@, and a documented field of a one-line record as
+-- @{-- \| …@, which does not parse at all.
+--
+-- A Haddock that comes back out as @{- | … -}@ is self-delimiting and does
+-- not force anything, so @data A = A {- | a number -} Int Bool@ is left
+-- alone rather than being exploded over five lines.
+multiLineIfDocumented :: (Data a) => a -> R () -> R ()
+multiLineIfDocumented x m = do
+  breaks <- hasLineHaddocks x
+  if breaks then enterLayout MultiLine m else m
+
+-- | 'switchLayout', except that the layout is multi-line regardless of the
+-- spans when rendering the given fragment will emit a Haddock as @--@
+-- lines.
+--
+-- Use this rather than 'multiLineIfDocumented' around a 'switchLayout': the
+-- override has to be applied after the spans have had their say, or it is
+-- immediately discarded.
+switchLayoutDocumented ::
+  (Data a) =>
+  -- | Fragment that decides whether documentation will be printed
+  a ->
+  -- | Span that controls layout otherwise
+  [SrcSpan] ->
+  -- | Computation to run with changed layout
+  R () ->
+  R ()
+switchLayoutDocumented x spans' =
+  switchLayout spans' . multiLineIfDocumented x
+
+-- | Does rendering this fragment emit a Haddock as @--@ lines?
+--
+-- Every site this is asked about prints its Haddocks in 'Pipe' style, which
+-- is what decides whether the author's own text can be reused.
+hasLineHaddocks :: (Data a) => a -> R Bool
+hasLineHaddocks x = case listify (const True :: LHsDoc GhcPs -> Bool) x of
+  -- A doc string that is not reachable as an 'LHsDoc' cannot be inspected,
+  -- so assume the worst and break.
+  [] -> pure (containsHaddocks x)
+  docs -> or <$> traverse rendersAsLines docs
+  where
+    rendersAsLines doc =
+      maybe True (not . isMultilineComment) <$> haddockAsWritten Pipe doc
+
+-- | The author's own text for a Haddock, when it can be reused.
+--
+-- 'Nothing' means the Haddock has to be rebuilt from its 'HsDocString' as
+-- @--@ lines: either its text was not kept, or it is about to be rendered
+-- in a different style than it was written in. Ormolu moves a trailing
+-- @-- ^ X@ in front of what it documents and writes it as @-- | X@, and
+-- keeping the author's text there would leave a @^@ pointing at the wrong
+-- thing.
+haddockAsWritten :: HaddockStyle -> LHsDoc GhcPs -> R (Maybe Comment)
+haddockAsWritten hstyle (L l _) = do
+  asWritten <- maybe (pure Nothing) lookupHaddockText (srcSpanToRealSrcSpan l)
+  pure (mfilter (writtenAs hstyle . NE.head . unComment) asWritten)
+
+-- | Was the Haddock written in the style it is about to be rendered in?
+writtenAs :: HaddockStyle -> Text -> Bool
+writtenAs hstyle firstLine =
+  case T.stripPrefix "--" opener of
+    Just rest -> hasTrigger (T.stripStart rest)
+    Nothing -> maybe False (hasTrigger . T.stripStart) (T.stripPrefix "{-" opener)
+  where
+    opener = T.stripStart firstLine
+    hasTrigger t = case hstyle of
+      Pipe -> "|" `T.isPrefixOf` t
+      Caret -> "^" `T.isPrefixOf` t
+      Asterisk n ->
+        T.replicate n "*" `T.isPrefixOf` t
+          && not (T.replicate (n + 1) "*" `T.isPrefixOf` t)
+      Named name -> ("$" <> T.pack name) `T.isPrefixOf` t
 
 p_sourceText :: SourceText -> R ()
 p_sourceText = \case

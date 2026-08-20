@@ -240,7 +240,7 @@ parsePrinterOptsCLI f =
       "INT"
     <*> f
       "haddock-style"
-      "How to print Haddock comments (choices: \"single-line\", \"multi-line\", or \"multi-line-compact\") (default: multi-line)"
+      "How to print Haddock comments (choices: \"single-line\", \"multi-line\", \"multi-line-compact\", or \"auto\") (default: multi-line)"
       "OPTION"
     <*> f
       "haddock-style-module"
@@ -374,6 +374,7 @@ data HaddockPrintStyle
   = HaddockSingleLine
   | HaddockMultiLine
   | HaddockMultiLineCompact
+  | HaddockAuto
   deriving (Eq, Show, Enum, Bounded)
 
 data HaddockPrintStyleModule
@@ -524,10 +525,11 @@ instance PrinterOptsFieldType HaddockPrintStyle where
       "single-line" -> Right HaddockSingleLine
       "multi-line" -> Right HaddockMultiLine
       "multi-line-compact" -> Right HaddockMultiLineCompact
+      "auto" -> Right HaddockAuto
       _ ->
         Left . unlines $
           [ "unknown value: " <> show s
-          , "Valid values are: \"single-line\", \"multi-line\", or \"multi-line-compact\""
+          , "Valid values are: \"single-line\", \"multi-line\", \"multi-line-compact\", or \"auto\""
           ]
 
 instance RenderPrinterOpt HaddockPrintStyle where
@@ -535,6 +537,7 @@ instance RenderPrinterOpt HaddockPrintStyle where
     HaddockSingleLine -> "single-line"
     HaddockMultiLine -> "multi-line"
     HaddockMultiLineCompact -> "multi-line-compact"
+    HaddockAuto -> "auto"
 
 instance Aeson.FromJSON HaddockPrintStyleModule where
   parseJSON =
@@ -833,7 +836,7 @@ defaultPrinterOptsYaml =
     , "# Number of spaces between top-level declarations"
     , "newlines-between-decls: 1"
     , ""
-    , "# How to print Haddock comments (choices: single-line, multi-line, or multi-line-compact)"
+    , "# How to print Haddock comments (choices: single-line, multi-line, multi-line-compact, or auto)"
     , "haddock-style: multi-line"
     , ""
     , "# How to print module docstring"

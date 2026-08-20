@@ -58,7 +58,7 @@ newtype State = State
   }
   deriving (Eq, Show)
 
--- | Recursively list all files inside directory.
+-- | Recursively list all files inside a directory.
 walkDir ::
   -- | Path to the root directory
   FilePath ->
@@ -84,7 +84,7 @@ readFileUtf8Latin1 filePath = catch @UnicodeException (T.Utf8.readFile filePath)
       e
     decodeLatin1 <$> ByteString.readFile filePath
 
--- | Scrap all fixity data from a Hoogle file, and update the state
+-- | Scrape all fixity data from a Hoogle file and update the state
 -- accordingly.
 extractFixitiesFromFile ::
   -- | Previous state
