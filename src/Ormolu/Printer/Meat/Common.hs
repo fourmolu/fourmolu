@@ -218,7 +218,7 @@ p_hsDocWith ::
   Choice "mayShareLine" ->
   LHsDoc GhcPs ->
   R ()
-p_hsDocWith poHStyle hstyle needsNewline mayShareLine (L l str) = do
+p_hsDocWith poHStyle hstyle needsNewline mayShareLine ldoc@(L l str) = do
   let goesAfterCommentOrHaddock = \case
         LastEmittedHaddock _ -> True
         LastEmittedComment _ -> True
@@ -226,38 +226,26 @@ p_hsDocWith poHStyle hstyle needsNewline mayShareLine (L l str) = do
   goesAfterComment <- goesAfterCommentOrHaddock <$> getLastEmitted
   -- Make sure the Haddock is separated by a newline from other comments.
   when goesAfterComment newline
-  -- Print what the author wrote when we still have it. Rebuilding the
-  -- comment from the doc string cannot preserve a @{- | … -}@ or an empty
-  -- @-- |@, and what it loses it loses from the AST too.
-  asWritten <- haddockAsWritten hstyle (L l str)
-  case asWritten of
-    Just written -> do
+  poHStyle' <- resolveHaddockPrintStyle poHStyle hstyle ldoc (length docStringLines)
+  case poHStyle' of
+    HaddockPrint_AsWritten written -> do
       let lns = unComment written
       sitcc . sequence_ . NE.intersperse newline . fmap txt $ lns
-    Nothing -> do
-      let docStringLines = splitDocString $ hsDocString str
-      if poHStyle == HaddockSingleLine || length docStringLines <= 1
-        then do
-          txt $ "-- " <> haddockDelim
-          space
-          sep (newline >> txt "--" >> space) txt docStringLines
-        else do
-          txt . T.concat $
-            [ "{-",
-              case (hstyle, poHStyle) of
-                (Pipe, HaddockMultiLineCompact) -> ""
-                _ -> " ",
-              haddockDelim
-            ]
-          space
-          sep multilineCommentNewline txtStripIndent docStringLines
-          newline
-          txt "-}"
+    HaddockPrint_Single -> do
+      txt $ "-- " <> haddockDelim
+      space
+      sep (newline >> txt "--" >> space) txt docStringLines
+    HaddockPrint_Multi delimSpace -> do
+      txt $ "{-" <> delimSpace <> haddockDelim
+      space
+      sep multilineCommentNewline txtStripIndent docStringLines
+      newline
+      txt "-}"
   -- A Haddock rendered as @--@ lines owns the rest of its line and has to
   -- end it. One rendered as @{- | … -}@ is self-delimiting, so a space will
   -- do when the surrounding layout is single-line.
   when (Choice.isTrue needsNewline) $
-    if Choice.isTrue mayShareLine && maybe False isMultilineComment asWritten
+    if Choice.isTrue mayShareLine && isMultilineHaddockPrintStyle poHStyle'
       then breakpoint
       else newline
   case l of
@@ -268,12 +256,45 @@ p_hsDocWith poHStyle hstyle needsNewline mayShareLine (L l str) = do
       getEnclosingSpan >>= mapM_ (setLastEmitted . LastEmittedHaddock)
     RealSrcSpan spn _ -> setLastEmitted (LastEmittedHaddock spn)
   where
+    docStringLines = splitDocString $ hsDocString str
     haddockDelim =
       case hstyle of
         Pipe -> "|"
         Caret -> "^"
         Asterisk n -> T.replicate n "*"
         Named name -> "$" <> T.pack name
+
+data HaddockPrintStyleResolved
+  = HaddockPrint_AsWritten Comment
+  | HaddockPrint_Single
+  | HaddockPrint_Multi Text
+
+resolveHaddockPrintStyle :: HaddockPrintStyle -> HaddockStyle -> LHsDoc GhcPs -> Int -> R HaddockPrintStyleResolved
+resolveHaddockPrintStyle poHStyle hstyle ldoc numLines =
+  case poHStyle of
+    HaddockSingleLine -> pure HaddockPrint_Single
+    HaddockMultiLine -> resolveMulti " "
+    HaddockMultiLineCompact -> resolveMulti $ case hstyle of Pipe -> ""; _ -> " "
+    HaddockAuto -> do
+      -- Print what the author wrote when we still have it. Rebuilding the
+      -- comment from the doc string cannot preserve a @{- | … -}@ or an empty
+      -- @-- |@, and what it loses it loses from the AST too.
+      --
+      -- If we can't figure out what the author wrote, fallback to single-line haddocks
+      asWritten <- haddockAsWritten hstyle ldoc
+      pure $ maybe HaddockPrint_Single HaddockPrint_AsWritten asWritten
+  where
+    resolveMulti delimSpace =
+      pure $
+        if numLines <= 1
+          then HaddockPrint_Single
+          else HaddockPrint_Multi delimSpace
+
+isMultilineHaddockPrintStyle :: HaddockPrintStyleResolved -> Bool
+isMultilineHaddockPrintStyle = \case
+  HaddockPrint_AsWritten written -> isMultilineComment written
+  HaddockPrint_Single -> False
+  HaddockPrint_Multi _ -> True
 
 -- | Lay the computation out on several lines if rendering the given
 -- fragment of the syntax tree will emit a Haddock as @--@ lines.
