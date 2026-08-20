@@ -122,7 +122,10 @@ ormolu cfgWithIndices path originalInput = do
   -- wrapper, which would lead to error messages presenting the exceptions
   -- as GHC bugs.
   let printed =
-        printSnippetsWithPlacements (Choice.fromBool (cfgDebug cfg)) result0 $ cfgPrinterOpts cfgWithIndices
+        printSnippetsWithPlacements
+          (cfgPrinterOpts cfgWithIndices)
+          (Choice.fromBool (cfgDebug cfg))
+          result0
       !formattedText = T.concat (fst <$> printed)
   -- Every comment of the input should come out exactly once, and in the
   -- order it went in. The AST check below does not cover this: it compares
@@ -174,7 +177,10 @@ ormolu cfgWithIndices path originalInput = do
     -- the same output.
     when (cfgCheckIdempotence cfg) . liftIO $
       let reformattedText =
-            printSnippets (Choice.fromBool (cfgDebug cfg)) result1 $ cfgPrinterOpts cfgWithIndices
+            printSnippets
+              (cfgPrinterOpts cfgWithIndices)
+              (Choice.fromBool (cfgDebug cfg))
+              result1
        in case diffText formattedText reformattedText path of
             Nothing -> return ()
             Just diff -> throwIO (OrmoluNonIdempotentOutput diff)

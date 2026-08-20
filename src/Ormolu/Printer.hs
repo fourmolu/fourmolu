@@ -30,14 +30,14 @@ import Ormolu.Processing.Common
 
 -- | Render several source snippets.
 printSnippets ::
+  PrinterOptsTotal ->
   -- | Whether to print out debug information during printing
   Choice "debug" ->
   -- | Result of parsing
   [SourceSnippet] ->
-  PrinterOptsTotal ->
   -- | Resulting rendition
   Text
-printSnippets debug snippets printerOpts = T.concat . fmap fst $ printSnippetsWithPlacements debug snippets printerOpts
+printSnippets printerOpts debug = T.concat . fmap fst . printSnippetsWithPlacements printerOpts debug
 
 -- | Like 'printSnippets', but also return, for each snippet, the placement
 -- of every comment it emitted.
@@ -46,23 +46,24 @@ printSnippets debug snippets printerOpts = T.concat . fmap fst $ printSnippetsWi
 -- themselves, so the placements stay grouped by snippet: anything that
 -- compares them against the input has to work one snippet at a time.
 printSnippetsWithPlacements ::
+  PrinterOptsTotal ->
   -- | Whether to print out debug information during printing
   Choice "debug" ->
   -- | Result of parsing
   [SourceSnippet] ->
-  PrinterOptsTotal ->
   -- | For each snippet, its rendition and the comments it emitted
   [(Text, [CommentPlacement])]
-printSnippetsWithPlacements debug = fmap (renderSnippet debug)
+printSnippetsWithPlacements printerOpts debug = fmap (renderSnippet printerOpts debug)
 
 -- | Render one snippet. A snippet that could not be parsed is passed
 -- through as it was.
 renderSnippet ::
+  PrinterOptsTotal ->
   Choice "debug" ->
   SourceSnippet ->
   (Text, [CommentPlacement])
-renderSnippet debug = \case
-  ParsedSnippet r -> render debug r
+renderSnippet printerOpts debug = \case
+  ParsedSnippet r -> render printerOpts debug r
   RawSnippet r -> (r, [])
 
 -- | Render one parsed snippet, along with the placement of every comment it
@@ -75,10 +76,11 @@ renderSnippet debug = \case
 -- thrown away; what it is for is the spans it visited, which is what the
 -- second pass attaches the comments to.
 render ::
+  PrinterOptsTotal ->
   Choice "debug" ->
   ParseResult ->
   (Text, [CommentPlacement])
-render debug r@ParseResult {..} =
+render printerOpts debug r@ParseResult {..} =
   let (_, _, visited) = renderWith noComments
       (rendered, placements, _) = renderWith (anchorMapFor r visited)
    in (rendered, placements)
