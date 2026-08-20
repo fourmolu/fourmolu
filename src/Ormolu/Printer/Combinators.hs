@@ -3,15 +3,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 -- | Printing combinators. The definitions here are presented in such an
--- order so you can just go through the Haddocks and by the end of the file
--- you should have a pretty good idea how to program rendering logic.
+-- order that you can just read through the Haddocks, and by the end of the
+-- file you should have a pretty good idea of how to program rendering logic.
 module Ormolu.Printer.Combinators
   ( -- * The 'R' monad
     R,
     runR,
     getEnclosingSpan,
-    getEnclosingSpanWhere,
-    getEnclosingComments,
+    getCommentsAnchoredWithin,
+    getCommentsBefore,
     isExtensionEnabled,
 
     -- * Combinators
@@ -33,9 +33,10 @@ module Ormolu.Printer.Combinators
     askModuleFixityMap,
     askDebug,
     located,
-    encloseLocated,
+    locatedEmpty,
     located',
     switchLayout,
+    switchLayoutWithEnclosingComments,
     switchLayoutNoLimit,
     spansLayout,
     enterLayout,
@@ -72,7 +73,6 @@ module Ormolu.Printer.Combinators
     comma,
     commaDel,
     commaDelImportExport,
-    equals,
     token'Larrowtail,
     token'Rarrowtail,
     token'darrow,
@@ -90,11 +90,14 @@ module Ormolu.Printer.Combinators
     token'lolly,
 
     -- ** Stateful markers
-    SpanMark (..),
-    spanMarkSpan,
+    LastEmitted (..),
+    lastEmittedSpan,
     HaddockStyle (..),
-    setSpanMark,
-    getSpanMark,
+    setLastEmitted,
+    getLastEmitted,
+
+    -- ** Haddocks
+    lookupHaddockText,
 
     -- ** Placement
     Placement (..),
@@ -104,6 +107,7 @@ where
 
 import Control.Monad
 import Data.List (intersperse)
+import Data.List.NonEmpty qualified as NE
 import Data.Text (Text)
 import GHC.Data.Strict qualified as Strict
 import GHC.LanguageExtensions.Type
@@ -112,6 +116,7 @@ import GHC.Types.SrcLoc hiding (spans)
 import Ormolu.Config
 import Ormolu.Printer.Comments
 import Ormolu.Printer.Internal
+import Ormolu.Utils (combineSrcSpans')
 
 ----------------------------------------------------------------------------
 -- Basic
@@ -126,7 +131,7 @@ inciIf ::
 inciIf b m = if b then inci m else m
 
 -- | Enter a 'GenLocated' entity. This combinator handles outputting comments
--- and sets layout (single-line vs multi-line) for the inner computation.
+-- and sets the layout (single-line vs multi-line) for the inner computation.
 -- Roughly, the rule for using 'located' is that every time there is a
 -- 'Located' wrapper, it should be “discharged” with a corresponding
 -- 'located' invocation.
@@ -134,59 +139,67 @@ located ::
   (HasLoc l) =>
   -- | Thing to enter
   GenLocated l a ->
-  -- | How to render inner value
+  -- | How to render the inner value
   (a -> R ()) ->
   R ()
 located (L l' a) f = case locA l' of
   UnhelpfulSpan _ -> f a
   RealSrcSpan l _ -> do
+    recordVisitedSpan l
     spitPrecedingComments l
     withEnclosingSpan l $
       switchLayout [RealSrcSpan l Strict.Nothing] (f a)
     spitFollowingComments l
 
--- | Similar to 'located', but when the "payload" is an empty list, print
--- virtual elements at the start and end of the source span to prevent comments
--- from "floating out".
-encloseLocated ::
-  (HasLoc l) =>
-  GenLocated l [a] ->
-  ([a] -> R ()) ->
+-- | Give an empty bracketed construct something for a comment written
+-- inside it to attach to.
+--
+-- Brackets are rendered with 'txt', so an empty export or import list, an
+-- empty @[]@ or a record with no fields contains no element at all. A
+-- comment written between the brackets would be attached to whatever
+-- encloses them and rendered outside them, so a zero-width element is
+-- entered at the opening bracket instead.
+locatedEmpty ::
+  -- | Span of the empty construct
+  SrcSpan ->
   R ()
-encloseLocated la f = located la $ \a -> do
-  when (null a) $ located (L startSpan ()) pure
-  f a
-  when (null a) $ located (L endSpan ()) pure
-  where
-    l = locA la
-    (startLoc, endLoc) = (srcSpanStart l, srcSpanEnd l)
-    (startSpan, endSpan) = (mkSrcSpan startLoc startLoc, mkSrcSpan endLoc endLoc)
+locatedEmpty l =
+  let loc = srcSpanStart l
+   in located (L (mkSrcSpan loc loc) ()) pure
 
--- | A version of 'located' with arguments flipped.
+-- | A version of 'located' with the arguments flipped.
 located' ::
   (HasLoc l) =>
-  -- | How to render inner value
+  -- | How to render the inner value
   (a -> R ()) ->
   -- | Thing to enter
   GenLocated l a ->
   R ()
 located' = flip located
 
--- | Set layout according to combination of given 'SrcSpan's for a given.
--- Use this only when you need to set layout based on e.g. combined span of
--- several elements when there is no corresponding 'Located' wrapper
--- provided by GHC AST. It is relatively rare that this one is needed.
+-- | Set the layout according to the combination of the given 'SrcSpan's,
+-- together with the spans of the comments that belong inside them.
 --
--- Given empty list this function will set layout to single line.
+-- Comments count towards the layout: a construct that would fit on one line
+-- has to be broken up anyway if a comment was written inside it, or the
+-- comment would swallow whatever follows it on the line.
+--
+-- 'located' calls this for you. Call it directly only when the layout has
+-- to come from something the GHC AST has no 'Located' wrapper for, such as
+-- the combined span of several elements; that is rare.
+--
+-- Given an empty list and no comments, this function will set the layout to
+-- single-line.
 switchLayout ::
   -- | Span that controls layout
   [SrcSpan] ->
   -- | Computation to run with changed layout
   R () ->
   R ()
-switchLayout spans r = do
-  layout <- spansLayout spans
-  enterLayout layout r
+switchLayout spans' m = do
+  csSpans <- commentSpansIn (combineSrcSpans' <$> NE.nonEmpty spans')
+  layout <- spansLayout (spans' <> csSpans)
+  enterLayout layout m
 
 -- | Same as 'switchLayout', except disregards the column limit.
 --
@@ -195,7 +208,57 @@ switchLayout spans r = do
 switchLayoutNoLimit :: [SrcSpan] -> R () -> R ()
 switchLayoutNoLimit spans = enterLayout (spansLayoutWithLimit NoLimit spans)
 
--- | Which layout combined spans result in?
+-- | Like 'switchLayout', but the comments are looked for in the enclosing
+-- element rather than in the given spans.
+--
+-- This is what a bracketed construct needs. In
+--
+-- > ( -- c
+-- >   x
+-- > )
+--
+-- the comment sits between the bracket and @x@, so it is inside neither of
+-- them, and the parentheses would be put on one line despite it. Widening
+-- the question to the enclosing element catches it. Do not reach for this
+-- elsewhere: it is deliberately coarser than 'switchLayout', and applying
+-- it where the enclosing element is large would let one comment break every
+-- layout decision inside it.
+switchLayoutWithEnclosingComments ::
+  -- | Span that controls layout
+  [SrcSpan] ->
+  -- | Computation to run with changed layout
+  R () ->
+  R ()
+switchLayoutWithEnclosingComments spans' m = do
+  enclosing <- getEnclosingSpan
+  csSpans <- commentSpansIn (flip RealSrcSpan Strict.Nothing <$> enclosing)
+  layout <- spansLayout (spans' <> csSpans)
+  enterLayout layout m
+
+-- | The spans of the comments that belong inside the given region: both
+-- attached to something in it and written inside it.
+--
+-- Both halves are needed. Without the first, a comment anywhere in a
+-- declaration would force every layout decision inside that declaration to
+-- multi-line. Without the second, a comment trailing an element would force
+-- that element itself to be broken up.
+--
+-- Haddocks are not consulted here. They do not travel in the anchor map,
+-- and their spans sit where the author wrote them rather than where they
+-- will be printed, which is the wrong question; see
+-- 'Ormolu.Printer.Meat.Common.multiLineIfDocumented'.
+commentSpansIn :: Maybe SrcSpan -> R [SrcSpan]
+commentSpansIn = \case
+  Just (RealSrcSpan region _) -> do
+    comments <- getCommentsAnchoredWithin region
+    pure
+      [ RealSrcSpan spn Strict.Nothing
+      | L spn _ <- comments,
+        region `containsSpan` spn
+      ]
+  _ -> pure []
+
+-- | Which layout do the combined spans result in?
 spansLayout :: [SrcSpan] -> R Layout
 spansLayout spans = do
   colLimit <- getPrinterOpt poColumnLimit
@@ -217,14 +280,14 @@ spansLayoutWithLimit colLimit = \case
            in spanLineLength > fromIntegral maxLineLength
         _ -> False
 
--- | Insert a space if enclosing layout is single-line, or newline if it's
--- multiline.
+-- | Insert a space if the enclosing layout is single-line, or a newline if
+-- it is multi-line.
 --
 -- > breakpoint = vlayout space newline
 breakpoint :: R ()
 breakpoint = vlayout space newline
 
--- | Similar to 'breakpoint' but outputs nothing in case of single-line
+-- | Similar to 'breakpoint', but outputs nothing in the case of single-line
 -- layout.
 --
 -- > breakpoint' = vlayout (return ()) newline
@@ -234,7 +297,7 @@ breakpoint' = vlayout (return ()) newline
 ----------------------------------------------------------------------------
 -- Formatting lists
 
--- | Render a collection of elements inserting a separator between them.
+-- | Render a collection of elements, inserting a separator between them.
 sep ::
   -- | Separator
   R () ->
@@ -245,9 +308,9 @@ sep ::
   R ()
 sep s f xs = sequence_ (intersperse s (f <$> xs))
 
--- | Render a collection of elements layout-sensitively using given printer,
--- inserting semicolons if necessary and respecting 'useBraces' and
--- 'dontUseBraces' combinators.
+-- | Render a collection of elements layout-sensitively using the given
+-- printer, inserting semicolons if necessary and respecting the 'useBraces'
+-- and 'dontUseBraces' combinators.
 --
 -- > useBraces $ sepSemi txt ["foo", "bar"]
 -- >   == vlayout (txt "{ foo; bar }") (txt "foo\nbar")
@@ -262,8 +325,8 @@ sepSemi ::
   R ()
 sepSemi = sepSemi' False
 
--- | A version of 'sepSemi' that allows to control whether semicolons should
--- be inserted in multi-line layout.
+-- | A version of 'sepSemi' that allows one to control whether semicolons
+-- should be inserted in multi-line layout.
 --
 -- > useBraces $ sepSemi' False txt ["foo", "bar"]
 -- >   == vlayout (txt "{ foo; bar }") (txt "foo\nbar")
@@ -302,7 +365,7 @@ sepSemi' addMultiColSemi f xs = vlayout singleLine multiLine
 ----------------------------------------------------------------------------
 -- Wrapping
 
--- | 'BracketStyle' controlling how closing bracket is rendered.
+-- | 'BracketStyle' controlling how the closing bracket is rendered.
 data BracketStyle
   = -- | Normal
     N
@@ -310,30 +373,31 @@ data BracketStyle
     S
   deriving (Eq, Show)
 
--- | Surround given entity by backticks.
+-- | Surround the given entity with backticks.
 backticks :: R () -> R ()
 backticks m = do
   txt "`"
   m
   txt "`"
 
--- | Surround given entity by banana brackets (i.e., from arrow notation.)
+-- | Surround the given entity with banana brackets (i.e. from arrow
+-- notation).
 banana :: BracketStyle -> R () -> R ()
 banana = brackets_ True token'oparenbar token'cparenbar
 
--- | Surround given entity by curly braces @{@ and  @}@.
+-- | Surround the given entity with curly braces @{@ and @}@.
 braces :: BracketStyle -> R () -> R ()
 braces = brackets_ False (txt "{") (txt "}")
 
--- | Surround given entity by square brackets @[@ and @]@.
+-- | Surround the given entity with square brackets @[@ and @]@.
 brackets :: BracketStyle -> R () -> R ()
 brackets = brackets_ False (txt "[") (txt "]")
 
--- | Surround given entity by parentheses @(@ and @)@.
+-- | Surround the given entity with parentheses @(@ and @)@.
 parens :: BracketStyle -> R () -> R ()
 parens = brackets_ False (txt "(") (txt ")")
 
--- | Surround given entity by @(# @ and @ #)@.
+-- | Surround the given entity with @(# @ and @ #)@.
 parensHash :: BracketStyle -> R () -> R ()
 parensHash = brackets_ True (txt "(#") (txt "#)")
 
@@ -444,10 +508,6 @@ commaDel' = \case
   Leading -> breakpoint' >> comma >> space
   Trailing -> comma >> breakpoint
 
--- | Print @=@. Do not use @'txt' "="@.
-equals :: R ()
-equals = interferingTxt "="
-
 ----------------------------------------------------------------------------
 -- Token literals
 -- The names of the following literals are from GHC's
@@ -527,13 +587,13 @@ unicodeText `whenUnicodeOtherwise` asciiText = do
 -- Placement
 
 -- | Expression placement. This marks the places where expressions that
--- implement handing forms may use them.
+-- support hanging forms may use them.
 data Placement
   = -- | Multi-line layout should cause
-    -- insertion of a newline and indentation
-    -- bump
+    -- insertion of a newline and an
+    -- indentation bump
     Normal
-  | -- | Expressions that have hanging form
+  | -- | Expressions that have a hanging form
     -- should use it and avoid bumping one level
     -- of indentation
     Hanging

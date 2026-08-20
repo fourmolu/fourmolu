@@ -26,20 +26,18 @@ Fourmolu is a formatter for Haskell source code. It is a fork of [Ormolu](https:
 
 We share all bar one of Ormolu's goals:
 
-* Using GHC's own parser to avoid parsing problems caused by
+* Use GHC's own parser to avoid the parsing problems caused by
   [`haskell-src-exts`](https://hackage.haskell.org/package/haskell-src-exts).
-* Let some whitespace be programmable. The layout of the input influences
-  the layout choices in the output. This means that the choices between
-  single-line/multi-line layouts in certain situations are made by the user,
-  not by an algorithm. This makes the implementation simpler and leaves some
-  control to the user while still guaranteeing that the formatted code is
-  stylistically consistent.
-* Writing code in such a way so it's easy to modify and maintain.
-* That formatting style aims to result in minimal diffs.
+* Make some whitespace programmable. The layout of the input influences the
+  layout choices in the output, so the choice between single-line and
+  multi-line layouts is made by the user rather than by an algorithm. This
+  keeps the implementation simpler and leaves some control to the user while
+  still guaranteeing that the formatted code is stylistically consistent.
+* Produce minimal diffs.
 * Choose a style compatible with modern dialects of Haskell. As new Haskell
-  extensions enter broad use, we may change the style to accommodate them.
-* Idempotence: formatting already formatted code doesn't change it.
-* Be well-tested and robust so that the formatter can be used in large
+  extensions enter broad use, we may adjust the style to accommodate them.
+* Guarantee idempotence: formatting already formatted code doesn't change it.
+* Stay well-tested and robust, so that the formatter can be used in large
   projects.
 * ~~Implementing one “true” formatting style which admits no configuration.~~ We allow configuration of various parameters, via CLI options or config files. We encourage any contributions which add further flexibility.
 
@@ -78,13 +76,13 @@ The `dev` flag may be omitted in your local workflow as you work, but CI may not
 
 ## Usage
 
-The following will print the formatted output to the standard output.
+The following prints the formatted output to the standard output:
 
 ```console
 $ fourmolu Module.hs
 ```
 
-Add `-i` (or `--mode inplace`) to replace the contents of the input file with the formatted output.
+Add `-i` (or `--mode inplace`) to replace the contents of the input file with the formatted output:
 
 ```console
 $ fourmolu -i Module.hs
@@ -104,7 +102,7 @@ $ fourmolu --mode inplace $(git ls-files '*.hs')
 $ git ls-files -z '*.hs' | xargs -P 12 -0 fourmolu --mode inplace
 ```
 
-To check if files are already formatted (useful on CI):
+To check whether files are already formatted (useful on CI):
 
 ```console
 $ fourmolu --mode check src
@@ -126,19 +124,19 @@ See https://fourmolu.github.io/ to try Fourmolu in your browser. This is re-depl
 
 Fourmolu can be integrated with your editor via the [Haskell Language Server](https://haskell-language-server.readthedocs.io/en/latest/index.html). Just set `haskell.formattingProvider` to `fourmolu` ([instructions](https://haskell-language-server.readthedocs.io/en/latest/configuration.html#language-specific-server-options)).
 
-### GitHub actions
+### GitHub Actions
 
-[`run-fourmolu`](https://github.com/haskell-actions/run-fourmolu) is the recommended way to ensure that a project is formatted with Fourmolu.
+[`run-fourmolu`](https://github.com/haskell-actions/run-fourmolu) is the recommended way to ensure that a project stays formatted with Fourmolu.
 
 ### Language extensions, dependencies, and fixities
 
 Fourmolu automatically locates the Cabal file that corresponds to a given
-source code file. Cabal files are used to extract both default extensions
-and dependencies. Default extensions directly affect behavior of the GHC
-parser, while dependencies are used to figure out fixities of operators that
-appear in the source code. Fixities can also be overridden via the `fixities` configuration option in `fourmolu.yaml`. When the input comes from
-stdin, one can pass `--stdin-input-file` which will give Fourmolu the location
-that should be used as the starting point for searching for `.cabal` files.
+source file. Cabal files are used to extract both default extensions and
+dependencies. Default extensions directly affect the behavior of the GHC
+parser, while dependencies are used to determine the fixities of operators
+that appear in the source code. Fixities can also be overridden via the `fixities` configuration option in `fourmolu.yaml`. When the input comes from stdin, you
+can pass `--stdin-input-file` to tell Fourmolu which location to use as the
+starting point when searching for `.cabal` files.
 
 Here is an example of the `fixities` configuration:
 
@@ -156,21 +154,20 @@ fixities:
   - infixr 3.7 <~>
 ```
 
-It uses exactly the same syntax as usual Haskell fixity declarations to make
-it easier for Haskellers to edit and maintain. Since Ormolu 0.7.8.0
-fractional precedences are supported for more precise control over
-formatting of complex operator chains.
+It uses exactly the same syntax as ordinary Haskell fixity declarations,
+which makes it easier for Haskellers to edit and maintain. Since Ormolu
+0.7.8.0, fractional precedences are supported for more precise control over
+the formatting of complex operator chains.
 
 `fourmolu.yaml` can also contain instructions about
-module re-exports that Fourmolu should be aware of. This might be desirable
-because at the moment Fourmolu cannot know about all possible module
-re-exports in the ecosystem and only few of them are actually important when
-it comes to fixity deduction. In 99% of cases the user won't have to do
-anything, especially since most common re-exports are already programmed
-into Fourmolu. (You are welcome to open PRs to make Fourmolu aware of more
-re-exports by default.) However, when the fixity of an operator is not
-inferred correctly, making Fourmolu aware of a re-export may come in handy.
-Here is an example:
+module re-exports that Fourmolu should be aware of. This can be useful because
+Fourmolu cannot know about every possible module re-export in the ecosystem,
+and only a few of them actually matter for fixity deduction. In 99% of cases
+you won't have to do anything, especially since the most common re-exports
+are already built into Fourmolu. (You are welcome to open PRs to make Fourmolu
+aware of more re-exports by default.) However, when the fixity of an operator
+is not inferred correctly, making Fourmolu aware of a re-export may help. Here
+is an example:
 
 ```yaml
 reexports:
@@ -205,22 +202,22 @@ and
 {- FOURMOLU_ENABLE -}
 ```
 
-This allows us to disable formatting selectively for code between these
-markers or disable it for the entire file. To achieve the latter, just put
-`{- FOURMOLU_DISABLE -}` at the very top. Note that for Fourmolu to work the
-fragments where Fourmolu is enabled must be parseable on their own. Because of
-that the magic comments cannot be placed arbitrarily, but rather must
-enclose independent top-level definitions.
+These let you disable formatting selectively for the code between the two
+markers, or for the entire file. To disable formatting for the whole file,
+just put `{- FOURMOLU_DISABLE -}` at the very top. Note that the fragments
+where Fourmolu is enabled must be parseable on their own. Because of this, the
+magic comments cannot be placed arbitrarily; they must enclose independent
+top-level definitions.
 
 `{- ORMOLU_DISABLE -}` and `{- ORMOLU_ENABLE -}`, respectively, can be used to the same effect,
 and the two styles of magic comments can be mixed.
 
 ### Regions
 
-One can ask Fourmolu to format a region of input and leave the rest
-unformatted. This is accomplished by passing the `--start-line` and
-`--end-line` command line options. `--start-line` defaults to the beginning
-of the file, while `--end-line` defaults to the end.
+You can ask Fourmolu to format a region of the input and leave the rest
+unformatted by passing the `--start-line` and `--end-line` command line
+options. `--start-line` defaults to the beginning of the file, and
+`--end-line` defaults to the end.
 
 Note that the selected region needs to be parseable Haskell code on its own.
 
@@ -239,6 +236,7 @@ Exit code | Meaning
 8         | Cabal file parsing failed
 9         | Missing input file path when using stdin input and accounting for .cabal files
 10        | Parse error while parsing fixity overrides
+11        | Comments of original and formatted code differ
 100       | In checking mode: unformatted files
 101       | Inplace mode does not work with stdin
 102       | Other issue (with multiple input files)
@@ -246,10 +244,10 @@ Exit code | Meaning
 
 ### Using as a library
 
-The `fourmolu` package can also be depended upon from other Haskell programs.
-For these purposes only the top `Ormolu` module should be considered stable.
-It follows [PVP](https://pvp.haskell.org/) starting from the version
-0.10.2.0. Rely on other modules at your own risk.
+The `fourmolu` package can also be used as a dependency from other Haskell
+programs. For this purpose, only the top-level `Ormolu` module should be
+considered stable. It follows the [PVP](https://pvp.haskell.org/) starting
+from version 0.10.2.0. Rely on other modules at your own risk.
 
 ## Troubleshooting
 
@@ -264,25 +262,26 @@ operator.
   specify the correct fixities in a `fourmolu.yaml` file.
 
 * If this is a third-party operator (e.g. from `base` or some other package
-  from Hackage), Ormolu probably doesn't recognize that the operator is the
+  on Hackage), Ormolu probably doesn't recognize that the operator is the
   same as the third-party one.
 
-  Some reasons this might be the case:
+  Some possible reasons for this:
 
-    * You might have a custom Prelude that re-exports things from Prelude
-    * You might have `-XNoImplicitPrelude` turned on
+    * You have a custom Prelude that re-exports things from the standard
+      Prelude.
+    * You have `-XNoImplicitPrelude` turned on.
 
-  If any of these are true, make sure to specify the reexports correctly in
-  a `fourmolu.yaml` file.
+  If either of these applies, make sure to specify the re-exports correctly
+  in a `fourmolu.yaml` file.
 
-You can see how Ormolu decides the fixity of operators if you use `--debug`.
+You can see how Ormolu decides the fixity of operators by using `--debug`.
 
 ## Limitations
 
 * CPP support is experimental. CPP is virtually impossible to handle
-  correctly, so we process them as a sort of unchangeable snippets. This
-  works only in simple cases when CPP conditionals surround top-level
-  declarations. See the [CPP](https://github.com/mrkkrp/ormolu/blob/master/DESIGN.md#cpp) section in the design notes for a
+  correctly, so Fourmolu treats CPP sections as unchangeable snippets. This
+  works only in simple cases, where CPP conditionals surround top-level
+  declarations. See the [CPP](https://github.com/mrkkrp/ormolu/blob/master/DESIGN.md#cpp) section of the design notes for a
   discussion of the dangers.
 * Various minor idempotence issues, most of them are related to comments or column limits.
 

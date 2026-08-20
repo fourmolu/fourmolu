@@ -11,6 +11,7 @@
 module Ormolu.Diff.ParseResult
   ( ParseResultDiff (..),
     diffParseResult,
+    diffCommentStream,
   )
 where
 
@@ -20,7 +21,7 @@ import Data.Choice (pattern Without)
 import Data.Foldable
 import Data.Function
 import Data.Generics
-import Data.List (sortOn)
+import Data.List (sort, sortOn)
 import Data.Text qualified as T
 import GHC.Data.FastString (FastString)
 import GHC.Hs
@@ -49,7 +50,12 @@ instance Semigroup ParseResultDiff where
 instance Monoid ParseResultDiff where
   mempty = Same
 
--- | Return 'Diff' of two 'ParseResult's.
+-- | Compare the parse result of the input against that of the output.
+--
+-- Two of Ormolu's three comment checks live here: 'diffCommentStream' for
+-- the text of the comments, and the syntax tree comparison for the
+-- Haddocks, which are part of the tree rather than of the comment stream.
+-- The third, "Ormolu.Comments.Invariants", checks where the comments went.
 diffParseResult ::
   ParseResult ->
   ParseResult ->
@@ -76,12 +82,35 @@ diffParseResult
           mempty
           ImportGroupSingle
 
+-- | Check that formatting did not change the /text/ of any comment.
+--
+-- This is the half of comment checking that works on what the comments say
+-- rather than on where they went. Ormolu edits comment text on purpose—it
+-- escapes Haddock triggers, re-indents block comments and normalizes the
+-- spacing after a trigger—and both sides of this comparison have been
+-- through 'Ormolu.Parser.CommentStream.mkCommentStream', so the intended
+-- edits cancel out and only unintended ones show up.
+--
+-- What it deliberately does /not/ check:
+--
+--   * __order__, because Ormolu sorts imports, import lists and pragmas,
+--     and a comment attached to one of those travels with it;
+--   * __which comment is which__, since the lines are compared as a
+--     multiset; a failure cannot say more than that the two sides differ,
+--     which is why 'Different' is returned with no spans;
+--   * __comments outside the stream__ — the Stack header and the comments
+--     that travel with pragmas are lifted out of it during parsing, so
+--     duplicating one of those is invisible here.
+--
+-- All three are covered by "Ormolu.Comments.Invariants", which compares
+-- spans instead of text. Neither check subsumes the other and both run by
+-- default.
 diffCommentStream :: CommentStream -> CommentStream -> ParseResultDiff
 diffCommentStream (CommentStream cs) (CommentStream cs')
   | commentLines cs == commentLines cs' = Same
   | otherwise = Different []
   where
-    commentLines = concatMap (toList . unComment . unLoc)
+    commentLines = sort . concatMap (toList . unComment . unLoc)
 
 -- | Compare two modules for equality disregarding certain semantically
 -- irrelevant features like exact print annotations.
@@ -190,8 +219,30 @@ diffHsModule = genericQuery
         f QualifiedPost QualifiedPre = True
         f x x' = x == x'
 
+    -- Documentation is compared up to the normalizations Ormolu performs
+    -- on it: the space it puts after a Haddock's trigger, the
+    -- re-indentation it gives a @{- | … -}@ so that the comment lines up
+    -- with the code it documents, and the collapsing of consecutive blank
+    -- lines. All three change the doc string GHC parses back out, and all
+    -- three are intended.
     hsDocStringEq :: HsDocString -> GenericQ ParseResultDiff
-    hsDocStringEq = considerEqualVia' ((==) `on` (map (T.dropWhile isSpace) . splitDocString))
+    hsDocStringEq =
+      considerEqualVia' ((==) `on` (collapseBlanks . dedent . splitDocString))
+      where
+        -- The printer emits at most one blank line in a row, as it does for
+        -- ordinary comments.
+        collapseBlanks = \case
+          (x : y : rest)
+            | T.null x, T.null y -> collapseBlanks (y : rest)
+          (x : rest) -> x : collapseBlanks rest
+          [] -> []
+        dedent = \case
+          [] -> []
+          (x : xs) ->
+            let indentOf l = T.length (T.takeWhile (== ' ') l)
+                indents = indentOf <$> filter (not . T.all isSpace) xs
+                n = if null indents then 0 else minimum indents
+             in x : fmap (T.drop n) xs
 
     forLocated ::
       (Data e0, Data e1) =>

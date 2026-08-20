@@ -70,7 +70,7 @@ p_hsType = \case
     p_rdrName n
   HsAppTy _ f x -> do
     let -- In order to format type applications with multiple parameters
-        -- nicer, traverse the AST to gather the function and all the
+        -- more nicely, traverse the AST to gather the function and all the
         -- parameters together.
         gatherArgs f' knownArgs =
           case f' of
@@ -110,10 +110,8 @@ p_hsType = \case
     let opTree = BinaryOpBranches (tyOpTree x) op (tyOpTree y)
     p_tyOpTree
       (reassociateOpTree debug (Just . unLoc) modFixityMap opTree)
-  HsParTy _ t -> do
-    csSpans <-
-      fmap (flip RealSrcSpan Strict.Nothing . getLoc) <$> getEnclosingComments
-    switchLayout (locA t : csSpans) $
+  HsParTy _ t ->
+    switchLayoutWithEnclosingComments [locA t] $
       parens N (sitcc $ located t p_hsType)
   HsIParamTy _ n t -> sitcc $ do
     located n atom
@@ -197,7 +195,7 @@ p_hsTypeAnnotation ty =
         next = parseFunRepr ty
       }
 
--- | Return 'True' if at least one argument in 'HsType' has a doc string
+-- | Return 'True' if at least one argument in the 'HsType' has a doc string
 -- attached to it.
 hasDocStrings :: HsType GhcPs -> Bool
 hasDocStrings = \case
@@ -212,7 +210,10 @@ p_hsContext = p_hsContext' p_hsType
 
 p_hsConDeclRecFields :: [LHsConDeclRecField GhcPs] -> R ()
 p_hsConDeclRecFields xs =
-  recordBraces $ sep commaDel (sitcc . located' p_hsConDeclRecField) xs
+  multiLineIfDocumented xs . recordBraces $ do
+    when (null xs) $
+      getEnclosingSpan >>= mapM_ (locatedEmpty . flip RealSrcSpan Strict.Nothing)
+    sep commaDel (sitcc . located' p_hsConDeclRecField) xs
 
 p_hsConDeclRecField :: HsConDeclRecField GhcPs -> R ()
 p_hsConDeclRecField field@HsConDeclRecField {..} = withFieldHaddocks $ do
@@ -232,8 +233,8 @@ p_hsConDeclRecField field@HsConDeclRecField {..} = withFieldHaddocks $ do
       when (commaStyle == Leading) $
         mapM_ (inciByFrac (-1) . (newline >>) . p_hsDoc Caret (Without #endNewline)) doc
 
--- | This does not print 'cdf_doc' and 'cdf_multiplicity' as there is no single
--- strategy for where to print them (see call sites).
+-- | This does not print 'cdf_doc' and 'cdf_multiplicity', as there is no
+-- single strategy for where to print them (see call sites).
 p_hsConDeclField :: HsConDeclField GhcPs -> R ()
 p_hsConDeclField CDF {..} = do
   case cdf_unpack of
@@ -254,8 +255,8 @@ p_hsConDeclFieldWithDoc cdf = withHaddocks (Is #end) cdf.cdf_doc $ do
 p_lhsTypeArg :: LHsTypeArg GhcPs -> R ()
 p_lhsTypeArg = \case
   HsValArg NoExtField ty -> located ty p_hsType
-  -- first argument is the SrcSpan of the @,
-  -- but the @ always has to be directly before the type argument
+  -- The first argument is the SrcSpan of the @, but the @ always has to be
+  -- directly before the type argument.
   HsTypeArg _ ty -> txt "@" *> located ty p_hsType
   -- NOTE(amesgen) is this unreachable or just not implemented?
   HsArgPar _ -> notImplemented "HsArgPar"

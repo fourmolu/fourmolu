@@ -82,18 +82,18 @@ p_hsmodImport ImportDecl {..} = do
     space
     case ideclImportList of
       Nothing -> return ()
-      Just (hiding, L _ xs) -> do
+      Just (hiding, L listLoc xs) -> do
         case hiding of
           Exactly -> pure ()
           EverythingBut -> txt "hiding"
         breakIfNotDiffFriendly
         parens' True $ do
           layout <- getLayout
+          when (null xs) $ locatedEmpty (locA listLoc)
           sep
             breakpoint
             (\(p, l) -> sitcc (located l (p_lie layout False p)))
             (attachRelativePos xs)
-    newline
 
 p_declLevel :: ImportDeclLevel -> R ()
 p_declLevel = \case
