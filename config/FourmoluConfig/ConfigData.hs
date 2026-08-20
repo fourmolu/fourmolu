@@ -155,7 +155,7 @@ allOptions =
         description = "How to print Haddock comments",
         type_ = "HaddockPrintStyle",
         default_ = HsExpr "HaddockMultiLine",
-        ormolu = HsExpr "HaddockSingleLine",
+        ormolu = HsExpr "HaddockAuto",
         sinceVersion = Just "0.2.0.0",
         cliOverrides = emptyOverrides
       },
@@ -393,7 +393,8 @@ allFieldTypes =
         enumOptions =
           [ ("HaddockSingleLine", "single-line"),
             ("HaddockMultiLine", "multi-line"),
-            ("HaddockMultiLineCompact", "multi-line-compact")
+            ("HaddockMultiLineCompact", "multi-line-compact"),
+            ("HaddockAuto", "auto")
           ]
       },
     FieldTypeADT
