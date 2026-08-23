@@ -22,7 +22,7 @@
 * [Contributing](#contributing)
 * [License](#license)
 
-Fourmolu is a formatter for Haskell source code. It is a fork of [Ormolu](https://github.com/mrkkrp/ormolu), with upstream improvements continually merged.
+Fourmolu is a formatter for Haskell source code. It is a fork of [Ormolu](https://github.com/tweag/ormolu), with upstream improvements continually merged.
 
 We share all bar one of Ormolu's goals:
 
@@ -282,7 +282,7 @@ You can see how Ormolu decides the fixity of operators if you use `--debug`.
 * CPP support is experimental. CPP is virtually impossible to handle
   correctly, so we process them as a sort of unchangeable snippets. This
   works only in simple cases when CPP conditionals surround top-level
-  declarations. See the [CPP](https://github.com/mrkkrp/ormolu/blob/master/DESIGN.md#cpp) section in the design notes for a
+  declarations. See the [CPP](https://github.com/tweag/ormolu/blob/master/DESIGN.md#cpp) section in the design notes for a
   discussion of the dangers.
 * Various minor idempotence issues, most of them are related to comments or column limits.
 
