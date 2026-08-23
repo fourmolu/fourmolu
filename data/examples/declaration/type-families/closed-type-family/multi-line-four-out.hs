@@ -23,6 +23,5 @@ type family
     F a = String
 
 type family F a where
-    F a -- foo
-        =
+    F a = -- foo
         a
