@@ -28,6 +28,7 @@ import GHC.Types.SourceText
 import GHC.Types.SrcLoc
 import Ormolu.Config.Gen (ImportGrouping (ImportGroupSingle))
 import Ormolu.Imports (normalizeImports)
+import Ormolu.Imports.Grouping (GroupImportsOpts (..))
 import Ormolu.Parser.CommentStream
 import Ormolu.Parser.Result
 import Ormolu.Utils
@@ -71,10 +72,12 @@ diffParseResult
       -- The exact parameters here don't matter, it just needs to be consistent
       normalizeImports' =
         normalizeImports
-          (Without #implicitPrelude)
-          False
+          GroupImportsOpts
+            { grouping = ImportGroupSingle,
+              respectful = False
+            }
           mempty
-          ImportGroupSingle
+          (Without #implicitPrelude)
 
 diffCommentStream :: CommentStream -> CommentStream -> ParseResultDiff
 diffCommentStream (CommentStream cs) (CommentStream cs')
