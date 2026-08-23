@@ -2,6 +2,9 @@ module Main where
 
 import Data.Either
 import Data.Functor
+import Foo
+-- some comment
+import Foo.Bar
 import SomeInternal.Module2
 
 import Data.Text (Text)

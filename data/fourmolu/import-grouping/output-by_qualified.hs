@@ -5,6 +5,9 @@ import Data.Either
 import Data.Functor
 import Data.Maybe (maybe)
 import Data.Text (Text)
+import Foo
+-- some comment
+import Foo.Bar
 import SomeInternal.Module1 (anotherDefinition, someDefinition)
 import SomeInternal.Module2
 import Text.Printf (printf)

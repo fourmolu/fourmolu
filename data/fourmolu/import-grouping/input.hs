@@ -14,3 +14,7 @@ import qualified SomeInternal.Module2 as Mod2
 import Text.Printf (printf)
 import qualified SomeModule
 import SomeInternal.Module2
+
+import Foo
+-- some comment
+import Foo.Bar
