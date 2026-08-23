@@ -29,8 +29,13 @@ import GHC.Types.Name.Reader
 import GHC.Types.PkgQual
 import GHC.Types.SourceText
 import GHC.Types.SrcLoc
-import Ormolu.Config (ImportGrouping)
-import Ormolu.Imports.Grouping (Import (..), ImportList (..), groupImports, prepareExistingGroups)
+import Ormolu.Imports.Grouping
+  ( GroupImportsOpts,
+    Import (..),
+    ImportList (..),
+    groupImports,
+    prepareExistingGroups,
+  )
 import Ormolu.Utils (notImplemented, showOutputable)
 
 -- | Sort, group and normalize imports.
@@ -39,21 +44,20 @@ import Ormolu.Utils (notImplemented, showOutputable)
 -- sorted by source location, so this function should be called at most once on a
 -- given input list.
 normalizeImports ::
-  Choice "implicitPrelude" ->
-  Bool ->
+  GroupImportsOpts ->
   Set Cabal.ModuleName ->
-  ImportGrouping ->
+  Choice "implicitPrelude" ->
   [LImportDecl GhcPs] ->
   [[LImportDecl GhcPs]]
-normalizeImports implicitPrelude respectful localModules importGrouping =
+normalizeImports groupImportsOpts localModules implicitPrelude =
   map (fmap snd)
     . concatMap
-      ( groupImports importGrouping localModules toImport
+      ( groupImports groupImportsOpts localModules toImport
           . M.toAscList
           . M.fromListWith combineImports
           . fmap (\x -> (importId implicitPrelude x, g x))
       )
-    . prepareExistingGroups importGrouping respectful
+    . prepareExistingGroups groupImportsOpts
   where
     toImport :: (ImportId, x) -> Import
     toImport (ImportId {..}, _) =

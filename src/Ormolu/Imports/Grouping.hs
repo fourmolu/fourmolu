@@ -1,9 +1,12 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE NoFieldSelectors #-}
 
 module Ormolu.Imports.Grouping
   ( Import (..),
     ImportList (..),
+    GroupImportsOpts (..),
     prepareExistingGroups,
     groupImports,
   )
@@ -158,20 +161,25 @@ matchesRule localMods Import {..} ImportGroupRule {..} =
             Config.MatchExternalModules -> not isLocalModule
             Config.MatchLocalModules -> isLocalModule
 
-prepareExistingGroups :: ImportGrouping -> Bool -> [LImportDecl GhcPs] -> [[LImportDecl GhcPs]]
-prepareExistingGroups ig respectful =
-  case ig of
+data GroupImportsOpts = GroupImportsOpts
+  { grouping :: ImportGrouping,
+    respectful :: Bool
+  }
+
+prepareExistingGroups :: GroupImportsOpts -> [LImportDecl GhcPs] -> [[LImportDecl GhcPs]]
+prepareExistingGroups opts =
+  case opts.grouping of
     ImportGroupPreserve -> preserveGroups
-    ImportGroupLegacy | respectful -> preserveGroups
+    ImportGroupLegacy | opts.respectful -> preserveGroups
     _ -> flattenGroups
   where
     preserveGroups = map toList . groupBy' (\x y -> not $ separatedByBlank getLocA x y)
     flattenGroups = pure
 
-groupImports :: forall x. ImportGrouping -> Set Cabal.ModuleName -> (x -> Import) -> [x] -> [[x]]
-groupImports ig localModules fToImport = regroup . fmap (breakTies . matchRules)
+groupImports :: forall x. GroupImportsOpts -> Set Cabal.ModuleName -> (x -> Import) -> [x] -> [[x]]
+groupImports opts localModules fToImport = regroup . fmap (breakTies . matchRules)
   where
-    ImportGroups igs = groupsFromConfig ig
+    ImportGroups igs = groupsFromConfig opts.grouping
 
     indexedGroupRules :: [(Int, [ImportGroupRule])]
     indexedGroupRules = zip [0 ..] (toList . igRules <$> toList igs)
