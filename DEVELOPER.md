@@ -139,7 +139,7 @@ To release a new version, do the following workflow:
 Fourmolu aims to continue merging upstream changes in Ormolu. Whenever Ormolu makes a new release (ideally within a week), the following steps should be run to merge the changes into Fourmolu.
 
 1. `cd` into your local copy of the Fourmolu repository
-1. Add Ormolu as an upstream remote: `git remote add ormolu git@github.com:mrkkrp/ormolu`
+1. Add Ormolu as an upstream remote: `git remote add ormolu git@github.com:tweag/ormolu`
 1. Check out a new branch: `git switch -c merge-ormolu main`
 1. Pull Ormolu's git history: `git fetch ormolu --no-tags`
 1. Find the commit corresponding to the new Ormolu version and merge it: `git merge <commit> -m 'Merge ormolu-X.Y.Z'`
