@@ -66,18 +66,20 @@ diffParseResult
     } =
     diffCommentStream cstream0 cstream1
       <> diffHsModule
-        hs0 {hsmodImports = concat . normalizeImports' $ hsmodImports hs0}
-        hs1 {hsmodImports = concat . normalizeImports' $ hsmodImports hs1}
+        hs0 {hsmodImports = concat $ normalizeImports' hs0}
+        hs1 {hsmodImports = concat $ normalizeImports' hs1}
     where
       -- The exact parameters here don't matter, it just needs to be consistent
-      normalizeImports' =
+      normalizeImports' hsmod =
         normalizeImports
           GroupImportsOpts
             { grouping = ImportGroupSingle,
-              respectful = False
+              respectful = False,
+              allComments = listify (const True) hsmod
             }
           mempty
           (Without #implicitPrelude)
+          (hsmodImports hsmod)
 
 diffCommentStream :: CommentStream -> CommentStream -> ParseResultDiff
 diffCommentStream (CommentStream cs) (CommentStream cs')

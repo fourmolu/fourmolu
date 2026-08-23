@@ -13,6 +13,7 @@ where
 import Control.Monad
 import Data.Choice (pattern With)
 import Data.Choice qualified as Choice
+import Data.Generics.Schemes (listify)
 import GHC.Hs hiding (comment)
 import GHC.LanguageExtensions (Extension (ImplicitPrelude))
 import GHC.Types.SrcLoc
@@ -73,7 +74,8 @@ p_hsModule mstackHeader pragmas hsmod@HsModule {..} = do
         normalizeImports
           GroupImportsOpts
             { grouping = importGrouping,
-              respectful
+              respectful,
+              allComments = listify (const True) hsmod
             }
           localModules
           implicitPrelude

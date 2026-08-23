@@ -16,6 +16,5 @@ import qualified System.IO as SIO
 import Text.Printf (printf)
 
 import Foo
-
 -- some comment
 import Foo.Bar

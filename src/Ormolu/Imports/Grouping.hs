@@ -18,14 +18,17 @@ import Data.Function (on)
 import Data.List (groupBy, minimumBy, sortOn)
 import Data.List.NonEmpty (NonEmpty)
 import Data.List.NonEmpty qualified as NonEmpty
+import Data.Map qualified as Map
+import Data.Maybe (fromMaybe)
 import Data.Set (Set)
 import Data.Set qualified as Set
 import Distribution.ModuleName qualified as Cabal
-import GHC.Hs (GhcPs, getLocA)
+import GHC.Hs (GhcPs, LEpaComment, epaLocationRealSrcSpan, getLocA)
+import GHC.Types.SrcLoc (getLoc, srcSpanEndLine, srcSpanStartLine, srcSpanToRealSrcSpan)
 import Language.Haskell.Syntax (LImportDecl, ModuleName, moduleNameString)
 import Ormolu.Config (ImportGroup (..), ImportGroupRule (..), ImportGrouping (..))
 import Ormolu.Config qualified as Config
-import Ormolu.Utils (ghcModuleNameToCabal, groupBy', separatedByBlank)
+import Ormolu.Utils (ghcModuleNameToCabal, groupBy')
 import Ormolu.Utils.Glob (matchAllGlob, matchesGlob)
 
 newtype ImportGroups = ImportGroups (NonEmpty ImportGroup)
@@ -163,7 +166,12 @@ matchesRule localMods Import {..} ImportGroupRule {..} =
 
 data GroupImportsOpts = GroupImportsOpts
   { grouping :: ImportGrouping,
-    respectful :: Bool
+    respectful :: Bool,
+    -- | All comments in the HsModule.
+    --
+    -- Can't retrieve comments from 'R', since 'R' runs the first time without
+    -- comments.
+    allComments :: [LEpaComment]
   }
 
 prepareExistingGroups :: GroupImportsOpts -> [LImportDecl GhcPs] -> [[LImportDecl GhcPs]]
@@ -173,8 +181,31 @@ prepareExistingGroups opts =
     ImportGroupLegacy | opts.respectful -> preserveGroups
     _ -> flattenGroups
   where
-    preserveGroups = map toList . groupBy' (\x y -> not $ separatedByBlank getLocA x y)
+    preserveGroups = map toList . groupBy' (\x y -> not $ separatedByBlank' x y)
     flattenGroups = pure
+
+    -- separatedByBlank only checks if the span lines are more than 1 apart.
+    -- If there's a comment between two imports with no blank lines, we should
+    -- still consider it one import group.
+    separatedByBlank' a b =
+      fromMaybe False $ do
+        endA <- srcSpanEndLine <$> srcSpanToRealSrcSpan (getLocA a)
+        startB <- srcSpanStartLine <$> srcSpanToRealSrcSpan (getLocA b)
+        pure . any (not . hasComment) $ [endA + 1 .. startB - 1]
+
+    -- Maps startLine -> endLine
+    commentLineIntervals =
+      Map.fromList
+        [ (srcSpanStartLine spn, srcSpanEndLine spn)
+        | comment <- opts.allComments,
+          let spn = epaLocationRealSrcSpan $ getLoc comment
+        ]
+    hasComment lineNum =
+      (not . Map.null)
+        -- Find any comment where: startLine <= lineNum <= endLine
+        . Map.filter (>= lineNum)
+        . Map.takeWhileAntitone (<= lineNum)
+        $ commentLineIntervals
 
 groupImports :: forall x. GroupImportsOpts -> Set Cabal.ModuleName -> (x -> Import) -> [x] -> [[x]]
 groupImports opts localModules fToImport = regroup . fmap (breakTies . matchRules)
