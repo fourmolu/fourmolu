@@ -68,7 +68,10 @@ spec =
     [ TestGroup
         { label = "indentation",
           isMulti = False,
-          testCases = (,) <$> [2, 3, 4] <*> allOptions,
+          testCases =
+            (,)
+              <$> [2, 3, 4]
+              <*> [IndentWhereAuto, IndentWhere True, IndentWhere False],
           updateConfig = \(indent, indentWheres) opts ->
             opts
               { poIndentation = pure indent,
@@ -76,7 +79,10 @@ spec =
               },
           showTestCase = \(indent, indentWheres) ->
             [ renderPrinterOpt indent,
-              if indentWheres then "indent_wheres" else ""
+              case indentWheres of
+                IndentWhereAuto -> "indent_wheres=auto"
+                IndentWhere True -> "indent_wheres"
+                IndentWhere False -> ""
             ],
           checkIdempotence = True
         },

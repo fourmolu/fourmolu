@@ -37,6 +37,7 @@ module Ormolu.Config
     CommaStyle (..),
     RecordStyle (..),
     FunctionArrowsStyle (..),
+    IndentWhereStyle (..),
     HaddockPrintStyle (..),
     HaddockPrintStyleModule (..),
     HaddockLocSignature (..),

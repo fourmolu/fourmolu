@@ -2,6 +2,8 @@
 
 $info$
 
+If not provided, defaults to `true` if `indentation: 2` or `false` otherwise.
+
 ## Examples
 
 ```fourmolu-example-input

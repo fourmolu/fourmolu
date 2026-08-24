@@ -11,6 +11,7 @@ module Ormolu.Config.Gen
   , CommaStyle (..)
   , RecordStyle (..)
   , FunctionArrowsStyle (..)
+  , IndentWhereStyle (..)
   , HaddockPrintStyle (..)
   , HaddockPrintStyleModule (..)
   , HaddockLocSignature (..)
@@ -62,7 +63,7 @@ data PrinterOpts f =
     , -- | Rules for grouping import declarations
       poImportGrouping :: f ImportGrouping
     , -- | Whether to full-indent or half-indent 'where' bindings past the preceding body
-      poIndentWheres :: f Bool
+      poIndentWheres :: f IndentWhereStyle
     , -- | Whether to leave a space before an opening record brace
       poRecordBraceSpace :: f Bool
     , -- | Number of spaces between top-level declarations
@@ -137,7 +138,7 @@ defaultPrinterOpts =
     , poRecordStyle = pure RecordStyleAligned
     , poImportExportStyle = pure ImportExportDiffFriendly
     , poImportGrouping = pure ImportGroupLegacy
-    , poIndentWheres = pure False
+    , poIndentWheres = pure IndentWhereAuto
     , poRecordBraceSpace = pure False
     , poNewlinesBetweenDecls = pure 1
     , poHaddockStyle = pure HaddockMultiLine
@@ -228,8 +229,8 @@ parsePrinterOptsCLI f =
       "OPTION"
     <*> f
       "indent-wheres"
-      "Whether to full-indent or half-indent 'where' bindings past the preceding body (default: false)"
-      "BOOL"
+      "Whether to full-indent or half-indent 'where' bindings past the preceding body (default: null)"
+      "OPTION"
     <*> f
       "record-brace-space"
       "Whether to leave a space before an opening record brace (default: false)"
@@ -369,6 +370,11 @@ data FunctionArrowsStyle
   | LeadingArrows
   | LeadingArgsArrows
   deriving (Eq, Show, Enum, Bounded)
+
+data IndentWhereStyle
+  = IndentWhereAuto
+  | IndentWhere Bool
+  deriving (Eq, Show)
 
 data HaddockPrintStyle
   = HaddockSingleLine
@@ -511,6 +517,20 @@ instance RenderPrinterOpt FunctionArrowsStyle where
     TrailingArrows -> "trailing"
     LeadingArrows -> "leading"
     LeadingArgsArrows -> "leading-args"
+
+instance Aeson.FromJSON IndentWhereStyle where
+  parseJSON =
+    \v -> case v of
+      Aeson.Null -> pure IndentWhereAuto
+      Aeson.Bool b -> pure (IndentWhere b)
+      _ -> fail $ "Invalid value for indent-where: " ++ show v
+
+instance PrinterOptsFieldType IndentWhereStyle where
+  parsePrinterOptType =
+    \s -> case s of
+      "true" -> pure (IndentWhere True)
+      "false" -> pure (IndentWhere False)
+      _ -> Left $ "Invalid value for indent-where: " ++ s
 
 instance Aeson.FromJSON HaddockPrintStyle where
   parseJSON =
@@ -825,7 +845,7 @@ defaultPrinterOptsYaml =
     , "import-grouping: legacy"
     , ""
     , "# Whether to full-indent or half-indent 'where' bindings past the preceding body"
-    , "indent-wheres: false"
+    , "indent-wheres: null"
     , ""
     , "# Whether to leave a space before an opening record brace"
     , "record-brace-space: false"

@@ -8,7 +8,7 @@ comma-style: trailing
 record-style: aligned
 import-export-style: trailing
 import-grouping: legacy
-indent-wheres: true
+indent-wheres: null
 record-brace-space: true
 newlines-between-decls: 1
 haddock-style: single-line

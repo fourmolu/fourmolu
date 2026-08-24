@@ -290,7 +290,7 @@ p_match' placer render style isInfix multAnn strictness m_pats GRHSs {..} = do
       p_where = do
         unless (eqEmptyLocalBinds grhssLocalBinds) $ do
           breakpoint
-          indentWhere <- getPrinterOpt poIndentWheres
+          indentWhere <- getIndentWheres
           bool (inciByFrac (-1 / 2)) id indentWhere $ do
             located (L localBindsWhereSpan ()) $ \_ -> txt "where"
           breakpoint
@@ -1022,7 +1022,7 @@ p_patSynBind PSB {..} = do
               breakpoint
               located psb_def p_pat
             breakpoint
-            indentWhere <- getPrinterOpt poIndentWheres
+            indentWhere <- getIndentWheres
             let (inciWhere, inciBody) =
                   if indentWhere
                     then (id, inci)
@@ -1593,3 +1593,9 @@ p_hsExprListItem e = do
       ExplicitList {} -> True
       ExplicitTuple {} -> True
       _ -> False
+
+getIndentWheres :: R Bool
+getIndentWheres =
+  getPrinterOpt poIndentWheres >>= \case
+    IndentWhereAuto -> (== 2) <$> getPrinterOpt poIndentation
+    IndentWhere b -> pure b

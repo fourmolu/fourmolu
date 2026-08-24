@@ -123,9 +123,9 @@ allOptions =
       { name = "indent-wheres",
         fieldName = Just "poIndentWheres",
         description = "Whether to full-indent or half-indent 'where' bindings past the preceding body",
-        type_ = "Bool",
-        default_ = HsBool False,
-        ormolu = HsBool True,
+        type_ = "IndentWhereStyle",
+        default_ = HsExpr "IndentWhereAuto",
+        ormolu = HsExpr "IndentWhereAuto",
         sinceVersion = Just "0.2.0.0",
         cliOverrides = emptyOverrides
       },
@@ -362,6 +362,7 @@ data ADTSchemaInputType
 data ADTSchemaInputParser
   = ADTSchemaInputParserString
   | ADTSchemaInputParserNumber
+  | ADTSchemaInputParserBool
   | ADTSchemaInputParserNull
 
 allFieldTypes :: [FieldType]
@@ -387,6 +388,41 @@ allFieldTypes =
             ("LeadingArrows", "leading"),
             ("LeadingArgsArrows", "leading-args")
           ]
+      },
+    FieldTypeADT
+      { fieldTypeName = "IndentWhereStyle",
+        adtConstructors =
+          [ "IndentWhereAuto",
+            "IndentWhere Bool"
+          ],
+        adtSchema =
+          ADTSchema
+            { adtOptions =
+                [ ADTOptionLiteral "null",
+                  ADTOptionLiteral "true",
+                  ADTOptionLiteral "false"
+                ],
+              adtInputType =
+                ADTSchemaInputDropdown
+                  [ ADTSchemaInputParserNull,
+                    ADTSchemaInputParserBool
+                  ]
+            },
+        adtRender = [("IndentWhereAuto", "null")],
+        adtParseJSON =
+          unlines
+            [ "\\v -> case v of",
+              "  Aeson.Null -> pure IndentWhereAuto",
+              "  Aeson.Bool b -> pure (IndentWhere b)",
+              "  _ -> fail $ \"Invalid value for indent-where: \" ++ show v"
+            ],
+        adtParsePrinterOptType =
+          unlines
+            [ "\\s -> case s of",
+              "  \"true\" -> pure (IndentWhere True)",
+              "  \"false\" -> pure (IndentWhere False)",
+              "  _ -> Left $ \"Invalid value for indent-where: \" ++ s"
+            ]
       },
     FieldTypeEnum
       { fieldTypeName = "HaddockPrintStyle",
