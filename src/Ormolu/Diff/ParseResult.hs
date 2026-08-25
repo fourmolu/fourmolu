@@ -28,6 +28,7 @@ import GHC.Types.SourceText
 import GHC.Types.SrcLoc
 import Ormolu.Config.Gen (ImportGrouping (ImportGroupSingle))
 import Ormolu.Imports (normalizeImports)
+import Ormolu.Imports.Grouping (GroupImportsOpts (..))
 import Ormolu.Parser.CommentStream
 import Ormolu.Parser.Result
 import Ormolu.Utils
@@ -65,16 +66,20 @@ diffParseResult
     } =
     diffCommentStream cstream0 cstream1
       <> diffHsModule
-        hs0 {hsmodImports = concat . normalizeImports' $ hsmodImports hs0}
-        hs1 {hsmodImports = concat . normalizeImports' $ hsmodImports hs1}
+        hs0 {hsmodImports = concat $ normalizeImports' hs0}
+        hs1 {hsmodImports = concat $ normalizeImports' hs1}
     where
       -- The exact parameters here don't matter, it just needs to be consistent
-      normalizeImports' =
+      normalizeImports' hsmod =
         normalizeImports
-          (Without #implicitPrelude)
-          False
+          GroupImportsOpts
+            { grouping = ImportGroupSingle,
+              respectful = False,
+              allComments = listify (const True) hsmod
+            }
           mempty
-          ImportGroupSingle
+          (Without #implicitPrelude)
+          (hsmodImports hsmod)
 
 diffCommentStream :: CommentStream -> CommentStream -> ParseResultDiff
 diffCommentStream (CommentStream cs) (CommentStream cs')

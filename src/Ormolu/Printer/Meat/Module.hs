@@ -13,11 +13,13 @@ where
 import Control.Monad
 import Data.Choice (pattern With)
 import Data.Choice qualified as Choice
+import Data.Generics.Schemes (listify)
 import GHC.Hs hiding (comment)
 import GHC.LanguageExtensions (Extension (ImplicitPrelude))
 import GHC.Types.SrcLoc
 import Ormolu.Config
 import Ormolu.Imports (normalizeImports)
+import Ormolu.Imports.Grouping (GroupImportsOpts (..))
 import Ormolu.Parser.CommentStream
 import Ormolu.Parser.Pragma
 import Ormolu.Printer.Combinators
@@ -70,10 +72,13 @@ p_hsModule mstackHeader pragmas hsmod@HsModule {..} = do
       importGrouping <- getPrinterOpt poImportGrouping
       pure $
         normalizeImports
-          implicitPrelude
-          respectful
+          GroupImportsOpts
+            { grouping = importGrouping,
+              respectful,
+              allComments = listify (const True) hsmod
+            }
           localModules
-          importGrouping
+          implicitPrelude
           imports
 
 p_hsModuleHeader :: HsModule GhcPs -> LocatedA ModuleName -> R ()

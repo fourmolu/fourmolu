@@ -6,6 +6,9 @@ import Data.Functor
 import Data.Maybe (maybe)
 import Data.Text (Text)
 import qualified Data.Text
+import Foo
+-- some comment
+import Foo.Bar
 import qualified SomeModule
 import qualified System.IO as SIO
 import Text.Printf (printf)

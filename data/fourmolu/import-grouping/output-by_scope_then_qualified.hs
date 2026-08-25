@@ -5,6 +5,9 @@ import Data.Either
 import Data.Functor
 import Data.Maybe (maybe)
 import Data.Text (Text)
+import Foo
+-- some comment
+import Foo.Bar
 import Text.Printf (printf)
 
 import qualified Data.Text
