@@ -137,3 +137,16 @@ foo ::
   forall x.
   Int %Many ->
   Bool
+
+bindWithSig = do
+  y
+    :: Int
+    <- foo
+  h
+    :: Int
+    -> Bool
+    <- foo
+  (a, b)
+    :: (Int, Int)
+    <- do
+      foo

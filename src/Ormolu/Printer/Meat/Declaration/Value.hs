@@ -450,16 +450,7 @@ p_stmt' ::
   R ()
 p_stmt' s placer render = \case
   LastStmt _ body _ _ -> located body (render s)
-  BindStmt _ p f@(getLocA -> l) -> do
-    located p p_pat
-    space
-    token'larrow
-    let loc = getLocA p
-        placement
-          | isOneLineSpan (mkSrcSpan (srcSpanEnd loc) (srcSpanStart l)) = placer (unLoc f)
-          | otherwise = Normal
-    switchLayout [loc, l] $
-      placeHanging placement (located f (render N))
+  BindStmt larrow p f -> p_bindStmt placer render larrow p f
   BodyStmt _ body _ _ -> located body (render s)
   LetStmt epAnnLet binds -> p_let' True epAnnLet binds Nothing
   ParStmt {} ->
@@ -500,6 +491,71 @@ p_stmt' s placer render = \case
     txt "rec"
     space
     sitcc . located recS_stmts $ sepSemi (withSpacing (p_stmt' s placer render))
+
+-- | Print @pat <- body@.
+p_bindStmt ::
+  (Anno body ~ SrcSpanAnnA) =>
+  -- | Placer
+  (body -> Placement) ->
+  -- | Render
+  (BracketStyle -> body -> R ()) ->
+  EpUniToken "<-" "←" ->
+  LPat GhcPs ->
+  XRec GhcPs body ->
+  R ()
+p_bindStmt placer render larrow p f = do
+  let patLoc :: SrcSpan
+      patLoc = getLocA p
+
+      bodyLoc :: SrcSpan
+      bodyLoc = getLocA f
+
+      placement :: Placement
+      placement
+        | startsLineAfter patLoc bodyLoc = Normal
+        | otherwise = placer $ unLoc f
+
+      larrowStartsLine :: Bool
+      larrowStartsLine = tokenStartsLineAfter patLoc larrow
+
+      body :: R ()
+      body = located f $ render N
+
+  located p p_pat
+
+  respectful :: Bool <- getPrinterOpt poRespectful
+
+  let useLeadingLarrow :: Bool
+      useLeadingLarrow =
+        and
+          [ respectful,
+            isSigPat $ unLoc p,
+            larrowStartsLine
+          ]
+
+  switchLayout [patLoc, bodyLoc] $
+    if useLeadingLarrow
+      then placeLeadingLarrow bodyLoc body
+      else do
+        space
+        token'larrow
+        placeHanging placement body
+
+-- | Place a bind body on a new line after a leading @<-@.
+placeLeadingLarrow :: SrcSpan -> R () -> R ()
+placeLeadingLarrow bodyLoc body = do
+  breakpoint
+  inci $ do
+    printCommentsBeforeBody
+    token'larrow
+    space
+    body
+  where
+    printCommentsBeforeBody :: R ()
+    printCommentsBeforeBody = located (L bodyStart ()) pure
+
+    bodyStart :: SrcSpan
+    bodyStart = srcLocSpan (srcSpanStart bodyLoc)
 
 p_stmts ::
   ( Anno [LStmt GhcPs (XRec GhcPs body)] ~ SrcSpanAnnLW,
@@ -1558,6 +1614,24 @@ exprPlacement = \case
       then Hanging
       else Normal
   _ -> Normal
+
+-- | Whether a pattern is @pat :: type@ at its top level.
+isSigPat :: Pat GhcPs -> Bool
+isSigPat = \case
+  SigPat {} -> True
+  _ -> False
+
+-- | Whether a span starts on a later line than the given span ends.
+startsLineAfter :: SrcSpan -> SrcSpan -> Bool
+startsLineAfter before loc =
+  not $ isOneLineSpan $ mkSrcSpan (srcSpanEnd before) (srcSpanStart loc)
+
+-- | Whether a token starts on a later line than the given span ends. An
+-- absent token does not.
+tokenStartsLineAfter :: SrcSpan -> EpUniToken tok utok -> Bool
+tokenStartsLineAfter before = \case
+  EpUniTok loc _ -> startsLineAfter before $ getHasLoc loc
+  NoEpUniTok -> False
 
 -- | Return 'True' if any of the RHS expressions has guards.
 withGuards :: NonEmpty (LGRHS GhcPs body) -> Bool
