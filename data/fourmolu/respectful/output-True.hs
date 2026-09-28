@@ -14,10 +14,10 @@ type Bar2 = Double
 main = do
     x :: Int <- foo
     y ::
-        Int <-
-        foo
-    u :: Int <-
-        foo
+        Int
+        <- foo
+    u :: Int
+        <- foo
     z ::
         Int <-
         foo
@@ -33,14 +33,14 @@ main = do
         foo
     p <- foo
     q ::
-        Int <-
+        Int
         -- comment
-        foo
+        <- foo
 
 bindInComp =
     [ r
-    | r :: Int <-
-        foo
+    | r :: Int
+        <- foo
     ]
 
 bindInCompOneLine = [r | r :: Int <- foo]

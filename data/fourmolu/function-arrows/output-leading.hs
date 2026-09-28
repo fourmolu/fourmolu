@@ -141,13 +141,13 @@ foo
 
 bindWithSig = do
     y
-        :: Int <-
-        foo
+        :: Int
+        <- foo
     h
         :: Int
-        -> Bool <-
-        foo
+        -> Bool
+        <- foo
     (a, b)
-        :: (Int, Int) <-
-        do
+        :: (Int, Int)
+        <- do
             foo
