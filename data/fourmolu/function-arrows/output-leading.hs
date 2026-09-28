@@ -138,3 +138,58 @@ foo
     :: forall x
      . Int
     %Many -> Bool
+
+bindWithSig = do
+    x :: Int <- foo
+    y
+        :: Int
+        <- foo
+    z
+        :: Int <-
+        foo
+    h
+        :: Int
+        -> Bool
+        <- foo
+    (a, b)
+        :: (Int, Int) <- do
+        foo
+    w :: Int <- do
+        foo
+    v :: Int <-
+        foo bar
+    u :: Int <-
+        foo
+            bar
+    (r :: Int) <-
+        foo
+    t <-
+        foo bar
+    s
+        <- foo
+    p <- foo
+    q
+        :: Int
+        -- comment
+        <- foo
+
+bindInComp =
+    [ r
+    | r :: Int <-
+        foo
+    ]
+
+bindInCompOneLine = [r | r :: Int <- foo]
+
+bindInCompOneLineBind =
+    [ r
+    | r :: Int <- foo
+    ]
+
+bindInCompNoSig =
+    [ r
+    | r <-
+        foo
+    ]
+
+bindInCompNoSigOneLine = [r | r <- foo]

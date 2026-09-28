@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -51,6 +52,7 @@ import {-# SOURCE #-} Ormolu.Printer.Meat.Declaration.OpTree
 import {-# SOURCE #-} Ormolu.Printer.Meat.Declaration.Signature
 import Ormolu.Printer.Meat.Declaration.StringLiteral
 import Ormolu.Printer.Meat.Type
+import Ormolu.Printer.Meat.Type.Function (getIsTrailing)
 import Ormolu.Printer.Operators
 import Ormolu.Utils
 
@@ -450,16 +452,7 @@ p_stmt' ::
   R ()
 p_stmt' s placer render = \case
   LastStmt _ body _ _ -> located body (render s)
-  BindStmt _ p f@(getLocA -> l) -> do
-    located p p_pat
-    space
-    token'larrow
-    let loc = getLocA p
-        placement
-          | isOneLineSpan (mkSrcSpan (srcSpanEnd loc) (srcSpanStart l)) = placer (unLoc f)
-          | otherwise = Normal
-    switchLayout [loc, l] $
-      placeHanging placement (located f (render N))
+  BindStmt larrow p f -> p_bindStmt placer render larrow p f
   BodyStmt _ body _ _ -> located body (render s)
   LetStmt epAnnLet binds -> p_let' True epAnnLet binds Nothing
   ParStmt {} ->
@@ -500,6 +493,78 @@ p_stmt' s placer render = \case
     txt "rec"
     space
     sitcc . located recS_stmts $ sepSemi (withSpacing (p_stmt' s placer render))
+
+-- | Print @pat <- body@.
+p_bindStmt ::
+  (Anno body ~ SrcSpanAnnA) =>
+  -- | Placer
+  (body -> Placement) ->
+  -- | Render
+  (BracketStyle -> body -> R ()) ->
+  EpUniToken "<-" "←" ->
+  LPat GhcPs ->
+  XRec GhcPs body ->
+  R ()
+p_bindStmt placer render larrow p f = do
+  let patLoc :: SrcSpan
+      patLoc = getLocA p
+
+      bodyLoc :: SrcSpan
+      bodyLoc = getLocA f
+
+      startsOnPatLine :: SrcSpan -> Bool
+      startsOnPatLine loc =
+        isOneLineSpan $ mkSrcSpan (srcSpanEnd patLoc) (srcSpanStart loc)
+
+      placement :: Placement
+      placement
+        | startsOnPatLine bodyLoc = placer $ unLoc f
+        | otherwise = Normal
+
+      larrowStartsLine :: Bool
+      larrowStartsLine = case larrow of
+        EpUniTok loc _ -> not $ startsOnPatLine $ getHasLoc loc
+        NoEpUniTok -> False
+
+      body :: R ()
+      body = located f $ render N
+
+  located p p_pat
+
+  isTrailing :: Choice.Choice "argDelim" -> Bool <- getIsTrailing
+  respectful :: Bool <- getPrinterOpt poRespectful
+
+  let useLeadingLarrow :: Bool
+      useLeadingLarrow =
+        and
+          [ not $ isTrailing $ Choice.Is #argDelim,
+            respectful,
+            larrowStartsLine
+          ]
+
+  switchLayout [patLoc, bodyLoc] $
+    if useLeadingLarrow
+      then placeLeadingLarrow bodyLoc body
+      else do
+        space
+        token'larrow
+        placeHanging placement body
+
+-- | Place a bind body on a new line after a leading @<-@.
+placeLeadingLarrow :: SrcSpan -> R () -> R ()
+placeLeadingLarrow bodyLoc body = do
+  breakpoint
+  inci $ do
+    printCommentsBeforeBody
+    token'larrow
+    space
+    body
+  where
+    printCommentsBeforeBody :: R ()
+    printCommentsBeforeBody = located (L bodyStart ()) pure
+
+    bodyStart :: SrcSpan
+    bodyStart = srcLocSpan (srcSpanStart bodyLoc)
 
 p_stmts ::
   ( Anno [LStmt GhcPs (XRec GhcPs body)] ~ SrcSpanAnnLW,

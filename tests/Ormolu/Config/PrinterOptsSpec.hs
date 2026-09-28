@@ -347,6 +347,21 @@ spec =
               renderPrinterOpt importExportStyle
             ],
           checkIdempotence = True
+        },
+      TestGroup
+        { label = "respectful-function-arrows",
+          isMulti = False,
+          testCases = (,) <$> allOptions <*> allOptions,
+          updateConfig = \(respectful, functionArrows) opts ->
+            opts
+              { poRespectful = pure respectful,
+                poFunctionArrows = pure functionArrows
+              },
+          showTestCase = \(respectful, functionArrows) ->
+            [ "respectful=" ++ renderPrinterOpt respectful,
+              renderPrinterOpt functionArrows
+            ],
+          checkIdempotence = True
         }
     ]
 

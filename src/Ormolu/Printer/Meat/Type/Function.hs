@@ -37,6 +37,9 @@ module Ormolu.Printer.Meat.Type.Function
 
     -- * Haddocks
     withHaddocks,
+
+    -- * Arrow style
+    getIsTrailing,
   )
 where
 
