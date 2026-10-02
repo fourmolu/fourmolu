@@ -520,6 +520,20 @@ index 961d773..3244772 100644
  
  -- | Smart constructor of 'Mixin', enforces invariant.
  --
+diff --git a/Cabal-syntax/src/Distribution/Types/PackageDescription.hs b/Cabal-syntax/src/Distribution/Types/PackageDescription.hs
+index 1b05846..1ec705c 100644
+--- a/Cabal-syntax/src/Distribution/Types/PackageDescription.hs
++++ b/Cabal-syntax/src/Distribution/Types/PackageDescription.hs
+@@ -192,8 +192,7 @@ buildType :: PackageDescription -> BuildType
+ buildType pkg
+   | specVersion pkg >= CabalSpecV2_2 =
+       fromMaybe newDefault (buildTypeRaw pkg)
+-  | otherwise -- cabal-version < 2.1
+-    =
++  | otherwise = -- cabal-version < 2.1
+       fromMaybe Custom (buildTypeRaw pkg)
+   where
+     newDefault
 diff --git a/Cabal-syntax/src/Distribution/Types/VersionRange/Internal.hs b/Cabal-syntax/src/Distribution/Types/VersionRange/Internal.hs
 index ec37c01..d490384 100644
 --- a/Cabal-syntax/src/Distribution/Types/VersionRange/Internal.hs
@@ -1044,6 +1058,24 @@ index 7b077d9..3fc4d65 100644
 +            | not (null dupLibsLax) -> [PackageBuildImpossible (DuplicateModule s dupLibsLax)]
 +            | not (null dupLibsStrict) -> [PackageDistSuspicious (PotentialDupModule s dupLibsStrict)]
 +            | otherwise -> []
+diff --git a/Cabal/src/Distribution/PackageDescription/Check/Paths.hs b/Cabal/src/Distribution/PackageDescription/Check/Paths.hs
+index 28e1e38..9692f41 100644
+--- a/Cabal/src/Distribution/PackageDescription/Check/Paths.hs
++++ b/Cabal/src/Distribution/PackageDescription/Check/Paths.hs
+@@ -116,10 +116,9 @@ checkWindowsPath isGlob path =
+     escape :: Bool -> String -> String
+     escape wisGlob wpath =
+       (".\\" ++)
+-      -- Glob paths will be expanded before being dereferenced, so asterisks
+-      -- shouldn't count against them.
+-      $
+-        map (\c -> if c == '*' && wisGlob then 'x' else c) wpath
++        -- Glob paths will be expanded before being dereferenced, so asterisks
++        -- shouldn't count against them.
++        $ map (\c -> if c == '*' && wisGlob then 'x' else c) wpath
+ 
+ -- | Check a file name is valid for the portable POSIX tar format.
+ --
 diff --git a/Cabal/src/Distribution/PackageDescription/Check/Target.hs b/Cabal/src/Distribution/PackageDescription/Check/Target.hs
 index 5e05b6f..04721fd 100644
 --- a/Cabal/src/Distribution/PackageDescription/Check/Target.hs
@@ -1261,7 +1293,7 @@ index f3c51d7..f51b65e 100644
            , ver <- maybeToList (programVersion prog)
            , let (major1, major2, minor) = majorMinor ver
 diff --git a/Cabal/src/Distribution/Simple/BuildTarget.hs b/Cabal/src/Distribution/Simple/BuildTarget.hs
-index 6913b34..1384d94 100644
+index 6913b34..8c33e84 100644
 --- a/Cabal/src/Distribution/Simple/BuildTarget.hs
 +++ b/Cabal/src/Distribution/Simple/BuildTarget.hs
 @@ -216,8 +216,8 @@ readUserBuildTargets = partitionEithers . map readUserBuildTarget
@@ -1410,6 +1442,15 @@ index 6913b34..1384d94 100644
  
  ------------------------------
  -- Matching file targets
+@@ -996,7 +996,7 @@ data MaybeAmbiguous a = None [MatchError] | Unambiguous a | Ambiguous [a]
+ --
+ 
+ {-
+--- | A primitive matcher that looks up a value in a finite 'Map'. The
++-- \| A primitive matcher that looks up a value in a finite 'Map'. The
+ -- value must match exactly.
+ --
+ matchExactly :: forall a b. Ord a => [(a, b)] -> (a -> Match b)
 @@ -1058,8 +1058,8 @@ checkBuildTargets
      let (enabled, disabled) =
            partitionEithers
@@ -2328,6 +2369,24 @@ index b0da463..ea90353 100644
  
  replNoLoad :: Ord a => ReplOptions -> NubListR a -> NubListR a
  replNoLoad replFlags l
+diff --git a/Cabal/src/Distribution/Simple/GHC/Build/Utils.hs b/Cabal/src/Distribution/Simple/GHC/Build/Utils.hs
+index 2e30c47..f82455f 100644
+--- a/Cabal/src/Distribution/Simple/GHC/Build/Utils.hs
++++ b/Cabal/src/Distribution/Simple/GHC/Build/Utils.hs
+@@ -255,11 +255,9 @@ decodeMainIsArg arg
+   | headOf main_fn isLower =
+       -- The arg looked like "Foo.Bar.baz"
+       Just (ModuleName.fromString main_mod)
+-  | headOf arg isUpper -- The arg looked like "Foo" or "Foo.Bar"
+-    =
++  | headOf arg isUpper = -- The arg looked like "Foo" or "Foo.Bar"
+       Just (ModuleName.fromString arg)
+-  | otherwise -- The arg looked like "baz"
+-    =
++  | otherwise = -- The arg looked like "baz"
+       Nothing
+   where
+     headOf :: String -> (Char -> Bool) -> Bool
 diff --git a/Cabal/src/Distribution/Simple/GHC/Internal.hs b/Cabal/src/Distribution/Simple/GHC/Internal.hs
 index c316da6..d25d4dd 100644
 --- a/Cabal/src/Distribution/Simple/GHC/Internal.hs
@@ -2348,7 +2407,7 @@ index c316da6..d25d4dd 100644
  
  -- Applies options only if the GHC version is greater than or
 diff --git a/Cabal/src/Distribution/Simple/GHCJS.hs b/Cabal/src/Distribution/Simple/GHCJS.hs
-index 065cd8b..adf8e36 100644
+index 065cd8b..50b011b 100644
 --- a/Cabal/src/Distribution/Simple/GHCJS.hs
 +++ b/Cabal/src/Distribution/Simple/GHCJS.hs
 @@ -140,15 +140,15 @@ configureCompiler verbosity hcPath conf0 = do
@@ -2428,7 +2487,21 @@ index 065cd8b..adf8e36 100644
      | packagedb <- packagedbs
      ]
  
-@@ -1351,9 +1351,9 @@ gbuild verbosity numJobs pkg_descr lbi bm clbi = do
+@@ -1100,11 +1100,9 @@ decodeMainIsArg arg
+   | headOf main_fn isLower =
+       -- The arg looked like "Foo.Bar.baz"
+       Just (ModuleName.fromString main_mod)
+-  | headOf arg isUpper -- The arg looked like "Foo" or "Foo.Bar"
+-    =
++  | headOf arg isUpper = -- The arg looked like "Foo" or "Foo.Bar"
+       Just (ModuleName.fromString arg)
+-  | otherwise -- The arg looked like "baz"
+-    =
++  | otherwise = -- The arg looked like "baz"
+       Nothing
+   where
+     headOf :: String -> (Char -> Bool) -> Bool
+@@ -1351,9 +1349,9 @@ gbuild verbosity numJobs pkg_descr lbi bm clbi = do
            , ghcOptLinkLibs = extraLibs bnfo
            , ghcOptLinkLibPath = toNubListR $ extraLibDirs bnfo
            , ghcOptLinkFrameworks =
@@ -2441,7 +2514,7 @@ index 065cd8b..adf8e36 100644
            , ghcOptLinkFrameworkDirs =
                toNubListR $
                  PD.extraFrameworkDirs bnfo
-@@ -1441,38 +1441,38 @@ gbuild verbosity numJobs pkg_descr lbi bm clbi = do
+@@ -1441,38 +1439,38 @@ gbuild verbosity numJobs pkg_descr lbi bm clbi = do
      info verbosity "Building C++ Sources..."
      sequence_
        [ do
@@ -2512,7 +2585,7 @@ index 065cd8b..adf8e36 100644
        | filename <- cxxSrcs
        ]
  
-@@ -1481,34 +1481,34 @@ gbuild verbosity numJobs pkg_descr lbi bm clbi = do
+@@ -1481,34 +1479,34 @@ gbuild verbosity numJobs pkg_descr lbi bm clbi = do
      info verbosity "Building C Sources..."
      sequence_
        [ do
@@ -2575,7 +2648,7 @@ index 065cd8b..adf8e36 100644
        | filename <- cSrcs
        ]
  
-@@ -1909,9 +1909,9 @@ installLib verbosity lbi targetDir dynlibTargetDir _bytecodeTargetDir _builtDir
+@@ -1909,9 +1907,9 @@ installLib verbosity lbi targetDir dynlibTargetDir _bytecodeTargetDir _builtDir
      whenShared $
        sequence_
          [ installShared
@@ -2588,7 +2661,7 @@ index 065cd8b..adf8e36 100644
          | l <- getHSLibraryName uid : extraBundledLibs (libBuildInfo lib)
          , f <- "" : extraDynLibFlavours (libBuildInfo lib)
          ]
-@@ -2037,9 +2037,9 @@ pkgRoot verbosity lbi = pkgRoot'
+@@ -2037,9 +2035,9 @@ pkgRoot verbosity lbi = pkgRoot'
        createDirectoryIfMissing True rootDir
        return rootDir
      pkgRoot' (SpecificPackageDB fp) =
@@ -2659,7 +2732,7 @@ index 20b7e8c..5489b97 100644
                extractExts :: GlobPieces -> Maybe String
                extractExts [] = Nothing
 diff --git a/Cabal/src/Distribution/Simple/Haddock.hs b/Cabal/src/Distribution/Simple/Haddock.hs
-index 79ae426..6d2a09e 100644
+index 79ae426..e08bc4e 100644
 --- a/Cabal/src/Distribution/Simple/Haddock.hs
 +++ b/Cabal/src/Distribution/Simple/Haddock.hs
 @@ -321,20 +321,20 @@ haddock_setupHooks
@@ -2731,7 +2804,7 @@ index 79ae426..6d2a09e 100644
 -      -- missing documentation
 -      )
 +       ( [ ( FilePath -- path to interface
-+       -- file
++           -- file
 +           , Maybe FilePath -- url to html
 +           -- documentation
 +           , Maybe FilePath -- url to hyperlinked
@@ -2805,7 +2878,7 @@ index 79ae426..6d2a09e 100644
 -      -- missing documentation
 -      )
 +       ( [ ( FilePath -- path to interface
-+       -- file
++           -- file
 +           , Maybe FilePath -- url to html
 +           -- documentation
 +           , Maybe FilePath -- url to hyperlinked
@@ -2955,7 +3028,7 @@ index 3ca2756..ab80c6a 100644
    parseString parser verbosity upath bs
  
 diff --git a/Cabal/src/Distribution/Simple/PackageIndex.hs b/Cabal/src/Distribution/Simple/PackageIndex.hs
-index b078285..dc2500a 100644
+index b078285..d18c1c7 100644
 --- a/Cabal/src/Distribution/Simple/PackageIndex.hs
 +++ b/Cabal/src/Distribution/Simple/PackageIndex.hs
 @@ -205,12 +205,12 @@ invariant (PackageIndex pids pnames) =
@@ -2977,6 +3050,15 @@ index b078285..dc2500a 100644
  mkPackageIndex pids pnames = assert (invariant index) index
    where
      index = PackageIndex pids pnames
+@@ -366,7 +366,7 @@ deletePackageName name original@(PackageIndex pids pnames) =
+         (Map.delete (name, LMainLibName) pnames)
+ 
+ {-
+--- | Removes all packages satisfying this dependency from the index.
++-- \| Removes all packages satisfying this dependency from the index.
+ --
+ deleteDependency :: Dependency -> PackageIndex -> PackageIndex
+ deleteDependency (Dependency name versionRange) =
 @@ -663,8 +663,8 @@ dependencyClosure
    :: InstalledPackageIndex
    -> [UnitId]
@@ -4825,7 +4907,7 @@ index 2a9261a..fb0a378 100644
  uhcPackageDbOptions :: FilePath -> FilePath -> PackageDBStack -> [String]
  uhcPackageDbOptions user system db =
 diff --git a/Cabal/src/Distribution/Simple/Utils.hs b/Cabal/src/Distribution/Simple/Utils.hs
-index d23c22b..ccd1ca7 100644
+index d23c22b..9ceeeb9 100644
 --- a/Cabal/src/Distribution/Simple/Utils.hs
 +++ b/Cabal/src/Distribution/Simple/Utils.hs
 @@ -445,8 +445,8 @@ dieWithLocation' verbosity filename mb_lineno msg =
@@ -4970,7 +5052,17 @@ index d23c22b..ccd1ca7 100644
  
  -- | Execute the given command with the given arguments, returning
  -- the command's exit code.
-@@ -1097,9 +1097,9 @@ rawSystemExitWithEnvCwd
+@@ -1064,8 +1064,7 @@ compatWithCreateProcess verbosity cp action =
+                  , stderr
+                  , vStdoutHandle (verbosityHandles verbosity)
+                  , vStderrHandle (verbosityHandles verbosity)
+-                 ] -- Don't close the verbosity handles!
+-        =
++                 ] = -- Don't close the verbosity handles!
+           return ()
+       | otherwise =
+           hClose hdl
+@@ -1097,9 +1096,9 @@ rawSystemExitWithEnvCwd
    -> [(String, String)]
    -> IO ()
  rawSystemExitWithEnvCwd verbosity mbWorkDir path args env =
@@ -4983,7 +5075,7 @@ index d23c22b..ccd1ca7 100644
  
  -- | Execute the given command with the given arguments, returning
  -- the command's exit code.
-@@ -1202,9 +1202,9 @@ rawSystemStdout verbosity path args = withFrozenCallStack $ do
+@@ -1202,9 +1201,9 @@ rawSystemStdout verbosity path args = withFrozenCallStack $ do
        Nothing
        Nothing
        (IOData.iodataMode :: IODataMode mode)
@@ -4996,7 +5088,7 @@ index d23c22b..ccd1ca7 100644
    return output
  
  -- | Execute the given command with the given arguments, returning
-@@ -1265,21 +1265,21 @@ rawSystemStdInOut verbosity path args mcwd menv input _ = withFrozenCallStack $
+@@ -1265,21 +1264,21 @@ rawSystemStdInOut verbosity path args mcwd menv input _ = withFrozenCallStack $
    -- get the stderr, so it can be added to error message
    err <- reportOutputIOError mberr2
  
@@ -5033,7 +5125,7 @@ index d23c22b..ccd1ca7 100644
  
    -- Check if we hit an exception while consuming the output
    -- (e.g. a text decoding error)
-@@ -1937,9 +1937,9 @@ withTempFileEx opts template action = do
+@@ -1937,9 +1936,9 @@ withTempFileEx opts template action = do
        (openTempFile tmp template)
        ( \(name, handle) -> do
            hClose handle
@@ -5046,7 +5138,7 @@ index d23c22b..ccd1ca7 100644
        )
        (withLexicalCallStack (\(fn, h) -> action (mkRelToPkg tmp fn) h))
    where
-@@ -2056,9 +2056,9 @@ rewriteFileLBS verbosity path newContent =
+@@ -2056,9 +2055,9 @@ rewriteFileLBS verbosity path newContent =
    flip catchIO mightNotExist $ do
      existingContent <- annotateIO verbosity $ BS.readFile path
      _ <- evaluate (BS.length existingContent)
@@ -9056,6 +9148,31 @@ index 0090144..7cba0f3 100644
      PackageHashInputs
        { pkgHashPkgId = packageId elab
        , pkgHashComponent =
+diff --git a/cabal-install/src/Distribution/Client/ProjectPlanning/SetupPolicy.hs b/cabal-install/src/Distribution/Client/ProjectPlanning/SetupPolicy.hs
+index e3a6595..96d6f7a 100644
+--- a/cabal-install/src/Distribution/Client/ProjectPlanning/SetupPolicy.hs
++++ b/cabal-install/src/Distribution/Client/ProjectPlanning/SetupPolicy.hs
+@@ -61,17 +61,14 @@ packageSetupScriptStyle :: PackageDescription -> SetupScriptStyle
+ packageSetupScriptStyle pkg
+   | customOrHooks
+   , Just setupbi <- setupBuildInfo pkg -- does have a custom-setup stanza
+-  , not (defaultSetupDepends setupbi) -- but not one we added ourselves
+-    =
++  , not (defaultSetupDepends setupbi) = -- but not one we added ourselves
+       SetupCustomExplicitDeps
+   | customOrHooks
+   , Just setupbi <- setupBuildInfo pkg -- does have a custom-setup stanza
+-  , defaultSetupDepends setupbi -- that we had to add ourselves
+-    =
++  , defaultSetupDepends setupbi = -- that we had to add ourselves
+       SetupCustomImplicitDeps
+   | customOrHooks
+-  , Nothing <- setupBuildInfo pkg -- we get this case pre-solver
+-    =
++  , Nothing <- setupBuildInfo pkg = -- we get this case pre-solver
+       SetupCustomImplicitDeps
+   -- The specified @cabal-version@ is newer that the last we know about.
+   -- Here we could fail but we are optimist and build an external setup script.
 diff --git a/cabal-install/src/Distribution/Client/ProjectPlanning/Types.hs b/cabal-install/src/Distribution/Client/ProjectPlanning/Types.hs
 index db0fe1a..c618a25 100644
 --- a/cabal-install/src/Distribution/Client/ProjectPlanning/Types.hs
