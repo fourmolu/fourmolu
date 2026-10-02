@@ -129,12 +129,13 @@ p_dataDecl style name tyVars getTyVarLoc p_tyVar fixity HsDataDefn {..} = do
           txt "="
           space
           layout <- getLayout
+          fourmoluSitccFix <- getIsFourmoluMultiHaddockPrintStyle first_dd_cons
           let s =
                 if layout == MultiLine || lineHaddocks
                   then newline >> txt "|" >> space
                   else space >> txt "|" >> space
               sitcc' =
-                if lineHaddocks || Choice.isFalse singleRecCon
+                if lineHaddocks || Choice.isFalse singleRecCon || fourmoluSitccFix
                   then sitcc
                   else id
           sep s (sitcc' . located' (p_conDecl singleRecCon)) dd_cons'

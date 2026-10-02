@@ -24,6 +24,7 @@ module Ormolu.Printer.Meat.Common
     p_namespaceSpec,
     p_hsMultAnn,
     p_arrow,
+    getIsFourmoluMultiHaddockPrintStyle,
   )
 where
 
@@ -33,9 +34,11 @@ import Data.Choice qualified as Choice
 import Data.Data (Data)
 import Data.Generics.Schemes (listify)
 import Data.List.NonEmpty qualified as NE
+import Data.Maybe (isJust)
 import Data.Text (Text)
 import Data.Text qualified as T
 import GHC.Data.FastString
+import GHC.Hs (ConDecl (..), LConDecl)
 import GHC.Hs.Binds
 import GHC.Hs.Doc
 import GHC.Hs.Extension (GhcPs)
@@ -424,3 +427,20 @@ isMultilineHaddockPrintStyle = \case
 
 getDocStringLines :: LHsDoc GhcPs -> [Text]
 getDocStringLines = splitDocString . hsDocString . unLoc
+
+-- Hack to workaround upstream bug
+-- https://github.com/tweag/ormolu/issues/1225
+getIsFourmoluMultiHaddockPrintStyle :: LConDecl GhcPs -> R Bool
+getIsFourmoluMultiHaddockPrintStyle (L _ decl) = do
+  poHStyle <- getPrinterOpt poHaddockStyle
+  pure $ isJust doc && isMulti poHStyle
+  where
+    doc =
+      case decl of
+        ConDeclGADT {con_doc} -> con_doc
+        ConDeclH98 {con_doc} -> con_doc
+    isMulti = \case
+      HaddockSingleLine -> False
+      HaddockMultiLine -> True
+      HaddockMultiLineCompact -> True
+      HaddockAuto -> False
