@@ -10,7 +10,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
--- | Renedring of data type declarations.
+-- | Rendering of data type declarations.
 module Ormolu.Printer.Meat.Declaration.Data
   ( p_dataDecl,
   )
@@ -22,7 +22,7 @@ import Data.Choice qualified as Choice
 import Data.List (sortOn)
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.List.NonEmpty qualified as NE
-import Data.Maybe (isJust, isNothing, maybeToList)
+import Data.Maybe (isJust, isNothing, mapMaybe, maybeToList)
 import Data.Text qualified as Text
 import GHC.Hs
 import GHC.Types.Fixity
@@ -116,21 +116,25 @@ p_dataDecl style name tyVars getTyVarLoc p_tyVar fixity HsDataDefn {..} = do
               conDeclConsSpans = \case
                 ConDeclGADT {..} -> getLocA <$> con_names
                 ConDeclH98 {..} -> getLocA con_name :| []
-          if hasHaddocks dd_cons'
+          -- A constructor documented with @--@ lines cannot share a line
+          -- with anything. One documented with @{- | … -}@ can, so it is
+          -- laid out as though it were undocumented.
+          lineHaddocks <- consHaveLineHaddocks dd_cons'
+          if lineHaddocks
             then newline
             else
               if Choice.isTrue singleRecCon && compactLayoutAroundEquals
                 then space
                 else breakpoint
-          equals
+          txt "="
           space
           layout <- getLayout
           let s =
-                if layout == MultiLine || hasHaddocks dd_cons'
+                if layout == MultiLine || lineHaddocks
                   then newline >> txt "|" >> space
                   else space >> txt "|" >> space
               sitcc' =
-                if hasHaddocks dd_cons' || Choice.isFalse singleRecCon
+                if lineHaddocks || Choice.isFalse singleRecCon
                   then sitcc
                   else id
           sep s (sitcc' . located' (p_conDecl singleRecCon)) dd_cons'
@@ -158,7 +162,7 @@ data DerivingClauseSortKey
 p_conDecl :: Choice "singleRecCon" -> ConDecl GhcPs -> R ()
 p_conDecl _ decl@ConDeclGADT {..} = do
   mapM_ (p_hsDoc Pipe (With #endNewline)) con_doc
-  switchLayout conDeclSpn $ do
+  switchLayoutDocumented documented conDeclSpn $ do
     let c :| cs = con_names
     p_rdrName c
     unless (null cs) . inci $ do
@@ -166,6 +170,10 @@ p_conDecl _ decl@ConDeclGADT {..} = do
       sep commaDel p_rdrName cs
     inci $ p_hsFun decl
   where
+    -- Every part of the signature shares one layout decision, so any
+    -- Haddock in any of them puts the whole of it on several lines.
+    documented = (con_g_args, con_res_ty)
+
     conDeclSpn =
       fmap getLocA (NE.toList con_names) <> conSigSpans
     conSigSpans =
@@ -181,13 +189,11 @@ p_conDecl singleRecCon ConDeclH98 {..} =
     PrefixCon xs -> do
       renderConDoc
       renderContext
-      switchLayout conDeclSpn $ do
+      switchLayoutDocumented xs conDeclSpn $ do
         p_rdrName con_name
-        let argsHaveDocs = conArgsHaveHaddocks xs
-            delimiter = if argsHaveDocs then newline else breakpoint
-        unless (null xs) delimiter
+        unless (null xs) breakpoint
         inci . sitcc $
-          sep delimiter (sitcc . p_hsConDeclFieldWithDoc) xs
+          sep breakpoint (sitcc . p_hsConDeclFieldWithDoc) xs
     RecCon l -> do
       renderConDoc
       renderContext
@@ -197,18 +203,19 @@ p_conDecl singleRecCon ConDeclH98 {..} =
         if recordStyle == RecordStyleKnr then space else breakpoint
         inciIf (Choice.isFalse singleRecCon) (located l p_hsConDeclRecFields)
     InfixCon l r -> do
-      -- manually render these
+      -- Render these manually.
       let larg_doc = cdf_doc l
           rarg_doc = cdf_doc r
 
-      -- the constructor haddock can go on top of the entire constructor
-      -- only if neither argument has haddocks
+      -- The constructor Haddock can go on top of the entire constructor
+      -- only if neither argument has Haddocks.
       let putConDocOnTop = isNothing larg_doc && isNothing rarg_doc
 
       when putConDocOnTop renderConDoc
       renderContext
       switchLayout conDeclSpn $ do
-        -- the left arg haddock can use pipe only if the infix constructor has docs
+        -- The left arg Haddock can use pipe style only if the infix
+        -- constructor has docs.
         if isJust con_doc
           then do
             mapM_ (p_hsDoc Pipe (With #endNewline)) larg_doc
@@ -268,26 +275,27 @@ isGadt = \case
 p_hsDerivingClause ::
   HsDerivingClause GhcPs ->
   R ()
-p_hsDerivingClause HsDerivingClause {..} = do
+p_hsDerivingClause HsDerivingClause {..} = multiLineIfDocumented deriv_clause_tys $ do
   singleDerivingParens <- getPrinterOpt poSingleDerivingParens
 
   txt "deriving"
-  let derivingWhat = located deriv_clause_tys $ \case
-        DctSingle NoExtField sigTy
-          | DerivingAlways <- singleDerivingParens -> parens N $ located sigTy p_hsSigType
-          | otherwise -> located sigTy p_hsSigType
-        DctMulti NoExtField sigTys
-          | [sigTy] <- sigTys,
-            DerivingNever <- singleDerivingParens ->
-              located sigTy p_hsSigType
-          | otherwise -> do
-              sortDerivedClasses <- getPrinterOpt poSortDerivedClasses
-              let sort = if sortDerivedClasses then sortOn showOutputable else id
-              parens N $
-                sep
-                  commaDel
-                  (sitcc . located' p_hsSigType)
-                  (sort sigTys)
+  let derivingWhat = located deriv_clause_tys $ \tys ->
+        multiLineIfDocumented tys $ case tys of
+          DctSingle NoExtField sigTy
+            | DerivingAlways <- singleDerivingParens -> parens N $ located sigTy p_hsSigType
+            | otherwise -> located sigTy p_hsSigType
+          DctMulti NoExtField sigTys
+            | [sigTy] <- sigTys,
+              DerivingNever <- singleDerivingParens ->
+                located sigTy p_hsSigType
+            | otherwise -> do
+                sortDerivedClasses <- getPrinterOpt poSortDerivedClasses
+                let sort = if sortDerivedClasses then sortOn showOutputable else id
+                parens N $
+                  sep
+                    commaDel
+                    (sitcc . located' p_hsSigType)
+                    (sort sigTys)
   space
   case deriv_clause_strategy of
     Nothing -> do
@@ -417,19 +425,24 @@ instance FunRepr (ConDeclGADT GhcPs) where
 ----------------------------------------------------------------------------
 -- Helpers
 
+-- | Do any of these constructors print a Haddock as @--@ lines where it
+-- would share a line with the rest of the declaration?
+--
+-- Only the constructor's own Haddock and the docs on its prefix arguments
+-- count. A record constructor lays its fields out over several lines
+-- anyway, so documenting one of them says nothing about how the @=@ and the
+-- constructor name should be arranged.
+consHaveLineHaddocks :: [LConDecl GhcPs] -> R Bool
+consHaveLineHaddocks = fmap or . traverse (f . unLoc)
+  where
+    f ConDeclH98 {..} =
+      hasLineHaddocks $
+        maybeToList con_doc <> case con_args of
+          PrefixCon xs -> mapMaybe cdf_doc xs
+          _ -> []
+    f _ = pure False
+
 isInfix :: LexicalFixity -> Bool
 isInfix = \case
   Infix -> True
   Prefix -> False
-
-hasHaddocks :: [LConDecl GhcPs] -> Bool
-hasHaddocks = any (f . unLoc)
-  where
-    f ConDeclH98 {..} =
-      isJust con_doc || case con_args of
-        PrefixCon xs -> conArgsHaveHaddocks xs
-        _ -> False
-    f _ = False
-
-conArgsHaveHaddocks :: [HsConDeclField GhcPs] -> Bool
-conArgsHaveHaddocks = any (isJust . cdf_doc)

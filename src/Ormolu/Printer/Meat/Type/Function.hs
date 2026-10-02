@@ -56,7 +56,7 @@ import GHC.Types.Var (Specificity (..))
 import GHC.Utils.Outputable (Outputable)
 import Ormolu.Config
 import Ormolu.Printer.Combinators
-import Ormolu.Printer.Meat.Common (p_arrow, p_hsDoc, p_rdrName)
+import Ormolu.Printer.Meat.Common (p_arrow, p_hsDoc, p_hsDocInline, p_rdrName)
 import Ormolu.Utils (showOutputable)
 import Prelude hiding (span)
 
@@ -479,7 +479,7 @@ withHaddocks isEnd doc m = do
 
   if Choice.isTrue isLeadingHaddock
     then do
-      traverse (liftR . p_hsDoc Pipe (With #endNewline)) doc *> m
+      traverse (liftR . p_hsDocInline Pipe) doc *> m
     else do
       let (pre, endNewline) =
             if Choice.isTrue isEnd
