@@ -35,7 +35,7 @@ module Ormolu.Printer.Meat.Type
 where
 
 import Control.Monad
-import Data.Choice (pattern Is, pattern Without)
+import Data.Choice (pattern Is, pattern With, pattern Without)
 import Data.Maybe (fromMaybe)
 import GHC.Data.Strict qualified as Strict
 import GHC.Hs hiding (isPromoted)
@@ -228,10 +228,10 @@ p_hsConDeclRecField field@HsConDeclRecField {..} = withFieldHaddocks $ do
       commaStyle <- getPrinterOpt poCommaStyle
       let doc = cdf_doc cdrf_spec
       when (commaStyle == Trailing) $
-        mapM_ (p_hsDocInline Pipe) doc
+        mapM_ (p_hsDocInline Pipe (With #endNewline)) doc
       action
       when (commaStyle == Leading) $
-        mapM_ (inciByFrac (-1) . (newline >>) . p_hsDoc Caret (Without #endNewline)) doc
+        mapM_ (inciByFrac (-1) . (newline >>) . p_hsDocInline Caret (Without #endNewline)) doc
 
 -- | This does not print 'cdf_doc' and 'cdf_multiplicity', as there is no
 -- single strategy for where to print them (see call sites).
