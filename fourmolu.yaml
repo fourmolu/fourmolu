@@ -11,7 +11,7 @@ import-grouping: legacy
 indent-wheres: true
 record-brace-space: true
 newlines-between-decls: 1
-haddock-style: single-line
+haddock-style: auto
 haddock-style-module: null
 haddock-location-signature: auto
 let-style: inline

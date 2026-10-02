@@ -7,7 +7,6 @@ newtype A = A Int
     deriving newtype (Num)
 
 data B
-    -- A comment that will end up in an odd place
-
     deriving (Eq)
+    -- A comment that will stay above Show
     deriving stock (Show)

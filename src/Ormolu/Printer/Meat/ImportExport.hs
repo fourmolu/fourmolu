@@ -16,7 +16,6 @@ import Control.Monad
 import Data.Choice (pattern Without)
 import Data.Foldable (for_, traverse_)
 import Data.List (inits)
-import Data.Text qualified as T
 import GHC.Hs
 import GHC.LanguageExtensions.Type
 import GHC.Types.PkgQual
@@ -82,18 +81,18 @@ p_hsmodImport ImportDecl {..} = do
     space
     case ideclImportList of
       Nothing -> return ()
-      Just (hiding, L _ xs) -> do
+      Just (hiding, L listLoc xs) -> do
         case hiding of
           Exactly -> pure ()
           EverythingBut -> txt "hiding"
         breakIfNotDiffFriendly
         parens' True $ do
           layout <- getLayout
+          when (null xs) $ locatedEmpty (locA listLoc)
           sep
             breakpoint
             (\(p, l) -> sitcc (located l (p_lie layout False p)))
             (attachRelativePos xs)
-    newline
 
 p_declLevel :: ImportDeclLevel -> R ()
 p_declLevel = \case
@@ -146,7 +145,7 @@ p_lie encLayout isAllPrevDoc relativePos = \case
   IEDoc NoExtField str ->
     indentDoc $
       p_hsDoc Pipe (Without #endNewline) str
-  IEDocNamed NoExtField str -> indentDoc $ txt $ "-- $" <> T.pack str
+  IEDocNamed NoExtField str -> indentDoc $ p_hsDocName str
   where
     -- Add a comma to a import-export list element
     withComma m =
