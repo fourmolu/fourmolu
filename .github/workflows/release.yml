@@ -31,6 +31,7 @@ jobs:
           "darwin-x86_64",
           "darwin-arm64"
         ]
+      static: '[false, true]'
       version: ${{ needs.cabal_file.outputs.version }}
 
   check_changelog:
@@ -100,9 +101,13 @@ jobs:
           scripts/release_notes.py generate
             --fourmolu-version "${version}"
             --bin linux-x86_64 .release/bin/fourmolu-${version}-linux-x86_64.zip
+            --bin linux-x86_64 .release/bin/fourmolu-${version}-linux-x86_64-static.zip
             --bin linux-aarch64 .release/bin/fourmolu-${version}-linux-arm64.zip
+            --bin linux-aarch64 .release/bin/fourmolu-${version}-linux-arm64-static.zip
             --bin macos-x86_64 .release/bin/fourmolu-${version}-darwin-x86_64.zip
+            --bin macos-x86_64 .release/bin/fourmolu-${version}-darwin-x86_64-static.zip
             --bin macos-aarch64 .release/bin/fourmolu-${version}-darwin-arm64.zip
+            --bin macos-aarch64 .release/bin/fourmolu-${version}-darwin-arm64-static.zip
             | tee .release/release-notes.md
       -
         uses: haskell-actions/hackage-publish@v1
